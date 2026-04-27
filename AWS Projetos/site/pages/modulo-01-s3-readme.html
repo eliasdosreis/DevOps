@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Módulo 1 — Storage: Amazon S3 | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#modulo-01-s3-readme">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">S3 · 7 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para S3" loading="lazy"><figcaption>S3 e a base para arquivos, sites estaticos, backups e data lakes.</figcaption></figure><h1 id="modulo-1-storage-amazon-s3">Módulo 1 — Storage: Amazon S3</h1>
+<blockquote><strong>Custo:</strong> ~$0.00 | <strong>Pré-requisito:</strong> Módulo 0 concluído | <strong>Duração estimada:</strong> 3-4 horas</blockquote>
+<p>---</p>
+<h2 id="1-analogia-do-dia-a-dia">1. ANALOGIA DO DIA A DIA</h2>
+<p>Imagine que o <strong>S3 é um armazém infinito do Correios</strong>.</p>
+<ul>
+<li>O <strong>Bucket</strong> é como uma <strong>caixa postal com nome único no mundo</strong> — ninguém mais pode ter o mesmo nome.</li>
+<li>Os <strong>Objetos</strong> são as <strong>cartas e pacotes</strong> guardados dentro da caixa.</li>
+<li>A <strong>Política do Bucket</strong> é como as <strong>regras de acesso</strong> — quem pode pegar o quê.</li>
+<li>O <strong>Versionamento</strong> é como um <strong>arquivo fotográfico</strong> — você guarda cada versão de uma foto tirada no mesmo lugar.</li>
+<li>O <strong>Lifecycle</strong> é como uma <strong>política de descarte</strong> — &quot;档案 com mais de 30 dias vão para o arquivo morto; com mais de 90 dias, deletar&quot;.</li>
+<li>O <strong>Static Website Hosting</strong> é como transformar sua caixa postal em uma <strong>vitrine de loja</strong> — qualquer pessoa pode ver o que está exposto.</li>
+</ul>
+<p>---</p>
+<h2 id="2-o-que-e-definicao-tecnica-senior">2. O QUE É (Definição Técnica Sênior)</h2>
+<p><strong>Amazon S3 (Simple Storage Service):</strong> Object storage com durabilidade de 99.999999999% (11 noves). Armazena dados como objetos (até 5 TB cada) dentro de buckets. É a base de praticamente toda arquitetura AWS moderna.</p>
+<p><strong>Características fundamentais:</strong></p>
+<ul>
+<li><strong>Durabilidade:</strong> 99.999999999% — a AWS replica automaticamente em múltiplas AZs</li>
+<li><strong>Disponibilidade:</strong> 99.99% SLA (Standard class)</li>
+<li><strong>Consistência:</strong> Strong read-after-write consistency (desde dezembro 2020)</li>
+<li><strong>Escalabilidade:</strong> Ilimitada — sem provisioning manual</li>
+<li><strong>Storage Classes:</strong> Standard, IA, Glacier, Deep Archive (diferença de custo e retrieval time)</li>
+</ul>
+<p>---</p>
+<h2 id="custo-estimado-deste-modulo">💲 CUSTO ESTIMADO DESTE MÓDULO</h2>
+<pre><code>💲 CUSTO ESTIMADO — MÓDULO 1:
+  - S3 Storage:    $0.00  (Free Tier: 5 GB/mês por 12 meses)
+  - S3 Requests:   $0.00  (Free Tier: 20.000 GET + 2.000 PUT/mês)
+  - Data Transfer: $0.00  (saída até 100 GB/mês é grátis para internet)
+  - TOTAL:         ~$0.00
+  
+  ⚠️  Cuidado após 12 meses: $0.023/GB (região us-east-1)
+  ⚠️  Lembre-se de destruir os recursos ao final!</code></pre>
+<p>---</p>
+<h2 id="3-projetos-deste-modulo">3. PROJETOS DESTE MÓDULO</h2>
+<div class="table-wrap"><table><thead><tr><th>Arquivo</th><th>O que cria</th><th>Conceito ensinado</th></tr></thead><tbody><tr><td><a href="./01-bucket-s3.yaml"><code>01-bucket-s3.yaml</code></a></td><td>Bucket S3 básico privado</td><td>Buckets, nomenclatura, regiões</td></tr><tr><td><a href="./02-bucket-versionamento.yaml"><code>02-bucket-versionamento.yaml</code></a></td><td>Adiciona versionamento ao bucket</td><td>Versioning, proteção contra delete</td></tr><tr><td><a href="./03-bucket-lifecycle.yaml"><code>03-bucket-lifecycle.yaml</code></a></td><td>Regras de ciclo de vida</td><td>Lifecycle rules, storage classes</td></tr><tr><td><a href="./04-site-estatico.yaml"><code>04-site-estatico.yaml</code></a></td><td>Hospedagem de site estático</td><td>Static Website, public access</td></tr><tr><td><a href="./05-bucket-policy-publica.yaml"><code>05-bucket-policy-publica.yaml</code></a></td><td>Política pública de leitura</td><td>Bucket Policies, JSON IAM</td></tr><tr><td><a href="./06-upload-e-teste.sh"><code>06-upload-e-teste.sh</code></a></td><td>Upload de arquivos e testes</td><td>CLI S3, sync, presigned URLs</td></tr><tr><td><a href="./07-limpeza.sh"><code>07-limpeza.sh</code></a></td><td>Destroi todos os recursos</td><td>Cleanup obrigatório</td></tr></tbody></table></div>
+<p>---</p>
+<h2 id="4-fluxo-de-aprendizado">4. FLUXO DE APRENDIZADO</h2>
+<pre><code>[01] Criar bucket privado
+         ↓
+[02] Ativar versionamento
+         ↓
+[03] Adicionar regras de lifecycle
+         ↓
+[04] Habilitar hospedagem de site estático
+         ↓
+[05] Criar política pública de leitura
+         ↓
+[06] Fazer upload e testar via CLI
+         ↓
+[07] 🧹 LIMPEZA (sempre!)</code></pre>
+<p>---</p>
+<h2 id="5-conceitos-fundamentais-do-s3">5. CONCEITOS FUNDAMENTAIS DO S3</h2>
+<h3 id="5-1-nomenclatura-de-buckets">5.1 Nomenclatura de Buckets</h3>
+<pre><code>Regras OBRIGATÓRIAS:
+  ✅ Entre 3 e 63 caracteres
+  ✅ Letras minúsculas, números e hífens apenas
+  ✅ Deve começar com letra ou número
+  ✅ GLOBALMENTE ÚNICO em toda a AWS (não só na sua conta!)
+  ❌ Não pode ter letras maiúsculas
+  ❌ Não pode ter underscores
+  ❌ Não pode ser um endereço IP (ex: 192.168.1.1)
+
+Boa prática de nomenclatura:
+  {propósito}-{conta-ou-projeto}-{região}-{ambiente}
+  Exemplo: uploads-meuapp-us-east-1-dev</code></pre>
+<h3 id="5-2-storage-classes-o-que-cada-uma-significa">5.2 Storage Classes — O que cada uma significa</h3>
+<pre><code>STANDARD          → Acesso frequente. ~$0.023/GB
+                    Durabilidade: 11 noves, 3+ AZs
+
+STANDARD-IA       → Acesso infrequente. ~$0.0125/GB
+                    Mas cobra $0.01/GB a cada retrievl!
+                    Use para: backups, disaster recovery
+
+ONE ZONE-IA       → Como Standard-IA mas em 1 AZ apenas.
+                    Mais barato (~$0.01/GB) mas menos resiliente
+                    Não use para dados críticos
+
+GLACIER INSTANT   → Acesso raro (~1x por trimestre), retrieval: ms
+                    ~$0.004/GB
+
+GLACIER FLEXIBLE  → Acesso muito raro, retrieval: minutos-horas
+                    ~$0.0036/GB  
+
+DEEP ARCHIVE      → Arquivamento de longo prazo, retrieval: 12h
+                    ~$0.00099/GB (o mais barato!)
+                    Use para: conformidade, registros financeiros
+
+INTELLIGENT-TIERING → AWS move automaticamente entre tiers
+                       Cobra $0.0025/objeto para monitoramento
+                       Bom quando o padrão de acesso é imprevisível</code></pre>
+<h3 id="5-3-arn-do-s3">5.3 ARN do S3</h3>
+<pre><code>Formato:  arn:aws:s3:::nome-do-bucket
+          arn:aws:s3:::nome-do-bucket/pasta/arquivo.txt
+
+Note: S3 não tem região no ARN (é global)
+      S3 não tem Account ID no ARN</code></pre>
+<p>---</p>
+<h2 id="6-verificacao-e-troubleshooting-comuns">6. VERIFICAÇÃO E TROUBLESHOOTING COMUNS</h2>
+<h3 id="erro-bucketalreadyexists">Erro: &quot;BucketAlreadyExists&quot;</h3>
+<pre><code>Causa: O nome do bucket já existe em ALGUMA conta AWS do mundo
+Solução: Adicione sufixo único (ex: -2024, -seunome, random)</code></pre>
+<h3 id="erro-access-denied-ao-acessar-o-site">Erro: &quot;Access Denied&quot; ao acessar o site</h3>
+<pre><code>Causa: Block Public Access ainda ativo, ou política não aplicada
+Solução:
+  1. Verifique se o Block Public Access está desativado
+  2. Verifique se a bucket policy permite s3:GetObject para *
+  3. Verifique se o arquivo foi carregado com o nome correto (index.html)</code></pre>
+<h3 id="erro-nosuchbucket">Erro: &quot;NoSuchBucket&quot;</h3>
+<pre><code>Causa: Nome do bucket errado ou bucket em outra região
+Solução: 
+  aws s3 ls → lista todos os buckets
+  Verifique a região: aws s3api get-bucket-location --bucket nome-do-bucket</code></pre>
+<p>---</p>
+<h2 id="7-conceito-senior">7. 🧠 CONCEITO SÊNIOR</h2>
+<h3 id="o-que-um-senior-sabe-que-um-junior-nao-sabe">O que um Sênior sabe que um Júnior não sabe:</h3>
+<p><strong>1. S3 não é &quot;apenas storage&quot; — é um sistema de computação distribuída</strong> O S3 suporta S3 Select (queries SQL em objetos), S3 Object Lambda (transforma dados na leitura), e Event Notifications. Em produção, S3 é o &quot;hub&quot; de pipelines de dados.</p>
+<p><strong>2. Segurança em camadas (Defense in Depth)</strong> Um Sênior configura 3 camadas:</p>
+<ul>
+<li>Block Public Access (nível de conta E bucket)</li>
+<li>Bucket Policy (quem pode acessar O QUÊ)</li>
+<li>Object ACLs (desabilitado em buckets modernos — use Bucket Policies)</li>
+<li>KMS encryption at rest (SSE-KMS para dados sensíveis)</li>
+</ul>
+<p><strong>3. Performance patterns</strong> Para alto throughput (&gt;3.500 PUT/s), use prefixos randômicos: - ❌ <code>uploads/2024/01/arquivo.jpg</code> (tutti os objetos no mesmo prefixo) - ✅ <code>a9f2/2024/01/arquivo.jpg</code> (hash no início distribui a carga)</p>
+<p><strong>4. Custo oculto: Lifecycle mal configurado</strong> Mover 1 objeto para Glacier ANTES de 30 dias na Standard gera cobrança duplicada (minimum storage duration). Sempre leia a documentação de &quot;minimum storage requirements&quot; de cada classe.</p>
+<p><strong>5. Presigned URLs vs Bucket Policy</strong> Para compartilhar arquivos temporariamente (ex: link de download por 1 hora), use presigned URLs — nunca torne o bucket público. A URL expira automaticamente.</p>
+<p><strong>6. Replication para compliance</strong> CRR (Cross-Region Replication) e SRR (Same-Region Replication) para disaster recovery, conformidade regulatória (dados no Brasil, réplica no exterior), e redução de latência para usuários globais.</p>
+<p>---</p>
+<h2 id="8-perguntas-de-entrevista">8. PERGUNTAS DE ENTREVISTA</h2>
+<p><strong>Q: Qual a diferença entre uma Bucket Policy e uma ACL no S3? Qual você prefere e por quê?</strong></p>
+<blockquote><strong>Resposta esperada:</strong> Bucket Policies são documentos JSON baseados em IAM que controlam acesso a nível de bucket ou objeto usando ações, recursos e condições. ACLs (Access Control Lists) são um mecanismo legado no nível de objeto. Amazon recomenda desabilitar ACLs (Object Ownership = Bucket Owner Enforced) e usar apenas Bucket Policies e IAM Policies. Prefiro Bucket Policies pois são mais expressivas (suportam Conditions, MFA, IP ranges), são auditáveis via CloudTrail, e seguem o mesmo modelo IAM do resto da AWS. ACLs ficaram obsoletas em agosto de 2021.</blockquote>
+<p><strong>Q: Como você organizaria o S3 para uma empresa com dados de múltiplos clientes garantindo isolamento?</strong></p>
+<blockquote><strong>Resposta esperada:</strong> Usaria um bucket por cliente (com nome como <code>dados-cliente-{id}</code>) ou prefixos por tenant com Bucket Policies que restringem acesso por prefixo usando condições <code>s3:prefix</code>. Em produção, prefiro contas AWS separadas por cliente usando AWS Organizations (isolamento total). Para isolamento por prefixo, uso IAM Roles com <code>Condition: {&quot;StringLike&quot;: {&quot;s3:prefix&quot;: &quot;cliente-X/*&quot;}}</code>. Adicionaria KMS CMK por cliente para criptografia com chaves isoladas. Habilitaria S3 Access Logs e CloudTrail Data Events para auditoria.</blockquote>
+<p>---</p>
+<h2 id="proximo-modulo">✅ Próximo Módulo</h2>
+<p>Quando terminar e executar a limpeza: 👉 <strong><a href="../modulo-02-lambda/README.md"><code>../modulo-02-lambda/README.md</code></a></strong></p><nav class="page-nav"><a href="./modulo-00-preparacao-readme.html">Anterior: Módulo 0 — Preparação do Ambiente</a><a href="./modulo-02-lambda-readme.html">Proximo: Módulo 2 — Computação Serverless: AWS Lambda</a></nav></article></main></body></html>

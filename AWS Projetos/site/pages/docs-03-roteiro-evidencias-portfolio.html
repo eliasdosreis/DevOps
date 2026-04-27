@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Roteiro de evidencias para portfolio | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#docs-03-roteiro-evidencias-portfolio">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">Portfolio · 3 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para Portfolio" loading="lazy"><figcaption>Documentacao de portfolio transforma laboratorio em historia profissional.</figcaption></figure><h1 id="roteiro-de-evidencias-para-portfolio">Roteiro de evidencias para portfolio</h1>
+<p>Este roteiro ajuda a provar que o projeto funcionou.</p>
+<h2 id="pasta-sugerida-por-modulo">Pasta sugerida por modulo</h2>
+<p>Crie uma pasta local de evidencias quando executar:</p>
+<pre><code>evidencias/
+  modulo-01-s3/
+    01-stack-created.png
+    02-bucket-config.png
+    03-site-online.png
+    04-cloudwatch-or-cli-output.txt
+    05-cleanup.png</code></pre>
+<p>Nao suba prints com account id, email pessoal, tokens, nomes reais de clientes ou informacoes sensiveis.</p>
+<h2 id="evidencias-por-tipo-de-projeto">Evidencias por tipo de projeto</h2>
+<h3 id="s3">S3</h3>
+<ul>
+<li>bucket criado;</li>
+<li>bloqueio publico quando aplicavel;</li>
+<li>versionamento/lifecycle;</li>
+<li>site acessando;</li>
+<li>limpeza do bucket.</li>
+</ul>
+<h3 id="lambda">Lambda</h3>
+<ul>
+<li>funcao criada;</li>
+<li>role IAM anexada;</li>
+<li>teste de invocacao;</li>
+<li>logs no CloudWatch;</li>
+<li>metrica de invocacao/erro.</li>
+</ul>
+<h3 id="api-gateway">API Gateway</h3>
+<ul>
+<li>endpoint criado;</li>
+<li>chamada via <code>curl</code>;</li>
+<li>resposta de sucesso;</li>
+<li>CORS se houver frontend;</li>
+<li>logs/metricas.</li>
+</ul>
+<h3 id="dynamodb">DynamoDB</h3>
+<ul>
+<li>tabela criada;</li>
+<li>chave primaria e sort key;</li>
+<li>item inserido;</li>
+<li>query funcionando;</li>
+<li>exemplo de erro evitado: scan desnecessario.</li>
+</ul>
+<h3 id="sns-sqs">SNS/SQS</h3>
+<ul>
+<li>topico/fila criada;</li>
+<li>mensagem publicada;</li>
+<li>mensagem recebida;</li>
+<li>DLQ configurada ou explicada;</li>
+<li>alarme sugerido para fila crescendo.</li>
+</ul>
+<h3 id="cloudformation">CloudFormation</h3>
+<ul>
+<li>stack criada;</li>
+<li>outputs;</li>
+<li>evento de deploy;</li>
+<li>drift detection ou validacao;</li>
+<li>stack deletada.</li>
+</ul>
+<h3 id="iam-secrets">IAM/Secrets</h3>
+<ul>
+<li>policy com menor privilegio;</li>
+<li>secret criado sem expor valor;</li>
+<li>acesso via role;</li>
+<li>exemplo de acesso negado esperado;</li>
+<li>limpeza do secret.</li>
+</ul>
+<h3 id="containers">Containers</h3>
+<ul>
+<li>imagem Docker buildada;</li>
+<li>container rodando local;</li>
+<li>push para ECR;</li>
+<li>task/service ECS;</li>
+<li>health check passando.</li>
+</ul>
+<h3 id="cloudwatch">CloudWatch</h3>
+<ul>
+<li>log group;</li>
+<li>query Logs Insights;</li>
+<li>dashboard;</li>
+<li>alarm;</li>
+<li>exemplo de investigacao.</li>
+</ul>
+<h3 id="projeto-final">Projeto final</h3>
+<ul>
+<li>arquitetura completa;</li>
+<li>deploy da stack;</li>
+<li>frontend carregando;</li>
+<li>API criando produto;</li>
+<li>pedido passando por SQS;</li>
+<li>email/notificacao SNS ou evidencia equivalente;</li>
+<li>dashboard/metricas;</li>
+<li>limpeza final.</li>
+</ul>
+<h2 id="como-escrever-legenda-de-evidencia">Como escrever legenda de evidencia</h2>
+<p>Use frases curtas:</p>
+<p>&quot;Stack CloudFormation criada com sucesso. O output mostra a URL da API e o nome dos recursos principais.&quot;</p>
+<p>&quot;Teste end-to-end criando produto e pedido. A resposta HTTP 201 confirma criacao, e o log da Lambda mostra processamento sem erro.&quot;</p>
+<p>&quot;Limpeza executada ao final. O objetivo e evitar custo residual e mostrar disciplina operacional.&quot;</p>
+<h2 id="evidencia-que-impressiona-em-entrevista">Evidencia que impressiona em entrevista</h2>
+<p>Uma evidencia forte mostra causa e efeito:</p>
+<ol>
+<li>Eu chamei a API.</li>
+<li>A Lambda registrou log.</li>
+<li>O DynamoDB recebeu o item.</li>
+<li>A fila recebeu a mensagem.</li>
+<li>O worker processou.</li>
+<li>O status mudou.</li>
+<li>Eu limpei tudo.</li>
+</ol>
+<p>Isso conta uma historia de engenharia, nao apenas uma lista de prints.</p><nav class="page-nav"><a href="./docs-02-checklist-well-architected-finops.html">Anterior: Checklist Well-Architected e FinOps para portfolio</a><a href="./docs-04-roadmap-projetos-avancados.html">Proximo: Roadmap de projetos avancados para evoluir o portfolio</a></nav></article></main></body></html>

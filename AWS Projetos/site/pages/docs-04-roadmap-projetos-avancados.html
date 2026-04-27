@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Roadmap de projetos avancados para evoluir o portfolio | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#docs-04-roadmap-projetos-avancados">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">Portfolio · 3 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para Portfolio" loading="lazy"><figcaption>Documentacao de portfolio transforma laboratorio em historia profissional.</figcaption></figure><h1 id="roadmap-de-projetos-avancados-para-evoluir-o-portfolio">Roadmap de projetos avancados para evoluir o portfolio</h1>
+<p>Esta trilha atual ja cobre a base. Para deixar o portfolio mais forte, adicione evolucoes graduais.</p>
+<h2 id="nivel-1-portfolio-essencial">Nivel 1 - Portfolio essencial</h2>
+<p>Meta: provar que voce sabe criar, testar e limpar recursos.</p>
+<ul>
+<li>S3 site estatico.</li>
+<li>Lambda hello world com logs.</li>
+<li>API Gateway + Lambda.</li>
+<li>DynamoDB CRUD.</li>
+<li>SNS/SQS.</li>
+<li>CloudFormation.</li>
+</ul>
+<p>Resultado esperado:</p>
+<p>&quot;Consigo construir pequenos blocos AWS com seguranca e custo controlado.&quot;</p>
+<h2 id="nivel-2-portfolio-profissional">Nivel 2 - Portfolio profissional</h2>
+<p>Meta: mostrar operacao e boas praticas.</p>
+<p>Adicionar:</p>
+<ul>
+<li>tags padrao em todos os templates;</li>
+<li>alarms CloudWatch;</li>
+<li>dashboard por projeto;</li>
+<li>DLQ em fluxos assincronos;</li>
+<li>README com evidencias;</li>
+<li>script unico de deploy/test/cleanup;</li>
+<li>ADRs para decisoes importantes.</li>
+</ul>
+<p>Resultado esperado:</p>
+<p>&quot;Consigo entregar projeto operavel, nao apenas recurso funcionando.&quot;</p>
+<h2 id="nivel-3-portfolio-senior">Nivel 3 - Portfolio senior</h2>
+<p>Meta: defender arquitetura em entrevista.</p>
+<p>Adicionar:</p>
+<ul>
+<li>autenticacao com Cognito;</li>
+<li>WAF em front/API quando aplicavel;</li>
+<li>CloudFront na frente do S3/API;</li>
+<li>CI/CD com GitHub Actions ou CodePipeline;</li>
+<li>testes automatizados;</li>
+<li>ambiente dev/prod via parametros;</li>
+<li>least privilege revisado;</li>
+<li>cost allocation tags;</li>
+<li>runbook de incidente;</li>
+<li>diagrama C4 simples.</li>
+</ul>
+<p>Resultado esperado:</p>
+<p>&quot;Consigo explicar trade-offs de seguranca, custo, resiliencia e performance.&quot;</p>
+<h2 id="projetos-extras-recomendados">Projetos extras recomendados</h2>
+<h3 id="1-url-shortener-serverless">1. URL Shortener Serverless</h3>
+<p>Servicos:</p>
+<ul>
+<li>API Gateway;</li>
+<li>Lambda;</li>
+<li>DynamoDB;</li>
+<li>CloudWatch;</li>
+<li>CloudFormation.</li>
+</ul>
+<p>O que demonstra:</p>
+<ul>
+<li>baixa latencia;</li>
+<li>modelagem NoSQL simples;</li>
+<li>redirecionamento HTTP;</li>
+<li>custo quase zero.</li>
+</ul>
+<h3 id="2-pipeline-de-imagens">2. Pipeline de imagens</h3>
+<p>Servicos:</p>
+<ul>
+<li>S3;</li>
+<li>Lambda;</li>
+<li>SQS;</li>
+<li>DynamoDB;</li>
+<li>CloudWatch.</li>
+</ul>
+<p>O que demonstra:</p>
+<ul>
+<li>evento de upload;</li>
+<li>processamento assincrono;</li>
+<li>fila para desacoplar;</li>
+<li>status de processamento.</li>
+</ul>
+<h3 id="3-mini-data-lake">3. Mini data lake</h3>
+<p>Servicos:</p>
+<ul>
+<li>S3;</li>
+<li>Glue;</li>
+<li>Athena;</li>
+<li>QuickSight ou outputs SQL;</li>
+<li>CloudFormation.</li>
+</ul>
+<p>O que demonstra:</p>
+<ul>
+<li>analytics;</li>
+<li>dados em camadas;</li>
+<li>consulta SQL em S3;</li>
+<li>custo controlado.</li>
+</ul>
+<h3 id="4-api-containerizada">4. API containerizada</h3>
+<p>Servicos:</p>
+<ul>
+<li>Docker;</li>
+<li>ECR;</li>
+<li>ECS Fargate;</li>
+<li>ALB;</li>
+<li>CloudWatch.</li>
+</ul>
+<p>O que demonstra:</p>
+<ul>
+<li>container;</li>
+<li>health check;</li>
+<li>deploy gerenciado;</li>
+<li>diferenca entre serverless function e container.</li>
+</ul>
+<h3 id="5-e-commerce-serverless-com-autenticacao">5. E-commerce serverless com autenticacao</h3>
+<p>Servicos:</p>
+<ul>
+<li>S3/CloudFront;</li>
+<li>Cognito;</li>
+<li>API Gateway;</li>
+<li>Lambda;</li>
+<li>DynamoDB;</li>
+<li>SQS/SNS;</li>
+<li>CloudWatch.</li>
+</ul>
+<p>O que demonstra:</p>
+<ul>
+<li>arquitetura real;</li>
+<li>autenticacao;</li>
+<li>fluxo assincrono;</li>
+<li>observabilidade;</li>
+<li>historia forte para entrevista.</li>
+</ul>
+<h2 id="como-priorizar">Como priorizar</h2>
+<p>Se o objetivo e emprego rapido:</p>
+<ol>
+<li>Finalize o projeto final.</li>
+<li>Crie case study.</li>
+<li>Adicione evidencias.</li>
+<li>Publique no GitHub.</li>
+<li>Faça um post no LinkedIn.</li>
+<li>Prepare respostas de entrevista.</li>
+</ol>
+<p>Se o objetivo e nivel senior:</p>
+<ol>
+<li>Adicione Cognito.</li>
+<li>Adicione CI/CD.</li>
+<li>Adicione alarms e dashboard.</li>
+<li>Adicione WAF/CloudFront.</li>
+<li>Adicione ADRs.</li>
+<li>Escreva runbook de incidente.</li>
+</ol><nav class="page-nav"><a href="./docs-03-roteiro-evidencias-portfolio.html">Anterior: Roteiro de evidencias para portfolio</a><a href="./docs-05-template-adr.html">Proximo: Template ADR - Architecture Decision Record</a></nav></article></main></body></html>

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Módulo 6 — Infraestrutura como Código: CloudFormation | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#modulo-06-cloudformation-readme">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">CloudFormation · 7 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para CloudFormation" loading="lazy"><figcaption>Infraestrutura como codigo cria ambientes repetiveis, auditaveis e destrutiveis.</figcaption></figure><h1 id="modulo-6-infraestrutura-como-codigo-cloudformation">Módulo 6 — Infraestrutura como Código: CloudFormation</h1>
+<blockquote><strong>Custo:</strong> ~$0.00 | <strong>Pré-requisito:</strong> Módulos 1-5 concluídos | <strong>Duração estimada:</strong> 5-6 horas</blockquote>
+<p>---</p>
+<h2 id="1-analogia-do-dia-a-dia">1. ANALOGIA DO DIA A DIA</h2>
+<p>Imagine que o <strong>CloudFormation é uma receita de bolo muito precisa</strong>.</p>
+<ul>
+<li>A <strong>receita (template YAML)</strong> descreve <strong>exactamente</strong> o que fazer: &quot;1 bucket S3 privado, 1 Lambda Python com 128 MB, 1 API Gateway HTTP conectado à Lambda...&quot;</li>
+<li>O <strong>chef (CloudFormation)</strong> lê a receita e cria o bolo (infraestrutura) automaticamente</li>
+<li>Se você quiser 10 bolos iguais: usa a mesma receita 10 vezes (múltiplos environments: dev, staging, prod)</li>
+<li>Se a receita mudar: o chef atualiza <strong>apenas o que mudou</strong> (não refaz o bolo inteiro)</li>
+<li>Se der errado durante o preparo: o chef <strong>desfaz tudo</strong> automaticamente (rollback)</li>
+</ul>
+<p><strong>Sem CloudFormation (ClickOps):</strong></p>
+<ul>
+<li>&quot;Cliquei no console, criei o bucket, depois a Lambda, depois esqueci como configurei...&quot;</li>
+<li>Difícil reproduzir, difícil auditar, fácil errar</li>
+</ul>
+<p><strong>Com CloudFormation (IaC):</strong></p>
+<ul>
+<li>&quot;Execute este template YAML e a infraestrutura estará idêntica em qualquer conta, qualquer região&quot;</li>
+</ul>
+<p>---</p>
+<h2 id="2-o-que-e-definicao-tecnica-senior">2. O QUE É (Definição Técnica Sênior)</h2>
+<p><strong>AWS CloudFormation:</strong> Serviço de Infrastructure as Code (IaC) que permite modelar e provisionar recursos AWS e de terceiros usando templates declarativos (JSON ou YAML). Você descreve o estado desejado; CloudFormation determina e executa a sequência correta de operações.</p>
+<p><strong>Conceitos fundamentais:</strong></p>
+<ul>
+<li><strong>Template:</strong> Arquivo YAML/JSON que descreve os recursos a criar (o &quot;código&quot;)</li>
+<li><strong>Stack:</strong> Instância de um template (o &quot;ambiente&quot; criado pelo template)</li>
+<li><strong>Change Set:</strong> Preview das mudanças antes de aplicar (como um &quot;diff&quot; da infraestrutura)</li>
+<li><strong>Drift:</strong> Diferença entre o template e o que realmente existe (mudança manual)</li>
+<li><strong>Cross-Stack Reference:</strong> Exportar/importar valores entre stacks</li>
+</ul>
+<p>---</p>
+<h2 id="custo-estimado-deste-modulo">💲 CUSTO ESTIMADO DESTE MÓDULO</h2>
+<pre><code>💲 CUSTO ESTIMADO — MÓDULO 6:
+  - CloudFormation:  $0.00  (o serviço em si é GRATUITO)
+  - Recursos criados: depende dos recursos nos templates
+    (neste módulo, recriamos os Módulos 1-5 = ainda ~$0.00)
+  - TOTAL:           ~$0.00
+  
+  ✅ CloudFormation não cobra pelo serviço — apenas pelos recursos que cria!</code></pre>
+<p>---</p>
+<h2 id="3-projetos-deste-modulo">3. PROJETOS DESTE MÓDULO</h2>
+<div class="table-wrap"><table><thead><tr><th>Arquivo</th><th>O que cria</th><th>Conceito ensinado</th></tr></thead><tbody><tr><td><a href="./01-meu-primeiro-template.yaml"><code>01-meu-primeiro-template.yaml</code></a></td><td>Stack S3 básica</td><td>Template anatomy, Sections</td></tr><tr><td><a href="./02-parameters-e-outputs.yaml"><code>02-parameters-e-outputs.yaml</code></a></td><td>Template com parâmetros</td><td>Parameters, Outputs, Pseudo-parameters</td></tr><tr><td><a href="./03-conditions-e-mappings.yaml"><code>03-conditions-e-mappings.yaml</code></a></td><td>Lógica condicional</td><td>Conditions, Mappings, If functions</td></tr><tr><td><a href="./04-cross-stack-references.yaml"><code>04-cross-stack-references.yaml</code></a></td><td>Valores entre stacks</td><td>Export, ImportValue, Cross-Stack</td></tr><tr><td><a href="./05-nested-stacks.yaml"><code>05-nested-stacks.yaml</code></a></td><td>Stacks aninhadas</td><td>Nested Stacks, modularidade</td></tr><tr><td><a href="./06-deploy-e-update.sh"><code>06-deploy-e-update.sh</code></a></td><td>Deploy, atualização, drift</td><td>CLI CloudFormation commands</td></tr><tr><td><a href="./07-limpeza.sh"><code>07-limpeza.sh</code></a></td><td>Destrói todos os recursos</td><td>Cleanup obrigatório</td></tr></tbody></table></div>
+<p>---</p>
+<h2 id="4-anatomia-de-um-template-cloudformation">4. ANATOMIA DE UM TEMPLATE CLOUDFORMATION</h2>
+<pre><code># Estrutura completa de um template (seções marcadas como obrigatório/opcional)
+
+AWSTemplateFormatVersion: &#39;2010-09-09&#39;  # [OBRIGATÓRIO] Sempre este valor
+Description: &#39;descrição do template&#39;    # [OPCIONAL] aparece no console
+
+# [OPCIONAL] Metadados extras (ex: configurações do AWS Console)
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups: [...]
+
+# [OPCIONAL] Valores de entrada que o usuário fornece ao criar a stack
+Parameters:
+  NomeBucket:
+    Type: String
+    Default: meu-bucket
+
+# [OPCIONAL] Lógica condicional (if/else para recursos)
+Conditions:
+  EhProducao: !Equals [!Ref Ambiente, prod]
+
+# [OPCIONAL] Mapeamentos chave-valor estáticos
+Mappings:
+  AmbienteConfig:
+    dev:
+      MemoriaLambda: 128
+
+# [OBRIGATÓRIO] Os recursos a criar
+Resources:
+  MeuBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref NomeBucket
+
+# [OPCIONAL] Valores retornados após criação (visíveis no console e exportáveis)
+Outputs:
+  ARNBucket:
+    Value: !GetAtt MeuBucket.Arn
+    Export:
+      Name: !Sub &quot;${AWS::StackName}-bucket-arn&quot;</code></pre>
+<p>---</p>
+<h2 id="5-funcoes-intrinsecas-o-vocabulario-do-cloudformation">5. FUNÇÕES INTRÍNSECAS — O &quot;vocabulário&quot; do CloudFormation</h2>
+<pre><code>!Ref NomeParametro         # Referencia um Parameter ou Resource
+!GetAtt Recurso.Atributo  # Pega um atributo de um recurso
+!Sub &quot;texto ${Variavel}&quot;  # Interpolação de string (como f-string Python)
+!Join [&quot;-&quot;, [a, b, c]]    # Junta lista com separator: &quot;a-b-c&quot;
+!Select [0, [a, b, c]]    # Seleciona por índice: &quot;a&quot;
+!If [Cond, ValorTrue, ValorFalse]  # Condicional
+!Equals [Valor1, Valor2]  # Retorna true/false
+!And [Cond1, Cond2]       # Lógica AND
+!Or [Cond1, Cond2]        # Lógica OR
+!Not [Condicao]            # Negação
+!FindInMap [Map, Key1, Key2]  # Lookup no Mappings section
+!ImportValue NomeExport    # Importa Output de outra stack
+
+# Pseudo-parameters (valores automáticos da AWS):
+!Ref AWS::AccountId        # ID da conta (ex: 123456789012)
+!Ref AWS::Region           # Região (ex: us-east-1)
+!Ref AWS::StackName        # Nome da stack atual
+!Ref AWS::NoValue          # Remove o atributo (útil em condicionais)</code></pre>
+<p>---</p>
+<h2 id="6-conceito-senior">6. 🧠 CONCEITO SÊNIOR</h2>
+<p><strong>1. Change Sets — Nunca atualize uma stack sem revisar o Change Set</strong></p>
+<pre><code># ERRADO (vai diretamente):
+aws cloudformation update-stack --stack-name minha-stack --template-body file://template.yaml
+
+# CORRETO (revise antes!):
+aws cloudformation create-change-set \
+    --stack-name minha-stack \
+    --change-set-name minha-mudanca \
+    --template-body file://template.yaml
+
+aws cloudformation describe-change-set \
+    --stack-name minha-stack \
+    --change-set-name minha-mudanca
+
+# Após revisar:
+aws cloudformation execute-change-set \
+    --stack-name minha-stack \
+    --change-set-name minha-mudanca</code></pre>
+<p><strong>2. Tipos de Update no CloudFormation</strong></p>
+<ul>
+<li><strong>No interruption:</strong> Recurso atualizado sem downtime (ex: mudar tag)</li>
+<li><strong>Some interruption:</strong> Breve interrupção (ex: mudar tipo de instância EC2)</li>
+<li><strong>Replacement:</strong> O recurso é DELETADO e recriado (ex: mudar o nome do bucket S3)</li>
+<p>→ ⚠️ Replacement de banco de dados em produção = downtime! Sempre verifique no Change Set.</p>
+</ul>
+<p><strong>3. Stack Policies — Proteção extra em produção</strong> Evita que updates acidentais deletem ou substituam recursos críticos como bancos de dados:</p>
+<pre><code>aws cloudformation set-stack-policy --stack-name prod-stack --stack-policy-body &#39;{
+  &quot;Statement&quot;: [{
+    &quot;Effect&quot;: &quot;Deny&quot;,
+    &quot;Action&quot;: [&quot;Update:Replace&quot;, &quot;Update:Delete&quot;],
+    &quot;Resource&quot;: &quot;LogicalResourceId/BancoDeDados&quot;
+  }]
+}&#39;</code></pre>
+<p><strong>4. Drift Detection — Auditoria de mudanças manuais</strong></p>
+<pre><code># Detecta se alguém mudou recursos manualmente no console:
+aws cloudformation detect-stack-drift --stack-name minha-stack
+aws cloudformation describe-stack-drift-detection-status --stack-drift-detection-id ID
+aws cloudformation describe-stack-resource-drifts --stack-name minha-stack</code></pre>
+<p>---</p>
+<h2 id="7-perguntas-de-entrevista">7. PERGUNTAS DE ENTREVISTA</h2>
+<p><strong>Q: Qual a diferença entre CloudFormation e Terraform? Quando usaria cada um?</strong></p>
+<blockquote><strong>Resposta esperada:</strong> CloudFormation é nativo AWS: integrado profundamente com todos os serviços AWS, sem custo adicional, suporta todos os tipos de recurso AWS instantaneamente, e o state é gerenciado pela própria AWS (sem S3 backend manual). Terraform é multi-cloud (AWS, Azure, GCP, K8s, DataDog...) com HCL como linguagem. Escolheria CloudFormation em: ambiente 100% AWS, times sem experiência Terraform, quando conformidade com AWS-native é obrigatória. Terraform em: infra multi-cloud, necessidade de recursos não-AWS (ex: Cloudflare DNS, PagerDuty), times com expertise HCL, estados complexos com módulos reutilizáveis. Na prática: muitas empresas usam CDK (AWS Cloud Development Kit) — constrói CloudFormation com Python/TypeScript, melhor DX.</blockquote>
+<p><strong>Q: O que é drift no CloudFormation e como você preveniria numa equipe de 20 devs?</strong></p>
+<blockquote><strong>Resposta esperada:</strong> Drift é quando o estado real dos recursos AWS diverge do que está no template CloudFormation — causado por mudanças manuais no console ou via CLI. Prevenção: (1) AWS Config Rules que detectam mudanças fora do CloudFormation; (2) SCPs (Service Control Policies) no Organizations que bloqueiam modificações em recursos tagueados como Managed=CloudFormation; (3) CI/CD: todo change passa por Pull Request com CloudFormation Linter (cfn-lint) e deploy automatizado; (4) CloudTrail + Lambda que detecta mudanças manuais e envia alerta ao Slack; (5) Drift Detection semanal automatizado via EventBridge; (6) Cultura: obrigar IaC em code review — changes manuais não são aceitos.</blockquote>
+<p>---</p>
+<h2 id="proximo-modulo">✅ Próximo Módulo</h2>
+<p>👉 <strong><a href="../modulo-07-iam-secrets/README.md"><code>../modulo-07-iam-secrets/README.md</code></a></strong></p><nav class="page-nav"><a href="./modulo-05-sns-sqs-readme.html">Anterior: Módulo 5 — Mensageria: SNS + SQS</a><a href="./modulo-07-iam-secrets-readme.html">Proximo: Módulo 7 — Segurança: IAM Avançado + Secrets Manager</a></nav></article></main></body></html>

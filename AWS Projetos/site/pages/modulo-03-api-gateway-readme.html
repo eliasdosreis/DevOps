@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Módulo 3 — API: API Gateway + Lambda | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#modulo-03-api-gateway-readme">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">API Gateway · 7 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para API Gateway" loading="lazy"><figcaption>API Gateway e a porta de entrada segura para funcoes e servicos.</figcaption></figure><h1 id="modulo-3-api-api-gateway-lambda">Módulo 3 — API: API Gateway + Lambda</h1>
+<blockquote><strong>Custo:</strong> ~$0.00 | <strong>Pré-requisito:</strong> Módulo 2 concluído | <strong>Duração estimada:</strong> 4-5 horas</blockquote>
+<p>---</p>
+<h2 id="1-analogia-do-dia-a-dia">1. ANALOGIA DO DIA A DIA</h2>
+<p>Imagine que o <strong>API Gateway é um porteiro de hotel 5 estrelas</strong>.</p>
+<ul>
+<li><strong>Você</strong> (cliente/aplicação) pede algo ao porteiro — &quot;Quero ver o quarto 305&quot;</li>
+<li>O <strong>porteiro (API Gateway)</strong> verifica seu crachá (autenticação), anota o pedido (logging), limita quantas vezes você pode pedir por minuto (throttling), e então chama o funcionário certo (Lambda)</li>
+<li>O <strong>funcionário (Lambda)</strong> faz o trabalho real e retorna a resposta</li>
+<li>O <strong>porteiro</strong> entrega a resposta formatada para você</li>
+</ul>
+<p>Sem o porteiro: você teria que ir direto ao quarto (acesso direto à Lambda — menos seguro, sem controle)</p>
+<p>---</p>
+<h2 id="2-o-que-e-definicao-tecnica-senior">2. O QUE É (Definição Técnica Sênior)</h2>
+<p><strong>Amazon API Gateway:</strong> Serviço gerenciado para criar, publicar, manter, monitorar e proteger APIs em qualquer escala. Suporta REST APIs, HTTP APIs e WebSocket APIs.</p>
+<p><strong>HTTP API vs REST API:</strong></p>
+<pre><code>HTTP API (v2):                    REST API (v1):
+  ✅ Mais barato (~70% menos)       ✅ Mais funcionalidades
+  ✅ Menor latência                  ✅ Usage Plans e API Keys
+  ✅ OIDC/OAuth2 nativo             ✅ Request/Response transformations
+  ✅ Lambda Proxy simplificado       ✅ AWS WAF integration
+  ❌ Sem request validation          ✅ Private APIs (VPC)
+  ❌ Sem mock/mock integration       ❌ Mais caro ($3.50/M vs $1/M)
+  
+  USO: 80% dos casos use HTTP API  USO: APIs enterprise com WAF, keys</code></pre>
+<p>---</p>
+<h2 id="custo-estimado-deste-modulo">💲 CUSTO ESTIMADO DESTE MÓDULO</h2>
+<pre><code>💲 CUSTO ESTIMADO — MÓDULO 3:
+  - HTTP API Gateway: $0.00  (Free Tier: 1M chamadas/mês por 12 meses)
+  - Lambda:           $0.00  (Free Tier: 1M invocações — SEMPRE)
+  - CloudWatch Logs:  $0.00  (Free Tier: 5 GB/mês)
+  - TOTAL:            ~$0.00
+  
+  ⚠️  Após 12 meses: HTTP API = $1.00/M req + $0.0035/hora para conexões
+  
+  PARA REFERÊNCIA PRODUÇÃO:
+  - 10M req/mês com API HTTP:  ~$9.00/mês
+  - 10M req/mês com REST API: ~$35.00/mês</code></pre>
+<p>---</p>
+<h2 id="3-projetos-deste-modulo">3. PROJETOS DESTE MÓDULO</h2>
+<div class="table-wrap"><table><thead><tr><th>Arquivo</th><th>O que cria</th><th>Conceito ensinado</th></tr></thead><tbody><tr><td><a href="./01-lambda-api-handler.py"><code>01-lambda-api-handler.py</code></a></td><td>Lambda que responde como API REST</td><td>CRUD, HTTP methods, status codes</td></tr><tr><td><a href="./02-http-api.yaml"><code>02-http-api.yaml</code></a></td><td>HTTP API no API Gateway</td><td>Routes, integrations, stages</td></tr><tr><td><a href="./03-api-com-cors.yaml"><code>03-api-com-cors.yaml</code></a></td><td>CORS para front-end</td><td>CORS, preflight, origins</td></tr><tr><td><a href="./04-api-com-throttling.yaml"><code>04-api-com-throttling.yaml</code></a></td><td>Rate limiting e throttling</td><td>Throttling, burst, quotas</td></tr><tr><td><a href="./05-testar-api.sh"><code>05-testar-api.sh</code></a></td><td>Testa todos os endpoints com curl</td><td>curl, HTTP methods, payloads</td></tr><tr><td><a href="./06-limpeza.sh"><code>06-limpeza.sh</code></a></td><td>Destrói todos os recursos</td><td>Cleanup obrigatório</td></tr></tbody></table></div>
+<p>---</p>
+<h2 id="4-conceitos-fundamentais">4. CONCEITOS FUNDAMENTAIS</h2>
+<h3 id="4-1-estrutura-de-uma-requisicao-rest">4.1 Estrutura de uma Requisição REST</h3>
+<pre><code>Cliente → API Gateway → Lambda → Banco/Serviço → Lambda → API Gateway → Cliente
+
+Requisição HTTP:
+  Método:  GET / POST / PUT / DELETE / PATCH
+  Path:    /produtos/42
+  Headers: Authorization: Bearer jwt-token...
+           Content-Type: application/json
+  Body:    {&quot;nome&quot;: &quot;Camiseta&quot;, &quot;preco&quot;: 49.90}  (apenas PUT/POST)
+  Params:  ?categoria=vestuario&amp;pagina=1
+
+Resposta HTTP:
+  Código: 200 / 201 / 400 / 401 / 404 / 500
+  Headers: Content-Type: application/json
+  Body:    {&quot;id&quot;: 42, &quot;nome&quot;: &quot;Camiseta&quot;, ...}</code></pre>
+<h3 id="4-2-codigos-http-que-um-senior-conhece-de-cor">4.2 Códigos HTTP que um Sênior conhece de cor</h3>
+<pre><code>2xx SUCESSO:
+  200 OK              → GET, PUT, DELETE bem-sucedidos
+  201 Created         → POST que criou um recurso
+  204 No Content      → DELETE sem corpo de resposta
+  
+4xx ERRO DO CLIENTE:
+  400 Bad Request     → Payload inválido, campo obrigatório ausente
+  401 Unauthorized    → Não autenticado (sem token)
+  403 Forbidden       → Autenticado mas sem permissão
+  404 Not Found       → Recurso não existe
+  409 Conflict        → Conflito (ex: email já cadastrado)
+  422 Unprocessable   → Dados válidos mas semanticamente incorretos
+  429 Too Many Reqs   → Throttling/rate limiting ativado
+  
+5xx ERRO DO SERVIDOR:
+  500 Internal Error  → Erro inesperado (bug)
+  502 Bad Gateway     → API Gateway não conseguiu chamar a Lambda
+  503 Unavailable     → Serviço temporariamente indisponível
+  504 Gateway Timeout → Lambda demorou mais que o timeout configurado</code></pre>
+<h3 id="4-3-cors-por-que-existe-e-como-funciona">4.3 CORS — Por que existe e como funciona</h3>
+<pre><code>PROBLEMA: Browser bloqueia chamadas JavaScript para domínios diferentes
+          (Poluição Cross-Site Request Forgery — CSRF)
+
+EXEMPLO:
+  Site em:   https://meu-site.s3-website.amazonaws.com
+  API em:    https://abc123.execute-api.us-east-1.amazonaws.com
+  → DOMÍNIOS DIFERENTES → Browser BLOQUEIA por padrão!
+
+SOLUÇÃO — CORS Headers:
+  Access-Control-Allow-Origin: https://meu-site.s3-website.amazonaws.com
+  Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+  Access-Control-Allow-Headers: Content-Type, Authorization
+
+PREFLIGHT REQUEST (antes de POST/PUT/DELETE):
+  Browser envia: OPTIONS /api/recurso
+  Server responde: 200 OK + CORS headers
+  Browser confirma: &quot;ok, pode fazer a chamada real&quot;</code></pre>
+<p>---</p>
+<h2 id="5-verificacao-e-troubleshooting">5. VERIFICAÇÃO E TROUBLESHOOTING</h2>
+<h3 id="erro-cors-blocked-cross-origin">Erro: CORS (blocked cross-origin)</h3>
+<pre><code>Causa: API Gateway não está retornando os headers CORS corretos
+Solução:
+  1. Na HTTP API: habilite CORS na configuração da API
+  2. Na Lambda: o response DEVE incluir os headers CORS:
+     headers = {
+       &#39;Access-Control-Allow-Origin&#39;: &#39;*&#39;,
+       &#39;Access-Control-Allow-Methods&#39;: &#39;GET, POST, DELETE, OPTIONS&#39;,
+     }
+  3. OPTIONS (preflight) deve retornar 200 com os headers corretos</code></pre>
+<h3 id="erro-502-bad-gateway">Erro: 502 Bad Gateway</h3>
+<pre><code>Causa: A Lambda retornou um formato de resposta incorreto
+Solução: O retorno DEVE ter esta estrutura:
+  {
+    &quot;statusCode&quot;: 200,           ← Obrigatório (INT)
+    &quot;headers&quot;: {...},            ← Opcional
+    &quot;body&quot;: &quot;string aqui&quot;       ← Obrigatório (STRING, use json.dumps())
+  }
+  
+  ❌ ERRADO: return {&quot;mensagem&quot;: &quot;ok&quot;}
+  ✅ CERTO:  return {&quot;statusCode&quot;: 200, &quot;body&quot;: json.dumps({&quot;mensagem&quot;: &quot;ok&quot;})}</code></pre>
+<p>---</p>
+<h2 id="6-conceito-senior">6. 🧠 CONCEITO SÊNIOR</h2>
+<p><strong>1. HTTP API é quase sempre a escolha certa</strong> REST API existe por razões históricas. HTTP API tem menor latência, é mais barata, e suporta JWT authorization nativo. A única razão para REST API é: WAF, Usage Plans, Request Validation, ou APIs privadas.</p>
+<p><strong>2. Lambda Proxy Integration vs Custom Integration</strong> Lambda Proxy: API Gateway passa tudo para a Lambda (event completo). A Lambda controla tudo, inclusive os headers de resposta. É o padrão atual e o mais flexível. Custom Integration (REST API apenas): API Gateway transforma request/response usando templates VTL. Poderoso mas complexo — usado para integrar com serviços legacy.</p>
+<p><strong>3. Stage Variables para multi-ambiente</strong> Use stage variables para apontar para diferentes Lambdas por ambiente: <code>dev</code> → <code>lambda-minha-api-dev</code> / <code>prod</code> → <code>lambda-minha-api-prod</code></p>
+<p><strong>4. WebSocket API para tempo real</strong> Para chat, notificações em tempo real, jogos multiplayer: API Gateway WebSocket + Lambda. Mantém conexão persistente e pode enviar mensagens de volta ao cliente a qualquer momento.</p>
+<p>---</p>
+<h2 id="7-perguntas-de-entrevista">7. PERGUNTAS DE ENTREVISTA</h2>
+<p><strong>Q: Qual a diferença entre autenticação e autorização no API Gateway?</strong></p>
+<blockquote><strong>Resposta esperada:</strong> Autenticação verifica QUEM você é; autorização verifica O QUE você pode fazer. No API Gateway: (1) Lambda Authorizer: executa uma Lambda customizada antes de cada request para validar tokens/headers e retornar uma IAM Policy; (2) JWT Authorizer (HTTP API): valida JWTs contra um OIDC/OAuth2 provider (Cognito, Auth0, etc.) sem escrever código; (3) IAM Auth: usa credenciais AWS para assinar requisições (SigV4) — ideal para comunicação serviço-a-serviço; (4) API Keys: identificação de clientes, mas NÃO é autenticação de segurança — apenas para throttling por cliente.</blockquote>
+<p><strong>Q: Como você protegeria uma API pública de ataques DDoS e uso abusivo?</strong></p>
+<blockquote><strong>Resposta esperada:</strong> Camadas de proteção: (1) AWS WAF: regras gerenciadas contra OWASP Top 10, geo-blocking, IP rate limiting; (2) API Gateway Throttling: limits de burst (pico) e rate (requisições/segundo) por stage ou por rota; (3) Usage Plans + API Keys: limites por cliente com quotas mensais; (4) CloudFront na frente: absorve DDoS na borda global, caching para reduzir carga na origem; (5) Lambda Reserved Concurrency: limita quantas execuções simultâneas a Lambda aceita (proteção contra cascading failure); (6) AWS Shield Standard (gratuito) ou Shield Advanced (pago) para proteção DDoS na camada de rede.</blockquote>
+<p>---</p>
+<h2 id="proximo-modulo">✅ Próximo Módulo</h2>
+<p>Após executar a limpeza: 👉 <strong><a href="../modulo-04-dynamodb/README.md"><code>../modulo-04-dynamodb/README.md</code></a></strong></p><nav class="page-nav"><a href="./modulo-02-lambda-readme.html">Anterior: Módulo 2 — Computação Serverless: AWS Lambda</a><a href="./modulo-04-dynamodb-readme.html">Proximo: Módulo 4 — Banco de Dados: Amazon DynamoDB</a></nav></article></main></body></html>

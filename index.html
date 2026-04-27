@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EstudoFlix - Catalogo de Cursos</title>
+  <link rel="stylesheet" href="./assets/catalog.css">
+</head>
+<body>
+  <header class="hero">
+    <nav class="topbar">
+      <a class="logo" href="./index.html">Estudo<span>Flix</span></a>
+      <div class="top-actions">
+        <a href="./AWS%20CLF02/site/index.html">Continuar AWS CLF02</a>
+        <a href="./PROMPTS/converter-curso-md-para-site-html.md">Prompt mestre</a>
+      </div>
+    </nav>
+    <section class="hero-content">
+      <div>
+        <p class="eyebrow">Seu hub de aprendizado DevOps, AWS e Linux</p>
+        <h1>Escolha o proximo curso como quem escolhe uma serie boa.</h1>
+        <p>Todos os cursos da pasta Estudo em um catalogo visual, com busca, filtros e atalhos para abrir cada trilha.</p>
+        <div class="hero-buttons">
+          <button id="playFeatured">Assistir destaque</button>
+          <button id="shuffleCourse">Surpreenda-me</button>
+        </div>
+      </div>
+      <article class="featured-card" id="featuredCard"></article>
+    </section>
+  </header>
+
+  <main class="catalog-shell">
+    <section class="controls">
+      <label>
+        <span>Buscar curso</span>
+        <input id="searchInput" type="search" placeholder="AWS, Linux, Docker, Kubernetes...">
+      </label>
+      <label>
+        <span>Categoria</span>
+        <select id="categoryFilter"></select>
+      </label>
+      <label>
+        <span>Status</span>
+        <select id="statusFilter">
+          <option value="all">Todos</option>
+          <option value="site">Com site pronto</option>
+          <option value="content">Com conteudo</option>
+          <option value="empty">Vazios/reservados</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="stats" id="stats"></section>
+    <section id="rows" class="rows"></section>
+  </main>
+
+  <script src="./assets/catalog-data.js"></script>
+  <script src="./assets/catalog.js"></script>
+</body>
+</html>

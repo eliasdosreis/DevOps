@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Guia de portfolio - AWS Projetos | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#portfolio">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">Inicio · 5 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para Inicio" loading="lazy"><figcaption>Portfolio AWS: cada projeto precisa provar arquitetura, custo, seguranca e operacao.</figcaption></figure><h1 id="guia-de-portfolio-aws-projetos">Guia de portfolio - AWS Projetos</h1>
+<p>Objetivo desta pasta: transformar cada modulo em uma prova publica de habilidade.</p>
+<p>Um projeto bom de portfolio nao mostra apenas &quot;eu rodei comandos&quot;. Ele mostra:</p>
+<ul>
+<li>problema de negocio;</li>
+<li>arquitetura escolhida;</li>
+<li>decisao tecnica;</li>
+<li>seguranca;</li>
+<li>custo;</li>
+<li>observabilidade;</li>
+<li>evidencia de funcionamento;</li>
+<li>limpeza para nao gerar cobranca;</li>
+<li>explicacao simples, como para uma crianca de 8 anos;</li>
+<li>explicacao senior, como em entrevista.</li>
+</ul>
+<h2 id="como-explicar-esta-pasta-em-entrevista">Como explicar esta pasta em entrevista</h2>
+<p>&quot;Eu montei uma trilha pratica de AWS com projetos pequenos, baratos e destrutiveis. Cada modulo treina uma habilidade real: S3, Lambda, API Gateway, DynamoDB, mensageria, CloudFormation, IAM, containers, observabilidade e um e-commerce serverless final. O foco foi aprender como um engenheiro senior: pensando em custo, seguranca, operacao, falha, logs e limpeza.&quot;</p>
+<h2 id="padrao-de-portfolio-para-cada-modulo">Padrao de portfolio para cada modulo</h2>
+<p>Use este roteiro em todos os modulos:</p>
+<div class="table-wrap"><table><thead><tr><th>Secao</th><th>O que escrever</th></tr></thead><tbody><tr><td>Problema</td><td>Qual dor real o projeto resolve</td></tr><tr><td>Solucao</td><td>Quais servicos AWS foram usados</td></tr><tr><td>Arquitetura</td><td>Fluxo simples de ponta a ponta</td></tr><tr><td>Como executar</td><td>Comandos minimos e pre-requisitos</td></tr><tr><td>Evidencias</td><td>Prints, logs, outputs e testes</td></tr><tr><td>Seguranca</td><td>IAM, criptografia, menor privilegio</td></tr><tr><td>Custo</td><td>Estimativa, recursos pagos, limpeza</td></tr><tr><td>Observabilidade</td><td>Logs, metricas, alarmes, troubleshooting</td></tr><tr><td>Melhorias futuras</td><td>O que faria em producao</td></tr><tr><td>Entrevista</td><td>3 respostas fortes sobre decisoes tecnicas</td></tr></tbody></table></div>
+<h2 id="mapa-de-modulos-para-projetos-publicaveis">Mapa de modulos para projetos publicaveis</h2>
+<div class="table-wrap"><table><thead><tr><th>Modulo</th><th>Nome de portfolio sugerido</th><th>Entrega forte</th></tr></thead><tbody><tr><td>00</td><td>AWS Landing Zone pessoal de baixo custo</td><td>usuario IAM, MFA, budget, checklist Free Tier</td></tr><tr><td>01</td><td>Site estatico seguro com S3</td><td>bucket privado/publico controlado, lifecycle, site</td></tr><tr><td>02</td><td>Automacao serverless com Lambda</td><td>Lambda, logs, permissao IAM, teste via CLI</td></tr><tr><td>03</td><td>API HTTP serverless</td><td>API Gateway + Lambda + CORS + testes</td></tr><tr><td>04</td><td>CRUD NoSQL com DynamoDB</td><td>tabela, chaves, query vs scan, CRUD Boto3</td></tr><tr><td>05</td><td>Mensageria resiliente com SNS e SQS</td><td>fan-out, fila, DLQ, retry, desacoplamento</td></tr><tr><td>06</td><td>Infraestrutura como codigo com CloudFormation</td><td>templates reutilizaveis, parametros, outputs</td></tr><tr><td>07</td><td>Seguranca com IAM e Secrets Manager</td><td>least privilege, secrets, rotacao conceitual</td></tr><tr><td>08</td><td>API containerizada no ECS/Fargate</td><td>Docker, ECR, ECS, health check</td></tr><tr><td>09</td><td>Observabilidade com CloudWatch</td><td>logs, metricas, alarms, queries</td></tr><tr><td>10</td><td>E-commerce serverless completo</td><td>case study final para entrevista</td></tr></tbody></table></div>
+<h2 id="nivel-crianca-de-8-anos">Nivel crianca de 8 anos</h2>
+<p>Pense nos projetos como uma cidade:</p>
+<ul>
+<li>S3 e um armario gigante para guardar arquivos.</li>
+<li>Lambda e um ajudante que aparece, faz uma tarefa e vai embora.</li>
+<li>API Gateway e a porta de atendimento.</li>
+<li>DynamoDB e um caderno magico super rapido.</li>
+<li>SQS e uma fila de tarefas.</li>
+<li>SNS e um megafone que avisa varias pessoas.</li>
+<li>CloudFormation e uma receita que monta tudo igual sempre.</li>
+<li>IAM e a chave certa para a pessoa certa.</li>
+<li>CloudWatch e o painel que mostra se a cidade esta bem.</li>
+</ul>
+<h2 id="nivel-senior">Nivel senior</h2>
+<p>Em cada modulo, responda:</p>
+<ul>
+<li>Qual falha este desenho tolera?</li>
+<li>Qual custo escondido pode aparecer?</li>
+<li>Qual permissao IAM poderia ser reduzida?</li>
+<li>Onde ficam os logs?</li>
+<li>Como eu provo que funcionou?</li>
+<li>Como eu destruo tudo com seguranca?</li>
+<li>O que mudaria para producao?</li>
+</ul>
+<h2 id="checklist-antes-de-publicar-no-github">Checklist antes de publicar no GitHub</h2>
+<ul>
+<li>[ ] Removi credenciais, account id sensivel, emails pessoais e tokens.</li>
+<li>[ ] Coloquei um <code>README.md</code> claro no modulo.</li>
+<li>[ ] Adicionei diagrama simples.</li>
+<li>[ ] Adicionei comandos de deploy e limpeza.</li>
+<li>[ ] Adicionei evidencia de teste.</li>
+<li>[ ] Expliquei custo estimado.</li>
+<li>[ ] Expliquei seguranca e IAM.</li>
+<li>[ ] Expliquei melhorias futuras.</li>
+<li>[ ] Rodei limpeza na AWS.</li>
+</ul>
+<h2 id="sugestao-de-post-para-linkedin">Sugestao de post para LinkedIn</h2>
+<p>Hoje finalizei um projeto pratico de AWS focado em arquitetura real e custo controlado.</p>
+<p>O que construi:</p>
+<ul>
+<li>infraestrutura como codigo;</li>
+<li>servicos serverless;</li>
+<li>controle de custo;</li>
+<li>seguranca com IAM;</li>
+<li>logs e metricas;</li>
+<li>limpeza automatizada.</li>
+</ul>
+<p>Principal aprendizado: em AWS, subir recurso e facil. O diferencial e saber operar com seguranca, custo previsivel, observabilidade e decisao tecnica defensavel.</p><nav class="page-nav"><a href="./readme.html">Anterior: AWS do Zero ao Senior — Curso Prático com Custo &lt; $1 por Projeto</a><a href="./docs-01-padrao-projeto-portfolio.html">Proximo: Padrao de projeto para portfolio</a></nav></article></main></body></html>

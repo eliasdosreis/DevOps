@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Módulo 10 — Projeto Final Sênior: E-commerce Serverless Completo | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#modulo-10-projeto-final-readme">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">Projeto Final · 9 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para Projeto Final" loading="lazy"><figcaption>O projeto final junta frontend, API, banco, fila, notificacao, logs e IaC.</figcaption></figure><h1 id="modulo-10-projeto-final-senior-e-commerce-serverless-completo">Módulo 10 — Projeto Final Sênior: E-commerce Serverless Completo</h1>
+<blockquote><strong>Custo:</strong> ~$0.50 | <strong>Pré-requisito:</strong> Todos os módulos anteriores | <strong>Duração estimada:</strong> 8-12 horas</blockquote>
+<p>---</p>
+<h2 id="missao-final">🎯 MISSÃO FINAL</h2>
+<p>Você chegou até aqui! Agora é hora de integrar tudo que aprendeu em um sistema real e completo. Este é o projeto que você mostra em entrevistas e coloca no portfólio.</p>
+<p>---</p>
+<h2 id="1-arquitetura-completa">1. ARQUITETURA COMPLETA</h2>
+<pre><code>                    ┌──────────────────┐
+                    │   USUÁRIO        │
+                    │  (Navegador)     │
+                    └────────┬─────────┘
+                             │ HTTPS
+                    ┌────────▼─────────┐
+               ┌───►│  S3 + CloudFront  │ ← Site estático (Módulo 1)
+               │    │   (Front-end)     │
+               │    └──────────────────┘
+               │             │ API calls
+               │    ┌────────▼─────────┐
+               │    │   API Gateway    │ ← HTTP API REST (Módulo 3)
+               │    │   (HTTPS + CORS) │   Throttling, Auth
+               │    └────────┬─────────┘
+               │             │ Lambda Proxy
+               │    ┌────────▼─────────┐
+               │    │   Lambda         │ ← Business logic (Módulo 2)
+               │    │ (Lógica negócio) │   IAM Role, Env Vars
+               │    └────┬──────┬──────┘
+               │         │      │
+         ┌─────▼──┐  ┌───▼──────▼──┐
+         │DynamoDB│  │  SQS Queue   │ ← Queue de pedidos (Módulo 5)
+         │ Tabela │  │ (Pedidos)    │
+         │Pedidos │  └──────┬───────┘
+         └────────┘         │ Event Trigger
+                    ┌───────▼──────────┐
+                    │  Lambda Worker   │ ← Processador assíncrono
+                    │ (Processa fila)  │
+                    └───────┬──────────┘
+                            │ Publica resultado
+                   ┌────────▼──────────┐
+                   │   SNS Topic       │ ← Notificações (Módulo 5)
+                   └────────┬──────────┘
+                            │ Subscribers
+                   ┌────────▼──────────┐
+                   │   Email / SQS    │ ← Notifica usuário
+                   └───────────────────┘
+                   
+         ┌──────────────────────────────────┐
+         │         OBSERVABILIDADE          │
+         │  CloudWatch Metrics + Logs       │ ← Módulo 9
+         │  Alarmes + Dashboard             │
+         └──────────────────────────────────┘
+         
+         ┌──────────────────────────────────┐
+         │         SEGURANÇA                │
+         │  IAM Roles (least privilege)     │ ← Módulo 7
+         │  Secrets Manager (credenciais)   │
+         │  CloudTrail (auditoria)          │
+         └──────────────────────────────────┘
+         
+         ┌──────────────────────────────────┐
+         │      INFRAESTRUTURA COMO CÓDIGO  │
+         │  CloudFormation (1 deploy total) │ ← Módulo 6
+         └──────────────────────────────────┘</code></pre>
+<p>---</p>
+<h2 id="custo-estimado-deste-modulo">💲 CUSTO ESTIMADO DESTE MÓDULO</h2>
+<pre><code>💲 CUSTO ESTIMADO — MÓDULO 10 (projeto completo):
+  - S3 (front-end):          $0.00  (Free Tier)
+  - API Gateway:             $0.00  (Free Tier)
+  - Lambda (2 functions):    $0.00  (Free Tier)
+  - DynamoDB:                $0.00  (Free Tier)
+  - SQS:                     $0.00  (Free Tier)
+  - SNS:                     $0.00  (Free Tier)
+  - CloudWatch:              $0.00  (Free Tier)
+  - Secrets Manager:         ~$0.04 (1 secret por ~3 dias)
+  - CloudTrail:              $0.00  (primeiros 90 dias gratuitos)
+  
+  TOTAL:                     ~$0.04 a $0.50
+  
+  ⚠️  O custo aumenta se você deixar os recursos rodando!
+  ⚠️  Execute a limpeza IMEDIATAMENTE após a demonstração.
+  
+  CUSTO SE FOSSE PRODUÇÃO REAL (10.000 usuários/mês):
+  - API Gateway (10M req):   ~$10/mês
+  - Lambda:                  ~$5/mês
+  - DynamoDB (10M ops):      ~$5/mês
+  - CloudWatch:              ~$15/mês
+  - S3 + CloudFront:         ~$5/mês
+  TOTAL PRODUÇÃO:            ~$40/mês (muito barato vs EC2!)</code></pre>
+<p>---</p>
+<h2 id="2-o-que-voce-vai-entregar">2. O QUE VOCÊ VAI ENTREGAR</h2>
+<h3 id="entregavel-1-template-cloudformation-master">✅ Entregável 1: Template CloudFormation Master</h3>
+<p>Um único arquivo que sobe TODA a infraestrutura:</p>
+<pre><code>aws cloudformation deploy \
+    --template-file master-stack.yaml \
+    --stack-name ecommerce-serverless \
+    --capabilities CAPABILITY_NAMED_IAM \
+    --parameter-overrides Email=seu@email.com
+# → Em ~5 minutos, tudo estará ONLINE!</code></pre>
+<h3 id="entregavel-2-api-rest-documentada">✅ Entregável 2: API REST Documentada</h3>
+<pre><code>POST   /produtos        → Criar produto
+GET    /produtos        → Listar produtos (paginado)
+GET    /produtos/{id}   → Obter produto
+PUT    /produtos/{id}   → Atualizar produto
+DELETE /produtos/{id}   → Deletar produto (soft delete)
+
+POST   /pedidos         → Criar pedido (envia para SQS)
+GET    /pedidos         → Listar pedidos do usuário
+GET    /pedidos/{id}    → Obter pedido com status
+
+GET    /health          → Health check da API</code></pre>
+<h3 id="entregavel-3-front-end-no-s3">✅ Entregável 3: Front-end no S3</h3>
+<p>Site HTML/JS que consome a API e demonstra todo o fluxo.</p>
+<h3 id="entregavel-4-dashboard-cloudwatch">✅ Entregável 4: Dashboard CloudWatch</h3>
+<p>Métricas em tempo real: pedidos/minuto, latência p95, erros, custo estimado.</p>
+<h3 id="entregavel-5-simulacao-de-entrevista">✅ Entregável 5: Simulação de Entrevista</h3>
+<p>Você conseguirá responder com propriedade a qualquer pergunta sobre esta arquitetura.</p>
+<p>---</p>
+<h2 id="3-projetos-deste-modulo">3. PROJETOS DESTE MÓDULO</h2>
+<div class="table-wrap"><table><thead><tr><th>Arquivo</th><th>Descrição</th></tr></thead><tbody><tr><td><a href="./01-master-stack.yaml"><code>01-master-stack.yaml</code></a></td><td>Stack CloudFormation que une tudo</td></tr><tr><td><a href="./02-lambda-produtos.py"><code>02-lambda-produtos.py</code></a></td><td>CRUD de produtos com DynamoDB</td></tr><tr><td><a href="./03-lambda-pedidos.py"><code>03-lambda-pedidos.py</code></a></td><td>Criação e consulta de pedidos</td></tr><tr><td><a href="./04-lambda-worker.py"><code>04-lambda-worker.py</code></a></td><td>Processador assíncrono da fila SQS</td></tr><tr><td><a href="./05-frontend/"><code>05-frontend/</code></a></td><td>Front-end completo em HTML/JS/CSS</td></tr><tr><td><a href="./06-testar-api-completo.sh"><code>06-testar-api-completo.sh</code></a></td><td>Script de teste E2E (end-to-end)</td></tr><tr><td><a href="./07-simular-entrevista.md"><code>07-simular-entrevista.md</code></a></td><td>30 perguntas de entrevista sênior</td></tr><tr><td><a href="./08-limpeza.sh"><code>08-limpeza.sh</code></a></td><td>Destrói TUDO (obrigatório!)</td></tr></tbody></table></div>
+<p>---</p>
+<h2 id="4-design-do-banco-de-dados-dynamodb">4. DESIGN DO BANCO DE DADOS (DynamoDB)</h2>
+<h3 id="tabela-ecommerce-produtos">Tabela: <code>ecommerce-produtos</code></h3>
+<pre><code>PK (partition key): produtoId (String)
+Atributos: nome, preco, categoria, estoque, ativo, criadoEm, atualizadoEm
+
+GSI-1: PK=categoria, SK=preco → listar por categoria ordenado por preço
+GSI-2: PK=ativo, SK=criadoEm → listar produtos ativos por data de criação
+TTL: nenhum (produtos não expiram)</code></pre>
+<h3 id="tabela-ecommerce-pedidos">Tabela: <code>ecommerce-pedidos</code></h3>
+<pre><code>PK (partition key): clienteId (String)
+SK (sort key):      pedidoId (String) — formato: &quot;pedido#{ISO-timestamp}#{uuid}&quot;
+
+Atributos: status, itens, total, criadoEm, atualizadoEm
+
+GSI-1: PK=status, SK=criadoEm → listar todos os pedidos por status
+TTL: expiracaoEm (pedidos cancelados expiram após 90 dias)
+
+ACCESS PATTERNS:
+  1. GetItem(clienteId, pedidoId)                    → detalhes de um pedido
+  2. Query(clienteId, SK BEGINS_WITH &quot;pedido#&quot;)      → todos os pedidos do cliente
+  3. Query(clienteId, SK BETWEEN data1 AND data2)    → pedidos em um período
+  4. Query GSI-1(status=&quot;pendente&quot;)                  → todos os pedidos pendentes</code></pre>
+<p>---</p>
+<h2 id="5-fluxo-completo-de-um-pedido">5. FLUXO COMPLETO DE UM PEDIDO</h2>
+<pre><code>1. Usuário acessa o site (S3)
+2. Clica &quot;Fazer Pedido&quot;
+3. JavaScript chama: POST /pedidos (API Gateway)
+4. API Gateway → Lambda Principal
+5. Lambda valida o payload e checa estoque (DynamoDB GetItem)
+6. Lambda cria o pedido no DynamoDB (PutItem) com status=&quot;pendente&quot;
+7. Lambda publica mensagem no SQS: {pedidoId, itens, clienteId}
+8. Lambda retorna: 201 Created + {pedidoId}
+
+[Processamento assíncrono na fila:]
+9. Lambda Worker recebe mensagem do SQS
+10. Worker processa pagamento (simulado)
+11. Worker atualiza estoque (DynamoDB UpdateItem)
+12. Worker atualiza status do pedido: &quot;confirmado&quot;
+13. Worker publica no SNS: &quot;pedido confirmado&quot;
+14. SNS envia email ao cliente (subscriber)
+
+[Monitoramento contínuo:]
+15. CloudWatch registra todas as métricas
+16. Alarme dispara se erros &gt; 5 em 5 minutos
+17. Dashboard mostra saúde do sistema em tempo real</code></pre>
+<p>---</p>
+<h2 id="6-conceitos-senior-do-projeto-final">6. 🧠 CONCEITOS SÊNIOR DO PROJETO FINAL</h2>
+<p><strong>1. Idempotência na criação de pedidos</strong> O front-end pode reenviar o pedido (clique duplo, retry de erro de rede). Solução: <code>condition_expression=&quot;attribute_not_exists(pedidoId)&quot;</code> no DynamoDB. Se já existe, retorna 200 com o pedido existente.</p>
+<p><strong>2. Compensating Transactions</strong> Se o pagamento falhar após dar baixa no estoque: a Lambda Worker deve reverter o estoque (UpdateItem) e atualizar o status para &quot;cancelado&quot;. Como não há transactions multi-table no DynamoDB: use Step Functions para orquestrar com rollback automático.</p>
+<p><strong>3. Circuit Breaker para dependências externas</strong> Se o serviço de pagamento (externo) ficar instável: em vez de deixar as Lambdas travando por timeout, implemente circuit breaker: &quot;se 5 chamadas falharam em 1 minuto, parar de tentar por 30 segundos&quot;. Biblioteca: <code>pybreaker</code> para Python.</p>
+<p><strong>4. Cost Optimization em produção</strong></p>
+<ul>
+<li>Lambda com mais memória frequentemente é mais barata (executa mais rápido)</li>
+<li>DynamoDB On-Demand para tráfego imprevisível; Provisioned + Auto Scaling para produção estável</li>
+<li>S3 Intelligent-Tiering para imagens de produtos</li>
+<li>CloudFront na frente do API Gateway: caching de respostas GET reduz até 80% das chamadas</li>
+</ul>
+<p><strong>5. Well-Architected Framework (as 6 pillars)</strong> Este projeto aplica os 6 pilares do AWS Well-Architected:</p>
+<ul>
+<li><strong>Operational Excellence:</strong> CloudFormation IaC, CloudWatch logging, runbook de limpeza</li>
+<li><strong>Security:</strong> IAM Roles, Secrets Manager, CloudTrail, menos permissões possível</li>
+<li><strong>Reliability:</strong> SQS como buffer, DLQ para falhas, Lambda retry automático</li>
+<li><strong>Performance Efficiency:</strong> DynamoDB On-Demand, Lambda arm64, cache de secrets</li>
+<li><strong>Cost Optimization:</strong> Serverless, Free Tier maximizado, cleanup automático</li>
+<li><strong>Sustainability:</strong> Serverless = 0 recursos ociosos → menor footprint de carbono</li>
+</ul>
+<p>---</p>
+<h2 id="7-simulacao-de-entrevista">7. SIMULAÇÃO DE ENTREVISTA</h2>
+<p>Veja o arquivo <strong><a href="./07-simular-entrevista.md"><code>07-simular-entrevista.md</code></a></strong> para 30 perguntas de entrevista Sênior com respostas completas.</p>
+<p>Algumas amostras:</p>
+<h3 id="q1-desenhe-a-arquitetura-de-um-e-commerce-serverless-que-suporte-10-000-usuarios-simultaneos">Q1: &quot;Desenhe a arquitetura de um e-commerce serverless que suporte 10.000 usuários simultâneos&quot;</h3>
+<blockquote>Você acabou de construir esta arquitetura! Explique cada componente e suas razões.</blockquote>
+<h3 id="q2-como-voce-garantiria-que-um-pedido-nao-seja-processado-duas-vezes">Q2: &quot;Como você garantiria que um pedido não seja processado duas vezes?&quot;</h3>
+<blockquote>Idempotência com condition expressions DynamoDB + MessageDeduplicationId no SQS FIFO.</blockquote>
+<h3 id="q3-o-que-acontece-se-a-fila-sqs-crescer-mais-rapido-do-que-a-lambda-processa">Q3: &quot;O que acontece se a fila SQS crescer mais rápido do que a Lambda processa?&quot;</h3>
+<blockquote>SQS acumula mensagens (escala automaticamente até 120.000 mensagens visíveis). Lambda escala concorrência até o limite. Configure alarme quando a fila &gt; 1000 mensagens. Configure Dead Letter Queue. Em extremo: Scale Up a concorrência reservada.</blockquote>
+<h3 id="q4-como-voce-faria-o-rollback-de-uma-versao-defeituosa-desta-lambda">Q4: &quot;Como você faria o rollback de uma versão defeituosa desta Lambda?&quot;</h3>
+<blockquote>Lambda Versions + Aliases. Deploy para uma versão específica. Traffic shifting: 90% → alias estável, 10% → nova versão (Canary). CloudWatch Alarm detecta erros → CodeDeploy faz rollback automático. Lambda: <code>aws lambda update-alias --routing-config AdditionalVersionWeights={&quot;2&quot;: 0.1}</code></blockquote>
+<p>---</p>
+<h2 id="8-limpeza-final">8. 🧹 LIMPEZA FINAL</h2>
+<pre><code># Execute ao terminar tudo:
+./08-limpeza.sh
+
+# O script:
+# 1. Esvazia todos os buckets S3
+# 2. Deleta todas as stacks CloudFormation (em ordem reversa)
+# 3. Deleta Secrets Manager secrets (forçado, sem recovery window)
+# 4. Remove Log Groups do CloudWatch
+# 5. Verifica se não há recursos órfãos
+# 6. Confirma custo $0.00 no Cost Explorer</code></pre>
+<p>---</p>
+<h2 id="parabens-voce-concluiu-o-curso">🎓 PARABÉNS! Você concluiu o curso!</h2>
+<pre><code>✅ Módulo 0:  IAM, CLI, Budget Alerts, Free Tier
+✅ Módulo 1:  S3 — buckets, versionamento, lifecycle, site estático
+✅ Módulo 2:  Lambda — handlers, triggers, Boto3, cold start
+✅ Módulo 3:  API Gateway — REST, CORS, throttling, auth
+✅ Módulo 4:  DynamoDB — PK/SK, GSI, Query vs Scan, TTL
+✅ Módulo 5:  SNS + SQS — pub/sub, fan-out, DLQ, visibility timeout
+✅ Módulo 6:  CloudFormation — IaC, stacks, change sets, drift
+✅ Módulo 7:  IAM Avançado + Secrets Manager — conditions, ABAC, rotation
+✅ Módulo 8:  ECR + ECS Fargate — containers, Dockerfile, Task Definitions
+✅ Módulo 9:  CloudWatch — metrics, logs, alarms, Insights, dashboards
+✅ Módulo 10: Projeto Final — arquitetura completa e-commerce serverless
+
+CUSTO TOTAL DO CURSO: &lt; $1.00 💰</code></pre>
+<h3 id="proximos-passos-recomendados">Próximos passos recomendados:</h3>
+<ol>
+<li><strong>AWS Certified Solutions Architect — Associate</strong> (use este projeto como base de estudo)</li>
+<li><strong>AWS Certified Developer — Associate</strong> (aprofunde Lambda, DynamoDB, API Gateway)</li>
+<li><strong>AWS Certified DevOps Engineer — Professional</strong> (CloudFormation, CI/CD, CloudWatch avançado)</li>
+<li><strong>Terraform</strong> (IaC multi-cloud — complementa CloudFormation)</li>
+<li><strong>Kubernetes/EKS</strong> (próximo nível de containers além do Fargate)</li>
+</ol><nav class="page-nav"><a href="./modulo-10-projeto-final-portfolio-case-study.html">Anterior: Case study de portfolio - E-commerce serverless AWS</a><span></span></nav></article></main></body></html>

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Módulo 9 — Observabilidade: Amazon CloudWatch | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#modulo-09-cloudwatch-readme">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">CloudWatch · 7 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para CloudWatch" loading="lazy"><figcaption>Observabilidade mostra se a aplicacao esta saudavel antes do usuario reclamar.</figcaption></figure><h1 id="modulo-9-observabilidade-amazon-cloudwatch">Módulo 9 — Observabilidade: Amazon CloudWatch</h1>
+<blockquote><strong>Custo:</strong> ~$0.00 | <strong>Pré-requisito:</strong> Módulos 1-8 concluídos | <strong>Duração estimada:</strong> 4-5 horas</blockquote>
+<p>---</p>
+<h2 id="1-analogia-do-dia-a-dia">1. ANALOGIA DO DIA A DIA</h2>
+<p>Imagine que o <strong>CloudWatch é como o painel de controle de um avião</strong>.</p>
+<ul>
+<li><strong>Métricas</strong> = os <strong>instrumentos de voo</strong>: velocidade, altitude, combustível — dados numéricos em tempo real</li>
+<li><strong>Logs</strong> = a <strong>caixa preta</strong>: registra tudo que aconteceu, em ordem cronológica</li>
+<li><strong>Alarmes</strong> = a <strong>luz de alerta</strong>: &quot;combustível abaixo de 20%&quot; → alarme dispara → piloto age</li>
+<li><strong>Dashboards</strong> = o <strong>painel principal</strong>: todos os instrumentos importantes na mesma tela</li>
+<li><strong>CloudWatch Insights</strong> = o <strong>analisador de voo</strong>: após um incidente, analisa a caixa preta com queries</li>
+</ul>
+<p>Sem CloudWatch, você está voando no escuro: não sabe se a Lambda está funcionando, se o DynamoDB está estrangulado, se há erros aumentando. Um sistema sem observabilidade em produção é como um avião sem instrumentos.</p>
+<p>---</p>
+<h2 id="2-o-que-e-definicao-tecnica-senior">2. O QUE É (Definição Técnica Sênior)</h2>
+<p><strong>Amazon CloudWatch:</strong> Plataforma de observabilidade nativa AWS que coleta e monitora métricas, logs e eventos de recursos AWS e aplicações personalizadas. Base do pilar de Excelência Operacional do AWS Well-Architected Framework.</p>
+<p><strong>Os três pilares da observabilidade:</strong></p>
+<ul>
+<li><strong>Metrics:</strong> Dados numéricos agregados ao longo do tempo (ex: Invocations/min, ErrorRate %)</li>
+<li><strong>Logs:</strong> Eventos textuais com timestamp (ex: &quot;2024-01-15 10:30:00 ERROR NullPointerException&quot;)</li>
+<li><strong>Traces:</strong> Rastro de uma requisição por múltiplos serviços (X-Ray — não coberto neste módulo)</li>
+</ul>
+<p>---</p>
+<h2 id="custo-estimado-deste-modulo">💲 CUSTO ESTIMADO DESTE MÓDULO</h2>
+<pre><code>💲 CUSTO ESTIMADO — MÓDULO 9:
+  - CloudWatch Metrics:     $0.00  (Free Tier: 10 métricas customizadas)
+  - CloudWatch Logs:        $0.00  (Free Tier: 5 GB ingestão + 5 GB armazenamento)
+  - CloudWatch Alarms:      $0.00  (Free Tier: 10 alarmes)
+  - CloudWatch Dashboards:  $0.00  (Free Tier: 3 dashboards)
+  - CloudWatch Insights:    $0.00  (Free Tier: 5 GB queries/mês)
+  - SNS (alertas email):    $0.00  (Free Tier)
+  - TOTAL:                  ~$0.00
+  
+  ⚠️  Após Free Tier:
+      Logs: $0.50/GB ingestão + $0.03/GB/mês armazenamento
+      Métricas customizadas: $0.30 cada/mês
+      Alarmes: $0.10/alarme/mês (métricas customizadas)</code></pre>
+<p>---</p>
+<h2 id="3-projetos-deste-modulo">3. PROJETOS DESTE MÓDULO</h2>
+<div class="table-wrap"><table><thead><tr><th>Arquivo</th><th>O que cria</th><th>Conceito ensinado</th></tr></thead><tbody><tr><td><a href="./01-log-group-basico.yaml"><code>01-log-group-basico.yaml</code></a></td><td>Log Group com retenção</td><td>Log Groups, retention, KMS</td></tr><tr><td><a href="./02-metrica-customizada.py"><code>02-metrica-customizada.py</code></a></td><td>Publica métricas de negócio</td><td>PutMetricData, dimensions, units</td></tr><tr><td><a href="./03-alarme-cloudwatch.yaml"><code>03-alarme-cloudwatch.yaml</code></a></td><td>Alarme com ação SNS</td><td>Alarms, thresholds, actions</td></tr><tr><td><a href="./04-dashboard.yaml"><code>04-dashboard.yaml</code></a></td><td>Dashboard completo</td><td>Dashboards, widgets, metrics</td></tr><tr><td><a href="./05-log-insights-queries.sh"><code>05-log-insights-queries.sh</code></a></td><td>Queries nos logs</td><td>CloudWatch Insights, query language</td></tr><tr><td><a href="./06-lambda-com-metricas.py"><code>06-lambda-com-metricas.py</code></a></td><td>Lambda que gera métricas</td><td>Structured logging, EMF</td></tr><tr><td><a href="./07-limpeza.sh"><code>07-limpeza.sh</code></a></td><td>Destrói todos os recursos</td><td>Cleanup obrigatório</td></tr></tbody></table></div>
+<p>---</p>
+<h2 id="4-conceitos-fundamentais">4. CONCEITOS FUNDAMENTAIS</h2>
+<h3 id="4-1-metricas-o-que-entender">4.1 Métricas — O que entender</h3>
+<pre><code>ESTRUTURA DE UMA MÉTRICA:
+  Namespace: AWS/Lambda        (ex: AWS/Lambda, AWS/DynamoDB, ou custom: &quot;MeuApp/Pedidos&quot;)
+  Nome:      Invocations        (ex: Invocations, Errors, Duration, Throttles)
+  Dimensions: FunctionName=...  (quais recursos estão sendo medidos)
+  Value:     42                 (o valor)
+  Unit:      Count              (Count, Milliseconds, Bytes, Percent, ...)
+  Timestamp: 2024-01-15T...     (quando medido)
+
+MÉTRICAS AUTOMÁTICAS (AWS cria para você):
+  Lambda: Invocations, Errors, Duration, Throttles, ConcurrentExecutions
+  DynamoDB: ConsumedWriteCapacityUnits, ConsumedReadCapacityUnits
+  API Gateway: Count, 4XXError, 5XXError, Latency
+
+MÉTRICAS CUSTOMIZADAS (você cria):
+  &quot;PedidosCriados&quot;, &quot;ValorTotalVendido&quot;, &quot;UsuariosAtivos&quot;
+  São as métricas de negócio que importam para o seu produto</code></pre>
+<h3 id="4-2-alarmes-como-configurar-corretamente">4.2 Alarmes — Como configurar corretamente</h3>
+<pre><code>ANATOMY DE UM ALARME:
+  Métrica:    Lambda Errors &gt; 5 em 5 minutos
+  Período:    Cada ponto de dados = 5 minutos de dados agregados
+  Avaliação:  3 períodos consecutivos (15 minutos total de problemas)
+  Ação:       Enviar email via SNS → Criar ticket no PagerDuty
+  
+ESTADOS DO ALARME:
+  OK         → tudo normal
+  ALARM      → threshold atingido → ação disparada
+  INSUFFICIENT_DATA → dados insuficientes (comum nos primeiros minutos)
+
+ERROS COMUNS:
+  ❌ Período muito curto (1 min): muitos falsos positivos
+  ❌ Threshold muito alto: erros passam sem alarme
+  ✅ Use pelo menos 3 períodos avaliação (evita alarme em pico momentâneo)
+  ✅ Crie alarme de &quot;sem dados&quot; para detectar se a Lambda parou de reportar</code></pre>
+<h3 id="4-3-cloudwatch-logs-insights-query-language">4.3 CloudWatch Logs Insights — Query language</h3>
+<pre><code># Contar erros por hora:
+stats count(*) as erros by bin(1h)
+| filter @message like /ERROR/
+| sort @timestamp desc
+
+# Performance da Lambda — percentil 95:
+stats percentile(@duration, 95) as p95, 
+      avg(@duration) as media, 
+      max(@duration) as maximo
+by bin(5m)
+| filter @type = &quot;REPORT&quot;
+
+# Encontrar cold starts:
+filter @message like /Init Duration/
+| parse @message &quot;Init Duration: * ms&quot; as initDuration
+| stats avg(initDuration) as avgColdStart, count(*) as quantidadeColdStarts
+
+# Erros agrupados por tipo:
+filter @message like /ERROR/
+| parse @message &quot;[*] *&quot; as nivel, mensagem  
+| stats count(*) as total by mensagem
+| sort total desc
+| limit 10</code></pre>
+<p>---</p>
+<h2 id="5-conceito-senior">5. 🧠 CONCEITO SÊNIOR</h2>
+<p><strong>1. Embedded Metrics Format (EMF) — A forma correta de publicar métricas de Lambda</strong> Em vez de chamar PutMetricData explicitamente (latência + custo), escreva métricas como JSON estruturado nos logs. CloudWatch reconhece automaticamente e cria métricas:</p>
+<pre><code>import json
+# Em vez de: cloudwatch.put_metric_data(...)
+# Escreva nos logs:
+print(json.dumps({
+    &quot;_aws&quot;: {
+        &quot;Timestamp&quot;: 1234567890,
+        &quot;CloudWatchMetrics&quot;: [{
+            &quot;Namespace&quot;: &quot;MeuApp/Pedidos&quot;,
+            &quot;Dimensions&quot;: [[&quot;Ambiente&quot;]],
+            &quot;Metrics&quot;: [{&quot;Name&quot;: &quot;TotalPedidos&quot;, &quot;Unit&quot;: &quot;Count&quot;}]
+        }]
+    },
+    &quot;Ambiente&quot;: &quot;prod&quot;,
+    &quot;TotalPedidos&quot;: 42
+}))
+# CloudWatch detecta automático e publica a métrica!</code></pre>
+<p><strong>2. Log Dimensions — O erro mais comum que explode o custo</strong> Nunca use <code>request_id</code> ou <code>user_id</code> como dimensão de uma métrica customizada — cria uma nova timeseries por request (cardinality explosion → R$$$). Dimensões devem ser de baixa cardinalidade: ambiente (prod/dev), região, serviço.</p>
+<p><strong>3. Anomaly Detection — Alertas inteligentes sem threshold fixo</strong> Em vez de &quot;alerta se &gt; 100 erros&quot;, use ML para aprender o padrão normal e alertar em anomalias: <code>aws cloudwatch put-anomaly-detector --namespace AWS/Lambda --metric-name Errors</code> Detecta: picos inesperados, queda de tráfego (que pode indicar falha silenciosa), sazonalidade.</p>
+<p><strong>4. Composite Alarms — Reduzir alertas desnecessários</strong> Combina múltiplos alarmes com AND/OR lógico. Evita alert fatigue: &quot;Alertar APENAS SE: (erros &gt; 5) AND (latência &gt; 2000ms) AND (invocações &gt; 100)&quot;</p>
+<p>---</p>
+<h2 id="6-perguntas-de-entrevista">6. PERGUNTAS DE ENTREVISTA</h2>
+<p><strong>Q: Como você estruturaria observabilidade para uma arquitetura de microsserviços na AWS?</strong></p>
+<blockquote><strong>Resposta esperada:</strong> Três pilares: (1) Metrics: CloudWatch Metrics customizadas para métricas de negócio (pedidos/min, valor médio), métricas default para cada serviço. Alarmes compostos para reduzir noise. (2) Logs: Structured logging em JSON em todos os serviços (facilita Insights queries). Log Groups com retenção por ambiente (7d dev, 30d staging, 90d+ prod). CloudWatch Insights para correlação cross-service com @requestId. (3) Traces: AWS X-Ray para tracing distribuído — rastrear uma requisição passando por API Gateway → Lambda → DynamoDB → SQS. Identifica gargalos por percentil de latência. Além dos três pilares: Dashboards por serviço + dashboard executivo de negócio. Alarmes com múltiplas ações (SNS → PagerDuty, Slack). Service Level Objectives (SLOs) monitorados com CloudWatch Metrics Math.</blockquote>
+<p><strong>Q: Qual a diferença entre CloudWatch Logs e CloudWatch Metrics? Quando usar cada um?</strong></p>
+<blockquote><strong>Resposta esperada:</strong> Logs são dados textuais discretos — registam EVENTOS: &quot;às 10:30:42 o usuário X fez checkout com erro de pagamento&quot;. Metrics são dados numéricos agregados — medem TENDÊNCIAS ao longo do tempo: &quot;144 erros de pagamento na última hora&quot;. Use logs para: debugging de bugs específicos, auditoria de eventos, descoberta de causa raiz, correlação de múltiplos eventos. Use metrics para: alertas em tempo real (alarmes reagem em segundos), dashboards de tendência, análise de performance (percentis), custo-efetivo para dados em alta frequência. Na prática: gere logs estruturados (JSON) nas Lambdas e use Metrics Filter para extrair métricas automaticamente dos logs (sem custo extra de PutMetricData).</blockquote>
+<p>---</p>
+<h2 id="proximo-modulo-final">✅ Próximo Módulo (FINAL!)</h2>
+<p>👉 <strong><a href="../modulo-10-projeto-final/README.md"><code>../modulo-10-projeto-final/README.md</code></a></strong></p><nav class="page-nav"><a href="./modulo-08-containers-readme.html">Anterior: Módulo 8 — Containers: ECR + ECS Fargate</a><a href="./modulo-10-projeto-final-07-simular-entrevista.html">Proximo: � Simulação de Entrevista Sênior AWS</a></nav></article></main></body></html>

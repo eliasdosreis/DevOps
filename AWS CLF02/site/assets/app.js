@@ -166,7 +166,7 @@
       const done = state.completed.has(lesson.slug);
       return `<button class="lesson-item ${lesson.slug === state.activeSlug ? "active" : ""} ${done ? "done" : ""}" style="--accent:${mod?.accent || "#ff9900"}" data-slug="${lesson.slug}">
         <strong>${lesson.title}</strong>
-        <small>${lesson.moduleLabel} · ${lesson.readingTime} min · ${done ? "concluida" : "pendente"}</small>
+        <small>${lesson.moduleLabel} - ${lesson.readingTime} min - ${done ? "concluida" : "pendente"}</small>
       </button>`;
     }).join("");
 
@@ -185,7 +185,7 @@
     els.lessonView.classList.remove("fade-out", "fade-in");
     els.lessonView.innerHTML = `<div class="lesson-toolbar">
       <div>
-        <div class="lesson-kicker">${lesson.moduleLabel} · ${lesson.readingTime} min · ${lesson.relative}</div>
+        <div class="lesson-kicker">${lesson.moduleLabel} - ${lesson.readingTime} min - ${lesson.relative}</div>
       </div>
       <div>
         <button class="complete-btn" id="completeButton">${done ? "Marcar pendente" : "Marcar concluida"}</button>
@@ -206,6 +206,8 @@
       saveCompleted();
       render();
     });
+
+    window.enhanceQuizzes?.(els.lessonView);
   }
 
   function render() {

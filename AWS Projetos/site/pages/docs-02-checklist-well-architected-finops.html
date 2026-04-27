@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Checklist Well-Architected e FinOps para portfolio | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#docs-02-checklist-well-architected-finops">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">Portfolio · 4 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para Portfolio" loading="lazy"><figcaption>Documentacao de portfolio transforma laboratorio em historia profissional.</figcaption></figure><h1 id="checklist-well-architected-e-finops-para-portfolio">Checklist Well-Architected e FinOps para portfolio</h1>
+<p>Base conceitual: AWS Well-Architected Framework, boas praticas de CloudFormation e ferramentas AWS de custo.</p>
+<h2 id="explicacao-simples">Explicacao simples</h2>
+<p>Pense em construir uma casa:</p>
+<ul>
+<li>Operacao: consigo cuidar da casa todo dia?</li>
+<li>Seguranca: portas e janelas estao protegidas?</li>
+<li>Confiabilidade: se uma lampada queima, a casa continua funcionando?</li>
+<li>Performance: a casa atende bem sem desperdicio?</li>
+<li>Custo: nao estou pagando por quartos vazios?</li>
+<li>Sustentabilidade: uso so o necessario?</li>
+</ul>
+<h2 id="checklist-por-pilar">Checklist por pilar</h2>
+<h3 id="1-excelencia-operacional">1. Excelencia operacional</h3>
+<ul>
+<li>[ ] O deploy e repetivel com CloudFormation/script.</li>
+<li>[ ] Existe comando claro de teste.</li>
+<li>[ ] Existe comando claro de limpeza.</li>
+<li>[ ] Logs sao enviados para CloudWatch.</li>
+<li>[ ] O README explica troubleshooting comum.</li>
+<li>[ ] Mudancas sao versionadas no Git.</li>
+</ul>
+<p>Pergunta senior:</p>
+<p>&quot;Como voce faria rollback se a mudanca quebrasse?&quot;</p>
+<p>Resposta esperada:</p>
+<p>&quot;Eu versionaria o template/codigo, usaria change sets quando aplicavel, monitoraria alarmes e faria rollback para a versao anterior do stack/codigo.&quot;</p>
+<h3 id="2-seguranca">2. Seguranca</h3>
+<ul>
+<li>[ ] Nao ha credenciais no repositorio.</li>
+<li>[ ] IAM usa menor privilegio.</li>
+<li>[ ] Dados sensiveis usam Secrets Manager ou Parameter Store.</li>
+<li>[ ] S3 publico somente quando necessario.</li>
+<li>[ ] Buckets tem Block Public Access quando aplicavel.</li>
+<li>[ ] Logs de auditoria sao considerados com CloudTrail.</li>
+<li>[ ] MFA e budget estao configurados na conta.</li>
+</ul>
+<p>Pergunta senior:</p>
+<p>&quot;O que voce faria se uma access key vazasse?&quot;</p>
+<p>Resposta esperada:</p>
+<p>&quot;Desativaria e rotacionaria a key, revisaria CloudTrail, validaria uso suspeito, reduziria permissao e moveria o fluxo para role temporaria quando possivel.&quot;</p>
+<h3 id="3-confiabilidade">3. Confiabilidade</h3>
+<ul>
+<li>[ ] Existe tratamento de erro.</li>
+<li>[ ] Existe retry ou DLQ quando ha fila/eventos.</li>
+<li>[ ] Recursos podem ser recriados via IaC.</li>
+<li>[ ] O projeto documenta limites e cotas relevantes.</li>
+<li>[ ] Dados importantes tem backup ou estrategia de recuperacao.</li>
+</ul>
+<p>Pergunta senior:</p>
+<p>&quot;O que acontece se a Lambda falhar enquanto processa mensagem?&quot;</p>
+<p>Resposta esperada:</p>
+<p>&quot;A mensagem pode voltar para a fila apos visibility timeout. Depois de varias falhas, deve ir para uma DLQ para analise sem perder o evento.&quot;</p>
+<h3 id="4-eficiencia-de-performance">4. Eficiencia de performance</h3>
+<ul>
+<li>[ ] Servico escolhido combina com o padrao de acesso.</li>
+<li>[ ] DynamoDB evita Scan em caminho critico.</li>
+<li>[ ] Lambda tem memoria/timeout pensados.</li>
+<li>[ ] API tem limites/throttling considerados.</li>
+<li>[ ] Cache e CloudFront sao considerados para leitura frequente.</li>
+</ul>
+<p>Pergunta senior:</p>
+<p>&quot;Como voce reduziria latencia?&quot;</p>
+<p>Resposta esperada:</p>
+<p>&quot;Eu analisaria metricas p95/p99, logs e traces; depois ajustaria memoria Lambda, reduziria chamadas externas, melhoraria chaves DynamoDB e adicionaria cache quando o padrao permitir.&quot;</p>
+<h3 id="5-otimizacao-de-custo">5. Otimizacao de custo</h3>
+<ul>
+<li>[ ] Ha estimativa antes do deploy.</li>
+<li>[ ] Ha budget configurado.</li>
+<li>[ ] Recursos caros sao evitados no laboratorio.</li>
+<li>[ ] Tags de custo sao usadas.</li>
+<li>[ ] Existe limpeza automatizada/manual documentada.</li>
+<li>[ ] Cost Explorer e usado depois do laboratorio.</li>
+</ul>
+<p>Pergunta senior:</p>
+<p>&quot;Qual a diferenca entre Pricing Calculator, Budgets e Cost Explorer?&quot;</p>
+<p>Resposta esperada:</p>
+<p>&quot;Pricing Calculator estima antes, Budgets alerta durante, Cost Explorer analisa historico depois.&quot;</p>
+<h3 id="6-sustentabilidade">6. Sustentabilidade</h3>
+<ul>
+<li>[ ] Recursos ociosos sao removidos.</li>
+<li>[ ] Serverless e usado quando faz sentido.</li>
+<li>[ ] Ambientes de laboratorio sao temporarios.</li>
+<li>[ ] Retencao de logs e lifecycle sao configurados.</li>
+</ul>
+<p>Pergunta senior:</p>
+<p>&quot;Como reduzir desperdicio sem perder qualidade?&quot;</p>
+<p>Resposta esperada:</p>
+<p>&quot;Removendo recursos ociosos, ajustando retencao, usando lifecycle, escolhendo serverless para demanda irregular e medindo custo por transacao.&quot;</p>
+<h2 id="checklist-finops-rapido">Checklist FinOps rapido</h2>
+<p>Antes do projeto:</p>
+<ul>
+<li>[ ] Budget ativo.</li>
+<li>[ ] Regiao definida.</li>
+<li>[ ] Estimativa de custo registrada.</li>
+<li>[ ] Tags definidas: <code>Project</code>, <code>Module</code>, <code>Owner</code>, <code>Environment</code>.</li>
+</ul>
+<p>Durante:</p>
+<ul>
+<li>[ ] Validar recursos criados.</li>
+<li>[ ] Anotar tempo de execucao.</li>
+<li>[ ] Registrar prints de evidencia.</li>
+</ul>
+<p>Depois:</p>
+<ul>
+<li>[ ] Rodar limpeza.</li>
+<li>[ ] Conferir recursos orfaos.</li>
+<li>[ ] Conferir Cost Explorer no dia seguinte.</li>
+<li>[ ] Atualizar README com custo real.</li>
+</ul>
+<h2 id="fontes-oficiais-uteis">Fontes oficiais uteis</h2>
+<ul>
+<li>AWS Well-Architected Framework: https://docs.aws.amazon.com/wellarchitected/</li>
+<li>CloudFormation best practices: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/best-practices.html</li>
+<li>AWS Pricing Calculator: https://docs.aws.amazon.com/pricing-calculator/</li>
+<li>AWS Budgets: https://aws.amazon.com/aws-cost-management/aws-budgets/</li>
+<li>AWS Cost Explorer: https://aws.amazon.com/documentation-overview/cost-explorer/</li>
+</ul><nav class="page-nav"><a href="./docs-01-padrao-projeto-portfolio.html">Anterior: Padrao de projeto para portfolio</a><a href="./docs-03-roteiro-evidencias-portfolio.html">Proximo: Roteiro de evidencias para portfolio</a></nav></article></main></body></html>

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Template ADR - Architecture Decision Record | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#docs-05-template-adr">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">Portfolio · 2 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para Portfolio" loading="lazy"><figcaption>Documentacao de portfolio transforma laboratorio em historia profissional.</figcaption></figure><h1 id="template-adr-architecture-decision-record">Template ADR - Architecture Decision Record</h1>
+<p>Use um ADR quando tomar uma decisao importante de arquitetura.</p>
+<h2 id="adr-000x-titulo-da-decisao">ADR-000X - Titulo da decisao</h2>
+<p>Data: YYYY-MM-DD</p>
+<p>Status: Proposta | Aceita | Substituida</p>
+<h2 id="contexto">Contexto</h2>
+<p>Qual problema estamos tentando resolver?</p>
+<p>Exemplo:</p>
+<p>&quot;Precisamos criar uma API de baixo custo para um portfolio, com pouca operacao e capacidade de escalar automaticamente.&quot;</p>
+<h2 id="decisao">Decisao</h2>
+<p>O que foi escolhido?</p>
+<p>Exemplo:</p>
+<p>&quot;Usaremos API Gateway + Lambda em vez de EC2.&quot;</p>
+<h2 id="explicacao-simples">Explicacao simples</h2>
+<p>Como explicar para uma crianca de 8 anos?</p>
+<p>Exemplo:</p>
+<p>&quot;Em vez de deixar um computador ligado o dia todo esperando alguem pedir algo, chamamos um ajudante so quando alguem bate na porta.&quot;</p>
+<h2 id="motivos-senior">Motivos senior</h2>
+<ul>
+<li>Menor custo ocioso.</li>
+<li>Menor responsabilidade operacional.</li>
+<li>Escala automatica.</li>
+<li>Integracao nativa com IAM e CloudWatch.</li>
+<li>Bom para trafego variavel.</li>
+</ul>
+<h2 id="alternativas-consideradas">Alternativas consideradas</h2>
+<div class="table-wrap"><table><thead><tr><th>Alternativa</th><th>Por que nao foi escolhida agora</th></tr></thead><tbody><tr><td>EC2</td><td>Mais controle, mas exige patching, rede, escala e custo ligado</td></tr><tr><td>ECS Fargate</td><td>Bom para containers, mas mais complexo para este modulo</td></tr><tr><td>Elastic Beanstalk</td><td>Simples para app web, mas menos direto para funcoes por evento</td></tr></tbody></table></div>
+<h2 id="consequencias">Consequencias</h2>
+<p>Positivas:</p>
+<ul>
+<li>Menos operacao.</li>
+<li>Custo baixo para laboratorio.</li>
+<li>Deploy simples.</li>
+</ul>
+<p>Negativas:</p>
+<ul>
+<li>Cold start pode existir.</li>
+<li>Limites de timeout/concorrrencia precisam ser conhecidos.</li>
+<li>Observabilidade precisa ser bem configurada.</li>
+</ul>
+<h2 id="como-validar">Como validar</h2>
+<ul>
+<li>Teste via <code>curl</code> ou AWS CLI.</li>
+<li>Logs no CloudWatch.</li>
+<li>Metricas de erro e latencia.</li>
+<li>Limpeza do recurso apos teste.</li>
+</ul><nav class="page-nav"><a href="./docs-04-roadmap-projetos-avancados.html">Anterior: Roadmap de projetos avancados para evoluir o portfolio</a><a href="./modulo-00-preparacao-readme.html">Proximo: Módulo 0 — Preparação do Ambiente</a></nav></article></main></body></html>

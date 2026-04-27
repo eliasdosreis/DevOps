@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Módulo 0 — Preparação do Ambiente | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#modulo-00-preparacao-readme">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">Preparacao · 9 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para Preparacao" loading="lazy"><figcaption>Antes de criar recursos, prepare seguranca, CLI, budget e controle de custo.</figcaption></figure><h1 id="modulo-0-preparacao-do-ambiente">Módulo 0 — Preparação do Ambiente</h1>
+<blockquote><strong>Custo:</strong> $0.00 | <strong>Pré-requisito:</strong> Nenhum | <strong>Duração estimada:</strong> 2-3 horas</blockquote>
+<p>---</p>
+<h2 id="1-analogia-do-dia-a-dia">1. ANALOGIA DO DIA A DIA</h2>
+<p>Imagine que a AWS é como um <strong>condomínio de prédios gigante</strong>.</p>
+<ul>
+<li>A <strong>conta root</strong> é como a <strong>escritura do imóvel</strong> — você só usa para coisas muito sérias (vender, hipotecar). No dia a dia, você usa a chave do apartamento.</li>
+<li>O <strong>usuário IAM</strong> é como a sua <strong>chave do apartamento</strong> — você usa todo dia, mas ela só abre o que precisa.</li>
+<li>O <strong>AWS CLI</strong> é como o <strong>controle remoto</strong> do condomínio — em vez de ir pessoalmente ao porteiro (Console AWS), você controla tudo da sua casa.</li>
+<li>O <strong>MFA</strong> é como uma <strong>fechadura dupla</strong> — mesmo que alguém roube sua chave, ainda precisa de um segundo código.</li>
+<li>O <strong>Cost Explorer</strong> é como o <strong>extrato do cartão de crédito</strong> — você vê exatamente onde gastou.</li>
+<li>O <strong>Budget Alert</strong> é como um <strong>alarme de limite no cartão</strong> — te avisa antes de você gastar demais.</li>
+</ul>
+<p>---</p>
+<h2 id="2-o-que-e-definicao-tecnica-senior">2. O QUE É (Definição Técnica Sênior)</h2>
+<p><strong>AWS Account:</strong> Contêiner isolado de recursos AWS com faturamento independente.</p>
+<p><strong>IAM (Identity and Access Management):</strong> Serviço global (não tem região) que controla <em>quem</em> pode fazer <em>o quê</em> em <em>quais recursos</em>. Opera no modelo de &quot;negar tudo por padrão&quot; — sem política explícita de ALLOW, o acesso é DENIED.</p>
+<p><strong>MFA (Multi-Factor Authentication):</strong> Segundo fator de autenticação via TOTP (Time-based One-Time Password). Fundamental para conformidade com SOC2, PCI-DSS e ISO 27001.</p>
+<p><strong>AWS CLI:</strong> Interface de linha de comando que chama as mesmas APIs que o Console AWS. Essencial para automação, scripts e IaC (Infrastructure as Code).</p>
+<p><strong>Cost Explorer:</strong> Serviço de visualização de custos e uso da AWS. Permite análise por serviço, região, tag, linked account.</p>
+<p><strong>Budget Alerts:</strong> Alertas proativos baseados em custo real ou previsto.</p>
+<p>---</p>
+<h2 id="custo-estimado-deste-modulo">💲 CUSTO ESTIMADO DESTE MÓDULO</h2>
+<pre><code>💲 CUSTO ESTIMADO — MÓDULO 0:
+  - IAM:           $0.00  (IAM é sempre gratuito)
+  - Budget Alerts: $0.00  (primeiros 2 budgets são gratuitos)
+  - Cost Explorer: $0.00  (visualização básica é gratuita)
+  - TOTAL:         $0.00
+  
+  ✅ Nenhum recurso com custo contínuo será criado neste módulo.</code></pre>
+<p>---</p>
+<h2 id="3-passos-do-modulo">3. PASSOS DO MÓDULO</h2>
+<h3 id="passo-1-criar-conta-aws">Passo 1: Criar conta AWS</h3>
+<ol>
+<li>Acesse <a href="https://aws.amazon.com">https://aws.amazon.com</a> → &quot;Crie uma conta da AWS&quot;</li>
+<li>Use um email válido (será o email root — guarde bem!)</li>
+<li>Escolha o plano <strong>Free (gratuito)</strong></li>
+<li>Insira um <strong>cartão de crédito</strong> (necessário, mas não será cobrado no Free Tier)</li>
+<li>Verifique o email e complete o cadastro</li>
+</ol>
+<blockquote>⚠️ <strong>IMPORTANTE:</strong> A senha da conta root deve ter no mínimo 16 caracteres. Guarde em um gerenciador de senhas (Bitwarden, 1Password, etc.)</blockquote>
+<p>---</p>
+<h3 id="passo-2-ativar-mfa-na-conta-root">Passo 2: Ativar MFA na conta Root</h3>
+<ol>
+<li>Faça login com a conta root em <a href="https://console.aws.amazon.com">https://console.aws.amazon.com</a></li>
+<li>Clique no seu nome (canto superior direito) → <strong>Security credentials</strong></li>
+<li>Seção <strong>Multi-factor authentication (MFA)</strong> → <strong>Assign MFA device</strong></li>
+<li>Escolha <strong>Authenticator app</strong></li>
+<li>Instale o <strong>Google Authenticator</strong> ou <strong>Authy</strong> no celular</li>
+<li>Escaneie o QR Code e insira 2 códigos consecutivos para confirmar</li>
+<li>Clique em <strong>Add MFA</strong></li>
+</ol>
+<blockquote>✅ <strong>Verificação:</strong> Faça logout e login novamente — o sistema deve pedir o código MFA.</blockquote>
+<p>---</p>
+<h3 id="passo-3-criar-usuario-iam-para-uso-diario">Passo 3: Criar usuário IAM para uso diário</h3>
+<p>Veja o arquivo <a href="./01-criar-usuario-iam.sh"><code>01-criar-usuario-iam.sh</code></a> para os comandos completos.</p>
+<p><strong>No Console AWS (alternativa visual):</strong></p>
+<ol>
+<li>Pesquise <strong>IAM</strong> na barra de busca</li>
+<li>Menu esquerdo → <strong>Users</strong> → <strong>Create user</strong></li>
+<li>Nome: <code>admin-pessoal</code> (ou seu nome)</li>
+<li>Marque: <strong>&quot;Provide user access to the AWS Management Console&quot;</strong></li>
+<li>Crie uma senha e desmarque &quot;must change password&quot;</li>
+<li>Next → <strong>Attach policies directly</strong></li>
+<li>Busque e selecione: <code>AdministratorAccess</code></li>
+<li>Next → <strong>Create user</strong></li>
+<li><strong>Guarde as credenciais geradas!</strong></li>
+</ol>
+<blockquote>⚠️ Em produção real, NUNCA use AdministratorAccess para usuários normais. Para aprendizado, usamos para simplificar. O Módulo 7 ensina como criar políticas com least privilege.</blockquote>
+<p>---</p>
+<h3 id="passo-4-ativar-mfa-no-usuario-iam">Passo 4: Ativar MFA no usuário IAM</h3>
+<ol>
+<li>Vá em IAM → Users → <code>admin-pessoal</code></li>
+<li>Aba <strong>Security credentials</strong> → <strong>Assign MFA device</strong></li>
+<li>Repita o processo do Passo 2 (com outro token no app)</li>
+</ol>
+<p>---</p>
+<h3 id="passo-5-instalar-e-configurar-o-aws-cli">Passo 5: Instalar e configurar o AWS CLI</h3>
+<p><strong>No Windows:</strong></p>
+<pre><code># Baixe e instale o AWS CLI v2:
+# https://awscli.amazonaws.com/AWSCLIV2.msi
+
+# Verifique a instalação:
+aws --version
+# Saída esperada: aws-cli/2.x.x Python/3.x.x Windows/...</code></pre>
+<p><strong>Configure com as credenciais do usuário IAM:</strong></p>
+<pre><code>aws configure
+# AWS Access Key ID [None]: AKIA... (cole seu Access Key)
+# AWS Secret Access Key [None]: ...  (cole seu Secret Key)
+# Default region name [None]: us-east-1
+# Default output format [None]: json</code></pre>
+<p><strong>Verifique se funcionou:</strong></p>
+<pre><code># Este comando retorna quem você é na AWS:
+aws sts get-caller-identity
+
+# Saída esperada:
+# {
+#     &quot;UserId&quot;: &quot;AIDA...&quot;,
+#     &quot;Account&quot;: &quot;123456789012&quot;,
+#     &quot;Arn&quot;: &quot;arn:aws:iam::123456789012:user/admin-pessoal&quot;
+# }</code></pre>
+<blockquote>✅ Se aparecer seu ARN, a CLI está configurada corretamente!</blockquote>
+<p>---</p>
+<h3 id="passo-6-criar-budget-alert-obrigatorio-antes-de-qualquer-modulo">Passo 6: Criar Budget Alert (OBRIGATÓRIO antes de qualquer módulo)</h3>
+<p>Veja o arquivo <a href="./02-budget-alert.sh"><code>02-budget-alert.sh</code></a> para criar via CLI.</p>
+<p><strong>No Console AWS:</strong></p>
+<ol>
+<li>Pesquise <strong>Billing</strong> na barra de busca</li>
+<li>Menu esquerdo → <strong>Budgets</strong> → <strong>Create budget</strong></li>
+<li>Escolha <strong>Use a template</strong> → <strong>Monthly cost budget</strong></li>
+<li>Budget name: <code>limite-aprendizado</code></li>
+<li>Budgeted amount: <code>$5</code></li>
+<li>Email recipients: seu email</li>
+<li><strong>Create budget</strong></li>
+</ol>
+<blockquote>✅ Agora você receberá um email se seus gastos chegarem a $5. Proteção ativa!</blockquote>
+<p>---</p>
+<h3 id="passo-7-entender-o-free-tier">Passo 7: Entender o Free Tier</h3>
+<pre><code>FREE TIER AWS — O que é gratuito e por quanto tempo:
+
+SEMPRE GRÁTIS (sem expiração):
+  ✅ Lambda:      1M invocações/mês + 400.000 GB-segundos
+  ✅ DynamoDB:    25 GB + 25 WCU + 25 RCU
+  ✅ S3:          5 GB + 20.000 GET + 2.000 PUT por mês
+  ✅ CloudWatch:  10 métricas + 5 GB logs + 10 alarmes
+  ✅ SNS:         1M publicações/mês
+  ✅ SQS:         1M requisições/mês
+  ✅ API Gateway: 1M chamadas REST/mês (HTTP API)
+  ✅ IAM:         ilimitado (sempre grátis)
+  ✅ CloudFormation: grátis (paga pelos recursos criados)
+
+12 MESES GRÁTIS (a partir da criação da conta):
+  ⏰ EC2:         750h/mês t2.micro ou t3.micro
+  ⏰ RDS:         750h/mês db.t2.micro (MySQL, PostgreSQL, etc.)
+  ⏰ ELB:         750h/mês
+  
+CUIDADO — NÃO são grátis:
+  ❌ NAT Gateway: ~$0.045/hora + dados (~$32/mês ligado 24h!)
+  ❌ ECS/EC2:     EC2 cobra por hora de uso
+  ❌ RDS Multi-AZ: cobra o dobro
+  ❌ Secrets Manager: $0.40/segredo/mês</code></pre>
+<p>---</p>
+<h3 id="passo-8-configurar-cost-explorer">Passo 8: Configurar Cost Explorer</h3>
+<ol>
+<li>No Console AWS, vá em <strong>Billing</strong> → <strong>Cost Explorer</strong></li>
+<li>Clique em <strong>Enable Cost Explorer</strong> (primeira vez)</li>
+<li>Aguarde 24h para os dados aparecerem</li>
+<li>Explore: <strong>Service</strong> → veja o custo por serviço</li>
+<li>Marque os filtros: últimos 7 dias, por serviço</li>
+</ol>
+<blockquote>💡 <strong>Dica Sênior:</strong> Sempre ative <strong>Cost Allocation Tags</strong> em projetos reais. Isso permite ver o custo por projeto, time ou cliente.</blockquote>
+<p>---</p>
+<h2 id="4-verificacao-final-do-modulo-0">4. VERIFICAÇÃO FINAL DO MÓDULO 0</h2>
+<p>Execute este checklist antes de avançar:</p>
+<pre><code># 1. CLI funcionando:
+aws sts get-caller-identity
+
+# 2. Você NÃO está usando root (verifique o ARN — deve ter &quot;user/&quot;, não &quot;root&quot;):
+# ✅ Correto:   &quot;arn:aws:iam::123456789012:user/admin-pessoal&quot;
+# ❌ Incorreto: &quot;arn:aws:iam::123456789012:root&quot;
+
+# 3. Região configurada:
+aws configure get region
+# Saída esperada: us-east-1
+
+# 4. Budget criado:
+aws budgets describe-budgets --account-id $(aws sts get-caller-identity --query Account --output text)</code></pre>
+<p>---</p>
+<h2 id="5-conceito-senior">5. 🧠 CONCEITO SÊNIOR</h2>
+<h3 id="o-que-um-senior-sabe-que-um-junior-nao-sabe">O que um Sênior sabe que um Júnior não sabe:</h3>
+<p><strong>1. Root é sagrado — nunca use no dia a dia</strong> Em incidentes reais de segurança, credenciais root comprometidas causaram perda de MILHÕES de dólares (cryptomining, ransomware). Trate as credenciais root como a &quot;chave mestre do cofre&quot; — só em emergências.</p>
+<p><strong>2. Least Privilege não é opcional em produção</strong> <code>AdministratorAccess</code> é aceitável para aprendizado, mas em produção cada Lambda, EC2, ECS Task precisa de uma Role IAM com apenas as permissões que ela realmente usa. Isso limita o &quot;blast radius&quot; de um ataque.</p>
+<p><strong>3. Access Keys são um risco</strong> Em produção moderna, raramente se usa Access Keys. Prefere-se:</p>
+<ul>
+<li>Instance Profiles para EC2</li>
+<li>Execution Roles para Lambda/ECS</li>
+<li>OIDC Federation para GitHub Actions</li>
+<li>AWS SSO para usuários humanos</li>
+</ul>
+<p><strong>4. Budget Alerts não são suficientes sozinhos</strong> Combine com: Service Control Policies (SCP) em Organizations, CloudTrail para auditoria, e AWS Config para conformidade contínua.</p>
+<p><strong>5. Multi-region e multi-account</strong> Empresas sérias usam AWS Organizations com múltiplas contas (dev, staging, prod) e políticas SCP para impedir que desenvolvedores criem recursos caros acidentalmente.</p>
+<p>---</p>
+<h2 id="6-perguntas-de-entrevista">6. PERGUNTAS DE ENTREVISTA</h2>
+<p><strong>Q: Qual a diferença entre um usuário IAM e uma Role IAM?</strong></p>
+<blockquote><strong>Resposta esperada:</strong> Um usuário IAM representa uma identidade permanente (pessoa ou aplicação) com credenciais de longo prazo (usuário/senha ou access keys). Uma Role IAM é uma identidade temporária assumida por outros serviços AWS, aplicações, usuários federados ou contas. Roles não têm credenciais permanentes — emitem tokens temporários via AWS STS (Security Token Service) com validade configurável. Roles são a forma preferida de autenticação em ambientes modernos por eliminar o risco de vazamento de credenciais de longo prazo.</blockquote>
+<p><strong>Q: O que é o princípio do Least Privilege e como você o implementa na AWS?</strong></p>
+<blockquote><strong>Resposta esperada:</strong> Least Privilege significa conceder a cada identidade (usuário, role, serviço) apenas as permissões estritamente necessárias para sua função, no momento em que precisa. Na AWS, implemento via: (1) Políticas IAM específicas por recurso usando ARNs, (2) Conditions para restringir por IP, MFA, hora ou tag, (3) Revisão periódica com IAM Access Analyzer e credential reports, (4) Permission Boundaries para limitar o escopo máximo que um administrador delegado pode conceder, (5) Service Control Policies em Organizations para guardrails em nível de conta.</blockquote>
+<p>---</p>
+<h2 id="proximo-modulo">✅ Próximo Módulo</h2>
+<p>Quando completar este checklist, avance para: 👉 <strong><a href="../modulo-01-s3/README.md"><code>../modulo-01-s3/README.md</code></a></strong></p><nav class="page-nav"><a href="./docs-05-template-adr.html">Anterior: Template ADR - Architecture Decision Record</a><a href="./modulo-01-s3-readme.html">Proximo: Módulo 1 — Storage: Amazon S3</a></nav></article></main></body></html>

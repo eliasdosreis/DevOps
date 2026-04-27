@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Case study de portfolio - E-commerce serverless AWS | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#modulo-10-projeto-final-portfolio-case-study">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">Projeto Final · 6 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para Projeto Final" loading="lazy"><figcaption>O projeto final junta frontend, API, banco, fila, notificacao, logs e IaC.</figcaption></figure><h1 id="case-study-de-portfolio-e-commerce-serverless-aws">Case study de portfolio - E-commerce serverless AWS</h1>
+<h2 id="resumo">Resumo</h2>
+<p>Este projeto implementa um e-commerce serverless usando AWS. O objetivo e demonstrar uma arquitetura real com frontend, API, banco de dados, fila, notificacao, observabilidade, seguranca e infraestrutura como codigo.</p>
+<p>Frase de portfolio:</p>
+<p>&quot;Construi um e-commerce serverless na AWS com API Gateway, Lambda, DynamoDB, SQS, SNS, S3, CloudWatch e CloudFormation, priorizando custo baixo, seguranca, resiliencia e automacao.&quot;</p>
+<h2 id="problema">Problema</h2>
+<p>Uma loja precisa receber pedidos online sem manter servidores ligados 24 horas por dia. O sistema precisa:</p>
+<ul>
+<li>exibir um frontend;</li>
+<li>criar e listar produtos;</li>
+<li>receber pedidos;</li>
+<li>processar pedidos de forma assincrona;</li>
+<li>registrar logs;</li>
+<li>notificar resultado;</li>
+<li>ser barato para demonstracao;</li>
+<li>ser facil de destruir para evitar custo.</li>
+</ul>
+<h2 id="explicacao-para-crianca-de-8-anos">Explicacao para crianca de 8 anos</h2>
+<p>Imagine uma lojinha:</p>
+<ul>
+<li>O site e a vitrine.</li>
+<li>A API e o balcao.</li>
+<li>A Lambda e o atendente.</li>
+<li>O DynamoDB e o caderno dos produtos e pedidos.</li>
+<li>A SQS e a fila de pedidos esperando preparo.</li>
+<li>A SNS e o megafone que avisa quando o pedido ficou pronto.</li>
+<li>O CloudWatch e a camera que mostra se tudo esta funcionando.</li>
+<li>O CloudFormation e a receita que monta a lojinha inteira.</li>
+</ul>
+<h2 id="arquitetura">Arquitetura</h2>
+<pre><code>Usuario
+  -&gt; S3/Frontend
+  -&gt; API Gateway
+  -&gt; Lambda principal
+  -&gt; DynamoDB produtos/pedidos
+  -&gt; SQS fila de pedidos
+  -&gt; Lambda worker
+  -&gt; SNS notificacao
+  -&gt; CloudWatch logs/metricas
+
+CloudFormation cria e conecta os recursos.
+IAM controla permissoes.</code></pre>
+<h2 id="servicos-usados">Servicos usados</h2>
+<div class="table-wrap"><table><thead><tr><th>Servico</th><th>Papel no projeto</th></tr></thead><tbody><tr><td>S3</td><td>Hospedar frontend estatico</td></tr><tr><td>API Gateway</td><td>Expor endpoints HTTPS</td></tr><tr><td>Lambda</td><td>Executar logica de negocio</td></tr><tr><td>DynamoDB</td><td>Persistir produtos e pedidos</td></tr><tr><td>SQS</td><td>Desacoplar processamento de pedidos</td></tr><tr><td>SNS</td><td>Enviar notificacoes</td></tr><tr><td>CloudWatch</td><td>Logs, metricas e alarmes</td></tr><tr><td>CloudFormation</td><td>Criar infraestrutura como codigo</td></tr><tr><td>IAM</td><td>Permissoes de menor privilegio</td></tr></tbody></table></div>
+<h2 id="decisoes-tecnicas">Decisoes tecnicas</h2>
+<h3 id="por-que-serverless">Por que serverless?</h3>
+<p>Para um portfolio e para cargas variaveis, serverless reduz operacao e custo ocioso. Nao ha servidor para manter ligado, atualizar ou escalar manualmente.</p>
+<p>Trade-off:</p>
+<ul>
+<li>positivo: baixo custo, escala automatica, pouca operacao;</li>
+<li>negativo: limites de timeout, cold start e necessidade de boa observabilidade.</li>
+</ul>
+<h3 id="por-que-sqs-entre-pedido-e-worker">Por que SQS entre pedido e worker?</h3>
+<p>Porque pedido nao deve depender de processamento imediato. A fila protege o sistema quando chegam muitos pedidos de uma vez.</p>
+<p>Trade-off:</p>
+<ul>
+<li>positivo: desacoplamento, retry, absorve pico;</li>
+<li>negativo: consistencia eventual e necessidade de tratar duplicidade.</li>
+</ul>
+<h3 id="por-que-dynamodb">Por que DynamoDB?</h3>
+<p>Porque e gerenciado, escala bem e combina com acesso por chave. Para este projeto, pedidos e produtos podem ser modelados com chaves claras.</p>
+<p>Trade-off:</p>
+<ul>
+<li>positivo: baixa latencia e pouca operacao;</li>
+<li>negativo: exige pensar access patterns antes de criar a tabela.</li>
+</ul>
+<h2 id="seguranca">Seguranca</h2>
+<p>Boas praticas aplicadas ou recomendadas:</p>
+<ul>
+<li>IAM roles por funcao;</li>
+<li>menor privilegio;</li>
+<li>nao usar credenciais no codigo;</li>
+<li>Secrets Manager para segredos quando necessario;</li>
+<li>CloudTrail para auditoria;</li>
+<li>CORS restrito em producao;</li>
+<li>S3 publico somente se for site estatico e com politica controlada;</li>
+<li>tags para rastrear dono, modulo e ambiente.</li>
+</ul>
+<p>Melhoria para producao:</p>
+<ul>
+<li>Cognito para autenticacao;</li>
+<li>WAF para protecao de borda;</li>
+<li>CloudFront com HTTPS e cache;</li>
+<li>KMS customer managed key se houver requisito de compliance.</li>
+</ul>
+<h2 id="confiabilidade">Confiabilidade</h2>
+<p>Pontos fortes:</p>
+<ul>
+<li>SQS absorve pico;</li>
+<li>Lambda pode processar mensagens com retry;</li>
+<li>infraestrutura pode ser recriada via CloudFormation;</li>
+<li>CloudWatch permite investigar falhas.</li>
+</ul>
+<p>Melhorias:</p>
+<ul>
+<li>Dead Letter Queue para mensagens com erro persistente;</li>
+<li>idempotencia em criacao/processamento de pedidos;</li>
+<li>alarms para erro Lambda, fila crescendo e latencia alta;</li>
+<li>backup/PITR em DynamoDB se o dado for importante.</li>
+</ul>
+<h2 id="observabilidade">Observabilidade</h2>
+<p>Evidencias que devem ser coletadas:</p>
+<ul>
+<li>logs da Lambda principal;</li>
+<li>logs da Lambda worker;</li>
+<li>metrica de invocacoes;</li>
+<li>metrica de erros;</li>
+<li>tamanho da fila SQS;</li>
+<li>latencia da API;</li>
+<li>resultado do script de teste end-to-end.</li>
+</ul>
+<p>Pergunta senior:</p>
+<p>&quot;Um cliente disse que o pedido ficou preso. Como investigar?&quot;</p>
+<p>Resposta:</p>
+<p>&quot;Eu verificaria API Gateway status/latencia, logs da Lambda principal, item do pedido no DynamoDB, metricas da SQS ApproximateNumberOfMessagesVisible, logs da worker e falhas/DLQ. A ideia e seguir o rastro do pedido de ponta a ponta.&quot;</p>
+<h2 id="custo">Custo</h2>
+<p>Para laboratorio, o projeto deve ficar barato porque usa servicos com Free Tier e serverless. Mesmo assim, podem gerar custo:</p>
+<ul>
+<li>logs CloudWatch com muita retencao;</li>
+<li>Secrets Manager se ficar ativo;</li>
+<li>requisicoes API Gateway em volume;</li>
+<li>dados armazenados;</li>
+<li>recursos esquecidos.</li>
+</ul>
+<p>Disciplina FinOps:</p>
+<ul>
+<li>budget antes do deploy;</li>
+<li>tags de custo;</li>
+<li>limpeza apos demonstracao;</li>
+<li>conferir Cost Explorer no dia seguinte.</li>
+</ul>
+<h2 id="como-demonstrar">Como demonstrar</h2>
+<p>Roteiro de demo:</p>
+<ol>
+<li>Mostrar diagrama.</li>
+<li>Rodar deploy CloudFormation.</li>
+<li>Abrir frontend.</li>
+<li>Criar produto.</li>
+<li>Listar produto.</li>
+<li>Criar pedido.</li>
+<li>Mostrar mensagem/processamento.</li>
+<li>Mostrar logs CloudWatch.</li>
+<li>Explicar custo e seguranca.</li>
+<li>Rodar limpeza.</li>
+</ol>
+<h2 id="evidencias-para-github">Evidencias para GitHub</h2>
+<ul>
+<li>Print do frontend.</li>
+<li>Output do deploy.</li>
+<li>Output do teste E2E.</li>
+<li>Print dos logs.</li>
+<li>Print do DynamoDB com item criado, ocultando dados sensiveis.</li>
+<li>Print da fila/processamento.</li>
+<li>Print da limpeza ou stack deletada.</li>
+</ul>
+<h2 id="melhorias-futuras">Melhorias futuras</h2>
+<ul>
+<li>Cognito para login.</li>
+<li>CloudFront para frontend.</li>
+<li>WAF para API.</li>
+<li>CodePipeline/GitHub Actions para CI/CD.</li>
+<li>DLQ e alarms.</li>
+<li>Dashboard CloudWatch.</li>
+<li>X-Ray para tracing.</li>
+<li>Testes automatizados.</li>
+<li>Ambientes dev/prod.</li>
+<li>ADRs das decisoes principais.</li>
+</ul>
+<h2 id="resposta-curta-para-entrevista">Resposta curta para entrevista</h2>
+<p>&quot;Eu escolhi uma arquitetura serverless porque o objetivo era reduzir custo ocioso e operacao. API Gateway recebe as chamadas, Lambda executa a logica, DynamoDB persiste dados e SQS desacopla o processamento de pedidos. O desenho e barato e escalavel, mas exige cuidados com idempotencia, IAM, observabilidade, DLQ e controle de custo.&quot;</p><nav class="page-nav"><a href="./modulo-10-projeto-final-07-simular-entrevista.html">Anterior: � Simulação de Entrevista Sênior AWS</a><a href="./modulo-10-projeto-final-readme.html">Proximo: Módulo 10 — Projeto Final Sênior: E-commerce Serverless Completo</a></nav></article></main></body></html>

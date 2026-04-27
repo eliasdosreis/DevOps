@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Módulo 2 — Computação Serverless: AWS Lambda | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#modulo-02-lambda-readme">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">Lambda · 8 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para Lambda" loading="lazy"><figcaption>Lambda executa codigo sob demanda: sem servidor ligado esperando trabalho.</figcaption></figure><h1 id="modulo-2-computacao-serverless-aws-lambda">Módulo 2 — Computação Serverless: AWS Lambda</h1>
+<blockquote><strong>Custo:</strong> ~$0.00 | <strong>Pré-requisito:</strong> Módulos 0 e 1 concluídos | <strong>Duração estimada:</strong> 4-5 horas</blockquote>
+<p>---</p>
+<h2 id="1-analogia-do-dia-a-dia">1. ANALOGIA DO DIA A DIA</h2>
+<p>Imagine que o <strong>Lambda é um garçom que aparece apenas quando você o chama</strong>.</p>
+<ul>
+<li>Em um restaurante normal (EC2), você tem um <strong>garçom fixo</strong> — ele fica lá mesmo quando não tem clientes, recebendo salário (pagando pela hora EC2).</li>
+<li>Com o Lambda, é como ter um <strong>garçom mágico</strong>: você aperta o botão, ele aparece, entrega seu pedido e desaparece. Você paga <strong>apenas pelo tempo que ele passou atendendo</strong>, não pelo tempo que ficou esperando.</li>
+</ul>
+<p>Mais detalhes:</p>
+<ul>
+<li><strong>Função Lambda</strong> = a receita que o garçom sabe executar (código)</li>
+<li><strong>Trigger</strong> = o botão que chama o garçom (evento S3, API, agendamento...)</li>
+<li><strong>Timeout</strong> = tempo máximo que o garçom pode passar no seu pedido antes de desistir</li>
+<li><strong>Memory</strong> = quanto o garçom consegue &quot;carregar&quot; de uma vez</li>
+<li><strong>Cold Start</strong> = quando o garçom precisa &quot;se preparar&quot; antes de atender (demora um pouco mais na 1ª vez)</li>
+<li><strong>Concurrent Executions</strong> = quantos garçons podem atender ao mesmo tempo</li>
+</ul>
+<p>---</p>
+<h2 id="2-o-que-e-definicao-tecnica-senior">2. O QUE É (Definição Técnica Sênior)</h2>
+<p><strong>AWS Lambda:</strong> Serviço de computação serverless que executa código em resposta a eventos, sem provisionar ou gerenciar servidores. O modelo de execução é stateless e orientado a eventos. A AWS gerencia automaticamente o scaling (de 0 até milhares de execuções simultâneas), alta disponibilidade e infraestrutura subjacente.</p>
+<p><strong>Características técnicas fundamentais:</strong></p>
+<ul>
+<li><strong>Runtimes:</strong> Python, Node.js, Java, Go, .NET, Ruby, ou Custom Runtime</li>
+<li><strong>Timeout máximo:</strong> 15 minutos (para processos longos, use ECS ou Step Functions)</li>
+<li><strong>Memória:</strong> 128 MB até 10.240 MB (CPU escala proporcionalmente)</li>
+<li><strong>Payload de entrada:</strong> até 6 MB (síncrono) ou 256 KB (assíncrono)</li>
+<li><strong>Concorrência:</strong> 1.000 execuções simultâneas por padrão (pode aumentar)</li>
+<li><strong>Execution Environment:</strong> Firecracker microVMs — isolados e efêmeros</li>
+<li><strong>Billing:</strong> por 1ms de execução + por GB-segundo de memória usada</li>
+</ul>
+<p>---</p>
+<h2 id="custo-estimado-deste-modulo">💲 CUSTO ESTIMADO DESTE MÓDULO</h2>
+<pre><code>💲 CUSTO ESTIMADO — MÓDULO 2:
+  - Lambda Invocações: $0.00  (Free Tier: 1.000.000 req/mês SEMPRE)
+  - Lambda Compute:    $0.00  (Free Tier: 400.000 GB-segundos/mês SEMPRE)
+  - CloudWatch Logs:   $0.00  (Free Tier: 5 GB/mês)
+  - S3 (trigger):      $0.00  (Free Tier já coberto no Módulo 1)
+  - TOTAL:             ~$0.00
+  
+  ✅ Lambda é SEMPRE gratuito dentro do Free Tier (sem prazo de expiração!)
+  
+  PARA REFERÊNCIA (após Free Tier):
+  - $0.20 por 1 MILHÃO de invocações
+  - $0.0000166667 por GB-segundo
+  
+  Exemplo: Lambda 128 MB, 1s de execução, 1M req/mês = ~$2.76/mês</code></pre>
+<p>---</p>
+<h2 id="3-projetos-deste-modulo">3. PROJETOS DESTE MÓDULO</h2>
+<div class="table-wrap"><table><thead><tr><th>Arquivo</th><th>O que cria</th><th>Conceito ensinado</th></tr></thead><tbody><tr><td><a href="./01-lambda-hello.py"><code>01-lambda-hello.py</code></a></td><td>Função Lambda básica</td><td>Handler, event, context</td></tr><tr><td><a href="./02-lambda-com-s3.py"><code>02-lambda-com-s3.py</code></a></td><td>Lambda que lê/escreve no S3</td><td>Boto3, IAM Role, permissões</td></tr><tr><td><a href="./03-lambda-processador-imagem.py"><code>03-lambda-processador-imagem.py</code></a></td><td>Processa imagens do S3</td><td>Trigger S3, Layers, PIL</td></tr><tr><td><a href="./04-lambda-role.yaml"><code>04-lambda-role.yaml</code></a></td><td>Role IAM para Lambda</td><td>Execution Role, least privilege</td></tr><tr><td><a href="./05-lambda-deploy.yaml"><code>05-lambda-deploy.yaml</code></a></td><td>Deploy da Lambda via CloudFormation</td><td>CloudFormation Lambda</td></tr><tr><td><a href="./06-lambda-trigger-s3.yaml"><code>06-lambda-trigger-s3.yaml</code></a></td><td>Conecta S3 → Lambda</td><td>Event Notifications</td></tr><tr><td><a href="./07-lambda-variaveis-ambiente.py"><code>07-lambda-variaveis-ambiente.py</code></a></td><td>Env vars e SSM Parameter Store</td><td>Configuration, security</td></tr><tr><td><a href="./08-testar-lambda.sh"><code>08-testar-lambda.sh</code></a></td><td>Invoca a Lambda e verifica logs</td><td>CLI invoke, CloudWatch</td></tr><tr><td><a href="./09-limpeza.sh"><code>09-limpeza.sh</code></a></td><td>Destrói todos os recursos</td><td>Cleanup obrigatório</td></tr></tbody></table></div>
+<p>---</p>
+<h2 id="4-conceitos-fundamentais-do-lambda">4. CONCEITOS FUNDAMENTAIS DO LAMBDA</h2>
+<h3 id="4-1-anatomia-de-uma-funcao-lambda">4.1 Anatomia de uma Função Lambda</h3>
+<pre><code># Toda função Lambda TEM que ter este formato:
+def handler(event, context):
+    #      ↑         ↑
+    #   Dados     Metadados
+    #  de entrada da execução
+    
+    return resultado</code></pre>
+<p><strong><code>event</code></strong> = o &quot;pedido&quot; que chegou. Muda dependendo do trigger:</p>
+<ul>
+<li>Trigger HTTP (API Gateway): <code>{&quot;httpMethod&quot;: &quot;GET&quot;, &quot;path&quot;: &quot;/&quot;, &quot;body&quot;: &quot;...&quot;}</code></li>
+<li>Trigger S3: <code>{&quot;Records&quot;: [{&quot;s3&quot;: {&quot;bucket&quot;: {...}, &quot;object&quot;: {...}}}]}</code></li>
+<li>Trigger SQS: <code>{&quot;Records&quot;: [{&quot;body&quot;: &quot;...&quot;, &quot;messageId&quot;: &quot;...&quot;}]}</code></li>
+</ul>
+<p><strong><code>context</code></strong> = metadados da execução (quanto tempo resta, nome da função, etc.)</p>
+<h3 id="4-2-cold-start-vs-warm-start">4.2 Cold Start vs Warm Start</h3>
+<pre><code>COLD START (primeira execução / após inatividade):
+  AWS cria o container → baixa o código → inicializa runtime → executa
+  Tempo extra: 100ms - 1s (Python/Node.js) ou 5-15s (Java/.NET)
+  
+WARM START (execuções subsequentes):
+  Container já existe → executa diretamente
+  Tempo extra: 0ms
+  
+COMO MITIGAR COLD START:
+  1. Provisioned Concurrency: mantém containers &quot;aquecidos&quot; (cobra por hora)
+  2. Escolha runtimes leves: Python/Node.js &gt; Java/.NET
+  3. Minimize o tamanho do pacote de deploy
+  4. Mova inicializações pesadas para FORA do handler:
+  
+  ❌ Ruim (reconecta a cada invocação):
+  def handler(event, context):
+      db = conectar_banco()  # Dentro do handler
+      return db.query()
+  
+  ✅ Bom (reutiliza conexão entre execuções):
+  db = conectar_banco()  # Fora do handler (no módulo)
+  def handler(event, context):
+      return db.query()</code></pre>
+<h3 id="4-3-concorrencia-no-lambda">4.3 Concorrência no Lambda</h3>
+<pre><code>CONCORRÊNCIA RESERVADA: garante X execuções exclusivamente para uma função
+CONCORRÊNCIA PROVISIONADA: mantém containers aquecidos (elimina cold start)
+THROTTLING: quando excede o limite, retorna erro 429 (TooManyRequests)
+
+Limite default por região: 1.000 execuções simultâneas (total da conta)
+Pode ser aumentado via Service Quotas (solicitar aumento)</code></pre>
+<p>---</p>
+<h2 id="5-verificacao-e-troubleshooting-comuns">5. VERIFICAÇÃO E TROUBLESHOOTING COMUNS</h2>
+<h3 id="erro-task-timed-out-after-x-xx-seconds">Erro: Task timed out after X.XX seconds</h3>
+<pre><code>Causa: A função demorou mais que o Timeout configurado
+Solução:
+  1. Aumente o Timeout (máximo: 900 segundos = 15 minutos)
+  2. Otimize o código (evite loops desnecessários)
+  3. Para tarefas longas: use Step Functions + Lambda encadeados</code></pre>
+<h3 id="erro-runtime-handlernotfound">Erro: Runtime.HandlerNotFound</h3>
+<pre><code>Causa: O nome do arquivo ou da função não bate com o Handler configurado
+Solução:
+  Handler: &quot;arquivo.funcao&quot; → arquivo.py com &quot;def funcao(event, context)&quot;
+  Exemplo: Handler=&quot;minha_funcao.handler&quot; → arquivo minha_funcao.py, def handler()</code></pre>
+<h3 id="erro-accessdeniedexception">Erro: AccessDeniedException</h3>
+<pre><code>Causa: A Role da Lambda não tem permissão para o recurso acessado
+Solução:
+  1. Vá em IAM → Roles → encontre a Role da Lambda
+  2. Adicione a permissão necessária (ex: s3:GetObject para ler do S3)
+  3. Ou use a política gerenciada correta (ex: AmazonS3ReadOnlyAccess)</code></pre>
+<p>---</p>
+<h2 id="6-conceito-senior">6. 🧠 CONCEITO SÊNIOR</h2>
+<h3 id="o-que-um-senior-sabe-que-um-junior-nao-sabe">O que um Sênior sabe que um Júnior não sabe:</h3>
+<p><strong>1. Lambda não é para tudo</strong> Use Lambda para: APIs, processamento de eventos, automações. EVITE para: processos longos (&gt;15min), workloads com estado, streaming de vídeo em tempo real.</p>
+<p><strong>2. Execution Environment é efêmero — mas o /tmp persiste entre invocações no mesmo container</strong> O diretório <code>/tmp</code> (até 10 GB) persiste enquanto o container está &quot;quente&quot;. Use para cache de dados entre invocações. Mas nunca assuma que vai estar lá — trate como opcional.</p>
+<p><strong>3. Lambda Power Tuning — otimização de custo vs performance</strong> Mais memória = mais CPU = execução mais rápida = pode ser mais BARATO. Use o <a href="https://github.com/alexcasalboni/aws-lambda-power-tuning">AWS Lambda Power Tuning</a> para encontrar o ponto ótimo.</p>
+<p><strong>4. Dead Letter Queue (DLQ) para invocações assíncronas</strong> Quando uma Lambda falha em modo assíncrono (ex: trigger S3), a AWS tenta 2 vezes. Após isso, o evento é PERDIDO. Configure DLQ (SQS) para capturar falhas.</p>
+<p><strong>5. Function URLs vs API Gateway</strong> Lambda Function URLs (não API Gateway): HTTPS endpoint simples, sem custo adicional. Bom para webhooks simples. Para APIs complexas com auth, transformações e throttling: API Gateway.</p>
+<p>---</p>
+<h2 id="7-perguntas-de-entrevista">7. PERGUNTAS DE ENTREVISTA</h2>
+<p><strong>Q: Explique o que é um cold start no Lambda e como você o mitigaria em produção.</strong></p>
+<blockquote><strong>Resposta esperada:</strong> Cold start ocorre quando a AWS precisa criar um novo container para executar a Lambda — isso inclui: inicializar o runtime (Python, Node.js, JVM...), baixar o código, carregar dependências, e chamar o handler. O impacto varia: Node.js/Python: 100-500ms; Java/.NET: 1-10s. Estratégias de mitigação: (1) Provisioned Concurrency: mantém N containers aquecidos, sem cold start — cobra por hora de existência; (2) Escolher runtimes leves (Python/Node.js); (3) Reduzir tamanho do deployment package; (4) Mover inicializações pesadas (DB connections, SDK clients) para fora do handler; (5) SnapStart para Java (snapshot da JVM inicializada); (6) Keep-warm via EventBridge schedules (workaround, não recomendado em produção).</blockquote>
+<p><strong>Q: Como você garantiria que uma Lambda tem apenas as permissões mínimas necessárias?</strong></p>
+<blockquote><strong>Resposta esperada:</strong> Aplico o princípio de Least Privilege criando uma IAM Role específica por função Lambda, não uma role compartilhada. O processo: (1) Identifico quais serviços a Lambda usa (ex: S3, DynamoDB, SNS); (2) Identifico as ações específicas (ex: s3:GetObject, NOT s3:<em>); (3) Identifico os recursos específicos por ARN (ex: arn:aws:s3:::meu-bucket/pasta-especifica/</em>); (4) Adiciono Conditions quando possível (ex: allow apenas de determinada VPC, ou apenas objetos com tag:owner); (5) Uso IAM Access Analyzer para detectar permissões não usadas; (6) Reviso periodicamente com Credential Reports e Access Advisor.</blockquote>
+<p>---</p>
+<h2 id="proximo-modulo">✅ Próximo Módulo</h2>
+<p>Quando terminar e executar a limpeza, avance para: 👉 <strong><a href="../modulo-03-api-gateway/README.md"><code>../modulo-03-api-gateway/README.md</code></a></strong></p><nav class="page-nav"><a href="./modulo-01-s3-readme.html">Anterior: Módulo 1 — Storage: Amazon S3</a><a href="./modulo-03-api-gateway-readme.html">Proximo: Módulo 3 — API: API Gateway + Lambda</a></nav></article></main></body></html>

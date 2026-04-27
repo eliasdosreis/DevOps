@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Padrao de projeto para portfolio | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#docs-01-padrao-projeto-portfolio">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">Portfolio · 3 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para Portfolio" loading="lazy"><figcaption>Documentacao de portfolio transforma laboratorio em historia profissional.</figcaption></figure><h1 id="padrao-de-projeto-para-portfolio">Padrao de projeto para portfolio</h1>
+<p>Use este arquivo como molde para revisar cada modulo.</p>
+<h2 id="1-resumo-executivo">1. Resumo executivo</h2>
+<p>Explique em 5 linhas:</p>
+<ul>
+<li>O que foi construido.</li>
+<li>Qual problema resolve.</li>
+<li>Quais servicos AWS foram usados.</li>
+<li>Quanto custa para demonstrar.</li>
+<li>Como limpar.</li>
+</ul>
+<p>Exemplo:</p>
+<p>&quot;Este projeto cria uma API serverless usando API Gateway, Lambda e DynamoDB. Ele resolve o problema de expor um CRUD simples sem gerenciar servidores. A infraestrutura pode ser criada com CloudFormation, testada via CLI e removida ao final para evitar custo.&quot;</p>
+<h2 id="2-explicacao-para-crianca-de-8-anos">2. Explicacao para crianca de 8 anos</h2>
+<p>Modelo:</p>
+<p>&quot;Imagine que voce tem uma loja de brinquedos. O cliente fala com o balcao, o balcao chama um ajudante, o ajudante procura no caderno e responde. Na AWS, o balcao e o API Gateway, o ajudante e a Lambda e o caderno e o DynamoDB.&quot;</p>
+<h2 id="3-explicacao-senior">3. Explicacao senior</h2>
+<p>Modelo:</p>
+<p>&quot;A arquitetura usa componentes gerenciados para reduzir operacao. API Gateway recebe chamadas HTTPS, Lambda executa logica sob demanda, DynamoDB fornece persistencia NoSQL com baixa latencia e CloudWatch centraliza logs/metricas. O desenho minimiza custo ocioso, mas exige atencao a IAM, limites de concorrencia, modelagem de chaves e alarmes.&quot;</p>
+<h2 id="4-arquitetura-minima">4. Arquitetura minima</h2>
+<p>Inclua sempre:</p>
+<pre><code>Usuario
+  -&gt; Servico de entrada
+  -&gt; Computacao
+  -&gt; Dados/Mensageria
+  -&gt; Logs/Metricas</code></pre>
+<h2 id="5-evidencias-obrigatorias">5. Evidencias obrigatorias</h2>
+<p>Para cada modulo, guarde:</p>
+<ul>
+<li>print do stack CloudFormation criado;</li>
+<li>print ou output do comando de teste;</li>
+<li>print de logs no CloudWatch;</li>
+<li>print do recurso principal funcionando;</li>
+<li>print do custo ou Budget;</li>
+<li>print da stack deletada ou script de limpeza executado.</li>
+</ul>
+<h2 id="6-seguranca">6. Seguranca</h2>
+<p>Responda no README:</p>
+<ul>
+<li>Qual role/policy foi criada?</li>
+<li>A policy esta com menor privilegio possivel?</li>
+<li>Existe dado sensivel?</li>
+<li>Existe criptografia?</li>
+<li>Existe recurso publico?</li>
+<li>Como auditar quem fez alteracao?</li>
+</ul>
+<h2 id="7-custo">7. Custo</h2>
+<p>Responda:</p>
+<ul>
+<li>Quais recursos podem gerar cobranca?</li>
+<li>O que fica no Free Tier?</li>
+<li>Qual recurso e mais perigoso esquecer ligado?</li>
+<li>Qual comando limpa?</li>
+<li>Como validar no Cost Explorer/Budgets?</li>
+</ul>
+<h2 id="8-observabilidade">8. Observabilidade</h2>
+<p>Inclua:</p>
+<ul>
+<li>onde ver logs;</li>
+<li>quais metricas importam;</li>
+<li>qual alarme faria sentido;</li>
+<li>como investigar erro comum.</li>
+</ul>
+<h2 id="9-melhorias-futuras">9. Melhorias futuras</h2>
+<p>Use linguagem de arquiteto:</p>
+<ul>
+<li>autenticacao;</li>
+<li>CI/CD;</li>
+<li>testes automatizados;</li>
+<li>WAF;</li>
+<li>CloudFront;</li>
+<li>DLQ;</li>
+<li>multi-ambiente;</li>
+<li>tags de custo;</li>
+<li>dashboards;</li>
+<li>disaster recovery.</li>
+</ul>
+<h2 id="10-frase-de-entrevista">10. Frase de entrevista</h2>
+<p>Sempre termine com uma frase forte:</p>
+<p>&quot;A principal decisao tecnica deste projeto foi escolher servicos gerenciados para reduzir operacao e custo ocioso, mantendo rastreabilidade com logs, controle de acesso com IAM e limpeza automatizada para evitar cobranca desnecessaria.&quot;</p><nav class="page-nav"><a href="./portfolio.html">Anterior: Guia de portfolio - AWS Projetos</a><a href="./docs-02-checklist-well-architected-finops.html">Proximo: Checklist Well-Architected e FinOps para portfolio</a></nav></article></main></body></html>

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Módulo 4 — Banco de Dados: Amazon DynamoDB | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#modulo-04-dynamodb-readme">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">DynamoDB · 7 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para DynamoDB" loading="lazy"><figcaption>DynamoDB exige pensar nos padroes de acesso antes de criar a tabela.</figcaption></figure><h1 id="modulo-4-banco-de-dados-amazon-dynamodb">Módulo 4 — Banco de Dados: Amazon DynamoDB</h1>
+<blockquote><strong>Custo:</strong> ~$0.00 | <strong>Pré-requisito:</strong> Módulo 3 concluído | <strong>Duração estimada:</strong> 5-6 horas</blockquote>
+<p>---</p>
+<h2 id="1-analogia-do-dia-a-dia">1. ANALOGIA DO DIA A DIA</h2>
+<p>Imagine que o <strong>DynamoDB é um arquivo de fichas de biblioteca</strong> — mas mágico e infinito.</p>
+<ul>
+<li>Cada <strong>Table</strong> é um <strong>gaveta</strong> do arquivo (ex: &quot;fichas de livros&quot;)</li>
+<li>Cada <strong>Item</strong> é uma <strong>ficha individual</strong> (ex: dados de um livro específico)</li>
+<li>A <strong>Partition Key</strong> é o <strong>número da ficha</strong> — único, a AWS usa ela para decidir em qual gaveta física guardar a ficha (isso é fundamental para performance!)</li>
+<li>A <strong>Sort Key</strong> é um <strong>sub-índice dentro da gaveta</strong> — permite organizar fichas do mesmo grupo (ex: todos os pedidos de um cliente, ordenados por data)</li>
+<li>O <strong>GSI</strong> (Global Secondary Index) é como um <strong>ficheiro alternativo</strong> — permite buscar as fichas por outro campo (ex: buscar por título em vez do número)</li>
+</ul>
+<p><strong>Analogia do não-relacional:</strong> No banco SQL (MySQL), todas as fichas têm os MESMOS campos. No DynamoDB, cada ficha pode ter campos DIFERENTES — item 1 pode ter &quot;isbn&quot;, item 2 pode ter &quot;ncm&quot;. Isso dá flexibilidade mas exige disciplina no design.</p>
+<p>---</p>
+<h2 id="2-o-que-e-definicao-tecnica-senior">2. O QUE É (Definição Técnica Sênior)</h2>
+<p><strong>Amazon DynamoDB:</strong> Banco de dados NoSQL totalmente gerenciado, de chave-valor e documentos, com latência de um dígito de milissegundo em qualquer escala. Serverless — sem provisioning de servidores, patches, backups manuais.</p>
+<p><strong>Características fundamentais:</strong></p>
+<ul>
+<li><strong>Modelo de dados:</strong> Key-value + Document (JSON até 400 KB por item)</li>
+<li><strong>Consistência:</strong> Strong consistency ou Eventual consistency (escolha por leitura)</li>
+<li><strong>Escalabilidade:</strong> Horizontal automática (sharding por partition key)</li>
+<li><strong>Modo de capacidade:</strong> Provisioned (WCU/RCU fixos) ou On-Demand (paga por uso)</li>
+<li><strong>Replicação:</strong> Multi-AZ por padrão; Global Tables para multi-região</li>
+<li><strong>Transações:</strong> ACID via TransactWriteItems/TransactGetItems (máx 100 itens por txn)</li>
+</ul>
+<p>---</p>
+<h2 id="custo-estimado-deste-modulo">💲 CUSTO ESTIMADO DESTE MÓDULO</h2>
+<pre><code>💲 CUSTO ESTIMADO — MÓDULO 4:
+  - DynamoDB Storage:  $0.00  (Free Tier: 25 GB SEMPRE)
+  - DynamoDB RCU:      $0.00  (Free Tier: 25 RCU SEMPRE)
+  - DynamoDB WCU:      $0.00  (Free Tier: 25 WCU SEMPRE)
+  - Lambda:            $0.00  (Free Tier: 1M inv/mês)
+  - TOTAL:             ~$0.00
+  
+  ✅ Free Tier do DynamoDB é PERMANENTE (não expira em 12 meses)!
+  
+  PARA REFERÊNCIA PRODUÇÃO (modo Provisioned):
+  - $0.00013/WCU/hora (~$0.09/mês por WCU)
+  - $0.00013/RCU/hora (~$0.09/mês por RCU)
+  - $0.25/GB/mês (além dos 25 GB gratuitos)</code></pre>
+<p>---</p>
+<h2 id="3-projetos-deste-modulo">3. PROJETOS DESTE MÓDULO</h2>
+<div class="table-wrap"><table><thead><tr><th>Arquivo</th><th>O que cria</th><th>Conceito ensinado</th></tr></thead><tbody><tr><td><a href="./01-tabela-simples.yaml"><code>01-tabela-simples.yaml</code></a></td><td>Tabela DynamoDB básica</td><td>PK, SK, tipos de dados</td></tr><tr><td><a href="./02-tabela-com-gsi.yaml"><code>02-tabela-com-gsi.yaml</code></a></td><td>Tabela com Global Secondary Index</td><td>GSI, queries alternativas</td></tr><tr><td><a href="./03-tabela-com-ttl.yaml"><code>03-tabela-com-ttl.yaml</code></a></td><td>TTL para auto-deleção</td><td>TTL, itens temporários</td></tr><tr><td><a href="./04-operacoes-crud.py"><code>04-operacoes-crud.py</code></a></td><td>Todas as operações DynamoDB</td><td>PutItem, GetItem, Query, Delete</td></tr><tr><td><a href="./05-lambda-crud-api.py"><code>05-lambda-crud-api.py</code></a></td><td>Lambda com CRUD completo</td><td>Integração API + DynamoDB</td></tr><tr><td><a href="./06-padroes-acesso.py"><code>06-padroes-acesso.py</code></a></td><td>Query vs Scan e performance</td><td>Access Patterns, design table</td></tr><tr><td><a href="./07-testar-dynamo.sh"><code>07-testar-dynamo.sh</code></a></td><td>Testa via CLI e API</td><td>aws dynamodb commands</td></tr><tr><td><a href="./08-limpeza.sh"><code>08-limpeza.sh</code></a></td><td>Destrói todos os recursos</td><td>Cleanup obrigatório</td></tr></tbody></table></div>
+<p>---</p>
+<h2 id="4-conceitos-fundamentais">4. CONCEITOS FUNDAMENTAIS</h2>
+<h3 id="4-1-primary-key-a-decisao-mais-importante-no-dynamodb">4.1 Primary Key — A decisão mais importante no DynamoDB</h3>
+<pre><code>OPÇÃO 1: Apenas Partition Key (Simple PK)
+  tabela: Usuarios
+  PK: userId (ex: &quot;user-abc123&quot;)
+  → Cada usuário = 1 item
+  → Leitura por GetItem(userId) = O(1) = ultrarrápido
+  
+OPÇÃO 2: Partition Key + Sort Key (Composite PK)
+  tabela: Pedidos
+  PK: clienteId (ex: &quot;cliente-42&quot;)
+  SK: pedidoId#timestamp (ex: &quot;pedido-001#2024-01-15T10:30:00Z&quot;)
+  → Todos os pedidos do cliente = 1 Query
+  → Pedidos de 2024 = Query com KeyCondition &quot;BETWEEN&quot;
+  → Padrão: MUITOS para MUITOS (1 cliente → N pedidos)</code></pre>
+<h3 id="4-2-query-vs-scan-a-diferenca-que-define-performance">4.2 Query vs Scan — A diferença que define performance</h3>
+<pre><code>GetItem:  O(1) — busca por PK exata (e SK se existir). SEMPRE use.
+Query:    O(n) — busca por PK + condição no SK. Muito eficiente.
+Scan:     O(N) — VAI EM TODOS OS ITENS DA TABELA. NUNCA em produção!
+
+Analogia do Scan:
+  Scan = procurar um livro lendo PÁGINA POR PÁGINA de todo o acervo
+  Query = ir direto à estante certa e buscar pelos itens que você sabe que estão lá
+
+⚠️  Scan em tabela de 1M itens = lê 1M itens = consome 1M RCU
+    Query na mesma tabela com PK correta = lê apenas 10 itens = 10 RCU</code></pre>
+<h3 id="4-3-design-table-first-para-dynamodb">4.3 Design Table-First para DynamoDB</h3>
+<pre><code>SQL: Você cria as tabelas e depois escreve os queries
+DynamoDB: Você define os queries PRIMEIRO e depois cria a tabela
+
+PROCESSO CORRETO:
+  1. Liste todos os padrões de acesso (access patterns):
+     - Buscar usuário por ID
+     - Listar todos os pedidos de um usuário (ordenados por data)
+     - Buscar pedidos por status (em andamento, entregue)
+  
+  2. Mapeie cada pattern para uma estrutura de PK/SK:
+     - GetItem({userId}) → PK=userId
+     - Query({clienteId}, SK BETWEEN datas) → PK=clienteId, SK=data#pedidoId
+     - GSI: PK=status, SK=data → lista por status
+  
+  3. Crie a tabela com os índices necessários</code></pre>
+<p>---</p>
+<h2 id="5-conceito-senior">5. 🧠 CONCEITO SÊNIOR</h2>
+<p><strong>1. Single Table Design vs Multi-Table</strong> Padrão avançado: guardar MÚLTIPLAS entidades em UMA tabela usando prefixos no PK/SK: <code>PK=Usuario#123, SK=METADATA</code> → dados do usuário <code>PK=Usuario#123, SK=Pedido#2024-001</code> → pedido do usuário <code>PK=Produto#456, SK=METADATA</code> → dados do produto Vantagem: 1 query retorna usuário + seus últimos pedidos. Desvantagem: complexidade.</p>
+<p><strong>2. Hot Partitions — O erro mais comum em produção</strong> DynamoDB distribui dados por partition key. Se todos usam a mesma PK (ex: <code>status=ativo</code>), uma partição fica sobrecarregada = throttling. Solução: adicionar sufixo randômico na PK (<code>status=ativo#3</code>) e agregar no código.</p>
+<p><strong>3. Capacidade On-Demand vs Provisioned</strong> On-Demand: perfeito para tráfego imprevisível ou desenvolvimento. Pode ser 5x mais caro em tráfego alto constante. Provisioned + Auto Scaling: melhor custo para tráfego previsível.</p>
+<p><strong>4. DynamoDB Streams para event sourcing</strong> Cada mudança (INSERT, MODIFY, REMOVE) gera um evento no Stream. Uma Lambda pode consumir esses eventos para: sincronizar com OpenSearch (busca full-text), invalidar cache Redis, enviar notificações, auditoria.</p>
+<p>---</p>
+<h2 id="6-perguntas-de-entrevista">6. PERGUNTAS DE ENTREVISTA</h2>
+<p><strong>Q: Como você escolhe entre Query e Scan no DynamoDB? Quando o Scan é aceitável?</strong></p>
+<blockquote><strong>Resposta esperada:</strong> Query busca por partition key específica + condição opcional no sort key, consumindo RCU apenas para itens retornados. Scan lê a tabela TODA, consumindo RCU de cada item (independente de filtros — filtros são aplicados APÓS a leitura completa). Scan é aceitável APENAS em: (1) tabelas pequenas (&lt;1000 itens) em operações de import/export one-time; (2) jobs de manutenção off-peak com Parallel Scan limitado; (3) desenvolvimento/debug. Em produção: qualquer Scan recorrente em tabelas grandes deve ser substituído por Query com GSI adequado, ou por ETL para Amazon OpenSearch para search full-text.</blockquote>
+<p><strong>Q: Explique o conceito de Hot Partition e como você evitaria em uma API de e-commerce.</strong></p>
+<blockquote><strong>Resposta esperada:</strong> Hot partition ocorre quando muitos requests concentram-se na mesma partition key, sobrecarregando a partição física (limite: 3.000 RCU ou 1.000 WCU por partição). Exemplos em e-commerce: (1) PK=produto_mais_vendido durante Black Friday → todos lendo/atualizando o mesmo item; (2) PK=status, SK=data → todos os pedidos ativos na mesma partição. Soluções: (1) Write sharding: <code>PK=produto-42#${random(1..10)}</code> → espalha writes em 10 partições, agrega no lado do read com Parallel Query; (2) DAX (DynamoDB Accelerator): cache in-memory que absorve hot reads sem chegar ao DynamoDB; (3) Caching na Lambda com TTL curto para dados quentes; (4) Para atualizações de quantidades de estoque: usar DynamoDB Transactions com backoff exponencial.</blockquote>
+<p>---</p>
+<h2 id="proximo-modulo">✅ Próximo Módulo</h2>
+<p>👉 <strong><a href="../modulo-05-sns-sqs/README.md"><code>../modulo-05-sns-sqs/README.md</code></a></strong></p><nav class="page-nav"><a href="./modulo-03-api-gateway-readme.html">Anterior: Módulo 3 — API: API Gateway + Lambda</a><a href="./modulo-05-sns-sqs-readme.html">Proximo: Módulo 5 — Mensageria: SNS + SQS</a></nav></article></main></body></html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AWS do Zero ao Senior — Curso Prático com Custo &lt; $1 por Projeto | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#readme">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">Inicio · 4 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para Inicio" loading="lazy"><figcaption>Portfolio AWS: cada projeto precisa provar arquitetura, custo, seguranca e operacao.</figcaption></figure><h1 id="aws-do-zero-ao-senior-curso-pratico-com-custo-1-por-projeto">🚀 AWS do Zero ao Senior — Curso Prático com Custo &lt; $1 por Projeto</h1>
+<blockquote><strong>Tutor:</strong> AWS Expert Sênior<br><strong>Objetivo:</strong> Te levar do zero ao nível Sênior exigido pelo mercado, com projetos reais e custo controlado.</blockquote>
+<p>---</p>
+<h2 id="o-que-voce-vai-aprender">🎯 O que você vai aprender</h2>
+<p>Ao concluir todos os módulos, você será capaz de:</p>
+<ul>
+<li>✅ Criar e gerenciar infraestrutura real na AWS com custo controlado</li>
+<li>✅ Entender cada serviço profundamente (não apenas clicar no console)</li>
+<li>✅ Passar em entrevistas técnicas de nível Sênior (incluindo AWS Solutions Architect)</li>
+<li>✅ Repassar esse conhecimento para outros</li>
+<li>✅ Usar esse projeto como base para qualquer arquitetura AWS real</li>
+</ul>
+<p>---</p>
+<h2 id="regra-de-ouro-cada-projeto-custa-menos-de-1">💰 REGRA DE OURO: Cada projeto custa menos de $1</h2>
+<div class="table-wrap"><table><thead><tr><th>Módulo</th><th>Tema</th><th>Custo Estimado</th><th>Status</th></tr></thead><tbody><tr><td>0</td><td>Preparação do Ambiente</td><td>$0.00</td><td>⬜</td></tr><tr><td>1</td><td>Storage — S3</td><td>$0.00</td><td>⬜</td></tr><tr><td>2</td><td>Computação Serverless — Lambda</td><td>$0.00</td><td>⬜</td></tr><tr><td>3</td><td>API — API Gateway + Lambda</td><td>$0.00</td><td>⬜</td></tr><tr><td>4</td><td>Banco de Dados — DynamoDB</td><td>$0.00</td><td>⬜</td></tr><tr><td>5</td><td>Mensageria — SNS + SQS</td><td>$0.00</td><td>⬜</td></tr><tr><td>6</td><td>IaC — CloudFormation</td><td>$0.00</td><td>⬜</td></tr><tr><td>7</td><td>Segurança — IAM + Secrets</td><td>~$0.05</td><td>⬜</td></tr><tr><td>8</td><td>Containers — ECR + ECS</td><td>~$0.30</td><td>⬜</td></tr><tr><td>9</td><td>Observabilidade — CloudWatch</td><td>$0.00</td><td>⬜</td></tr><tr><td>10</td><td>Projeto Final Senior</td><td>~$0.50</td><td>⬜</td></tr><tr><td><strong>TOTAL</strong></td><td></td><td><strong>&lt; $1.00</strong></td><td></td></tr></tbody></table></div>
+<p>---</p>
+<h2 id="estrutura-de-arquivos">📁 Estrutura de Arquivos</h2>
+<pre><code>AWS/
+├── README.md                          ← Este arquivo
+├── modulo-00-preparacao/              ← IAM, CLI, Cost Explorer
+├── modulo-01-s3/                      ← Buckets, Policies, Lifecycle
+├── modulo-02-lambda/                  ← Functions, Triggers, Layers
+├── modulo-03-api-gateway/             ← REST API, HTTP API, CORS
+├── modulo-04-dynamodb/                ← Tables, GSI, TTL, Streams
+├── modulo-05-sns-sqs/                 ← Topics, Queues, Fan-out, DLQ
+├── modulo-06-cloudformation/          ← Stacks, Templates, Parameters
+├── modulo-07-iam-secrets/             ← Roles, Policies, Secrets Manager
+├── modulo-08-containers/              ← Docker, ECR, ECS, Fargate
+├── modulo-09-cloudwatch/              ← Metrics, Logs, Alarms, Dashboards
+└── modulo-10-projeto-final/           ← E-commerce Serverless Completo</code></pre>
+<p>---</p>
+<h2 id="regras-de-seguranca-obrigatorias">⚠️ Regras de Segurança OBRIGATÓRIAS</h2>
+<ol>
+<li><strong>NUNCA</strong> use a conta root para nada além de criar o usuário IAM inicial</li>
+<li><strong>SEMPRE</strong> ative MFA na conta root e no usuário IAM</li>
+<li><strong>SEMPRE</strong> configure um Budget Alert de $5 antes de qualquer módulo</li>
+<li><strong>NUNCA</strong> suba credenciais AWS em repositórios públicos</li>
+<li><strong>SEMPRE</strong> execute o passo de limpeza ao final de cada projeto</li>
+<li><strong>VERIFIQUE</strong> o Cost Explorer no dia seguinte a qualquer projeto novo</li>
+<li><strong>PREFIRA</strong> recursos serverless (Lambda, DynamoDB, S3) com Free Tier generoso</li>
+<li><strong>EVITE</strong> NAT Gateway, EC2 ligado 24h, RDS Multi-AZ em aprendizado</li>
+</ol>
+<p>---</p>
+<h2 id="ferramentas-necessarias">🔧 Ferramentas Necessárias</h2>
+<pre><code># Verifique se estão instalados antes de começar:
+aws --version          # AWS CLI v2 — https://aws.amazon.com/cli/
+docker --version       # Para o Módulo 8
+python3 --version      # Runtime principal das Lambdas</code></pre>
+<p>---</p>
+<h2 id="acompanhamento-de-custos">📊 Acompanhamento de Custos</h2>
+<div class="table-wrap"><table><thead><tr><th>Módulo</th><th>Recursos Criados</th><th>Custo Real</th><th>Limpeza Feita?</th></tr></thead><tbody><tr><td>0</td><td>IAM, CLI</td><td>$0.00</td><td>N/A</td></tr><tr><td>1</td><td>S3 bucket</td><td>-</td><td>⬜</td></tr><tr><td>2</td><td>Lambda + CloudWatch</td><td>-</td><td>⬜</td></tr><tr><td>3</td><td>API Gateway + Lambda</td><td>-</td><td>⬜</td></tr><tr><td>4</td><td>DynamoDB + Lambda</td><td>-</td><td>⬜</td></tr><tr><td>5</td><td>SNS + SQS + Lambda</td><td>-</td><td>⬜</td></tr><tr><td>6</td><td>Stacks CloudFormation</td><td>-</td><td>⬜</td></tr><tr><td>7</td><td>IAM Roles + Secrets</td><td>-</td><td>⬜</td></tr><tr><td>8</td><td>ECR + ECS Fargate</td><td>-</td><td>⬜</td></tr><tr><td>9</td><td>CloudWatch Dashboards</td><td>-</td><td>⬜</td></tr><tr><td>10</td><td>Projeto Completo</td><td>-</td><td>⬜</td></tr><tr><td><strong>TOTAL</strong></td><td></td><td><strong>&lt; $1.00</strong></td><td></td></tr></tbody></table></div>
+<p>---</p>
+<h2 id="por-onde-comecar">🏁 Por onde começar?</h2>
+<p>👉 <strong>Comece pelo <a href="./modulo-00-preparacao/README.md"><code>modulo-00-preparacao/</code></a></strong></p>
+<p>Cada módulo tem seu próprio README com instruções completas, analogias, código comentado, comandos CLI e passos de limpeza.</p>
+<p>---</p>
+<p><em>&quot;A jornada de mil milhas começa com um único passo.&quot; — Lao Tzu</em></p><nav class="page-nav"><span></span><a href="./portfolio.html">Proximo: Guia de portfolio - AWS Projetos</a></nav></article></main></body></html>

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Módulo 5 — Mensageria: SNS + SQS | AWS Projetos Lab</title><link rel="stylesheet" href="../assets/styles.css"></head>
+<body class="standalone-page"><main class="page-shell"><a class="back-link" href="../index.html#modulo-05-sns-sqs-readme">Voltar para o painel</a><article class="lesson-card full"><div class="lesson-kicker">SNS + SQS · 7 min</div><figure class="lesson-visual"><img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80" alt="Imagem de apoio para SNS + SQS" loading="lazy"><figcaption>Filas e notificacoes desacoplam sistemas e deixam a arquitetura mais resiliente.</figcaption></figure><h1 id="modulo-5-mensageria-sns-sqs">Módulo 5 — Mensageria: SNS + SQS</h1>
+<blockquote><strong>Custo:</strong> ~$0.00 | <strong>Pré-requisito:</strong> Módulo 4 concluído | <strong>Duração estimada:</strong> 4-5 horas</blockquote>
+<p>---</p>
+<h2 id="1-analogia-do-dia-a-dia">1. ANALOGIA DO DIA A DIA</h2>
+<p>Imagine uma <strong>rádio FM</strong> (SNS) conectada a <strong>caixas de correio</strong> (SQS).</p>
+<p><strong>SNS (Simple Notification Service):</strong></p>
+<ul>
+<li>É como uma <strong>estação de rádio</strong> — ela transmite (publica) uma mensagem para todo mundo ao mesmo tempo</li>
+<li>Quem quer receber se &quot;inscreve&quot; (subscribe) na estação</li>
+<li>Múltiplos ouvintes podem escutar ao mesmo tempo (<strong>fan-out</strong>)</li>
+<li>A rádio não guarda as músicas — transmite e pronto (se você não estava ouvindo, perdeu)</li>
+</ul>
+<p><strong>SQS (Simple Queue Service):</strong></p>
+<ul>
+<li>É como uma <strong>caixa de correio</strong> — as cartas ficam esperando até você abrí-las</li>
+<li>Mesmo que você esteja dormindo, a carta fica lá guardada</li>
+<li>Você processa no seu ritmo (desacoplamento temporal)</li>
+<li>Se a Lambda &quot;morrer&quot; processando, a mensagem volta para a fila (<strong>visibility timeout</strong>)</li>
+<li>Se falhar muitas vezes, vai para a <strong>Dead Letter Queue</strong> (caixa de devolvidos)</li>
+</ul>
+<p><strong>Fan-out (SNS → múltiplos SQS):</strong></p>
+<ul>
+<li>A rádio transmite → várias caixas de correio diferentes recebem a mesma mensagem</li>
+<li>Cada sistema independente processa no seu próprio ritmo</li>
+</ul>
+<p>---</p>
+<h2 id="2-o-que-e-definicao-tecnica-senior">2. O QUE É (Definição Técnica Sênior)</h2>
+<p><strong>Amazon SNS (Simple Notification Service):</strong> Serviço de pub/sub totalmente gerenciado. Publishers enviam mensagens a Topics; Subscribers (SQS, Lambda, HTTP endpoints, email, SMS) recebem uma cópia. Entrega &quot;push&quot; — SNS empurra para os subscribers. Throughput praticamente ilimitado.</p>
+<p><strong>Amazon SQS (Simple Queue Service):</strong> Serviço de filas totalmente gerenciado. Producers enviam mensagens; Consumers fazem polling para receber. Dois tipos: Standard Queue (alta throughput, ordenação best-effort) e FIFO Queue (order-exactly-once, até 3.000 msg/s com batching).</p>
+<p><strong>Padrão Fan-out:</strong> 1 SNS Topic → N SQS Queues. Permite que múltiplos sistemas recebam o mesmo evento e processem independentemente. Exemplo: pedido criado → fila-estoque + fila-email + fila-analytics processam em paralelo.</p>
+<p>---</p>
+<h2 id="custo-estimado-deste-modulo">💲 CUSTO ESTIMADO DESTE MÓDULO</h2>
+<pre><code>💲 CUSTO ESTIMADO — MÓDULO 5:
+  - SNS:             $0.00  (Free Tier: 1M publicações/mês SEMPRE)
+  - SQS:             $0.00  (Free Tier: 1M requisições/mês SEMPRE)
+  - Lambda:          $0.00  (Free Tier: 1M invocações/mês SEMPRE)
+  - SNS Email:       $0.00  (Free Tier: 1.000 notificações email/mês)
+  - TOTAL:           ~$0.00
+  
+  ✅ SNS e SQS têm Free Tier PERMANENTE (não expira em 12 meses)
+  
+  PARA REFERÊNCIA PRODUÇÃO:
+  - SNS: $0.50/M notificações; $2.00/M SMS; email: $2.00/100k
+  - SQS Standard: $0.40/M requisições; FIFO: $0.50/M</code></pre>
+<p>---</p>
+<h2 id="3-projetos-deste-modulo">3. PROJETOS DESTE MÓDULO</h2>
+<div class="table-wrap"><table><thead><tr><th>Arquivo</th><th>O que cria</th><th>Conceito ensinado</th></tr></thead><tbody><tr><td><a href="./01-topico-sns.yaml"><code>01-topico-sns.yaml</code></a></td><td>Tópico SNS + subscrição email</td><td>Topics, Subscriptions, Protocols</td></tr><tr><td><a href="./02-fila-sqs.yaml"><code>02-fila-sqs.yaml</code></a></td><td>Fila SQS standard com DLQ</td><td>Queues, DLQ, Visibility Timeout</td></tr><tr><td><a href="./03-fanout-sns-sqs.yaml"><code>03-fanout-sns-sqs.yaml</code></a></td><td>Fan-out: 1 SNS → 2 SQS</td><td>Fan-out pattern, Filter Policy</td></tr><tr><td><a href="./04-lambda-consumer-sqs.py"><code>04-lambda-consumer-sqs.py</code></a></td><td>Lambda que consome SQS</td><td>Batch processing, error handling</td></tr><tr><td><a href="./05-publicar-e-testar.sh"><code>05-publicar-e-testar.sh</code></a></td><td>Publica mensagens e testa</td><td>CLI SNS/SQS, DLQ em ação</td></tr><tr><td><a href="./06-limpeza.sh"><code>06-limpeza.sh</code></a></td><td>Destrói todos os recursos</td><td>Cleanup obrigatório</td></tr></tbody></table></div>
+<p>---</p>
+<h2 id="4-conceitos-fundamentais">4. CONCEITOS FUNDAMENTAIS</h2>
+<h3 id="4-1-visibility-timeout-a-protecao-da-fila">4.1 Visibility Timeout — A proteção da fila</h3>
+<pre><code>PROBLEMA: Lambda A começa processando a mensagem.
+          Lambda A morre (crash, timeout).
+          A mensagem sumiu? NÃO!
+
+SOLUÇÃO — Visibility Timeout:
+  1. Lambda A &quot;recebe&quot; a mensagem
+  2. SQS esconde a mensagem por X segundos (Visibility Timeout)
+  3. Lambda A processa e exclui a mensagem (sucesso)
+     OU
+  3. Lambda A morre / timeout / não deleta
+  4. Após X segundos: mensagem &quot;reaparece&quot; na fila
+  5. Outra Lambda B recebe e processa
+
+BOAS PRÁTICAS:
+  - Visibility Timeout = 6x o Timeout da Lambda que consome
+  - Se Lambda tem timeout de 3min → VisibilityTimeout = 18min
+  - Evita que a mesma mensagem seja processada por múltiplas Lambdas</code></pre>
+<h3 id="4-2-dead-letter-queue-dlq">4.2 Dead Letter Queue (DLQ)</h3>
+<pre><code>CENÁRIO: Mensagem mal-formada faz a Lambda falhar sempre.
+         Sem DLQ: mensagem fica na fila para sempre, bloqueando resources.
+         Com DLQ: após N falhas, vai para a fila DLQ.
+
+FLUXO COM DLQ:
+  Tentativa 1: Lambda falha → mensagem volta para fila
+  Tentativa 2: Lambda falha → mensagem volta para fila  
+  Tentativa 3: Lambda falha → MaxReceiveCount atingido!
+               → Mensagem vai para DLQ (Dead Letter Queue)
+               → Alarme CloudWatch dispara → equipe notificada
+               → Time investiga e corrige manualmente
+
+IMPORTANTE:
+  - DLQ deve ter VisibilityTimeout MAIOR que a fila principal
+  - Configure alarme no CloudWatch quando DLQ tiver mensagens!
+  - Uma mensagem na DLQ = bug no seu código ou dado inválido</code></pre>
+<h3 id="4-3-sns-filter-policies-cada-subscriber-recebe-so-o-que-quer">4.3 SNS Filter Policies — Cada subscriber recebe só o que quer</h3>
+<pre><code>SEM FILTER POLICY: todos os subscribers recebem TODAS as mensagens
+
+COM FILTER POLICY:
+  SNS publica: {&quot;tipo&quot;: &quot;pedido_criado&quot;, &quot;valor&quot;: 500.00, &quot;pais&quot;: &quot;BR&quot;}
+  
+  Fila-email (filter: tipo IN [pedido_criado, pedido_cancelado]):
+    ✅ Recebe esta mensagem
+  
+  Fila-analytics (filter: valor &gt;= 100):
+    ✅ Recebe esta mensagem (valor = 500)
+  
+  Fila-fraude (filter: valor &gt;= 1000, pais = &quot;BR&quot;):
+    ❌ Não recebe (valor 500 &lt; 1000)
+
+BENEFÍCIO: Reduz processamento desnecessário em cada queue</code></pre>
+<p>---</p>
+<h2 id="5-conceito-senior">5. 🧠 CONCEITO SÊNIOR</h2>
+<p><strong>1. Standard vs FIFO Queue</strong> Standard: throughput ilimitado, entrega &quot;pelo menos uma vez&quot; (pode duplicar!), sem ordem garantida. FIFO: garante exatamente uma entrega e ordem FIFO por MessageGroupId, mas limitado a 3.000 msg/s. Use FIFO para: pagamentos, inventário, qualquer coisa onde duplicatas causam problemas.</p>
+<p><strong>2. SQS como buffer de pressão (backpressure)</strong> Quando a Lambda ou outro consumer não consegue processar tão rápido quanto as mensagens chegam, o SQS absorve o volume. Sem SQS: sistema sobrecarregado pode cair. Com SQS: backlog cresce na fila, consumers processam no seu ritmo. Essential em sistemas de alta escala.</p>
+<p><strong>3. Lambda Event Source Mapping para SQS</strong> Em vez de a Lambda fazer polling manualmente, o próprio serviço Lambda faz polling do SQS automaticamente. Configurável: batch size (1-10.000), batch window, concorrência. A Lambda processa o batch, e o SQS deleta automaticamente as mensagens bem-sucedidas. Mensagens que lançam exceção continuam na fila.</p>
+<p><strong>4. Idempotência é fundamental com SQS Standard</strong> Como SQS Standard pode entregar duplicatas, seu consumer DEVE ser idempotente: processar a mesma mensagem 2 vezes não deve causar efeito colateral. Técnica: usar MessageId como idempotency key, checando no DynamoDB se já foi processado.</p>
+<p>---</p>
+<h2 id="6-perguntas-de-entrevista">6. PERGUNTAS DE ENTREVISTA</h2>
+<p><strong>Q: Explique o padrão Fan-out e quando você o usaria em arquitetura AWS.</strong></p>
+<blockquote><strong>Resposta esperada:</strong> Fan-out é enviar uma mensagem a um SNS Topic que a distribui simultaneamente para múltiplos SQS Queues (ou outros endpoints). Usaria quando: (1) Um evento (ex: &quot;pedido criado&quot;) precisa acionar múltiplos sistemas independentes: fila de email, fila de estoque, fila de analytics, fila de fraud detection — todos recebem a mesma mensagem em paralelo; (2) Os sistemas têm diferentes velocidades de processamento (via SQS como buffer entre eles); (3) Novos sistemas precisam ser adicionados sem alterar o publisher (apenas adicionar nova subscription no SNS). Vantagens: desacoplamento total entre sistemas, escalabilidade independente, resiliência (falha em um consumer não afeta outros).</blockquote>
+<p><strong>Q: O que é idempotência e por que é essencial com SQS Standard?</strong></p>
+<blockquote><strong>Resposta esperada:</strong> Idempotência significa que executar uma operação N vezes produz o mesmo resultado que executar 1 vez. É essencial porque SQS Standard entrega mensagens &quot;pelo menos uma vez&quot; — pode haver duplicatas. Se o consumer não for idempotente: e-mails duplicados, cobranças duplas, estoque negativo. Implementação: (1) Usar MessageId (ou um campo business-key) como idempotency key; (2) Antes de processar, verificar no DynamoDB/Redis se já foi processado; (3) Se já processado: retornar sucesso sem fazer nada; (4) Caso contrário: processar e marcar como realizado (em transação atômica). Para garantias absolutas: use SQS FIFO com exactly-once processing (mas com limite de throughput).</blockquote>
+<p>---</p>
+<h2 id="proximo-modulo">✅ Próximo Módulo</h2>
+<p>👉 <strong><a href="../modulo-06-cloudformation/README.md"><code>../modulo-06-cloudformation/README.md</code></a></strong></p><nav class="page-nav"><a href="./modulo-04-dynamodb-readme.html">Anterior: Módulo 4 — Banco de Dados: Amazon DynamoDB</a><a href="./modulo-06-cloudformation-readme.html">Proximo: Módulo 6 — Infraestrutura como Código: CloudFormation</a></nav></article></main></body></html>
