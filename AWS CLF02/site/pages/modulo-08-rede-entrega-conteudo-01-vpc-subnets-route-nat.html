@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amazon VPC: subnets, route tables, internet gateway, NAT | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-08-rede-entrega-conteudo-01-vpc-subnets-route-nat">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Rede e CDN · 2 min</div>
+      <h1 id="amazon-vpc-subnets-route-tables-internet-gateway-nat">Amazon VPC: subnets, route tables, internet gateway, NAT</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>VPC é como um condomínio fechado: você define as ruas (subnets), portarias (gateways), regras de trânsito (route tables) e quem pode entrar ou sair (NAT, security groups).</p>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<p>Amazon Virtual Private Cloud (VPC) permite criar uma rede virtual isolada na AWS, com controle total sobre endereçamento IP, sub-redes, roteamento e conectividade.</p>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ SERVIÇO: Amazon VPC DOMÍNIO DO EXAME: Rede e Entrega de Conteúdo (33%) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>Rede virtual isolada na AWS</li>
+<li>Subnets públicas e privadas</li>
+<li>Route tables, internet gateway, NAT gateway</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;rede virtual isolada&quot; → &quot;subnet pública/privada&quot; → &quot;internet gateway/NAT&quot;</p>
+<p>QUANDO USAR: ✅ Controle total da rede ✅ Separar recursos públicos e privados</p>
+<p>QUANDO NÃO USAR: ❌ Workloads simples sem necessidade de isolamento ❌ Ignorar configuração de segurança</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>Permite integração com VPN e Direct Connect</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que é uma subnet privada em VPC?</li>
+<p>A) Tem acesso direto à internet B) Não tem acesso direto à internet (correta) C) Só pode ser usada para bancos de dados D) É igual à subnet pública</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: subnet privada não tem acesso direto.</li>
+<li>A), C), D) não são verdade.</li>
+</ul>
+<p>Armadilha: confundir subnet pública e privada.</p>
+<ol>
+<li>Para que serve o NAT Gateway?</li>
+<p>A) Permitir que subnets privadas acessem a internet (correta) B) Criar backups C) Gerenciar usuários D) Monitorar custos</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>A) Correta: NAT permite saída para internet.</li>
+<li>B), C), D) não são funções do NAT.</li>
+</ul>
+<p>Armadilha: achar que NAT permite entrada da internet.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>VPC pode ser conectada a outras redes via VPN ou Direct Connect.</li>
+<li>Boas práticas incluem separar subnets por função e camada.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>VPC = rede virtual isolada | subnets públicas/privadas | route tables | internet/NAT gateway | integração VPN/Direct Connect</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-07-banco-de-dados-08-dms.html">Anterior: Database Migration Service (DMS)</a>
+        <a href="./modulo-08-rede-entrega-conteudo-02-security-group-vs-nacl.html">Proximo: Security Groups vs NACLs (pegadinha clássica)</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

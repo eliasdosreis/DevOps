@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Auto Scaling e Elastic Load Balancer (ALB, NLB, CLB) | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-05-computacao-03-auto-scaling-elb">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Computacao · 2 min</div>
+      <h1 id="auto-scaling-e-elastic-load-balancer-alb-nlb-clb">Auto Scaling e Elastic Load Balancer (ALB, NLB, CLB)</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>Auto Scaling é como contratar garçons extras em um restaurante só quando o movimento aumenta. Load Balancer é como um gerente que distribui os clientes igualmente entre os garçons para ninguém ficar sobrecarregado.</p>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<ul>
+<li>Auto Scaling: ajusta automaticamente a quantidade de instâncias EC2 conforme a demanda.</li>
+<li>Elastic Load Balancer (ELB): distribui o tráfego entre múltiplas instâncias. Tipos: ALB (camada 7), NLB (camada 4), CLB (legado).</li>
+</ul>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ SERVIÇO: Auto Scaling e ELB DOMÍNIO DO EXAME: Computação (33%) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>Auto Scaling: escala automática de instâncias</li>
+<li>ELB: balanceamento de carga</li>
+<li>ALB: HTTP/HTTPS, NLB: TCP/UDP, CLB: legado</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;escala automática&quot; → &quot;balanceamento de carga&quot; → &quot;ALB = HTTP&quot; → &quot;NLB = TCP/UDP&quot;</p>
+<p>QUANDO USAR: ✅ Aplicações com variação de demanda ✅ Alta disponibilidade</p>
+<p>QUANDO NÃO USAR: ❌ Workloads fixos sem variação ❌ Usar CLB para novos projetos</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>Auto Scaling reduz custos e aumenta resiliência</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que faz o Auto Scaling?</li>
+<p>A) Cria backups B) Ajusta número de instâncias conforme demanda (correta) C) Gera relatórios de custos D) Gerencia usuários</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: Auto Scaling ajusta instâncias.</li>
+<li>A), C), D) não são funções do Auto Scaling.</li>
+</ul>
+<p>Armadilha: confundir Auto Scaling com ELB.</p>
+<ol>
+<li>Qual Load Balancer usar para HTTP/HTTPS?</li>
+<p>A) NLB B) ALB (correta) C) CLB D) S3</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: ALB é para HTTP/HTTPS.</li>
+<li>A), C), D) não são para HTTP/HTTPS.</li>
+</ul>
+<p>Armadilha: confundir ALB com NLB.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>Auto Scaling pode ser baseado em métricas customizadas.</li>
+<li>ALB suporta regras avançadas de roteamento.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>Auto Scaling = escala automática | ELB = balanceamento de carga | ALB = HTTP | NLB = TCP/UDP | CLB = legado | aumenta disponibilidade e reduz custos</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-05-computacao-02-ec2-tipos-de-instancia.html">Anterior: EC2: tipos de instância (On-Demand, Reserved, Spot, Savings Plans)</a>
+        <a href="./modulo-05-computacao-04-lambda.html">Proximo: AWS Lambda — serverless (funções sem servidor)</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

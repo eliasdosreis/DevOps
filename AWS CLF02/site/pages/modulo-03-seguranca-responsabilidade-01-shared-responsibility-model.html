@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shared Responsibility Model (Modelo de Responsabilidade Compartilhada) | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-03-seguranca-responsabilidade-01-shared-responsibility-model">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Responsabilidade · 2 min</div>
+      <h1 id="shared-responsibility-model-modelo-de-responsabilidade-compartilhada">Shared Responsibility Model (Modelo de Responsabilidade Compartilhada)</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>É como alugar um apartamento mobiliado: o prédio cuida da estrutura (portaria, elevador, segurança do prédio), mas você é responsável pelo que acontece dentro do seu apartamento (trancar portas, não deixar o fogão ligado).</p>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<p>O Shared Responsibility Model define o que é responsabilidade da AWS (segurança da nuvem) e o que é do cliente (segurança na nuvem). A AWS protege a infraestrutura, o cliente protege seus dados, aplicações e configurações.</p>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ TEMA: Shared Responsibility Model DOMÍNIO DO EXAME: Segurança e Conformidade (30%) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>Divisão clara de responsabilidades entre AWS e cliente</li>
+<li>AWS: segurança da nuvem (infraestrutura)</li>
+<li>Cliente: segurança na nuvem (dados, apps, permissões)</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;responsabilidade compartilhada&quot; → &quot;segurança da nuvem vs na nuvem&quot; → &quot;quem protege o quê&quot;</p>
+<p>QUANDO USAR: ✅ Sempre que usar AWS ✅ Para entender limites de responsabilidade</p>
+<p>QUANDO NÃO USAR: ❌ Ignorar responsabilidades do cliente ❌ Assumir que AWS protege tudo</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>É o conceito mais cobrado da prova</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que é responsabilidade da AWS?</li>
+<p>A) Gerenciar dados do cliente B) Proteger infraestrutura física (correta) C) Definir políticas de acesso do cliente D) Configurar firewalls de aplicação</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: AWS cuida da infraestrutura.</li>
+<li>A), C), D) são do cliente.</li>
+</ul>
+<p>Armadilha: achar que AWS protege tudo.</p>
+<ol>
+<li>O que é responsabilidade do cliente?</li>
+<p>A) Segurança física dos datacenters B) Gerenciar usuários e permissões (correta) C) Manutenção de hardware D) Monitorar energia elétrica</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: cliente gerencia usuários.</li>
+<li>A), C), D) são da AWS.</li>
+</ul>
+<p>Armadilha: confundir &quot;na nuvem&quot; com &quot;da nuvem&quot;.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>O modelo muda conforme o serviço (IaaS, PaaS, SaaS).</li>
+<li>Falhas de configuração do cliente são causa comum de incidentes.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>Shared Responsibility = AWS cuida da nuvem | cliente cuida do que está na nuvem | conceito mais cobrado | muda conforme serviço | atenção às configurações</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-02-infraestrutura-global-04-aws-outposts.html">Anterior: AWS Outposts (nuvem no seu datacenter)</a>
+        <a href="./modulo-03-seguranca-responsabilidade-02-aws-vs-cliente.html">Proximo: O que é responsabilidade DA AWS vs DO CLIENTE</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

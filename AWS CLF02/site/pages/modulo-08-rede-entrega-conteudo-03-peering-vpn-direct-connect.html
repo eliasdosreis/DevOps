@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VPC Peering, VPN, AWS Direct Connect | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-08-rede-entrega-conteudo-03-peering-vpn-direct-connect">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Rede e CDN · 2 min</div>
+      <h1 id="vpc-peering-vpn-aws-direct-connect">VPC Peering, VPN, AWS Direct Connect</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>VPC Peering é como abrir uma passagem entre dois condomínios. VPN é como um túnel seguro entre sua casa e o escritório. Direct Connect é como uma linha exclusiva de fibra óptica entre sua empresa e a AWS.</p>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<ul>
+<li>VPC Peering: conecta duas VPCs para tráfego privado.</li>
+<li>VPN: conexão segura e criptografada entre rede local e AWS.</li>
+<li>Direct Connect: conexão física dedicada entre data center local e AWS.</li>
+</ul>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ SERVIÇO: VPC Peering, VPN, Direct Connect DOMÍNIO DO EXAME: Rede e Entrega de Conteúdo (33%) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>Peering: tráfego privado entre VPCs</li>
+<li>VPN: túnel seguro via internet</li>
+<li>Direct Connect: link dedicado, alta performance</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;tráfego privado entre VPCs&quot; → &quot;conexão segura VPN&quot; → &quot;link dedicado Direct Connect&quot;</p>
+<p>QUANDO USAR: ✅ Integração entre ambientes AWS ✅ Conexão segura com data center local</p>
+<p>QUANDO NÃO USAR: ❌ Workloads 100% na nuvem sem integração externa ❌ Ignorar requisitos de segurança</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>Direct Connect oferece menor latência e maior banda</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que faz o VPC Peering?</li>
+<p>A) Conecta VPCs para tráfego privado (correta) B) Cria backups C) Gera relatórios de custos D) Gerencia usuários</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>A) Correta: Peering conecta VPCs.</li>
+<li>B), C), D) não são funções do Peering.</li>
+</ul>
+<p>Armadilha: confundir Peering com VPN.</p>
+<ol>
+<li>Quando usar Direct Connect?</li>
+<p>A) Para conexão dedicada e alta performance (correta) B) Para workloads simples C) Para backups D) Para CDN</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>A) Correta: Direct Connect é para alta performance.</li>
+<li>B), C), D) não são casos de uso de Direct Connect.</li>
+</ul>
+<p>Armadilha: achar que VPN sempre basta.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>Direct Connect pode ser combinado com VPN para redundância.</li>
+<li>Peering não permite transitive routing.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>Peering = conecta VPCs | VPN = túnel seguro | Direct Connect = link dedicado | escolha depende de segurança e performance | sem transitive routing no Peering</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-08-rede-entrega-conteudo-02-security-group-vs-nacl.html">Anterior: Security Groups vs NACLs (pegadinha clássica)</a>
+        <a href="./modulo-08-rede-entrega-conteudo-04-cloudfront.html">Proximo: Amazon CloudFront — CDN global</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

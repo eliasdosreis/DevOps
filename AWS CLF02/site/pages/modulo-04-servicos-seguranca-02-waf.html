@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AWS WAF — firewall de aplicação web | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-04-servicos-seguranca-02-waf">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Seguranca · 2 min</div>
+      <h1 id="aws-waf-firewall-de-aplicacao-web">AWS WAF — firewall de aplicação web</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>AWS WAF é como um filtro de segurança na porta de um prédio: só deixa entrar quem está na lista, bloqueia visitantes suspeitos e pode ser ajustado conforme novas ameaças aparecem.</p>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<p>AWS Web Application Firewall (WAF) protege aplicações web contra ataques comuns, como SQL injection e XSS, permitindo criar regras personalizadas de bloqueio e permissão.</p>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ SERVIÇO: AWS WAF DOMÍNIO DO EXAME: Segurança e Conformidade (30%) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>Firewall de aplicação web</li>
+<li>Protege contra ataques como SQLi, XSS</li>
+<li>Regras customizáveis</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;firewall de aplicação&quot; → &quot;bloqueio de ataques web&quot; → &quot;regras personalizadas&quot;</p>
+<p>QUANDO USAR: ✅ Aplicações web públicas ✅ Proteger APIs</p>
+<p>QUANDO NÃO USAR: ❌ Aplicações internas sem exposição ❌ Ignorar regras de segurança</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>Integração com CloudFront e ALB</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que faz o AWS WAF?</li>
+<p>A) Protege aplicações web contra ataques (correta) B) Gera relatórios de custos C) Cria backups D) Gerencia usuários</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>A) Correta: WAF protege aplicações web.</li>
+<li>B), C), D) não são funções do WAF.</li>
+</ul>
+<p>Armadilha: confundir WAF com firewall de rede tradicional.</p>
+<ol>
+<li>Com o que o WAF se integra?</li>
+<p>A) CloudFront e ALB (correta) B) S3 C) RDS D) Lambda</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>A) Correta: integra com CloudFront e ALB.</li>
+<li>B), C), D) não são integrações do WAF.</li>
+</ul>
+<p>Armadilha: achar que WAF protege toda a rede.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>WAF permite resposta rápida a novas ameaças via regras dinâmicas.</li>
+<li>Essencial para compliance em aplicações públicas.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>WAF = firewall de aplicação web | protege contra SQLi/XSS | integra com CloudFront/ALB | regras customizáveis | essencial para apps públicas</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-04-servicos-seguranca-01-shield-ddos.html">Anterior: AWS Shield (Standard vs Advanced) — proteção DDoS</a>
+        <a href="./modulo-04-servicos-seguranca-03-guardduty.html">Proximo: Amazon GuardDuty — detecção de ameaças com ML</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

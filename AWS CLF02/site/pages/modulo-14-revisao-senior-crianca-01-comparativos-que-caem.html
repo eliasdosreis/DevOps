@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comparativos que mais caem na CLF-C02 | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-14-revisao-senior-crianca-01-comparativos-que-caem">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Revisao senior · 5 min</div>
+      <h1 id="comparativos-que-mais-caem-na-clf-c02">Comparativos que mais caem na CLF-C02</h1>
+<h2 id="cloudwatch-vs-cloudtrail-vs-config">CloudWatch vs CloudTrail vs Config</h2>
+<p>Explicacao para crianca:</p>
+<ul>
+<li>CloudWatch e o relogio/termometro: ve se esta tudo funcionando.</li>
+<li>CloudTrail e a camera: mostra quem fez o que.</li>
+<li>Config e o inspetor: ve se as coisas estao do jeito combinado.</li>
+</ul>
+<p>Visao senior:</p>
+<div class="table-wrap"><table><thead><tr><th>Cenario</th><th>Servico</th></tr></thead><tbody><tr><td>CPU alta, alarme, metrica, log de aplicacao</td><td>CloudWatch</td></tr><tr><td>Quem deletou o bucket? Quem chamou a API?</td><td>CloudTrail</td></tr><tr><td>O recurso mudou configuracao? Esta em conformidade?</td><td>Config</td></tr></tbody></table></div>
+<p>Pegadinha:</p>
+<ul>
+<li>&quot;Monitorar performance&quot; nao e CloudTrail.</li>
+<li>&quot;Auditar chamadas de API&quot; nao e CloudWatch.</li>
+<li>&quot;Historico de configuracao&quot; nao e CloudTrail, e Config.</li>
+</ul>
+<h2 id="guardduty-vs-inspector-vs-macie-vs-security-hub">GuardDuty vs Inspector vs Macie vs Security Hub</h2>
+<p>Explicacao para crianca:</p>
+<ul>
+<li>GuardDuty e o vigia que percebe comportamento estranho.</li>
+<li>Inspector e o medico que examina se a maquina tem fraqueza.</li>
+<li>Macie e o detetive que acha documentos secretos no S3.</li>
+<li>Security Hub e a TV central que mostra alertas de varios lugares.</li>
+</ul>
+<p>Visao senior:</p>
+<div class="table-wrap"><table><thead><tr><th>Cenario</th><th>Servico</th></tr></thead><tbody><tr><td>Ameaca, comportamento suspeito, conta comprometida</td><td>GuardDuty</td></tr><tr><td>Vulnerabilidade em EC2, container image, Lambda</td><td>Inspector</td></tr><tr><td>PII/dados sensiveis no S3</td><td>Macie</td></tr><tr><td>Centralizar findings de seguranca</td><td>Security Hub</td></tr></tbody></table></div>
+<h2 id="s3-vs-ebs-vs-efs-vs-fsx">S3 vs EBS vs EFS vs FSx</h2>
+<p>Explicacao para crianca:</p>
+<ul>
+<li>S3 e uma caixa de brinquedos enorme.</li>
+<li>EBS e o HD grudado em um computador.</li>
+<li>EFS e uma pasta compartilhada por varios computadores Linux.</li>
+<li>FSx e uma pasta especial pronta para Windows, Lustre, NetApp ou OpenZFS.</li>
+</ul>
+<p>Visao senior:</p>
+<div class="table-wrap"><table><thead><tr><th>Cenario</th><th>Servico</th></tr></thead><tbody><tr><td>Arquivos/objetos, backup, site estatico, data lake</td><td>S3</td></tr><tr><td>Disco de uma EC2</td><td>EBS</td></tr><tr><td>File system Linux compartilhado por varias EC2</td><td>EFS</td></tr><tr><td>File system Windows ou alta performance especializada</td><td>FSx</td></tr></tbody></table></div>
+<p>Pegadinha:</p>
+<ul>
+<li>S3 nao e disco de EC2.</li>
+<li>EBS normalmente fica preso a uma AZ.</li>
+<li>EFS e regional e pode ser montado por varias instancias.</li>
+</ul>
+<h2 id="ec2-vs-lambda-vs-fargate-vs-elastic-beanstalk-vs-lightsail">EC2 vs Lambda vs Fargate vs Elastic Beanstalk vs Lightsail</h2>
+<p>Explicacao para crianca:</p>
+<ul>
+<li>EC2 e alugar um computador inteiro.</li>
+<li>Lambda e pedir para alguem fazer uma tarefa rapidinha quando algo acontece.</li>
+<li>Fargate e rodar container sem cuidar do servidor.</li>
+<li>Beanstalk e entregar o codigo e deixar a AWS montar a casa.</li>
+<li>Lightsail e um servidor simples com preco previsivel.</li>
+</ul>
+<p>Visao senior:</p>
+<div class="table-wrap"><table><thead><tr><th>Cenario</th><th>Servico</th></tr></thead><tbody><tr><td>Controle total do servidor</td><td>EC2</td></tr><tr><td>Evento, serverless, execucao curta</td><td>Lambda</td></tr><tr><td>Container sem gerenciar servidor</td><td>Fargate</td></tr><tr><td>Deploy simples de app web com plataforma gerenciada</td><td>Elastic Beanstalk</td></tr><tr><td>VPS simples para site pequeno/MVP</td><td>Lightsail</td></tr></tbody></table></div>
+<h2 id="rds-vs-aurora-vs-dynamodb-vs-redshift-vs-elasticache">RDS vs Aurora vs DynamoDB vs Redshift vs ElastiCache</h2>
+<p>Explicacao para crianca:</p>
+<ul>
+<li>RDS e uma planilha organizada em tabelas.</li>
+<li>Aurora e um RDS turbo da AWS.</li>
+<li>DynamoDB e uma caixa muito rapida de chave e valor.</li>
+<li>Redshift e uma sala enorme para analisar muitos dados.</li>
+<li>ElastiCache e um bloquinho de anotacoes super rapido para nao perguntar tudo de novo.</li>
+</ul>
+<p>Visao senior:</p>
+<div class="table-wrap"><table><thead><tr><th>Cenario</th><th>Servico</th></tr></thead><tbody><tr><td>Banco relacional gerenciado</td><td>RDS</td></tr><tr><td>Relacional compativel MySQL/PostgreSQL com alta performance AWS</td><td>Aurora</td></tr><tr><td>NoSQL, baixa latencia, escala massiva</td><td>DynamoDB</td></tr><tr><td>Data warehouse/analytics</td><td>Redshift</td></tr><tr><td>Cache em memoria</td><td>ElastiCache</td></tr></tbody></table></div>
+<h2 id="sns-vs-sqs-vs-eventbridge-vs-step-functions">SNS vs SQS vs EventBridge vs Step Functions</h2>
+<p>Explicacao para crianca:</p>
+<ul>
+<li>SNS e um megafone.</li>
+<li>SQS e uma fila.</li>
+<li>EventBridge e um organizador de eventos.</li>
+<li>Step Functions e uma receita passo a passo.</li>
+</ul>
+<p>Visao senior:</p>
+<div class="table-wrap"><table><thead><tr><th>Cenario</th><th>Servico</th></tr></thead><tbody><tr><td>Enviar notificacao para varios assinantes</td><td>SNS</td></tr><tr><td>Desacoplar sistemas com fila</td><td>SQS</td></tr><tr><td>Roteamento de eventos entre apps/SaaS/AWS</td><td>EventBridge</td></tr><tr><td>Orquestrar workflow com etapas</td><td>Step Functions</td></tr></tbody></table></div>
+<h2 id="route-53-vs-cloudfront-vs-global-accelerator">Route 53 vs CloudFront vs Global Accelerator</h2>
+<p>Explicacao para crianca:</p>
+<ul>
+<li>Route 53 e a agenda que transforma nome em endereco.</li>
+<li>CloudFront e uma lanchonete perto de voce com copia do lanche.</li>
+<li>Global Accelerator e uma pista expressa ate a aplicacao.</li>
+</ul>
+<p>Visao senior:</p>
+<div class="table-wrap"><table><thead><tr><th>Cenario</th><th>Servico</th></tr></thead><tbody><tr><td>DNS e registro de dominio</td><td>Route 53</td></tr><tr><td>CDN/cache de conteudo</td><td>CloudFront</td></tr><tr><td>Melhorar rota global para app TCP/UDP, IPs anycast</td><td>Global Accelerator</td></tr></tbody></table></div>
+<h2 id="athena-vs-glue-vs-kinesis-vs-quicksight">Athena vs Glue vs Kinesis vs QuickSight</h2>
+<p>Explicacao para crianca:</p>
+<ul>
+<li>Athena pergunta coisas para arquivos no S3.</li>
+<li>Glue arruma os dados baguncados.</li>
+<li>Kinesis recebe dados em movimento.</li>
+<li>QuickSight desenha graficos.</li>
+</ul>
+<p>Visao senior:</p>
+<div class="table-wrap"><table><thead><tr><th>Cenario</th><th>Servico</th></tr></thead><tbody><tr><td>SQL direto em dados no S3</td><td>Athena</td></tr><tr><td>ETL/catalogo de dados</td><td>Glue</td></tr><tr><td>Streaming de dados em tempo real</td><td>Kinesis</td></tr><tr><td>BI, dashboards, visualizacao</td><td>QuickSight</td></tr></tbody></table></div>
+<h2 id="pricing-calculator-vs-budgets-vs-cost-explorer-vs-cur">Pricing Calculator vs Budgets vs Cost Explorer vs CUR</h2>
+<p>Explicacao para crianca:</p>
+<ul>
+<li>Pricing Calculator calcula antes.</li>
+<li>Budgets avisa durante.</li>
+<li>Cost Explorer explica depois.</li>
+<li>CUR mostra a conta completa nos minimos detalhes.</li>
+</ul>
+<p>Visao senior:</p>
+<div class="table-wrap"><table><thead><tr><th>Cenario</th><th>Servico</th></tr></thead><tbody><tr><td>Estimar custo antes de usar</td><td>Pricing Calculator</td></tr><tr><td>Alerta de gasto/orcamento</td><td>Budgets</td></tr><tr><td>Analisar historico e tendencias</td><td>Cost Explorer</td></tr><tr><td>Relatorio detalhado de uso e custo</td><td>Cost and Usage Report</td></tr></tbody></table></div>
+      <nav class="page-nav">
+        <a href="./modulo-13-simulado-final-03-simulado-senior-comentado.html">Anterior: Simulado senior comentado - CLF-C02</a>
+        <a href="./modulo-14-revisao-senior-crianca-02-pegadinhas-de-prova.html">Proximo: Pegadinhas de prova CLF-C02</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Security Groups vs NACLs (pegadinha clássica) | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-08-rede-entrega-conteudo-02-security-group-vs-nacl">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Rede e CDN · 2 min</div>
+      <h1 id="security-groups-vs-nacls-pegadinha-classica">Security Groups vs NACLs (pegadinha clássica)</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>Security Group é como um porteiro que só deixa entrar quem está na lista. NACL é como uma cancela automática na entrada do condomínio, com regras para todos que passam.</p>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<ul>
+<li>Security Group: firewall de instância, controla tráfego de entrada/saída a nível de recurso.</li>
+<li>NACL (Network ACL): firewall de subnet, controla tráfego de entrada/saída a nível de rede, com regras explícitas de permitir e negar.</li>
+</ul>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ SERVIÇO: Security Groups vs NACLs DOMÍNIO DO EXAME: Rede e Entrega de Conteúdo (33%) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>Security Group: firewall stateful, nível de instância</li>
+<li>NACL: firewall stateless, nível de subnet</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;stateful vs stateless&quot; → &quot;firewall de instância/subnet&quot; → &quot;permitir/nega tráfego&quot;</p>
+<p>QUANDO USAR: ✅ Security Group: controle fino por recurso ✅ NACL: regras gerais por subnet</p>
+<p>QUANDO NÃO USAR: ❌ Usar só NACL para segurança fina ❌ Ignorar ordem das regras em NACL</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>Security Group só permite, NACL permite e nega</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que caracteriza um Security Group?</li>
+<p>A) Stateless B) Stateful (correta) C) Nível de subnet D) Só nega tráfego</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: Security Group é stateful.</li>
+<li>A), C), D) não são verdade.</li>
+</ul>
+<p>Armadilha: confundir stateful/stateless.</p>
+<ol>
+<li>O que caracteriza um NACL?</li>
+<p>A) Stateful B) Stateless (correta) C) Nível de instância D) Só permite tráfego</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: NACL é stateless.</li>
+<li>A), C), D) não são verdade.</li>
+</ul>
+<p>Armadilha: confundir NACL com Security Group.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>NACLs são úteis para bloquear ranges inteiros de IP.</li>
+<li>Security Groups são mais usados no dia a dia.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>Security Group = firewall stateful | NACL = stateless | SG = nível instância | NACL = nível subnet | SG só permite, NACL permite/nega</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-08-rede-entrega-conteudo-01-vpc-subnets-route-nat.html">Anterior: Amazon VPC: subnets, route tables, internet gateway, NAT</a>
+        <a href="./modulo-08-rede-entrega-conteudo-03-peering-vpn-direct-connect.html">Proximo: VPC Peering, VPN, AWS Direct Connect</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

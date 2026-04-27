@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amazon EBS — disco de EC2 | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-06-armazenamento-02-ebs">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Storage · 2 min</div>
+      <h1 id="amazon-ebs-disco-de-ec2">Amazon EBS — disco de EC2</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>EBS é como o HD de um computador: cada servidor (EC2) precisa de um disco para armazenar o sistema operacional e dados temporários.</p>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<p>Amazon Elastic Block Store (EBS) fornece volumes de armazenamento em blocos para instâncias EC2, permitindo alta performance e persistência de dados.</p>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ SERVIÇO: Amazon EBS DOMÍNIO DO EXAME: Armazenamento (33%) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>Disco de armazenamento em blocos para EC2</li>
+<li>Persistente e de alta performance</li>
+<li>Tipos: SSD, HDD</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;disco de EC2&quot; → &quot;armazenamento em blocos&quot; → &quot;persistência de dados&quot;</p>
+<p>QUANDO USAR: ✅ Instâncias EC2 ✅ Bancos de dados</p>
+<p>QUANDO NÃO USAR: ❌ Armazenar arquivos estáticos (use S3) ❌ Compartilhar entre várias instâncias (use EFS)</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>Snapshots para backup e recuperação</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que é o Amazon EBS?</li>
+<p>A) Armazenamento de objetos B) Disco de EC2 (correta) C) CDN D) Banco de dados</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: EBS é disco de EC2.</li>
+<li>A), C), D) não são EBS.</li>
+</ul>
+<p>Armadilha: confundir EBS com S3.</p>
+<ol>
+<li>Para que servem os snapshots do EBS?</li>
+<p>A) Backup e recuperação de dados (correta) B) Monitorar custos C) Gerenciar usuários D) Criar buckets S3</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>A) Correta: snapshots são para backup.</li>
+<li>B), C), D) não são funções dos snapshots.</li>
+</ul>
+<p>Armadilha: achar que snapshot é só para logs.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>Snapshots podem ser usados para replicação entre regiões.</li>
+<li>Performance depende do tipo de volume escolhido.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>EBS = disco de EC2 | armazenamento em blocos | snapshots para backup | SSD/HDD | persistência de dados</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-06-armazenamento-01-s3-conceito-classes-versionamento-lifecycle.html">Anterior: Amazon S3: conceito, classes, versionamento, lifecycle</a>
+        <a href="./modulo-06-armazenamento-03-efs.html">Proximo: Amazon EFS — sistema de arquivos compartilhado</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

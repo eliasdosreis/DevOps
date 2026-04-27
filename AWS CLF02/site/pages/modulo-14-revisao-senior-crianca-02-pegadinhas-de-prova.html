@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pegadinhas de prova CLF-C02 | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-14-revisao-senior-crianca-02-pegadinhas-de-prova">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Revisao senior · 4 min</div>
+      <h1 id="pegadinhas-de-prova-clf-c02">Pegadinhas de prova CLF-C02</h1>
+<h2 id="1-mais-gerenciado-geralmente-ganha">1. Mais gerenciado geralmente ganha</h2>
+<p>Se a pergunta pede menos administracao, pense em servico gerenciado.</p>
+<p>Exemplos:</p>
+<ul>
+<li>Banco relacional sem cuidar de servidor: RDS, nao EC2 com MySQL.</li>
+<li>Codigo por evento sem servidor: Lambda, nao EC2.</li>
+<li>Container sem servidor: Fargate, nao ECS em EC2.</li>
+</ul>
+<h2 id="2-responsabilidade-compartilhada-muda-por-servico">2. Responsabilidade compartilhada muda por servico</h2>
+<p>Explicacao para crianca:</p>
+<ul>
+<li>Em EC2, voce ganha uma casa vazia e cuida de muita coisa.</li>
+<li>Em Lambda, voce so entrega a tarefa e a AWS cuida da casa.</li>
+</ul>
+<p>Visao senior:</p>
+<div class="table-wrap"><table><thead><tr><th>Servico</th><th>AWS cuida mais de</th><th>Cliente cuida mais de</th></tr></thead><tbody><tr><td>EC2</td><td>Datacenter, hardware, virtualizacao</td><td>Sistema operacional, patches, app, dados</td></tr><tr><td>RDS</td><td>Banco gerenciado, backups, patching do engine</td><td>Dados, acesso, configuracao</td></tr><tr><td>Lambda</td><td>Servidor, runtime gerenciado</td><td>Codigo, permissao, dados</td></tr><tr><td>S3</td><td>Infraestrutura do storage</td><td>Bucket policy, dados, classificacao, lifecycle</td></tr></tbody></table></div>
+<h2 id="3-root-user-quase-nunca-deve-ser-usado">3. Root user quase nunca deve ser usado</h2>
+<p>Use root apenas para tarefas que exigem root.</p>
+<p>Para o dia a dia:</p>
+<ul>
+<li>Crie usuarios/roles IAM.</li>
+<li>Ative MFA no root.</li>
+<li>Nao crie access key para root.</li>
+<li>Use least privilege.</li>
+</ul>
+<h2 id="4-entrada-de-dados-geralmente-e-gratis-saida-costuma-custar">4. Entrada de dados geralmente e gratis, saida costuma custar</h2>
+<p>Explicacao simples:</p>
+<ul>
+<li>Colocar coisas na AWS costuma ser como entrar em uma loja: normalmente nao paga entrada.</li>
+<li>Tirar dados para fora ou mandar entre lugares pode gerar custo.</li>
+</ul>
+<p>Na prova:</p>
+<ul>
+<li>Data transfer IN: geralmente sem custo.</li>
+<li>Data transfer OUT para internet: geralmente tem custo.</li>
+<li>Entre regioes: geralmente tem custo.</li>
+</ul>
+<h2 id="5-alta-disponibilidade-nao-e-igual-a-backup">5. Alta disponibilidade nao e igual a backup</h2>
+<p>Explicacao simples:</p>
+<ul>
+<li>Alta disponibilidade e ter outra bicicleta pronta se a sua furar o pneu.</li>
+<li>Backup e ter uma foto/peca guardada para restaurar depois.</li>
+</ul>
+<p>Visao senior:</p>
+<ul>
+<li>Multi-AZ: continuidade dentro de uma regiao.</li>
+<li>Multi-Region: desastre, baixa latencia global ou soberania de dados.</li>
+<li>Backup: recuperacao de dados.</li>
+<li>Disaster Recovery: plano de volta depois de grande falha.</li>
+</ul>
+<h2 id="6-security-group-vs-nacl">6. Security Group vs NACL</h2>
+<p>Explicacao simples:</p>
+<ul>
+<li>Security Group e o seguranca na porta do quarto.</li>
+<li>NACL e o portao do condominio.</li>
+</ul>
+<p>Visao senior:</p>
+<div class="table-wrap"><table><thead><tr><th>Item</th><th>Security Group</th><th>NACL</th></tr></thead><tbody><tr><td>Nivel</td><td>Instancia/ENI</td><td>Subnet</td></tr><tr><td>Estado</td><td>Stateful</td><td>Stateless</td></tr><tr><td>Regras deny</td><td>Nao</td><td>Sim</td></tr><tr><td>Ordem das regras</td><td>Nao importa</td><td>Importa</td></tr></tbody></table></div>
+<h2 id="7-iam-policy-vs-scp">7. IAM Policy vs SCP</h2>
+<p>Explicacao simples:</p>
+<ul>
+<li>IAM Policy da permissao para uma pessoa.</li>
+<li>SCP coloca limite maximo para uma conta inteira.</li>
+</ul>
+<p>Visao senior:</p>
+<ul>
+<li>SCP nao concede permissao sozinho.</li>
+<li>SCP limita o que contas em AWS Organizations podem fazer.</li>
+<li>Mesmo admin da conta nao passa do limite imposto por SCP.</li>
+</ul>
+<h2 id="8-reserved-instances-vs-savings-plans-vs-spot">8. Reserved Instances vs Savings Plans vs Spot</h2>
+<p>Explicacao simples:</p>
+<ul>
+<li>On-Demand: pagar por uso, sem promessa.</li>
+<li>Reserved: prometer usar uma instancia por periodo.</li>
+<li>Savings Plans: prometer gastar por hora.</li>
+<li>Spot: usar sobra barata, mas pode ser interrompido.</li>
+</ul>
+<p>Visao senior:</p>
+<div class="table-wrap"><table><thead><tr><th>Necessidade</th><th>Melhor opcao</th></tr></thead><tbody><tr><td>Flexibilidade maxima</td><td>On-Demand</td></tr><tr><td>Carga previsivel por 1 ou 3 anos</td><td>Reserved Instances ou Savings Plans</td></tr><tr><td>Maior flexibilidade de computacao</td><td>Savings Plans</td></tr><tr><td>Trabalho tolerante a interrupcao</td><td>Spot</td></tr><tr><td>Licenca por socket/core ou host fisico dedicado</td><td>Dedicated Host</td></tr></tbody></table></div>
+<h2 id="9-aws-artifact-nao-e-auditoria-automatica">9. AWS Artifact nao e auditoria automatica</h2>
+<ul>
+<li>Artifact: baixa relatorios e acordos de compliance.</li>
+<li>Audit Manager: ajuda a coletar evidencias.</li>
+<li>Config: avalia configuracao dos recursos.</li>
+<li>CloudTrail: registra chamadas de API.</li>
+</ul>
+<h2 id="10-trusted-advisor-nao-e-monitoramento-de-metrica">10. Trusted Advisor nao e monitoramento de metrica</h2>
+<p>Trusted Advisor verifica boas praticas em categorias como:</p>
+<ul>
+<li>Custo.</li>
+<li>Performance.</li>
+<li>Seguranca.</li>
+<li>Tolerancia a falhas.</li>
+<li>Limites de servico.</li>
+</ul>
+<p>CloudWatch monitora metricas/logs/alarmes.</p>
+      <nav class="page-nav">
+        <a href="./modulo-14-revisao-senior-crianca-01-comparativos-que-caem.html">Anterior: Comparativos que mais caem na CLF-C02</a>
+        <a href="./modulo-14-revisao-senior-crianca-03-servicos-faltantes-resumo-rapido.html">Proximo: Servicos faltantes - resumo rapido para prova</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

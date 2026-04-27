@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amazon S3: conceito, classes, versionamento, lifecycle | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-06-armazenamento-01-s3-conceito-classes-versionamento-lifecycle">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Storage · 2 min</div>
+      <h1 id="amazon-s3-conceito-classes-versionamento-lifecycle">Amazon S3: conceito, classes, versionamento, lifecycle</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>S3 é como um depósito infinito de caixas: você pode guardar qualquer coisa, pegar de volta quando quiser, escolher caixas mais baratas para itens antigos e até recuperar versões antigas de um documento.</p>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<p>Amazon Simple Storage Service (S3) é um serviço de armazenamento de objetos, altamente durável e escalável, usado para guardar arquivos, backups, imagens, vídeos e dados de aplicações.</p>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ SERVIÇO: Amazon S3 DOMÍNIO DO EXAME: Armazenamento (33%) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>Armazenamento de objetos (arquivos) na nuvem</li>
+<li>Classes: Standard, Standard-IA, Glacier, Intelligent-Tiering</li>
+<li>Versionamento e políticas de ciclo de vida</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;armazenar arquivos estáticos&quot; → &quot;hospedar site estático&quot; → &quot;backup de objetos&quot; → &quot;durabilidade 11 noves (99,999999999%)&quot;</p>
+<p>QUANDO USAR: ✅ Imagens, vídeos, backups, logs ✅ Data Lake ✅ Hospedagem de sites estáticos</p>
+<p>QUANDO NÃO USAR: ❌ Banco de dados relacional ❌ Disco de EC2</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>Versionamento e ciclo de vida automatizam gestão de dados</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que é o Amazon S3?</li>
+<p>A) Banco de dados relacional B) Armazenamento de objetos na nuvem (correta) C) Disco de EC2 D) CDN</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: S3 é armazenamento de objetos.</li>
+<li>A), C), D) não são S3.</li>
+</ul>
+<p>Armadilha: confundir S3 com EBS ou RDS.</p>
+<ol>
+<li>O que faz o versionamento no S3?</li>
+<p>A) Cria backups automáticos B) Mantém versões antigas dos objetos (correta) C) Gera relatórios de custos D) Gerencia usuários</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: versionamento mantém versões.</li>
+<li>A), C), D) não são funções do versionamento.</li>
+</ul>
+<p>Armadilha: achar que versionamento é backup.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>Políticas de ciclo de vida reduzem custos movendo dados para classes mais baratas.</li>
+<li>Versionamento protege contra deleção acidental.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>S3 = armazenamento de objetos | classes: Standard, IA, Glacier | versionamento | ciclo de vida | durabilidade 11 noves</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-05-computacao-08-lightsail.html">Anterior: AWS Lightsail — VPS simplificado</a>
+        <a href="./modulo-06-armazenamento-02-ebs.html">Proximo: Amazon EBS — disco de EC2</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

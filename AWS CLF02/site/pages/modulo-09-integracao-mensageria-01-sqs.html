@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amazon SQS — fila de mensagens (desacoplamento) | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-09-integracao-mensageria-01-sqs">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Integracao · 2 min</div>
+      <h1 id="amazon-sqs-fila-de-mensagens-desacoplamento">Amazon SQS — fila de mensagens (desacoplamento)</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>SQS é como uma fila de senhas em um banco: cada cliente pega uma senha (mensagem), espera sua vez e é atendido por ordem de chegada, sem tumulto.</p>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<p>Amazon Simple Queue Service (SQS) é um serviço gerenciado de filas de mensagens, usado para desacoplar e escalar componentes de aplicações distribuídas.</p>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ SERVIÇO: Amazon SQS DOMÍNIO DO EXAME: Integração e Mensageria (33%) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>Fila de mensagens gerenciada</li>
+<li>Desacoplamento de sistemas</li>
+<li>Suporte a filas padrão e FIFO</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;fila de mensagens&quot; → &quot;desacoplamento&quot; → &quot;FIFO/SQS padrão&quot;</p>
+<p>QUANDO USAR: ✅ Processamento assíncrono ✅ Escalar aplicações distribuídas</p>
+<p>QUANDO NÃO USAR: ❌ Comunicação síncrona ❌ Workloads que exigem entrega instantânea</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>Suporte a Dead Letter Queues (DLQ)</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que é o Amazon SQS?</li>
+<p>A) Serviço de banco de dados B) Fila de mensagens gerenciada (correta) C) Serviço de armazenamento de objetos D) Load balancer</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: SQS é fila de mensagens.</li>
+<li>A), C), D) não são SQS.</li>
+</ul>
+<p>Armadilha: confundir SQS com SNS.</p>
+<ol>
+<li>Quando usar SQS FIFO?</li>
+<p>A) Quando a ordem das mensagens é importante (correta) B) Para backups C) Para workloads síncronos D) Para cache em memória</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>A) Correta: FIFO garante ordem.</li>
+<li>B), C), D) não são casos de uso de FIFO.</li>
+</ul>
+<p>Armadilha: achar que SQS padrão garante ordem.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>DLQ ajuda a tratar mensagens com erro.</li>
+<li>SQS escala automaticamente conforme demanda.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>SQS = fila de mensagens | desacoplamento | padrão/FIFO | DLQ | processamento assíncrono</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-08-rede-entrega-conteudo-06-global-accelerator.html">Anterior: AWS Global Accelerator</a>
+        <a href="./modulo-09-integracao-mensageria-02-sns.html">Proximo: Amazon SNS — notificações pub/sub</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

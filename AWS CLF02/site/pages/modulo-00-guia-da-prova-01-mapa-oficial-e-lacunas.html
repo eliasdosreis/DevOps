@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mapa oficial da prova CLF-C02 e lacunas para reforcar | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-00-guia-da-prova-01-mapa-oficial-e-lacunas">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Guia da prova · 5 min</div>
+      <h1 id="mapa-oficial-da-prova-clf-c02-e-lacunas-para-reforcar">Mapa oficial da prova CLF-C02 e lacunas para reforcar</h1>
+<p>Fonte-base: guia oficial AWS Certified Cloud Practitioner CLF-C02.</p>
+<h2 id="como-pensar-na-prova">Como pensar na prova</h2>
+<p>Imagine que a AWS e uma cidade gigante.</p>
+<ul>
+<li>Computacao e onde as maquinas trabalham.</li>
+<li>Armazenamento e onde as coisas ficam guardadas.</li>
+<li>Banco de dados e uma biblioteca organizada.</li>
+<li>Rede e o caminho das ruas.</li>
+<li>Seguranca e a fechadura, camera e porteiro.</li>
+<li>Cobranca e a conta de luz da cidade.</li>
+</ul>
+<p>A prova pergunta: &quot;Para este problema, qual predio da cidade voce deve usar?&quot;</p>
+<h2 id="dominio-1-conceitos-de-nuvem-24">Dominio 1 - Conceitos de nuvem (24%)</h2>
+<p>O que ja existe nos modulos:</p>
+<ul>
+<li>Beneficios da nuvem.</li>
+<li>Modelos de servico.</li>
+<li>Modelos de implantacao.</li>
+<li>Well-Architected.</li>
+<li>Infraestrutura global.</li>
+</ul>
+<p>O que reforcar:</p>
+<ul>
+<li>AWS Cloud Adoption Framework (AWS CAF).</li>
+<li>Estrategias de migracao.</li>
+<li>Economia de nuvem: custo fixo vs variavel, rightsizing, BYOL, automacao.</li>
+</ul>
+<p>Explicacao simples:</p>
+<ul>
+<li>CAF e como um plano de mudanca de casa. Nao e so levar os moveis; tambem precisa combinar dinheiro, pessoas, seguranca, operacao e negocio.</li>
+<li>Rightsizing e comprar um tenis do tamanho certo. Se compra grande demais, paga caro e fica ruim.</li>
+<li>BYOL e levar sua propria licenca de software para a nuvem, como levar seu proprio brinquedo para a escola.</li>
+</ul>
+<p>Visao senior:</p>
+<ul>
+<li>A prova pode perguntar &quot;como reduzir risco e melhorar eficiencia operacional na migracao&quot;. Isso aponta para AWS CAF.</li>
+<li>Se o cenario fala de servidor superdimensionado, pense em rightsizing ou Compute Optimizer.</li>
+<li>Se fala de licencas existentes, pense em BYOL ou License Manager.</li>
+</ul>
+<h2 id="dominio-2-seguranca-e-compliance-30">Dominio 2 - Seguranca e compliance (30%)</h2>
+<p>O que ja existe nos modulos:</p>
+<ul>
+<li>Modelo de responsabilidade compartilhada.</li>
+<li>IAM.</li>
+<li>MFA.</li>
+<li>Organizations e SCPs.</li>
+<li>Shield, WAF, GuardDuty, Inspector, Macie, KMS, CloudHSM, CloudTrail, Config.</li>
+</ul>
+<p>O que reforcar:</p>
+<ul>
+<li>AWS Artifact.</li>
+<li>AWS Audit Manager.</li>
+<li>AWS Security Hub.</li>
+<li>IAM Identity Center.</li>
+<li>Root user.</li>
+<li>Access keys e armazenamento de credenciais.</li>
+<li>Criptografia em repouso vs em transito.</li>
+<li>Onde encontrar informacoes oficiais de seguranca.</li>
+</ul>
+<p>Explicacao simples:</p>
+<ul>
+<li>Artifact e a pasta de documentos oficiais da AWS para mostrar que ela segue regras.</li>
+<li>Audit Manager e um ajudante que monta evidencias para auditoria.</li>
+<li>Security Hub e um painel que junta alertas de seguranca.</li>
+<li>IAM Identity Center e uma portaria unica para entrar em varias contas AWS.</li>
+</ul>
+<p>Visao senior:</p>
+<ul>
+<li>&quot;Relatorios de conformidade da AWS&quot; quase sempre aponta para AWS Artifact.</li>
+<li>&quot;Centralizar achados de seguranca&quot; aponta para Security Hub.</li>
+<li>&quot;Gerenciar acesso humano a varias contas AWS&quot; aponta para IAM Identity Center.</li>
+<li>&quot;Detectar atividade suspeita&quot; aponta para GuardDuty.</li>
+<li>&quot;Avaliar vulnerabilidade em EC2/container&quot; aponta para Inspector.</li>
+<li>&quot;Dados sensiveis em S3&quot; aponta para Macie.</li>
+</ul>
+<h2 id="dominio-3-tecnologia-e-servicos-34">Dominio 3 - Tecnologia e servicos (34%)</h2>
+<p>O que ja existe nos modulos:</p>
+<ul>
+<li>EC2, Lambda, ECS/EKS/Fargate, Beanstalk, Lightsail.</li>
+<li>S3, EBS, EFS, FSx, Storage Gateway, Snow Family.</li>
+<li>RDS, Aurora, DynamoDB, ElastiCache, Redshift, Neptune, DocumentDB, DMS.</li>
+<li>VPC, Route 53, CloudFront, Direct Connect, VPN, Global Accelerator.</li>
+<li>SQS, SNS, EventBridge, Step Functions, API Gateway.</li>
+<li>CloudWatch, CloudTrail, Config, Systems Manager, Trusted Advisor.</li>
+<li>ML basico.</li>
+</ul>
+<p>O que reforcar:</p>
+<ul>
+<li>Analytics: Athena, Glue, Kinesis, QuickSight, EMR, OpenSearch.</li>
+<li>Developer tools: CodeBuild, CodePipeline, X-Ray, CLI, SDK, APIs.</li>
+<li>End User Computing: WorkSpaces, AppStream 2.0, WorkSpaces Secure Browser.</li>
+<li>Frontend/mobile: Amplify, AppSync.</li>
+<li>IoT Core.</li>
+<li>Migration Hub, Application Migration Service, Application Discovery Service, Migration Evaluator, SCT.</li>
+<li>PrivateLink, Transit Gateway.</li>
+<li>AWS Backup e Elastic Disaster Recovery.</li>
+</ul>
+<p>Explicacao simples:</p>
+<ul>
+<li>Athena faz pergunta em arquivos no S3, como pesquisar em uma caixa de papeis sem tirar tudo de la.</li>
+<li>Glue e a cola que prepara dados para analise.</li>
+<li>Kinesis e uma esteira de dados chegando sem parar.</li>
+<li>QuickSight faz graficos e paineis.</li>
+<li>X-Ray mostra por onde uma requisicao passou quando a aplicacao esta lenta.</li>
+</ul>
+<p>Visao senior:</p>
+<ul>
+<li>A prova cobra reconhecimento, nao configuracao.</li>
+<li>Se o cenario fala de &quot;consultar dados no S3 com SQL&quot;, escolha Athena.</li>
+<li>Se fala de &quot;pipeline CI/CD&quot;, escolha CodePipeline; para compilar/testar, CodeBuild.</li>
+<li>Se fala de &quot;desktop virtual&quot;, escolha WorkSpaces; se fala de &quot;streaming de aplicacao&quot;, escolha AppStream 2.0.</li>
+<li>Se fala de &quot;GraphQL/API para app&quot;, escolha AppSync; se fala de &quot;site/app web full stack facil&quot;, escolha Amplify.</li>
+</ul>
+<h2 id="dominio-4-billing-pricing-e-suporte-12">Dominio 4 - Billing, pricing e suporte (12%)</h2>
+<p>O que ja existe nos modulos:</p>
+<ul>
+<li>Pricing Calculator.</li>
+<li>Cost Explorer.</li>
+<li>Budgets.</li>
+<li>Support Plans.</li>
+<li>Checklist de cobranca.</li>
+</ul>
+<p>O que reforcar:</p>
+<ul>
+<li>Savings Plans vs Reserved Instances.</li>
+<li>Spot Instances.</li>
+<li>Dedicated Hosts vs Dedicated Instances.</li>
+<li>Capacity Reservations.</li>
+<li>Data transfer IN vs OUT.</li>
+<li>Cost and Usage Report.</li>
+<li>Cost allocation tags.</li>
+<li>AWS Marketplace.</li>
+<li>AWS Health Dashboard e Health API.</li>
+<li>AWS re:Post, Knowledge Center, Prescriptive Guidance.</li>
+<li>Enterprise On-Ramp.</li>
+<li>AWS Trust and Safety.</li>
+</ul>
+<p>Explicacao simples:</p>
+<ul>
+<li>Budgets e o alarme da mesada.</li>
+<li>Cost Explorer e o desenho que mostra onde a mesada foi gasta.</li>
+<li>Pricing Calculator e a calculadora antes de comprar.</li>
+<li>CUR e a nota fiscal gigante com todos os detalhes.</li>
+</ul>
+<p>Visao senior:</p>
+<ul>
+<li>&quot;Prever custo antes de criar&quot; aponta para Pricing Calculator.</li>
+<li>&quot;Analisar gasto historico&quot; aponta para Cost Explorer.</li>
+<li>&quot;Receber alerta quando passar limite&quot; aponta para Budgets.</li>
+<li>&quot;Relatorio detalhado para BI/financas&quot; aponta para Cost and Usage Report.</li>
+<li>&quot;Agrupar custo por projeto/time&quot; aponta para cost allocation tags.</li>
+</ul>
+      <nav class="page-nav">
+        <span></span>
+        <a href="./modulo-01-fundamentos-cloud-01-o-que-e-cloud.html">Proximo: O que é computação em nuvem</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

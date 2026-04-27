@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amazon SNS — notificações pub/sub | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-09-integracao-mensageria-02-sns">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Integracao · 2 min</div>
+      <h1 id="amazon-sns-notificacoes-pub-sub">Amazon SNS — notificações pub/sub</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>SNS é como um sistema de alto-falante em uma escola: um aviso é enviado e todos que estão ouvindo (inscritos) recebem a mensagem ao mesmo tempo.</p>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<p>Amazon Simple Notification Service (SNS) é um serviço gerenciado de notificações pub/sub, que entrega mensagens a múltiplos assinantes via push (e-mail, SMS, Lambda, SQS, HTTP).</p>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ SERVIÇO: Amazon SNS DOMÍNIO DO EXAME: Integração e Mensageria (33%) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>Notificações pub/sub gerenciadas</li>
+<li>Entrega para múltiplos assinantes</li>
+<li>Suporte a vários protocolos (e-mail, SMS, Lambda, SQS, HTTP)</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;pub/sub&quot; → &quot;notificações push&quot; → &quot;múltiplos assinantes&quot;</p>
+<p>QUANDO USAR: ✅ Notificações em massa ✅ Integração com SQS, Lambda</p>
+<p>QUANDO NÃO USAR: ❌ Comunicação ponto a ponto ❌ Workloads que exigem confirmação de recebimento</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>Integração nativa com outros serviços AWS</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que é o Amazon SNS?</li>
+<p>A) Serviço de banco de dados B) Notificações pub/sub gerenciadas (correta) C) Serviço de armazenamento de objetos D) Load balancer</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: SNS é pub/sub.</li>
+<li>A), C), D) não são SNS.</li>
+</ul>
+<p>Armadilha: confundir SNS com SQS.</p>
+<ol>
+<li>Quando usar SNS?</li>
+<p>A) Para notificações em massa (correta) B) Para backups C) Para workloads síncronos D) Para cache em memória</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>A) Correta: SNS é para notificações.</li>
+<li>B), C), D) não são casos de uso de SNS.</li>
+</ul>
+<p>Armadilha: achar que SNS garante ordem de entrega.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>SNS pode acionar Lambda, SQS, HTTP endpoints e SMS.</li>
+<li>Suporta filtragem de mensagens por atributos.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>SNS = notificações pub/sub | push para múltiplos assinantes | integra com SQS/Lambda | vários protocolos | filtragem por atributos</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-09-integracao-mensageria-01-sqs.html">Anterior: Amazon SQS — fila de mensagens (desacoplamento)</a>
+        <a href="./modulo-09-integracao-mensageria-03-eventbridge.html">Proximo: Amazon EventBridge — barramento de eventos</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AWS KMS e CloudHSM — gerenciamento de chaves | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-04-servicos-seguranca-06-kms-cloudhsm">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Seguranca · 2 min</div>
+      <h1 id="aws-kms-e-cloudhsm-gerenciamento-de-chaves">AWS KMS e CloudHSM — gerenciamento de chaves</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>KMS é como um cofre digital onde você guarda as chaves de todos os cadeados da empresa. CloudHSM é como contratar um cofre físico exclusivo, só seu, para guardar as chaves mais valiosas.</p>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<ul>
+<li>AWS Key Management Service (KMS): serviço gerenciado de criação e controle de chaves de criptografia.</li>
+<li>AWS CloudHSM: módulo de segurança de hardware dedicado para gerenciamento de chaves, com controle total pelo cliente.</li>
+</ul>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ SERVIÇO: KMS e CloudHSM DOMÍNIO DO EXAME: Segurança e Conformidade (30%) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>KMS: gerenciamento de chaves gerenciado pela AWS</li>
+<li>CloudHSM: gerenciamento de chaves em hardware dedicado</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;criptografia gerenciada&quot; → &quot;HSM dedicado&quot; → &quot;controle total do cliente&quot;</p>
+<p>QUANDO USAR: ✅ KMS: maioria dos casos de criptografia ✅ CloudHSM: requisitos de compliance rigorosos</p>
+<p>QUANDO NÃO USAR: ❌ CloudHSM para casos simples ❌ Ignorar rotação de chaves</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>CloudHSM oferece controle físico total</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que faz o AWS KMS?</li>
+<p>A) Gerencia chaves de criptografia (correta) B) Gera relatórios de custos C) Detecta ameaças D) Cria backups</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>A) Correta: KMS gerencia chaves.</li>
+<li>B), C), D) não são funções do KMS.</li>
+</ul>
+<p>Armadilha: confundir KMS com CloudHSM.</p>
+<ol>
+<li>Quando usar CloudHSM?</li>
+<p>A) Para controle total das chaves (correta) B) Para casos simples de criptografia C) Para monitorar custos D) Para backup</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>A) Correta: CloudHSM é para controle total.</li>
+<li>B), C), D) não são motivos reais.</li>
+</ul>
+<p>Armadilha: achar que CloudHSM é sempre necessário.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>KMS integra com quase todos os serviços AWS.</li>
+<li>CloudHSM é exigido em setores altamente regulados.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>KMS = gerenciamento de chaves | CloudHSM = HSM dedicado | KMS cobre maioria dos casos | CloudHSM para compliance rigoroso | integra com serviços AWS</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-04-servicos-seguranca-05-macie.html">Anterior: AWS Macie — descoberta de dados sensíveis (PII) no S3</a>
+        <a href="./modulo-04-servicos-seguranca-07-secrets-manager-vs-parameter-store.html">Proximo: AWS Secrets Manager vs Systems Manager Parameter Store</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

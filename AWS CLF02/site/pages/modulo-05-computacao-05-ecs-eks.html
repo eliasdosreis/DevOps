@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amazon ECS e EKS — containers | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-05-computacao-05-ecs-eks">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Computacao · 2 min</div>
+      <h1 id="amazon-ecs-e-eks-containers">Amazon ECS e EKS — containers</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>ECS e EKS são como cozinhas industriais: você pode preparar vários pratos (aplicações) em recipientes separados (containers), cada um com seus ingredientes e receitas, sem misturar sabores.</p>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<ul>
+<li>Amazon ECS (Elastic Container Service): orquestração de containers Docker gerenciada pela AWS.</li>
+<li>Amazon EKS (Elastic Kubernetes Service): orquestração de containers usando Kubernetes gerenciado.</li>
+</ul>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ SERVIÇO: ECS e EKS DOMÍNIO DO EXAME: Computação (33%) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>ECS: orquestração nativa AWS para Docker</li>
+<li>EKS: Kubernetes gerenciado</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;orquestração de containers&quot; → &quot;ECS = Docker&quot; → &quot;EKS = Kubernetes&quot;</p>
+<p>QUANDO USAR: ✅ Aplicações em containers ✅ Necessidade de escalabilidade e automação</p>
+<p>QUANDO NÃO USAR: ❌ Workloads monolíticos ❌ Sem necessidade de containers</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>EKS é compatível com clusters on-premises</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que faz o Amazon ECS?</li>
+<p>A) Orquestra containers Docker (correta) B) Gerencia bancos de dados C) Cria backups D) Gerencia usuários</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>A) Correta: ECS é para Docker.</li>
+<li>B), C), D) não são ECS.</li>
+</ul>
+<p>Armadilha: confundir ECS com EKS.</p>
+<ol>
+<li>Quando usar o EKS?</li>
+<p>A) Para workloads em Kubernetes (correta) B) Para bancos de dados C) Para backups D) Para Lambda</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>A) Correta: EKS é Kubernetes.</li>
+<li>B), C), D) não são casos de uso de EKS.</li>
+</ul>
+<p>Armadilha: confundir EKS com ECS.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>ECS é mais simples para workloads 100% AWS.</li>
+<li>EKS facilita migração de clusters Kubernetes existentes.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>ECS = Docker | EKS = Kubernetes | orquestração de containers | escalabilidade | escolha depende do padrão da aplicação</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-05-computacao-04-lambda.html">Anterior: AWS Lambda — serverless (funções sem servidor)</a>
+        <a href="./modulo-05-computacao-06-fargate.html">Proximo: AWS Fargate — containers serverless</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amazon Route 53 — DNS gerenciado | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-08-rede-entrega-conteudo-05-route53">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Rede e CDN · 2 min</div>
+      <h1 id="amazon-route-53-dns-gerenciado">Amazon Route 53 — DNS gerenciado</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>Route 53 é como uma lista telefônica moderna: você digita o nome de uma empresa (domínio) e ele te mostra o número (endereço IP) para onde ligar.</p>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<p>Amazon Route 53 é um serviço gerenciado de DNS, registro de domínios e roteamento de tráfego global, com alta disponibilidade e integração com outros serviços AWS.</p>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ SERVIÇO: Route 53 DOMÍNIO DO EXAME: Rede e Entrega de Conteúdo (33%) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>DNS gerenciado e registro de domínios</li>
+<li>Roteamento global e health checks</li>
+<li>Suporte a vários tipos de roteamento (latência, geolocalização, failover)</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;DNS gerenciado&quot; → &quot;registro de domínio&quot; → &quot;roteamento global&quot;</p>
+<p>QUANDO USAR: ✅ Gerenciar domínios e DNS ✅ Roteamento inteligente de tráfego</p>
+<p>QUANDO NÃO USAR: ❌ Workloads sem necessidade de DNS customizado ❌ Ignorar configurações de health check</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>Integração com CloudFront, S3, ELB</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que faz o Amazon Route 53?</li>
+<p>A) Gerencia bancos de dados B) DNS gerenciado e roteamento global (correta) C) Serviço de armazenamento de objetos D) Load balancer</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: Route 53 é DNS gerenciado.</li>
+<li>A), C), D) não são Route 53.</li>
+</ul>
+<p>Armadilha: confundir Route 53 com ELB.</p>
+<ol>
+<li>O que são health checks no Route 53?</li>
+<p>A) Monitoram a saúde de recursos e roteiam tráfego (correta) B) Criam backups C) Gerenciam usuários D) Monitoram custos</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>A) Correta: health checks monitoram recursos.</li>
+<li>B), C), D) não são funções dos health checks.</li>
+</ul>
+<p>Armadilha: achar que health check é só para EC2.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>Route 53 suporta roteamento baseado em latência, geolocalização e failover.</li>
+<li>Pode ser usado para balanceamento global de aplicações.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>Route 53 = DNS gerenciado | registro de domínios | roteamento global | health checks | integra com CloudFront/ELB/S3</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-08-rede-entrega-conteudo-04-cloudfront.html">Anterior: Amazon CloudFront — CDN global</a>
+        <a href="./modulo-08-rede-entrega-conteudo-06-global-accelerator.html">Proximo: AWS Global Accelerator</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

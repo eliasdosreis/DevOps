@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Edge Locations e CloudFront | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-02-infraestrutura-global-02-edge-locations-cloudfront">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Infra global · 2 min</div>
+      <h1 id="edge-locations-e-cloudfront">Edge Locations e CloudFront</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>Edge Locations são como filiais de uma grande rede de lojas espalhadas pelo mundo, onde você pode pegar produtos rapidamente, sem esperar vir do estoque central.</p>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<ul>
+<li>Edge Location: ponto de presença global da AWS para entrega de conteúdo com baixa latência</li>
+<li>Amazon CloudFront: serviço de CDN (Content Delivery Network) que usa Edge Locations para distribuir conteúdo rapidamente aos usuários</li>
+</ul>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ TEMA: Edge Locations e CloudFront DOMÍNIO DO EXAME: Infraestrutura Global (Domínio 1 + 3) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>Edge Location: ponto de presença para cache e entrega de conteúdo</li>
+<li>CloudFront: CDN global da AWS</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;baixa latência&quot; → &quot;CDN&quot; → &quot;entrega de conteúdo&quot;</p>
+<p>QUANDO USAR: ✅ Sites globais ✅ Streaming de vídeo ✅ Reduzir latência para usuários</p>
+<p>QUANDO NÃO USAR: ❌ Conteúdo privado sem criptografia ❌ Aplicações só internas</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>CloudFront pode proteger contra ataques DDoS</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que é uma Edge Location?</li>
+<p>A) Datacenter principal B) Ponto de presença para entrega de conteúdo (correta) C) Serviço de banco de dados D) Região AWS</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: Edge Location é ponto de presença.</li>
+<li>A), C), D) não são Edge Locations.</li>
+</ul>
+<p>Armadilha: confundir Edge Location com AZ.</p>
+<ol>
+<li>Para que serve o Amazon CloudFront?</li>
+<p>A) Gerenciar bancos de dados B) Entregar conteúdo globalmente com baixa latência (correta) C) Monitorar custos D) Gerenciar contas</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: CloudFront é CDN.</li>
+<li>A), C), D) não são funções do CloudFront.</li>
+</ul>
+<p>Armadilha: achar que CloudFront é só para sites estáticos.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>CloudFront pode integrar com WAF para segurança.</li>
+<li>Edge Locations ajudam a cumprir requisitos de latência e compliance.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>Edge Location = ponto de presença | CloudFront = CDN global | baixa latência | entrega rápida de conteúdo | integra com WAF para segurança</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-02-infraestrutura-global-01-regioes-azs-local-zones.html">Anterior: Regiões (Regions), Zonas de Disponibilidade (AZs), Local Zones</a>
+        <a href="./modulo-02-infraestrutura-global-03-como-escolher-regiao.html">Proximo: Como escolher uma região (latência, preço, compliance, disponibilidade)</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

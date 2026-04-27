@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Amazon EFS — sistema de arquivos compartilhado | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-06-armazenamento-03-efs">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Storage · 2 min</div>
+      <h1 id="amazon-efs-sistema-de-arquivos-compartilhado">Amazon EFS — sistema de arquivos compartilhado</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>EFS é como um drive compartilhado na empresa: vários funcionários podem acessar, ler e gravar arquivos ao mesmo tempo, de diferentes computadores.</p>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<p>Amazon Elastic File System (EFS) é um sistema de arquivos compartilhado, escalável e gerenciado, acessível por múltiplas instâncias EC2 simultaneamente.</p>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ SERVIÇO: Amazon EFS DOMÍNIO DO EXAME: Armazenamento (33%) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>Sistema de arquivos compartilhado (NFS)</li>
+<li>Escalável e elástico</li>
+<li>Acesso simultâneo por várias EC2</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;sistema de arquivos compartilhado&quot; → &quot;NFS gerenciado&quot; → &quot;acesso simultâneo&quot;</p>
+<p>QUANDO USAR: ✅ Workloads que exigem acesso compartilhado ✅ Ambientes de machine learning, web servers</p>
+<p>QUANDO NÃO USAR: ❌ Armazenar objetos (use S3) ❌ Workloads que não precisam de compartilhamento</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>Paga pelo uso, escala automaticamente</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que é o Amazon EFS?</li>
+<p>A) Armazenamento de objetos B) Sistema de arquivos compartilhado (correta) C) Disco de EC2 D) CDN</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: EFS é sistema de arquivos compartilhado.</li>
+<li>A), C), D) não são EFS.</li>
+</ul>
+<p>Armadilha: confundir EFS com S3 ou EBS.</p>
+<ol>
+<li>Quando usar EFS?</li>
+<p>A) Para acesso simultâneo por várias EC2 (correta) B) Para backups C) Para banco de dados relacional D) Para CDN</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>A) Correta: EFS é para acesso compartilhado.</li>
+<li>B), C), D) não são casos de uso de EFS.</li>
+</ul>
+<p>Armadilha: achar que EFS é igual a S3.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>EFS pode ser montado em múltiplas AZs para alta disponibilidade.</li>
+<li>Performance ajustável conforme workload.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>EFS = sistema de arquivos compartilhado | NFS gerenciado | acesso simultâneo | escala automática | ideal para múltiplas EC2</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-06-armazenamento-02-ebs.html">Anterior: Amazon EBS — disco de EC2</a>
+        <a href="./modulo-06-armazenamento-04-storage-gateway.html">Proximo: AWS Storage Gateway — híbrido on-premises + nuvem</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>

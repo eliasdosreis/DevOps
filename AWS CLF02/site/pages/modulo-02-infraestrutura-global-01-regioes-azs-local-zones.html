@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Regiões (Regions), Zonas de Disponibilidade (AZs), Local Zones | AWS CLF-C02</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+  <main class="page-shell">
+    <a class="back-link" href="../index.html#modulo-02-infraestrutura-global-01-regioes-azs-local-zones">Voltar para o painel</a>
+    <article class="lesson-card full">
+      <div class="lesson-kicker">Infra global · 2 min</div>
+      <h1 id="regioes-regions-zonas-de-disponibilidade-azs-local-zones">Regiões (Regions), Zonas de Disponibilidade (AZs), Local Zones</h1>
+<h2 id="1-analogia-do-dia-a-dia">1. Analogia do Dia a Dia</h2>
+<p>Pense em uma rede de hotéis:</p>
+<ul>
+<li>Região: cada cidade onde há hotéis</li>
+<li>Zona de Disponibilidade: diferentes prédios/hotéis na mesma cidade</li>
+<li>Local Zone: um hotel menor em um bairro específico para atender clientes locais</li>
+</ul>
+<h2 id="2-o-que-e-definicao-tecnica-oficial-aws">2. O que é (definição técnica oficial AWS)</h2>
+<ul>
+<li>Região: área geográfica com múltiplos datacenters isolados</li>
+<li>Zona de Disponibilidade (AZ): um ou mais datacenters dentro de uma região, isolados de falhas</li>
+<li>Local Zone: extensão da região, próxima de grandes centros urbanos, para latência ultra baixa</li>
+</ul>
+<h2 id="3-ficha-de-estudo-comentada">3. Ficha de Estudo Comentada</h2>
+<p>============================================================ TEMA: Infraestrutura Global AWS DOMÍNIO DO EXAME: Infraestrutura Global (Domínio 1 + 3) ============================================================</p>
+<p>O QUE É:</p>
+<ul>
+<li>Região: conjunto de AZs</li>
+<li>AZ: datacenters isolados</li>
+<li>Local Zone: extensão local da região</li>
+</ul>
+<p>PALAVRAS-CHAVE NA PROVA: → &quot;alta disponibilidade&quot; → &quot;redundância&quot; → &quot;latência baixa&quot;</p>
+<p>QUANDO USAR: ✅ Para alta disponibilidade ✅ Reduzir latência ✅ Atender requisitos de compliance</p>
+<p>QUANDO NÃO USAR: ❌ Ignorar redundância ❌ Escolher região só pelo preço</p>
+<p>DIFERENCIAIS:</p>
+<ul>
+<li>Serviços podem não estar em todas as regiões</li>
+<p>============================================================</p>
+</ul>
+<h2 id="4-questoes-de-fixacao">4. Questões de Fixação</h2>
+<ol>
+<li>O que é uma Zona de Disponibilidade (AZ)?</li>
+<p>A) Região inteira B) Datacenter isolado dentro de uma região (correta) C) Extensão local da região D) Serviço de rede</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>B) Correta: AZ é datacenter isolado.</li>
+<li>A), C), D) não são AZ.</li>
+</ul>
+<p>Armadilha: confundir AZ com região.</p>
+<ol>
+<li>Para que servem as Local Zones?</li>
+<p>A) Reduzir latência em áreas urbanas (correta) B) Backup de dados C) Gerenciar contas D) Monitorar custos</p>
+</ol>
+<p>Explicação:</p>
+<ul>
+<li>A) Correta: Local Zone é para latência baixa.</li>
+<li>B), C), D) não são funções de Local Zone.</li>
+</ul>
+<p>Armadilha: achar que Local Zone é igual a AZ.</p>
+<h2 id="5-conceito-senior">5. Conceito Senior</h2>
+<ul>
+<li>Escolher a região certa impacta preço, latência e compliance.</li>
+<li>Nem todos os serviços estão disponíveis em todas as regiões.</li>
+</ul>
+<h2 id="6-resumo-para-revisao">6. Resumo para Revisão</h2>
+<ul>
+<li>Região = área geográfica | AZ = datacenter isolado | Local Zone = extensão local | escolha afeta latência, preço e compliance</li>
+</ul>
+      <nav class="page-nav">
+        <a href="./modulo-01-fundamentos-cloud-05-well-architected-framework.html">Anterior: Well-Architected Framework: os 6 pilares</a>
+        <a href="./modulo-02-infraestrutura-global-02-edge-locations-cloudfront.html">Proximo: Edge Locations e CloudFront</a>
+      </nav>
+    </article>
+  </main>
+</body>
+</html>
