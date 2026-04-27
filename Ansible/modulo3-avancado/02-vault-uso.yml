@@ -1,0 +1,79 @@
+---
+# ==============================================================
+# ARQUIVO: 02-vault-uso.yml
+# MÓDULO 3 - Avançado
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Agora vamos USAR as variáveis do cofre.
+# O Ansible abre o cofre automaticamente durante a execução.
+# Você não vê a senha na tela, mas o programa usa ela!
+#
+# ▶️  COMO RODAR:
+# Opção 1 (digitar senha): ansible-playbook 02-vault-uso.yml --ask-vault-pass
+# Opção 2 (arquivo com senha): ansible-playbook 02-vault-uso.yml --vault-password-file .vault_pass
+# ==============================================================
+
+- name: "Usando Variáveis do Vault com Segurança"
+  hosts: localhost
+  gather_facts: false
+
+  # "vars_files" carrega arquivos de variáveis externos
+  # O Ansible descriptografa automaticamente se for vault!
+  # vars_files:
+  #   - secrets.yml           ← Arquivo vault criptografado
+  #   - variaveis_normais.yml ← Arquivo normal (sem criptografia)
+
+  # Para este exemplo, simulamos as variáveis do vault:
+  vars:
+    # Normalmente estas viriam do secrets.yml criptografado:
+    db_host: "prod-db.minhaempresa.com"
+    db_usuario: "app_user"
+    db_senha: "{{ vault_db_senha | default('SENHA_NAO_DEFINIDA') }}"
+    api_key: "{{ vault_api_key | default('API_KEY_NAO_DEFINIDA') }}"
+
+    # Variáveis públicas (sem segredo):
+    app_name: "MinhaApp"
+    db_porta: 5432
+
+  tasks:
+
+    # ---- Usar senha sem expô-la na tela -----------------------
+    - name: "Verificar conexão com banco (sem mostrar senha)"
+      ansible.builtin.debug:
+        # CORRETO: mostrar só informações não-secretas
+        msg:
+          - "Conectando ao banco: {{ db_host }}:{{ db_porta }}"
+          - "Usuário: {{ db_usuario }}"
+          - "Senha: *** (protegida pelo Vault)"
+
+    # ---- Nunca faça isso! (expor senha no log) ----------------
+    # - name: "ERRADO - expor senha"
+    #   debug:
+    #     msg: "Senha é: {{ db_senha }}"   ← NUNCA faça isso!
+
+    # ---- Usar variável secreta em configuração ----------------
+    - name: "Gerar arquivo de configuração com segredo"
+      ansible.builtin.copy:
+        content: |
+          # Configuração da aplicação
+          # Gerado pelo Ansible - NÃO commitar este arquivo!
+          DB_HOST={{ db_host }}
+          DB_USER={{ db_usuario }}
+          DB_PASS={{ db_senha }}
+          API_KEY={{ api_key }}
+        dest: /tmp/ansible-demo/app-secrets.env
+        mode: '0600'  # Apenas o dono pode ler!
+        owner: root
+        group: root
+
+    # ---- Boas práticas com Vault ----------------------------
+    - name: "Boas práticas com Vault"
+      ansible.builtin.debug:
+        msg:
+          - "✅ Use vault para: senhas, tokens, chaves SSH, API keys"
+          - "✅ Salve a senha do vault em gerenciador de senhas"
+          - "✅ Use --vault-password-file em automações (CI/CD)"
+          - "✅ Coloque secrets.yml no .gitignore? NÃO! Commit criptografado é seguro"
+          - "❌ NUNCA coloque senhas em plain text no repositório"
+          - "❌ NUNCA mostre variáveis secretas com debug"

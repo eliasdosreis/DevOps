@@ -1,0 +1,141 @@
+# ============================================================
+# ARQUIVO: 05-networkpolicy.yaml
+# NETWORKPOLICY - Firewall entre Pods
+#
+# Por padrão no Kubernetes, QUALQUER pod pode falar com
+# QUALQUER outro pod. Isso é um problema de segurança!
+#
+# NetworkPolicy = Regras de firewall para pods
+#
+# Analogia: Condomínio com porteiros em cada andar
+# - Por padrão: qualquer morador acessa qualquer andar
+# - Com NetworkPolicy: porteiro bloqueia quem não tem acesso
+#
+# IMPORTANTE: Precisa de um CNI que suporte NetworkPolicy
+# Ex: Calico, Cilium, Weave (Flannel NÃO suporta!)
+# Minikube: minikube start --cni=calico
+# ============================================================
+
+# POLÍTICA 1: Bloqueia TODO tráfego de entrada por padrão
+# (deny all ingress) - Boa prática de segurança!
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: deny-all-ingress        # Nome da política
+  namespace: producao           # Em qual namespace
+
+spec:
+  podSelector: {}               # {} = aplica a TODOS os pods
+                                # do namespace
+
+  policyTypes:
+    - Ingress                   # Controla tráfego de ENTRADA
+
+  # Sem "ingress:" = nega TUDO
+  # Qualquer tráfego de entrada é bloqueado!
+
+---
+# POLÍTICA 2: Permite que o frontend acesse o backend
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: allow-frontend-to-backend
+  namespace: producao
+
+spec:
+  podSelector:                  # A quem esta regra se aplica?
+    matchLabels:
+      app: backend              # Protege os pods do backend
+
+  policyTypes:
+    - Ingress                   # Controla quem ENTRA no backend
+
+  ingress:                      # Quem PODE entrar?
+    - from:
+        - podSelector:          # Só pods com este label
+            matchLabels:
+              app: frontend     # Só o frontend pode acessar!
+
+      ports:                    # Em quais portas?
+        - protocol: TCP
+          port: 8080            # Só na porta 8080
+
+---
+# POLÍTICA 3: Permite acesso do backend ao banco de dados
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: allow-backend-to-db
+  namespace: producao
+
+spec:
+  podSelector:
+    matchLabels:
+      app: banco-dados          # Protege o banco de dados
+
+  policyTypes:
+    - Ingress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: backend      # Só backend acessa o banco
+
+      ports:
+        - protocol: TCP
+          port: 5432            # Porta do PostgreSQL
+
+---
+# POLÍTICA 4: Permite tráfego de um NAMESPACE específico
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: allow-monitoring-namespace
+  namespace: producao
+
+spec:
+  podSelector: {}               # Todos os pods de producao
+
+  policyTypes:
+    - Ingress
+
+  ingress:
+    - from:
+        - namespaceSelector:    # De pods em outro namespace
+            matchLabels:
+              nome: monitoramento   # O namespace precisa ter este label!
+
+      ports:
+        - protocol: TCP
+          port: 9090            # Porta do Prometheus
+
+# ============================================================
+# FLUXO DE SEGURANÇA COMPLETO (NÍVEL SÊNIOR):
+#
+# 1. deny-all-ingress     --> Bloqueia tudo por padrão
+# 2. allow-frontend-to-backend --> Libera só o necessário
+# 3. allow-backend-to-db  --> DB só aceita backend
+# 4. allow-monitoring     --> Prometheus acessa todos
+#
+# RESULTADO:
+# Internet -> [Ingress] -> [Frontend] -> [Backend] -> [DB]
+#                                    ↑
+#                              [Monitoring]
+#
+# Nenhum pod pode acessar diretamente o banco de dados
+# a não ser o backend. Princípio de defesa em profundidade!
+#
+# ENTREVISTA SÊNIOR:
+# "NetworkPolicy nega tráfego já existente?"
+# RESPOSTA: Não! NetworkPolicy é stateful. Conexões já
+# estabelecidas continuam até fechar naturalmente.
+# ============================================================

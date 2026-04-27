@@ -1,0 +1,136 @@
+---
+# =============================================================
+# ROLE: nodejs-app
+# PROPÓSITO: Instala Node.js e deploy da aplicação Express
+# IDEMPOTENTE: Sim
+# =============================================================
+
+- name: Adicionar repositório NodeSource (Node.js 20)
+  shell: |
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  args:
+    creates: /etc/apt/sources.list.d/nodesource.list
+  tags: nodejs
+
+- name: Instalar Node.js
+  apt:
+    name:   nodejs
+    state:  present
+    update_cache: yes
+  tags: nodejs
+
+- name: Criar diretório da aplicação
+  file:
+    path:  /opt/app
+    state: directory
+    owner: deploy
+    group: deploy
+    mode:  '0755'
+  tags: nodejs
+
+- name: Copiar código da aplicação Node.js
+  copy:
+    content: |
+      const express = require('express');
+      const mysql   = require('mysql2/promise');
+      const os      = require('os');
+      const app     = express();
+
+      const DB_CONFIG = {
+        host:     process.env.DB_HOST || '{{ machines.db.ip }}',
+        user:     process.env.DB_USER || '{{ db_user }}',
+        password: process.env.DB_PASS || '{{ db_password }}',
+        database: process.env.DB_NAME || '{{ db_name }}'
+      };
+
+      app.get('/health', (req, res) => {
+        res.json({ status: 'ok', host: os.hostname(), uptime: process.uptime() });
+      });
+
+      app.get('/api', async (req, res) => {
+        try {
+          const conn = await mysql.createConnection(DB_CONFIG);
+          await conn.execute(
+            'INSERT INTO requests (host, path) VALUES (?, ?)',
+            [os.hostname(), req.path]
+          );
+          const [rows] = await conn.execute(
+            'SELECT COUNT(*) as total FROM requests'
+          );
+          await conn.end();
+          res.json({
+            message:      'API funcionando!',
+            host:         os.hostname(),
+            total_requests: rows[0].total
+          });
+        } catch (err) {
+          res.status(500).json({ error: err.message });
+        }
+      });
+
+      app.listen({{ app_port }}, '0.0.0.0', () => {
+        console.log(`App rodando na porta {{ app_port }}`);
+      });
+    dest:  /opt/app/server.js
+    owner: deploy
+    group: deploy
+    mode:  '0644'
+  notify: Restart App
+  tags: nodejs
+
+- name: Instalar dependências npm
+  npm:
+    path:  /opt/app
+    name:  "{{ item }}"
+    state: present
+  loop:
+    - express
+    - mysql2
+  become_user: deploy
+  tags: nodejs
+
+- name: Criar serviço systemd para o app
+  copy:
+    content: |
+      [Unit]
+      Description={{ app_name }} Node.js Application
+      After=network.target mysql.service
+
+      [Service]
+      Type=simple
+      User=deploy
+      WorkingDirectory=/opt/app
+      ExecStart=/usr/bin/node /opt/app/server.js
+      Restart=always
+      RestartSec=10
+      Environment=NODE_ENV={{ app_env }}
+      Environment=DB_HOST={{ machines.db.ip }}
+      Environment=DB_USER={{ db_user }}
+      Environment=DB_PASS={{ db_password }}
+      Environment=DB_NAME={{ db_name }}
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/nodeapp.service
+    mode: '0644'
+  notify:
+    - Reload Systemd
+    - Restart App
+  tags: nodejs
+
+- name: Habilitar e iniciar serviço da aplicação
+  service:
+    name:    nodeapp
+    state:   started
+    enabled: yes
+  tags: nodejs
+
+handlers:
+  - name: Reload Systemd
+    systemd:
+      daemon_reload: yes
+
+  - name: Restart App
+    service:
+      name:  nodeapp
+      state: restarted

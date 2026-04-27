@@ -1,0 +1,148 @@
+# ============================================================
+# MÓDULO 7 — TRIGGERS (HOOKS DO CICLO DE VIDA)
+# O QUE ESTE ARQUIVO FAZ:
+#   Demonstra o sistema de Triggers do Vagrant — hooks que
+#   executam comandos NO HOST antes ou após eventos do ciclo
+#   de vida da VM (up, halt, destroy, provision, etc.)
+#   Propósito: automação e integração com sistemas externos.
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-triggers"
+  config.vm.network "private_network", ip: "192.168.56.91"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-triggers-demo"
+    vb.memory = "512"
+    vb.cpus   = 1
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: TRIGGER ANTES DO vagrant up
+  # Executa NO HOST antes de iniciar a VM
+  # Útil para: verificações pré-condição, logs, notificações
+  # -----------------------------------------------------------
+  config.trigger.before :up do |trigger|
+    trigger.name = "Pre-Up Check"
+    trigger.info = "Verificando pré-condições antes de subir a VM..."
+
+    # Executa comando no HOST
+    trigger.run = {
+      inline: "echo '=== [HOST] Iniciando VM em: $(date) ==='"
+    }
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: TRIGGER APÓS O vagrant up (VM PRONTA)
+  # -----------------------------------------------------------
+  config.trigger.after :up do |trigger|
+    trigger.name = "Post-Up Notification"
+    trigger.info = "VM pronta! Registrando..."
+
+    trigger.run = {
+      inline: <<-CMD
+        echo "=== [HOST] VM levantada com sucesso ==="
+        echo "    Data: $(date)"
+        echo "    IP: 192.168.56.91"
+        echo "    Acesse: vagrant ssh"
+      CMD
+    }
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: TRIGGER ANTES DO vagrant halt
+  # Útil para: backup de dados, flush de logs, notificações
+  # -----------------------------------------------------------
+  config.trigger.before :halt do |trigger|
+    trigger.name = "Pre-Halt Backup"
+    trigger.info = "Fazendo backup antes de desligar..."
+
+    # Executa script no HOST
+    trigger.run = {
+      inline: "echo '[HOST] Realizando backup antes de desligar...' && echo 'Backup concluído (simulado)'"
+    }
+
+    # Também pode executar DENTRO DA VM antes de desligar:
+    trigger.run_remote = {
+      inline: "echo '[VM] Salvando estado da aplicação...'"
+    }
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: TRIGGER ANTES DO vagrant destroy
+  # CRÍTICO: última chance de salvar dados
+  # -----------------------------------------------------------
+  config.trigger.before :destroy do |trigger|
+    trigger.name    = "Pre-Destroy Warning"
+    trigger.info    = "⚠️  ATENÇÃO: VM será permanentemente removida!"
+    trigger.warn    = "Todos os dados não persistidos serão perdidos!"
+
+    # on_error: :continue → não aborta o destroy se o trigger falhar
+    trigger.on_error = :continue
+
+    trigger.run = {
+      inline: "echo '[HOST] Registrando destruição da VM: $(date)'"
+    }
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: TRIGGER APÓS vagrant provision
+  # -----------------------------------------------------------
+  config.trigger.after :provision do |trigger|
+    trigger.name = "Post-Provision Test"
+    trigger.info = "Testando se provisionamento funcionou..."
+
+    trigger.run = {
+      inline: "echo '[HOST] Provisionamento concluído. Executando smoke tests...'"
+    }
+  end
+
+  # -----------------------------------------------------------
+  # TRIGGERS EM MÁQUINAS ESPECÍFICAS (MULTI-MACHINE)
+  # -----------------------------------------------------------
+  # config.trigger.after :up, type: :command, vm: "web" do |trigger|
+  #   trigger.run = { inline: "echo 'Apenas para VM web'" }
+  # end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PROVISIONAMENTO DA VM
+  # -----------------------------------------------------------
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update -q
+    apt-get install -y -q nginx
+    systemctl start nginx
+    echo "<h1>Triggers Demo</h1>" > /var/www/html/index.html
+    echo "✅ VM provisionada!"
+  SHELL
+
+end
+
+# ============================================================
+# EVENTOS DISPONÍVEIS PARA TRIGGERS:
+#   :up        → vagrant up
+#   :halt      → vagrant halt
+#   :destroy   → vagrant destroy
+#   :provision → vagrant provision
+#   :reload    → vagrant reload
+#   :ssh       → vagrant ssh
+#   :resume    → vagrant resume
+#   :suspend   → vagrant suspend
+#   :snapshot  → vagrant snapshot
+#
+# ORDEM DE EXECUÇÃO:
+#   trigger.before :up  → ANTES de ligar a VM
+#   trigger.after  :up  → APÓS a VM estar pronta
+#
+# ONDE EXECUTAM:
+#   trigger.run        → NO HOST (sua máquina local)
+#   trigger.run_remote → NA VM (dentro da máquina virtual)
+#
+# SENIORIDADE:
+#   Triggers são a porta de integração do Vagrant com o
+#   ecossistema externo: Slack, Jira, monitoring, logs
+#   centralizados, sistemas de billing, etc.
+#   Em pipelines de CI, use triggers para notificar
+#   outros sistemas sobre o estado do ambiente.
+# ============================================================

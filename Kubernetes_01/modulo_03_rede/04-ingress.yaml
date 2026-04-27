@@ -1,0 +1,90 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um Ingress. A forma mais "bonita e elegante" L7 de expor 
+# URLs completas via HTTP/HTTPS no ambiente para a internet.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Imagine um mega prédio Comercial com dezenas de ramais PABX (Nossas APIs).
+# Você não ensina a cidade a ligar para as portas esquizofrênicas de NodePort (32560).
+# O Ingress é como o **Recepcinista Engravatar** focado lendo currículos e nomes.
+# Quando a requisição externa bate nele na PORTA FINA 80 e a pessoa da rua fala "Eu vim 
+# procurar pela empresa Loja.com.br no caminho /login", a catraca lê o bloco de papel (Host Header),
+# e abre a porta que conecta magicamente e unicamente ao Service lá de dentro correspondente do Login.
+
+# 2. O QUE É (definição técnica Senior)
+# O Ingress é um objeto da API que gerencia o acesso externo (Traffic Routing L7) para 
+# os Services em um cluster. Ingress prove host-based/path-based roteamento inteligente. 
+# Para o Ingress funcionar atrelado ao `yaml` abaixo, você obrigatoriamente 
+# precisa instalar 1 software paralelo chamado "Ingress Controller" (O mais famoso é o 'ingress-nginx').
+# O Objeto vazio no banco Etcd não faz nada sem um Controller monitorando-o para escrever seu conf.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: meu-trafego-web-recepcao
+  namespace: meu-primeiro-projeto
+  # Como amarramos annotations no Ingress como o Senior faz para a Recepcionista:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /  # "Se digitar /app remova o app pro nodejs não se assustar"
+    
+spec:
+  ingressClassName: nginx     # Especifica QUAL software lida (Nginx Controller, Traefik, HAProxy, AWS ALB)
+  rules:                      # Regras de URL / Navegador
+    - host: www.meu-curso-k8s.com.br # MÁGICA: SÓ aceita pessoas que de fato digitarem essa URL perfeita no navegador
+      http:
+        paths:
+          - path: /           # (O Caminho a URL da tela Inicial "/")
+            pathType: Prefix
+            backend:          # ONDE DESTE DESPACHO do Recepcionista vai Bater?
+              service:
+                name: api-frontend # O exato ramal eterno criado em ClusterIP
+                port:
+                  number: 80
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. No Kind, INGRESS requer um Controller a ser instado (rode antes esse manifesto oficial longo deles):
+#    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+#
+# 2. Aplique nossa regra elegante (E repare que agora é de URL baseada):
+#    kubectl apply -f 04-ingress.yaml
+#
+# 3. Listar o IP externo dele atrelado a maquina:
+#    kubectl get ingress -n meu-primeiro-projeto
+
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# "Elias, mas meu windows não sabe quem é meu-curso-k8s.com.br!"
+# O maior "pega" do Ingress quando treinamos local é no O/S Windows. Para que esse URL 
+# funcione no Chrome pra testar seu yaml, você precisa abrir como Administrador o 
+# C:\Windows\System32\drivers\etc\hosts e incluir `127.0.0.1 www.meu-curso-k8s.com.br` no TXT
+# senão dará "Servidor Não Encontrado DNS Error". E pra macos `/etc/hosts`
+#
+# Já os bugs clássicos de log "502 Bad Gateway" significam que a recepcionista leu seu NOME, 
+# mas o portão para o Service "api-frontend" falhou. O Service está morto ou não encontrou Pods vivos.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# "LoadBalancer Cloud x Ingress":  Quando estamos na AWS/Azure/GCP, uma empresa gigantesca
+# pode ter 300 APIs (Catalogo, Faturamento, RH...). Se for criar 300 Services do tipo 'LoadBalancer', a AWS cobrará 
+# caríssimo $20 doláres por mês VEZES 300, e você ficará com 300 IPs públicos flutuantes insanos.
+# Ao invés disso, o Senior paga **apenas 1** Network Load Balancer pra bater no IngressController.
+# E ali dentro a engine do NGINX abre um túnel subdividindo todo mundo via Ingress de "hosts", 
+# roteados elegantemente por software interno sem nenhum custo financeiro extra ao dev-team. 
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Se nós quisermos colocar um Certificado TLS (Cadeado HTTPS Seguro), nós criamos 
+# esse arquivo .PEM ou .CRT dentro da imagem Docker do seu WebServer em NodeJS para o k8s hosteá-lo?"
+# Resposta Esperada: "Geralmente é desencorajado como anti-pattern atarefando os Pods de negócio. 
+# Quem decriptografa e insere a Terminação TCP/TLS segura na linha de frente e gerencia o SSL Handshake é estritamente
+# o IngressController no portão. Na spec nós injetamos o campo vazio `tls:` chamando Secrets montados contendo  
+# a CA (Let's encrypt p.e). O Ingress joga pro pod atrás do muro de forma decodificada e rápida (http tcp limpo)."

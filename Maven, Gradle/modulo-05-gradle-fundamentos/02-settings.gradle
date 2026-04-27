@@ -1,0 +1,91 @@
+// ============================================================
+// ARQUIVO: 02-settings.gradle
+// USO: Groovy DSL — renomeie para settings.gradle
+//       (Kotlin: settings.gradle.kts)
+//
+// O QUE ESTE ARQUIVO FAZ:
+// Define o NOME do projeto e lista os SUBPROJETOS incluídos.
+// É o PRIMEIRO arquivo que o Gradle lê — antes do build.gradle.
+//
+// ANALOGIA:
+// Se o build.gradle é o "manual de construção de cada loja",
+// o settings.gradle é o "mapa do shopping" — diz quantas lojas
+// existem, seus nomes, e como estão organizadas.
+//
+// DEFINIÇÃO TÉCNICA:
+// O settings.gradle define o escopo do build: qual é o projeto
+// raiz e quais subprojetos fazem parte dele. É executado na
+// FASE DE SETTINGS do Gradle, antes de qualquer build script.
+// ============================================================
+
+// ─────────────────────────────────────────────────────────────
+// rootProject.name: define o NOME do projeto raiz
+// Equivalente ao <artifactId> do POM pai no Maven
+// IMPORTANTE: este nome vira o artifactId do JAR gerado
+// ─────────────────────────────────────────────────────────────
+rootProject.name = 'hello-gradle'
+
+// ─────────────────────────────────────────────────────────────
+// include: lista os subprojetos (para projetos multi-módulo)
+// Para projetos SIMPLES (single-project), não precisa declarar include
+// Veja o Módulo 9 para multi-módulo com Gradle
+// ─────────────────────────────────────────────────────────────
+
+// Exemplo multi-módulo (descomente para usar):
+// include 'modulo-api'
+// include 'modulo-core'
+// include 'modulo-app'
+
+// Subprojetos aninhados:
+// include 'services:auth'
+// include 'services:pagamento'
+// O Gradle criaria a estrutura: services/auth/ e services/pagamento/
+
+// ─────────────────────────────────────────────────────────────
+// pluginManagement: configura repositórios e versões de plugins
+// Executado antes de qualquer build.gradle
+// ─────────────────────────────────────────────────────────────
+pluginManagement {
+    // Onde o Gradle vai buscar os plugins
+    repositories {
+        // Gradle Plugin Portal — repositório oficial de plugins
+        gradlePluginPortal()
+        // Maven Central — alguns plugins são publicados aqui
+        mavenCentral()
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// dependencyResolutionManagement (Gradle 7+):
+// Centraliza a configuração de repositórios para TODOS os projetos
+// Evita declarar repositories {} em cada build.gradle filho
+// ─────────────────────────────────────────────────────────────
+dependencyResolutionManagement {
+    // FAIL_ON_PROJECT_REPOS: falha se um subprojeto declarar repositories
+    // Força que todos os repositórios sejam declarados aqui (boa prática)
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+
+    repositories {
+        mavenCentral()
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// KOTLIN DSL equivalente (settings.gradle.kts):
+//
+// rootProject.name = "hello-gradle"
+//
+// pluginManagement {
+//     repositories {
+//         gradlePluginPortal()
+//         mavenCentral()
+//     }
+// }
+//
+// dependencyResolutionManagement {
+//     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+//     repositories {
+//         mavenCentral()
+//     }
+// }
+// ─────────────────────────────────────────────────────────────

@@ -1,0 +1,56 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Apresenta uma arquitetura Senior separando quem está publico
+# de quem de fato mora recluso atras de pontes seguras no DNS.
+# Adicionando o conceito importantissimo das "Dependencies Trees".
+# ============================================================
+
+version: "3.8"
+
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    # A arvore Depends On evita que o compose inicie o NGINX antes do APP.
+    # Evitando assim que o cliente bata no Ngxnx "Bad Gateway 502".
+    depends_on:
+      - apinode
+    # A web SÓ tem acesso na placa de rede "ext_pub". Ela jamais conseguira pingar o bd.
+    networks:
+      - ext_pub
+
+  apinode:
+    # Usando Build Context ao inves de imagem do hub! O Compose vai acionar 
+    # o deamon mandando ele compilar "AGORA NO UP" a sua pasta . na maquina host!!
+    # build: .    # (Comentado aqui pois se vc rodar esse yaml sem ter a pasta base NodeJS de verdade pra ele compilar agora dará erro).
+    image: node:20-alpine
+    user: node
+    environment:
+      # O pulo do gato usando a sintaxe segura para injetar do .env via shell passthrough
+      DB_HOST: "db"
+      DB_PASSWORD: "${MINHA_SENHA_DO_BD_SEGURA}"
+    depends_on:
+      - db
+    # A ponte! O apinode fala das DUAS lados. Enxerga a net publica pra bater no proxy Ngnx..
+    # E enxerga os cabos da net backend DB pra pingar a String "db" setada nele ali em cima para achar o banco com seguranca.
+    networks:
+      - ext_pub
+      - backend_priv
+
+  db:
+      image: postgres:16
+      environment:
+        # A sintaxe ${VARIAVEL:-valordefault} funciona como um try catch fallback 
+        # se o Junior esquecer de criar o .Arquivo ENV no host...
+        POSTGRES_PASSWORD: "${MINHA_SENHA_DO_BD_SEGURA:-123456segura}"
+      # O banco fica cego na rede publica. Só roda no Backend network.
+      networks:
+        - backend_priv
+
+# Sessão Raiz Global Obrigatória declarando os switches L2 (Redes)
+networks:
+  ext_pub:
+    driver: bridge
+  backend_priv:
+    driver: bridge # Essa rede poderia nem ter internet dependendo do parametro passado.

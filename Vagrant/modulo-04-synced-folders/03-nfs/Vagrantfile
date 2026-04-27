@@ -1,0 +1,99 @@
+# ============================================================
+# MÓDULO 4 — NFS SYNCED FOLDER
+# O QUE ESTE ARQUIVO FAZ:
+#   Configura compartilhamento de pasta via NFS (Network File System).
+#   NFS oferece performance muito superior ao VirtualBox SF para
+#   projetos com muitos arquivos. Ideal para Linux/macOS hosts.
+#   
+#   ⚠️  REQUISITOS:
+#   - Linux/macOS host (NFS não funciona nativamente no Windows)
+#   - Permissão de root/admin no host (para exports NFS)
+#   - O Vagrant pedirá senha sudo automaticamente
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-nfs"
+
+  # NFS REQUER uma rede private (não funciona apenas com NAT)
+  config.vm.network "private_network", ip: "192.168.56.41"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-nfs"
+    vb.memory = "1024"
+    vb.cpus   = 1
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: NFS SYNCED FOLDER
+  # type: "nfs" → usa o daemon NFS do host
+  # -----------------------------------------------------------
+
+  config.vm.synced_folder ".",
+    "/app",
+    type:          "nfs",              # Backend NFS
+    nfs_version:   4,                  # NFS v4 (mais seguro e rápido)
+    nfs_udp:       false,              # TCP em vez de UDP (mais confiável)
+    mount_options: ["nolock", "vers=4", "tcp", "actimeo=2"]
+
+  # -----------------------------------------------------------
+  # OPÇÕES NFS AVANÇADAS
+  # -----------------------------------------------------------
+
+  # nfs_export: false → usa exports NFS existentes (sem modificar /etc/exports)
+  # config.vm.synced_folder ".", "/app",
+  #   type: "nfs",
+  #   nfs_export: false,
+  #   nfs_version: 4
+
+  # Para múltiplas pastas NFS com performance tuning
+  config.vm.synced_folder "./data",
+    "/data",
+    type:         "nfs",
+    create:       true,               # Cria ./data no host se não existir
+    nfs_version:  4,
+    nfs_udp:      false,
+    mount_options: [
+      "nolock",
+      "vers=4",
+      "tcp",
+      "actimeo=1",    # Tempo de cache de atributos em segundos
+    ]
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PROVISIONAMENTO
+  # -----------------------------------------------------------
+  config.vm.provision "shell", inline: <<-SHELL
+    echo "=== NFS MOUNTS ATIVOS ==="
+    mount | grep -E "nfs|vagrant" || echo "Nenhum mount NFS encontrado"
+    echo ""
+    echo "=== CONTEÚDO DE /app ==="
+    ls -la /app/ | head -10
+    echo "========================="
+  SHELL
+
+end
+
+# ============================================================
+# COMO O NFS FUNCIONA COM VAGRANT:
+#
+# 1. vagrant up executa
+# 2. Vagrant detecta type: "nfs"
+# 3. Vagrant adiciona entrada em /etc/exports do host (pede sudo)
+# 4. Exporta via daemon nfsd do host
+# 5. VM monta via NFS network
+#
+# SE APRESENTAR PROBLEMAS:
+#   - "Operation not permitted": instale nfs-kernel-server no host
+#     sudo apt-get install nfs-kernel-server (Ubuntu/Debian)
+#     sudo exportfs -a
+#   - "Connection refused": firewall bloqueando NFS
+#     sudo ufw allow from 192.168.56.0/24 to any port nfs
+#
+# WINDOWS HOST:
+#   NFS não é suportado nativamente. Use uma das alternativas:
+#   1. rsync (type: "rsync") — melhor alternativa no Windows
+#   2. SMB (type: "smb") — melhor se usar Active Directory
+#   3. vagrant-winnfsd plugin — NFS emulado (instável)
+# ============================================================

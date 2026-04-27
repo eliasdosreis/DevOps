@@ -1,0 +1,123 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Junta tudo demonstrando a técnica de como um Aplicação (Pod) 
+# "lê" ou o Secret (A Senha do Banco) ou o ConfigMap na parede. 
+# Mostra tanto EnvVar Clássica quanto Mapeamento Físico de Arquivo (Volumes).
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# O ConfigMap e o Secret soltos num cluster não fazem nada, são pedaços de papel ao vento.
+# Aqui nós ensinamos o "Funcionário" (O Container) a duas coisas:
+# 1ª Forma -> Ao nascer (Ligar/Bootar) ele "memóriza" numa pancada só as 10 informações 
+# da empresa na Cuca (Ele injeta como Environment Variables do Linux/NodeJS).
+#
+# 2ª Forma -> Nós criamos uma "Pasta Física do Windows" chamada M:/cofre/, e a folha do
+# K8s magicamente se materializa lá dentro pra ele ler no disco igual um C:// txt file.
+
+# 2. O QUE É (definição técnica Senior)
+# Para acoplar CMs e Secrets, usamos duas features da block `spec.containers`:
+# 1. `env` ou `envFrom`: Para expor os metadados diretamente no process-space.
+# 2. `volumes` -> `volumeMounts`: Onde o engine nativo do kubernetes gera uma 
+# bind-mount estática (como tmpfs/ramdisk) conectada no root-tree do Linux rodando na VM.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-loja-com-banco
+  namespace: meu-primeiro-projeto
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-loja
+  template:
+    metadata:
+      labels:
+        app: backend-loja
+    spec:
+      containers:
+        - name: applicacao-api
+          image: busybox:latest         
+          # Criei um script de loop falso que apenas printa a variavel pra testarmos online!
+          command: ["/bin/sh", "-c", "while true; do echo Lendo banco no idioma [$IDIOMA_DO_SISTEMA] com usuario [$USER_SECRETO]; sleep 5; done"]
+          
+          # =========================================================
+          # OPÇÃO 01: Injetando como VARIÁVEL DE AMBIENTE (EnvVar) no Linux
+          # =========================================================
+          env:
+            # 1. Variável vinda do arquivo de ConfigMap Livre
+            - name: IDIOMA_DO_SISTEMA           # Título da variavel de Ambiente ex: printf $IDIOMA_DO_SISTEMA
+              valueFrom:
+                configMapKeyRef:
+                  name: configuracoes-da-minha-loja  # Puxa o objeto que criamos na aula `01`
+                  key: idioma_padrao                 # A chave exata dentro do YAML
+            
+            # 2. Variável Secreta vinda do Cofre de Secret
+            - name: USER_SECRETO                # (Mesma logica, com secretKey)
+              valueFrom:
+                secretKeyRef:
+                  name: credenciais-do-banco         # Objeto Opaque da aula `02`
+                  key: usuario_db
+          
+          # =========================================================
+          # OPÇÃO 02: Injetando como PASTA FÍSICA NO HD DO APP (VolumeMount)
+          # =========================================================
+          volumeMounts:
+            - name: disco-falso-para-colocar-senhas    # Nome do HD Fantasma atrelado abaixo.
+              mountPath: "/usr/src/app/segredos"       # Todo o Secret ficará despejado nessa rota física
+              readOnly: true
+              
+      # Os Discos Fantasmas são configurados FORA do <containers>, na aba de Pods inteiros:
+      volumes:
+        - name: disco-falso-para-colocar-senhas
+          secret:                             # Criando um volume do tipo File-From-Secret!
+            secretName: credenciais-do-banco
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Confirme que você aplicou na última aula os arquivos `01-configmap.yaml` e 
+#    `02-secret.yaml`. Depois lance o deploy:
+#    kubectl apply -f 03-pod-com-config.yaml
+#
+# 2. Pra ver a OPCAO 01 funcionando ao vivo no Container lendo a var:
+#    (Pegue o nome do pod vivo via get pods primeiro) e rode o tail do log
+#    kubectl logs <nome-gerado-do-pod> -n meu-primeiro-projeto
+#    (Vai aparecer: "Lendo banco no idioma [pt-BR] com usuario [admin-x-db]")
+#
+# 3. Pra ver a OPCAO 02 (Entrar na maquina em SSH Hack mode):
+#    kubectl exec -it <nome-gerado-do-pod> -n meu-primeiro-projeto -- sh
+#    -> cd /usr/src/app/segredos
+#    -> ls (Veja magicamente os arquivos com titulo "senha_db" existindo fisicamente!) 
+
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# O erro clássico do Mount Volumes é errar o `mountPath` e sobescrever caminhos base
+# do Sistema Linux Container root da sua aplicação. Se sua API estava no `/app` e o seu 
+# `mountPath` se chamar `/app` sem cuidado cego de formatação, você MATA o disco e o 
+# linux subordina o mount nativo inteiro ao Secret. Use "subPath" ou evite rotas cores.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# Seniors evitam Option 01 (EnvVars) por dois motivos cruciais. 
+# Motivo A: Quando sua aplicação trava e o Linux ou K8s emitem um Crash-Dump de Kernel, 
+# todas as variáveis de ambiente ativas (Environment Heap) são jogadas no arquivo crash.log 
+# cru, vazando toda e qualquer Hash/Password de AWS gravado nelas na cara dura das 
+# ferramentas de log (Data Dog, Kibana, etc).
+# Motivo B: Volumes Secret são Hot-Reloaded (Já explicado na aula 01-Configmap). As variables 
+# nunca trocam de versão se voce as alterar sem matar os Pods de vez, perdendo reatividade da esteira CI.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Se nós temos exatas 50 variáveis em um API NodeJs antiga baseadas em .env file.
+# Precisamos que escreva 50 chaves repetidas `valueFrom.. configMapKeyRef` no Spec.env do k8s YAML?"
+# Resposta Esperada: "Definitvamente Não. Além de deixar o Deployment GIGANTESCO com 1.000 linhas, 
+# nós usamos a diretiva genial do Kubernetes chamada `envFrom: [configMapRef: name: my-config]`. 
+# Essa unica linha fará o engine "desenrolar" dinamicamente toda as chaves de dentro daquele configmap 
+# ou secret e convertê-las auto magicamente 1 pra 1 em variáveis completas no sistema bash!".

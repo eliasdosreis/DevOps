@@ -1,0 +1,166 @@
+# ============================================================
+# ARQUIVO: 03-postgres-statefulset.yaml
+# PROJETO FINAL - Banco de dados PostgreSQL
+#
+# PostgreSQL tem ESTADO (dados persistentes), então usamos
+# StatefulSet. Nunca use Deployment para bancos de dados!
+#
+# O que este arquivo cria:
+# 1. Headless Service (DNS estável para o banco)
+# 2. StatefulSet com 1 réplica do PostgreSQL
+# 3. PVC automático de 20GB para os dados
+# ============================================================
+
+# PASSO 1: Headless Service para o PostgreSQL
+# Outros pods usam: postgres-service para conectar
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: postgres-service         # Nome usado em DB_HOST do ConfigMap!
+  namespace: ecommerce
+  labels:
+    app: postgres
+    componente: banco-de-dados
+
+spec:
+  clusterIP: None                # Headless = sem IP virtual
+                                 # Cada pod tem seu DNS próprio
+  selector:
+    app: postgres                # Encontra pods com label app=postgres
+
+  ports:
+    - name: postgres             # Nome da porta
+      port: 5432                 # Porta exposta pelo Service
+      targetPort: 5432           # Porta no container
+
+---
+# PASSO 2: O StatefulSet do PostgreSQL
+apiVersion: apps/v1
+kind: StatefulSet
+
+metadata:
+  name: postgres                 # Nome do StatefulSet
+  namespace: ecommerce
+  labels:
+    app: postgres
+    componente: banco-de-dados
+
+spec:
+  serviceName: postgres-service  # OBRIGATÓRIO: nome do Headless Service
+  replicas: 1                    # 1 réplica (produção real: use postgres HA)
+
+  selector:
+    matchLabels:
+      app: postgres              # Gerencia pods com este label
+
+  template:                      # Template dos pods
+    metadata:
+      labels:
+        app: postgres            # Label que o selector busca
+        componente: banco-de-dados
+
+    spec:
+      # -------------------------------------------------------
+      # securityContext: Configurações de segurança do POD
+      # Roda o container sem privilégios de root
+      # -------------------------------------------------------
+      securityContext:
+        runAsUser: 999           # UID do usuário postgres dentro do container
+        runAsGroup: 999          # GID do grupo postgres
+        fsGroup: 999             # Grupo do filesystem do volume
+
+      containers:
+        - name: postgres         # Nome do container
+          image: postgres:15     # Imagem oficial do PostgreSQL 15
+
+          ports:
+            - containerPort: 5432
+              name: postgres
+
+          # Variáveis de ambiente carregadas do Secret
+          env:
+            - name: POSTGRES_USER           # Variável dentro do container
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret     # De qual Secret
+                  key: POSTGRES_USER        # Qual chave do Secret
+
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_DB
+
+            # Otimizações de performance para produção
+            - name: POSTGRES_INITDB_ARGS
+              value: "--encoding=UTF-8 --locale=pt_BR.UTF-8"
+
+          # Recursos: PostgreSQL precisa de boa quantidade de RAM
+          resources:
+            requests:
+              memory: "256Mi"    # Mínimo garantido
+              cpu: "250m"
+            limits:
+              memory: "1Gi"      # Máximo permitido
+              cpu: "1000m"       # 1 core completo
+
+          # Volume montado onde postgres guarda os dados
+          volumeMounts:
+            - name: postgres-dados        # Nome do volume (vem do VCT)
+              mountPath: /var/lib/postgresql/data   # Dentro do container
+
+          # LIVENESS: O postgres está vivo?
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                # pg_isready verifica se postgres aceita conexões
+                - pg_isready -U $(POSTGRES_USER) -d $(POSTGRES_DB)
+            initialDelaySeconds: 30  # Postgres demora para iniciar
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # READINESS: Postgres está pronto para receber queries?
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U $(POSTGRES_USER) -d $(POSTGRES_DB)
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+
+  # -------------------------------------------------------
+  # VolumeClaimTemplates: Cria PVC automático por pod
+  # postgres-dados-postgres-0 = PVC do pod postgres-0
+  # -------------------------------------------------------
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-dados          # Prefixo do nome do PVC
+      spec:
+        accessModes: ["ReadWriteOnce"]  # Um nó por vez (ok para DB)
+        resources:
+          requests:
+            storage: 20Gi             # 20GB para os dados
+
+# ============================================================
+# ENTREVISTA SÊNIOR - PostgreSQL em K8s:
+#
+# "Você rodaria PostgreSQL em Kubernetes em produção?"
+# RESPOSTA HONESTA: "Depende do contexto."
+# - Pequeno/médio: sim, com StatefulSet + backups + monitoramento
+# - Grande escala: considerar RDS (AWS), Cloud SQL (GCP)
+#   pois managed databases reduzem overhead operacional
+# - Sempre: use PodDisruptionBudget, backups automatizados
+#   e teste restore regularmente!
+# ============================================================

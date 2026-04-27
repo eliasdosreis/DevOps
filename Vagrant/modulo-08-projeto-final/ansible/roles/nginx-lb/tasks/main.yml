@@ -1,0 +1,116 @@
+---
+# =============================================================
+# ROLE: nginx-lb
+# PROPÓSITO: Configura Nginx como Load Balancer para os web servers
+# ALGORITMO: round-robin com health checks ativos
+# IDEMPOTENTE: Sim
+# =============================================================
+
+- name: Instalar Nginx
+  apt:
+    name:  nginx
+    state: present
+  tags: nginx-lb
+
+- name: Configurar Nginx como Load Balancer
+  copy:
+    content: |
+      # Upstream: lista de web servers que o LB vai rotear entre eles
+      upstream web_servers {
+          # Algoritmo padrão: round-robin (distribui igualmente)
+          # Alternativas: least_conn (menor conexões), ip_hash (sticky session)
+
+          server {{ machines.web1.ip }}:80 max_fails=3 fail_timeout=30s;
+          server {{ machines.web2.ip }}:80 max_fails=3 fail_timeout=30s;
+
+          # Keepalive: mantém conexões abertas para reuso (performance)
+          keepalive 32;
+      }
+
+      server {
+          listen 80 default_server;
+          server_name _;
+
+          # Logs do Load Balancer
+          access_log /var/log/nginx/lb-access.log;
+          error_log  /var/log/nginx/lb-error.log warn;
+
+          # Headers informativos
+          add_header X-LB-Server    "{{ inventory_hostname }}" always;
+          add_header X-LB-Algorithm "round-robin" always;
+
+          # Headers de segurança
+          add_header X-Frame-Options        "SAMEORIGIN"    always;
+          add_header X-Content-Type-Options  "nosniff"       always;
+          add_header Strict-Transport-Security "max-age=31536000" always;
+
+          # Health check do próprio LB
+          location /lb-health {
+              return 200 "LB OK\n";
+              add_header Content-Type text/plain;
+          }
+
+          # Todo o resto vai para os web servers (upstream)
+          location / {
+              proxy_pass         http://web_servers;
+              proxy_http_version 1.1;
+
+              # Headers para o backend saber o IP real do cliente
+              proxy_set_header   Host              $host;
+              proxy_set_header   X-Real-IP         $remote_addr;
+              proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+              proxy_set_header   X-Forwarded-Proto $scheme;
+
+              # Connection: "" necessário para keepalive funcionar
+              proxy_set_header   Connection        "";
+
+              # Timeouts
+              proxy_connect_timeout 5s;
+              proxy_send_timeout    60s;
+              proxy_read_timeout    60s;
+
+              # Buffer settings para melhor performance
+              proxy_buffering    on;
+              proxy_buffer_size  4k;
+              proxy_buffers      8 4k;
+          }
+      }
+    dest: /etc/nginx/sites-available/default
+    mode: '0644'
+  notify: Restart Nginx
+  tags: nginx-lb
+
+- name: Garantir Nginx rodando e habilitado
+  service:
+    name:    nginx
+    state:   started
+    enabled: yes
+  tags: nginx-lb
+
+- name: Verificar que LB está respondendo
+  uri:
+    url:            "http://localhost/lb-health"
+    return_content: yes
+    status_code:    200
+  register: lb_health
+  retries:  5
+  delay:    3
+  until:    lb_health.status == 200
+  tags:
+    - nginx-lb
+    - verify
+
+- name: Exibir status do Load Balancer
+  debug:
+    msg:
+      - "✅ Load Balancer configurado!"
+      - "   URL pública: http://localhost:{{ host_port | default(8080) }}"
+      - "   Web1: {{ machines.web1.ip }}"
+      - "   Web2: {{ machines.web2.ip }}"
+  tags: nginx-lb
+
+handlers:
+  - name: Restart Nginx
+    service:
+      name:  nginx
+      state: restarted

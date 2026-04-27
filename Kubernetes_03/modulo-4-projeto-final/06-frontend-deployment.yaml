@@ -1,0 +1,150 @@
+# ============================================================
+# ARQUIVO: 06-frontend-deployment.yaml
+# PROJETO FINAL - Frontend (React/Next.js servido via Nginx)
+#
+# O frontend é um app STATELESS (sem estado).
+# Não guarda dados: cada request é independente.
+# Por isso usamos Deployment (não StatefulSet).
+#
+# Padrão de produção: Nginx serve os arquivos estáticos
+# e faz proxy das requisições de API.
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: frontend
+  namespace: ecommerce
+
+  annotations:
+    kubernetes.io/change-cause: "Frontend v1.0.0 - versao inicial"
+
+  labels:
+    app: frontend
+    componente: web
+    versao: "1.0.0"
+
+spec:
+  replicas: 2                    # 2 réplicas para HA
+                                 # Frontend é leve, 2 são suficientes
+
+  selector:
+    matchLabels:
+      app: frontend
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0          # Zero downtime sempre!
+
+  template:
+    metadata:
+      labels:
+        app: frontend
+        componente: web
+        versao: "1.0.0"
+
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101           # UID do usuário nginx
+        runAsGroup: 101
+
+      terminationGracePeriodSeconds: 15  # Frontend pode ser mais rápido
+
+      # Espalha pods em nós diferentes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: frontend
+                topologyKey: kubernetes.io/hostname
+
+      containers:
+        - name: frontend
+          image: nginx:1.25-alpine     # Nginx serve o build do React/Next
+
+          ports:
+            - containerPort: 80
+              name: http
+
+          # Configuração do nginx montada do ConfigMap
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d   # Onde fica a config
+              readOnly: true                 # Config é somente leitura
+
+            - name: tmp
+              mountPath: /tmp              # nginx precisa de /tmp
+
+            - name: nginx-cache
+              mountPath: /var/cache/nginx  # Cache do nginx
+
+            - name: nginx-run
+              mountPath: /var/run          # PID file do nginx
+
+          resources:
+            requests:
+              memory: "64Mi"     # Frontend nginx é leve
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+
+          livenessProbe:
+            httpGet:
+              path: /health      # Endpoint de health do nginx
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true   # Nginx config via volume
+            capabilities:
+              drop: ["ALL"]
+              add: ["NET_BIND_SERVICE"]    # Permite escutar na porta 80
+
+      volumes:
+        # Config do nginx vem do ConfigMap
+        - name: nginx-config
+          configMap:
+            name: config-api
+            items:
+              - key: nginx.conf          # Chave no ConfigMap
+                path: default.conf       # Nome do arquivo montado
+
+        # Volumes temporários para nginx funcionar com readOnly
+        - name: tmp
+          emptyDir: {}
+
+        - name: nginx-cache
+          emptyDir: {}
+
+        - name: nginx-run
+          emptyDir: {}
+
+# ============================================================
+# POR QUE emptyDir para cache e run?
+#
+# Com readOnlyRootFilesystem: true, o nginx não consegue
+# escrever em /tmp, /var/cache/nginx, /var/run.
+# Mas ele PRECISA dessas pastas para funcionar.
+# emptyDir cria volumes temporários writeable para essas pastas.
+# Cada pod tem seu próprio emptyDir (não compartilhado).
+# ============================================================

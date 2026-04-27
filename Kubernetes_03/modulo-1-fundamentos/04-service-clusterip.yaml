@@ -1,0 +1,90 @@
+# ============================================================
+# ARQUIVO: 04-service-clusterip.yaml
+# O QUE É UM SERVICE?
+#
+# Problema: Pods morrem e nascem com IPs diferentes.
+# Como outros apps acham o seu pod se o IP muda?
+#
+# SOLUÇÃO: Service é como a RECEPÇÃO de um hotel.
+# Você não fala com o quarto diretamente (pod),
+# você fala com a recepção (service) e ela te direciona.
+#
+# TIPOS DE SERVICE:
+# 1. ClusterIP  --> Só acessível DENTRO do cluster (padrão)
+# 2. NodePort   --> Acessível de FORA pelo IP do nó
+# 3. LoadBalancer --> Cria um IP externo na nuvem
+# 4. ExternalName --> Aponta para DNS externo
+# ============================================================
+
+# Primeiro criamos o Pod que o Service vai apontar
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: app-backend           # Pod que será exposto pelo service
+  labels:
+    app: backend              # LABEL CRUCIAL! O Service usa isso
+    versao: "v1"              # para encontrar o pod
+
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.25
+      ports:
+        - containerPort: 80
+
+---
+# ============================================================
+# AGORA O SERVICE
+# ============================================================
+
+apiVersion: v1
+kind: Service               # Tipo: Service
+
+metadata:
+  name: service-backend     # Nome do service
+                            # Outros pods usam ESSE nome para
+                            # se comunicar! Ex: http://service-backend
+
+  labels:
+    app: backend
+
+spec:
+  type: ClusterIP           # Tipo ClusterIP = só dentro do cluster
+                            # Este é o tipo PADRÃO
+                            # Acessível apenas dentro do cluster
+
+  selector:                 # COMO o service acha os pods?
+    app: backend            # Ele procura pods com label app=backend
+                            # DEVE BATER com os labels do Pod acima!
+                            # Isso é a "cola" entre Service e Pod
+
+  ports:
+    - name: http            # Nome da porta (opcional mas boa prática)
+      protocol: TCP         # Protocolo (TCP é o padrão)
+      port: 80              # Porta que o SERVICE expõe
+                            # Outros pods chamam: service-backend:80
+      targetPort: 80        # Porta que o POD está escutando
+                            # Precisa bater com containerPort do pod
+
+# ============================================================
+# COMO FUNCIONA O SELECTOR:
+#
+#   Pod tem label:     app: backend  ✓
+#   Service selector:  app: backend  ✓
+#   RESULTADO: Service roteia tráfego para o Pod!
+#
+#   Se o label NÃO bater, o Service não encontra o Pod.
+#   Essa é uma das causas mais comuns de bug em K8s!
+#
+# TESTAR:
+#   kubectl apply -f 04-service-clusterip.yaml
+#   kubectl get services
+#   kubectl describe service service-backend
+#   kubectl get endpoints service-backend   # Ver os IPs dos pods
+#
+# ENTREVISTA:
+# "O que são Endpoints no Kubernetes?"
+# RESPOSTA: São os IPs reais dos Pods que o Service aponta.
+# Você pode ver com: kubectl get endpoints <service-name>
+# ============================================================

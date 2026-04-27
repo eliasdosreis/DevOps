@@ -1,0 +1,78 @@
+# ============================================================
+# ARQUIVO: 01-replicaset.yaml
+# O QUE É UM REPLICASET?
+#
+# Imagine uma pizzaria:
+# Você precisa de 3 entregadores de bicicleta sempre.
+# Se um cai doente, o gerente contrata outro AUTOMATICAMENTE.
+# O ReplicaSet é esse gerente!
+#
+# ReplicaSet garante que SEMPRE terá N cópias do seu pod rodando.
+# Se um pod morrer, ele cria outro. Se tiver a mais, mata um.
+#
+# NOTA: Na prática, não criamos ReplicaSet diretamente.
+# Usamos Deployment (que cria ReplicaSet automaticamente).
+# Mas entender ReplicaSet é ESSENCIAL para entrevistas!
+# ============================================================
+
+apiVersion: apps/v1         # ReplicaSet usa "apps/v1" (não "v1")
+kind: ReplicaSet            # Tipo: ReplicaSet
+
+metadata:
+  name: replicaset-nginx    # Nome do ReplicaSet
+  labels:
+    app: nginx
+    modulo: dois
+
+spec:
+  replicas: 3               # NÚMERO DE PODS que queremos sempre ativos
+                            # Mude para 5 e aplique: vai criar 2 a mais!
+                            # Mude para 1 e aplique: vai matar 2!
+
+  selector:                 # Como o ReplicaSet ENCONTRA seus pods?
+    matchLabels:            # Procura pods com ESTES labels
+      app: nginx            # Deve bater com o template abaixo!
+
+  template:                 # MODELO para criar novos pods
+                            # É como uma "receita" de pod
+    metadata:
+      labels:
+        app: nginx          # DEVE bater com o selector acima!
+                            # Se não bater: ERRO!
+
+    spec:                   # Spec do pod (igual ao Pod normal)
+      containers:
+        - name: nginx
+          image: nginx:1.25
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+
+# ============================================================
+# EXPERIMENTOS PARA APRENDER:
+#
+# 1. Criar o ReplicaSet:
+#    kubectl apply -f 01-replicaset.yaml
+#
+# 2. Ver os 3 pods criados:
+#    kubectl get pods -l app=nginx
+#
+# 3. DELETAR um pod manualmente e ver o RS criar outro:
+#    kubectl delete pod <nome-do-pod>
+#    kubectl get pods    # Rapidinho tem 3 de novo!
+#
+# 4. Escalar na hora:
+#    kubectl scale replicaset replicaset-nginx --replicas=5
+#
+# PERGUNTA DE ENTREVISTA:
+# "Qual a diferença entre ReplicaSet e Deployment?"
+# RESPOSTA: ReplicaSet garante N réplicas. Deployment gerencia
+# ReplicaSets e adiciona: rollout, rollback, e histórico.
+# Use Deployment em produção, não ReplicaSet direto.
+# ============================================================

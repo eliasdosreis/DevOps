@@ -1,0 +1,31 @@
+---
+# ==============================================================
+# ARQUIVO: roles/webserver/meta/main.yml
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# "meta" = informações SOBRE a role (como a capa de um livro).
+# Diz quem criou, para qual sistema funciona,
+# e de quais outras roles depende.
+# ==============================================================
+
+galaxy_info:
+  author: "Alex DevOps Coach"
+  description: "Role para instalar e configurar Nginx"
+  license: "MIT"
+  min_ansible_version: "2.12"
+
+  # Sistemas operacionais suportados
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy    # 22.04
+        - focal    # 20.04
+    - name: Debian
+      versions:
+        - bullseye  # 11
+        - bookworm  # 12
+
+# Dependências: outras roles que devem rodar ANTES desta
+# (Deixar vazio = sem dependências)
+dependencies: []

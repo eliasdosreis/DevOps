@@ -1,0 +1,103 @@
+# ============================================================
+# MÓDULO 5 — AMBIENTE WEB + DATABASE
+# O QUE ESTE ARQUIVO FAZ:
+#   Simula uma arquitetura real de 2 camadas:
+#   - VM "web": Nginx como frontend (192.168.56.60)
+#   - VM "db":  MySQL como backend  (192.168.56.61)
+#   As VMs se comunicam via rede privada.
+#   O servidor web pode conectar ao banco de dados.
+# ============================================================
+
+# Variáveis de configuração centralizadas
+DB_IP      = "192.168.56.61"
+WEB_IP     = "192.168.56.60"
+DB_NAME    = "meuapp"
+DB_USER    = "appuser"
+DB_PASS    = "senha_segura_123"
+
+Vagrant.configure("2") do |config|
+
+  # -----------------------------------------------------------
+  # CONFIGURAÇÕES GLOBAIS
+  # -----------------------------------------------------------
+  config.vm.box          = "ubuntu/jammy64"
+  config.vm.boot_timeout = 300
+
+  # Desabilita atualização automática de boxes (mais rápido)
+  config.vm.box_check_update = false
+
+  # -----------------------------------------------------------
+  # SEÇÃO: VM DO BANCO DE DADOS
+  # Sobe primeiro (mas o Vagrant sobe em paralelo por padrão)
+  # -----------------------------------------------------------
+  config.vm.define "db", primary: false do |db|
+
+    db.vm.hostname = "db-server"
+    db.vm.network "private_network", ip: DB_IP
+
+    db.vm.provider "virtualbox" do |vb|
+      vb.name   = "vagrant-db-server"
+      vb.memory = "1024"   # DB precisa de mais memória
+      vb.cpus   = 1
+    end
+
+    db.vm.provision "shell",
+      path: "scripts/setup-db.sh",
+      env: {
+        "DB_NAME" => DB_NAME,
+        "DB_USER" => DB_USER,
+        "DB_PASS" => DB_PASS,
+        "WEB_IP"  => WEB_IP
+      }
+
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: VM DO SERVIDOR WEB
+  # -----------------------------------------------------------
+  config.vm.define "web", primary: true do |web|  # primary: vagrant ssh usa esta por padrão
+
+    web.vm.hostname = "web-server"
+    web.vm.network "private_network", ip: WEB_IP
+
+    # Expõe o app para o host
+    web.vm.network "forwarded_port",
+      guest:   80,
+      host:    8080,
+      host_ip: "127.0.0.1"
+
+    web.vm.provider "virtualbox" do |vb|
+      vb.name   = "vagrant-web-server"
+      vb.memory = "512"
+      vb.cpus   = 1
+    end
+
+    web.vm.provision "shell",
+      path: "scripts/setup-web.sh",
+      env: {
+        "DB_IP"   => DB_IP,
+        "DB_NAME" => DB_NAME,
+        "DB_USER" => DB_USER,
+        "DB_PASS" => DB_PASS
+      }
+
+  end
+
+end
+
+# ============================================================
+# ARQUITETURA DESTE AMBIENTE:
+#
+#   [Browser] → localhost:8080
+#       ↓
+#   [web VM - 192.168.56.60]  ← Nginx
+#       ↓  (rede privada)
+#   [db VM  - 192.168.56.61]  ← MySQL
+#
+# INICIALIZAÇÃO RECOMENDADA (garante que DB sobe primeiro):
+#   vagrant up db    → aguarde terminar
+#   vagrant up web   → agora o web pode conectar ao db
+#
+# OU SUBA TUDO E O WEB RETENTARÁ:
+#   vagrant up       → o script de setup-web.sh tem retry
+# ============================================================

@@ -1,0 +1,53 @@
+# ============================================================
+# ARQUIVO: 01-pod-simples.yaml
+# O QUE É UM POD?
+# Imagine uma caixa de papelão onde você coloca seu brinquedo.
+# O Pod é essa caixa. Dentro dela fica seu aplicativo (container).
+# O Kubernetes cuida dessas caixas para você!
+# ============================================================
+
+apiVersion: v1          # Versão da API do Kubernetes que usamos
+                        # Para Pods, sempre usamos "v1"
+
+kind: Pod               # Tipo do recurso. Aqui é um "Pod"
+                        # Outros tipos: Deployment, Service, etc.
+
+metadata:               # Informações SOBRE o pod (não o conteúdo)
+  name: meu-primeiro-pod  # Nome único do pod no cluster
+                           # Pense no nome da sua casinha
+
+  labels:               # Etiquetas para identificar o pod
+                        # Como etiquetas numa caixa de sapato
+    app: nginx          # Label "app" com valor "nginx"
+    ambiente: estudo    # Label "ambiente" com valor "estudo"
+    modulo: "um"        # Label "modulo" com valor "um"
+                        # Labels são pares chave: valor
+
+spec:                   # Especificação - O QUE tem dentro do pod
+  containers:           # Lista de containers dentro do pod
+                        # Um pod pode ter 1 ou mais containers
+
+    - name: container-nginx   # Nome do container dentro do pod
+      image: nginx:1.25       # Imagem Docker que vamos usar
+                              # nginx é um servidor web famoso
+                              # :1.25 é a versão (tag)
+
+      ports:                  # Portas que o container usa
+        - containerPort: 80   # Porta 80 = porta padrão do HTTP
+                              # É por onde o nginx responde
+
+# ============================================================
+# COMO USAR:
+#   kubectl apply -f 01-pod-simples.yaml
+#   kubectl get pods
+#   kubectl get pods -o wide   (mostra mais detalhes)
+#   kubectl describe pod meu-primeiro-pod
+#   kubectl logs meu-primeiro-pod
+#   kubectl delete pod meu-primeiro-pod
+#
+# PERGUNTA DE ENTREVISTA SENIOR:
+#   "Qual a diferença entre Pod e Container?"
+#   RESPOSTA: Container é a aplicação em si (processo).
+#   Pod é o ENVELOPE do Kubernetes que envolve 1+ containers,
+#   compartilhando rede e armazenamento entre eles.
+# ============================================================

@@ -1,0 +1,83 @@
+---
+# ==============================================================
+# ARQUIVO: roles/security/tasks/fail2ban.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Fail2Ban é como um SEGURANÇA com memória fotográfica!
+# Se alguém tentar entrar e errar a senha 5 vezes,
+# o segurança bloqueia esse cara por 1 hora.
+# Protege contra ataques de força bruta (tentativa/erro).
+# ==============================================================
+
+# Instalar o Fail2Ban
+- name: "Fail2Ban: Instalar"
+  ansible.builtin.apt:
+    name: fail2ban
+    state: present
+  when: ansible_os_family == "Debian"
+
+# Criar configuração local (sobrescreve a padrão com segurança)
+# NUNCA edite /etc/fail2ban/jail.conf diretamente!
+# Sempre use /etc/fail2ban/jail.local
+- name: "Fail2Ban: Criar configuração local"
+  ansible.builtin.copy:
+    # Conteúdo da configuração escrito inline
+    content: |
+      # Configuração local do Fail2Ban
+      # Gerado pelo Ansible - NÃO edite manualmente!
+
+      [DEFAULT]
+      # Tempo de ban em segundos (3600 = 1 hora)
+      bantime  = {{ security_fail2ban_ban_tempo }}
+
+      # Janela de tempo para contar tentativas (10 minutos)
+      findtime = 600
+
+      # Número máximo de tentativas antes do ban
+      maxretry = {{ security_fail2ban_max_tentativas }}
+
+      # Enviar email de alerta (opcional)
+      # destemail = admin@empresa.com
+
+      # ---- Proteção SSH -------------------------------------
+      [sshd]
+      enabled  = true
+      port     = {{ security_ssh_porta }}
+      filter   = sshd
+      logpath  = /var/log/auth.log
+      maxretry = {{ security_fail2ban_max_tentativas }}
+
+      # ---- Proteção Nginx (se instalado) -------------------
+      [nginx-http-auth]
+      enabled  = true
+      filter   = nginx-http-auth
+      logpath  = /var/log/nginx/error.log
+      maxretry = 5
+
+    dest: /etc/fail2ban/jail.local
+    mode: '0644'
+    owner: root
+    group: root
+  # Reiniciar fail2ban quando configuração mudar
+  notify: Reiniciar fail2ban
+
+# Garantir que Fail2Ban está rodando e inicia no boot
+- name: "Fail2Ban: Habilitar e iniciar serviço"
+  ansible.builtin.service:
+    name: fail2ban
+    state: started
+    enabled: true
+
+# Verificar status e IPs banidos
+- name: "Fail2Ban: Verificar status"
+  ansible.builtin.command:
+    cmd: fail2ban-client status
+  register: f2b_status
+  changed_when: false
+  ignore_errors: true   # Pode falhar se ainda estiver iniciando
+
+- name: "Fail2Ban: Status atual"
+  ansible.builtin.debug:
+    msg: "{{ f2b_status.stdout_lines | default(['Fail2Ban iniciando...']) }}"

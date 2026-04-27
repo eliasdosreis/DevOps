@@ -1,0 +1,97 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um Deployment, o tipo de Workload MAIS POPULAR de todo 
+# o Kubernetes. Permite atualizações em massa (Rollout) sem downtime.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Lembra que o ReplicaSet era o Feitor da Fábrica, garantindo a escala?
+# O **Deployment** é o C.E.O da fábrica. Ele controla vários *ReplicaSets*.
+# Se o C.E.O decide mudar as camisas dos funcionários (imagem do pod) de Azul pra Vermelha, 
+# se mandasse pro Feitor, ele não saberia trocar ninguem, só se o funcionário pedir as contas.
+# O Deployment cria um ReplicaSet NOVO p/ as camisas vermelhas, transfere 
+# 1 funcionário de cada vez do RS Azul para o RS Vermelho, sem que 
+# os clientes da loja fiquem sem atendimento (Zero Downtime / Rolling Updates).
+
+# 2. O QUE É (definição técnica Senior)
+# O Deployment fornece atualizações declarativas (*Rolling Updates*/Rollbacks) para 
+# ReplicaSets e Pods. Você descreve o "estado desejado" no Deployment, e ele 
+# altera a taxa de criação de um novo RS versus a delegação/estrangulamento do RS antigo 
+# a uma taxa controlada.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment            # O Objeto Rei dos workloads stateless do K8s
+metadata:
+  name: api-loja
+  namespace: meu-primeiro-projeto
+  labels:
+    app: api                # Label p/ o próprio Deployment (boa prática)
+spec:
+  replicas: 3               # Total de Pods que minha aplicação terá
+  selector:                 # Filtro para adotar os Pods gerados por ele (igual no RS)
+    matchLabels:
+      app: api-loja
+      
+  # Estratégia de Atualização: A diferença Master do Deployment!
+  strategy:
+    type: RollingUpdate     # Significa: "Não mate todos de vez quando atualizar!"
+    rollingUpdate:
+      maxSurge: 1           # O quão acima do limite desejado (3) ele pode passar durante o rollout? (Max 4 simultâneos)
+      maxUnavailable: 0     # O mínimo garantido que tem que sobrar online? (Sempre os 3 aqui)
+      
+  template:                 # A Receita dos Pods 
+    metadata:
+      labels:               
+        app: api-loja       # DEVE Bater com o spec.selector de cima.
+    spec:
+      containers:
+        - name: loja-container
+          image: nginx:1.24  # Atenção: Começaremos com a 1.24
+          ports:
+            - containerPort: 80
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Subir a api:
+#    kubectl apply -f 02-deployment.yaml
+#
+# 2. Efeito Cascata Mágico: Veja o k8s criando tudo (Deployment > RS > Pods):
+#    kubectl get deployments,rs,pods -n meu-primeiro-projeto
+#
+# 3. Altere o número da imagem no código acima de `nginx:1.24` para `nginx:1.25`, 
+# e rode um apply novamente:
+#    kubectl apply -f 02-deployment.yaml
+#
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# Tente rodar o comando abaixo para "assistir" o histórico (Rollout log):
+#    kubectl rollout status deployment api-loja -n meu-primeiro-projeto
+# 
+# PÂNICO! Atualizou p/ uma imagem errada e o app quebrou? Use ROlLLBACK fácil:
+#    kubectl rollout undo deployment api-loja -n meu-primeiro-projeto
+# Isso desfaz as quebras e volta p/ o ReplicaSet anterior.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# Não confunda stateless com bancos de dados. Deployments são feitos para
+# matar Pods Aleatórios a qualquer momento de forma distribuída (apenas "stateless"). 
+# Se você colocar seu Banco de Dados (Postgres ou MongoDB) em um Deployment, e ocorrer 
+# um RollingUpdate, ele tentará dar "kill" aleatório para recriá-los, possivelmente 
+# corrompendo blocos de consistência na concorrência do disco porque ele não se importa
+# com a ORDEM. Deployments amam processamento/web. Não perdem carinho por dados. 
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Se eu alterar a label do pod no 'template' de um Deployment e aplicar via 
+# kubectl, o que acontece?"
+# Resposta Esperada: "O apply falhará imediatamente. Selector de Deployments são 
+# IMUTÁVEIS após sua primeira criação para evitar que um Deployment perca a 
+# referência aos Pods órfãos que ele acabou de criar. Se precisar mudar Labels
+# primárias de seletores, você deve deletar e recriar o Deployment."

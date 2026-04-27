@@ -1,0 +1,93 @@
+# ============================================================
+# MÓDULO 4 — RSYNC SYNCED FOLDER
+# O QUE ESTE ARQUIVO FAZ:
+#   Configura sincronização via rsync — unidirecional (host → VM).
+#   Mais rápido para operações pois copia apenas diferenças.
+#   Ideal para: Windows hosts, builds, projetos com node_modules.
+#   Funciona em qualquer OS sem permissão de root.
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-rsync"
+
+  config.vm.network "private_network", ip: "192.168.56.42"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-rsync"
+    vb.memory = "1024"
+    vb.cpus   = 1
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: RSYNC SYNCED FOLDER
+  # UNIDIRECIONAL: alterações no HOST vão para a VM
+  # Alterações na VM NÃO voltam para o host
+  # -----------------------------------------------------------
+
+  config.vm.synced_folder ".",
+    "/app",
+    type:         "rsync",
+    rsync__auto:  true,              # Habilita sync automático (requires: vagrant rsync-auto)
+    rsync__args:  [                  # Argumentos passados ao rsync
+      "--verbose",                   # Mostra arquivos sendo sincronizados
+      "--archive",                   # Preserva permissões, timestamps, symlinks
+      "--delete",                    # Remove na VM arquivos deletados no host
+      "--compress"                   # Comprime os dados durante transferência
+    ],
+    rsync__exclude: [                # Arquivos/pastas a IGNORAR na sincronização
+      ".git/",                       # Ignorar histórico Git (pesado, não necessário na VM)
+      "node_modules/",               # Instale dependências NA VM para evitar issues de SO
+      "vendor/",                     # Dependências PHP/Ruby
+      ".vagrant/",                   # Estado local do Vagrant
+      "*.log",                       # Logs gerados localmente
+      ".DS_Store",                   # Arquivos macOS
+      "*.swp"                        # Arquivos temporários do Vim
+    ]
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PROVISIONAMENTO
+  # -----------------------------------------------------------
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update -q
+    apt-get install -y -q nginx rsync
+
+    echo "=== RSYNC SYNC FOLDER ==="
+    echo "Conteúdo sincronizado em /app:"
+    ls -la /app/
+    echo ""
+    echo "NOTA: node_modules/ e .git/ foram excluídos do sync"
+    echo "Para instalar dependências, faça dentro da VM:"
+    echo "  cd /app && npm install"
+    echo "=========================="
+  SHELL
+
+end
+
+# ============================================================
+# COMANDOS RSYNC DO VAGRANT:
+#
+#   vagrant rsync          → sincroniza UMA VEZ manualmente
+#   vagrant rsync-auto     → fica monitorando e sincroniza automático
+#                            (mantém terminal aberto, use em segundo plano)
+#
+# FLUXO DE DESENVOLVIMENTO COM RSYNC:
+#   Terminal 1: vagrant rsync-auto  (monitor de mudanças)
+#   Terminal 2: vagrant ssh         (acesso à VM)
+#   Editor:     edite os arquivos normalmente no host
+#   → rsync-auto detecta mudanças e sincroniza automaticamente
+#
+# VANTAGENS DO RSYNC NO WINDOWS:
+#   - Não precisa de driver especial (VirtualBox SF)
+#   - Não precisa de NFS (complexo no Windows)
+#   - Performance excelente (apenas delta de mudanças)
+#   - Controle total sobre o que sincroniza (exclude)
+#
+# node_modules e rsync:
+#   Excluir node_modules do rsync é a MELHOR PRÁTICA.
+#   node_modules tem binários nativos compilados para o SO.
+#   Se você está no Windows e a VM é Linux, os módulos
+#   compilados no host não funcionarão na VM.
+#   Instale sempre com `npm install` DENTRO da VM.
+# ============================================================

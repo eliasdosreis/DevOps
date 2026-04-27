@@ -1,0 +1,59 @@
+# ============================================================
+# MÓDULO 3 — SHELL SCRIPT EXTERNO
+# O QUE ESTE ARQUIVO FAZ:
+#   Usa scripts Bash externos para provisionar a VM.
+#   Separa a lógica de provisionamento do Vagrantfile,
+#   tornando o código mais organizado e reutilizável.
+#   Propósito: mostrar boas práticas de organização.
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-shell-script"
+
+  config.vm.network "private_network", ip: "192.168.56.31"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-shell-script"
+    vb.memory = "1024"
+    vb.cpus   = 1
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: SHELL PROVISIONER COM SCRIPT EXTERNO
+  # path: caminho relativo ao Vagrantfile
+  # O arquivo é copiado para a VM e executado lá
+  # -----------------------------------------------------------
+
+  # Script de instalação de dependências
+  # Executado como root (privileged: true é o padrão)
+  config.vm.provision "shell",
+    path: "scripts/install.sh"
+
+  # Script de configuração (executado após install.sh)
+  # Ordem garantida: install.sh SEMPRE antes de configure.sh
+  config.vm.provision "shell",
+    path: "scripts/configure.sh"
+
+  # -----------------------------------------------------------
+  # SHELL SCRIPT COM ARGUMENTOS
+  # Passa parâmetros para o script via args:
+  # -----------------------------------------------------------
+  # config.vm.provision "shell",
+  #   path: "scripts/install.sh",
+  #   args: ["--env", "development", "--port", "8080"]
+
+  # -----------------------------------------------------------
+  # SHELL SCRIPT COM VARIÁVEIS DE AMBIENTE
+  # env: hash de variáveis disponíveis no script
+  # -----------------------------------------------------------
+  # config.vm.provision "shell",
+  #   path: "scripts/configure.sh",
+  #   env: {
+  #     "APP_ENV"  => "development",
+  #     "DB_HOST"  => "192.168.56.50",
+  #     "APP_PORT" => "8080"
+  #   }
+
+end

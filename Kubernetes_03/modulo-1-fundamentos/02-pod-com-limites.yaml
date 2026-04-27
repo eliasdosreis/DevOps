@@ -1,0 +1,74 @@
+# ============================================================
+# ARQUIVO: 02-pod-com-limites.yaml
+# RESOURCE REQUESTS E LIMITS
+#
+# Imagine uma festa com comida:
+# - REQUEST = "Eu preciso de pelo menos 1 fatia de pizza"
+#   (Kubernetes GARANTE isso para você)
+# - LIMIT = "Você pode comer NO MÁXIMO 3 fatias"
+#   (Kubernetes BLOQUEIA se passar disso)
+#
+# Por que isso importa?
+# Sem limites, um app mal-feito pode consumir TODA a memória
+# do servidor e derrubar TODOS os outros apps. Ruim né?
+# ============================================================
+
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: pod-com-recursos      # Nome do nosso pod
+  labels:
+    app: app-controlada       # Label para identificar
+    modulo: "um"
+
+spec:
+  containers:
+    - name: container-com-limite
+      image: nginx:1.25
+
+      ports:
+        - containerPort: 80
+
+      # -------------------------------------------------------
+      # RESOURCES: Controle de CPU e Memória
+      # -------------------------------------------------------
+      resources:
+
+        requests:               # O MÍNIMO que o container precisa
+                                # Kubernetes usa isso para DECIDIR
+                                # em qual nó (máquina) colocar o pod
+
+          memory: "64Mi"        # 64 Megabytes de RAM no mínimo
+                                # Mi = Mebibytes (1Mi = ~1.04MB)
+                                # Outros: Ki, Mi, Gi, Ti
+
+          cpu: "100m"           # 100 millicores de CPU
+                                # 1000m = 1 core completo
+                                # 100m = 10% de 1 core
+
+        limits:                 # O MÁXIMO que o container pode usar
+                                # Se passar do limit de memória:
+                                # o container é MORTO (OOMKilled)
+                                # Se passar do limit de CPU:
+                                # o container é THROTTLED (freado)
+
+          memory: "128Mi"       # Máximo 128MB de RAM
+          cpu: "200m"           # Máximo 200 millicores (0.2 core)
+
+# ============================================================
+# DICA DE OURO PARA ENTREVISTA:
+#
+# "O que acontece quando um pod ultrapassa o memory limit?"
+# RESPOSTA: O processo é morto pelo kernel com OOMKilled.
+# O pod tenta reiniciar (depende da restartPolicy).
+#
+# "O que acontece quando ultrapassa o CPU limit?"
+# RESPOSTA: CPU throttling - o processo é FREADO,
+# não morto. Fica mais lento mas continua vivo.
+#
+# "Qual a diferença entre Request e Limit?"
+# RESPOSTA: Request é para AGENDAMENTO (scheduling),
+# o Kubernetes garante esse mínimo. Limit é o teto máximo
+# que o processo pode usar antes de ser punido.
+# ============================================================

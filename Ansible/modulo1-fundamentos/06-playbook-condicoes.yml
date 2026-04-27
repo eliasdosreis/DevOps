@@ -1,0 +1,94 @@
+---
+# ==============================================================
+# ARQUIVO: 06-playbook-condicoes.yml
+# MÓDULO 1 - Fundamentos
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Condições são como semáforos!
+# 🟢 Verde (condição verdadeira) = faça isso
+# 🔴 Vermelho (condição falsa)   = não faça / faça outra coisa
+#
+# Em Ansible, usamos "when:" para tomar decisões.
+# É como o "se" do português: "SE está chovendo, ENTÃO leve guarda-chuva"
+#
+# ▶️  COMO RODAR:
+# ansible-playbook -i 01-inventory-simples.ini 06-playbook-condicoes.yml
+# ==============================================================
+
+- name: "Condicionais no Ansible - Tomando Decisões"
+  hosts: localhost
+  become: true
+  gather_facts: true  # Precisamos dos fatos para as condições
+
+  # "vars" = variáveis que criamos nós mesmos
+  vars:
+    ambiente: "producao"      # Pode mudar para "staging" e ver a diferença!
+    numero_cpus_minimo: 1     # Mínimo de CPUs que queremos
+
+  tasks:
+
+    # ---- CONDIÇÃO SIMPLES: when ----------------------------------
+    # Só executa SE a condição for verdadeira
+    - name: "Mensagem específica para Ubuntu"
+      ansible.builtin.debug:
+        msg: "🐧 Este servidor roda Ubuntu!"
+      # "when" = "quando". Só roda SE for Ubuntu
+      when: ansible_distribution == "Ubuntu"
+
+    - name: "Mensagem específica para CentOS/RedHat"
+      ansible.builtin.debug:
+        msg: "🎩 Este servidor roda CentOS/RedHat!"
+      when: ansible_distribution in ["CentOS", "RedHat", "Rocky"]
+
+    # ---- CONDIÇÃO COM VARIÁVEL NOSSA ----------------------------
+    - name: "Aviso de ambiente de produção"
+      ansible.builtin.debug:
+        msg: "⚠️  ATENÇÃO: Você está em PRODUÇÃO! Tenha cuidado!"
+      when: ambiente == "producao"
+
+    - name: "Mensagem de ambiente de staging"
+      ansible.builtin.debug:
+        msg: "🧪 Ambiente de testes - pode experimentar à vontade!"
+      when: ambiente == "staging"
+
+    # ---- CONDIÇÃO COM NÚMERO ------------------------------------
+    - name: "Verificar quantidade de CPUs"
+      ansible.builtin.debug:
+        msg: "✅ Servidor tem {{ ansible_processor_vcpus }} CPUs - OK!"
+      # Verifica se tem CPUs suficientes
+      when: ansible_processor_vcpus >= numero_cpus_minimo
+
+    # ---- CONDIÇÃO COMPOSTA: AND (e) -----------------------------
+    # Duas condições precisam ser verdadeiras ao mesmo tempo
+    - name: "Ubuntu E produção juntos"
+      ansible.builtin.debug:
+        msg: "🔒 Ubuntu em produção - configuração mais segura ativada"
+      when:
+        - ansible_distribution == "Ubuntu"   # Condição 1
+        - ambiente == "producao"             # Condição 2 (AND = ambas verdadeiras)
+
+    # ---- CONDIÇÃO COMPOSTA: OR (ou) ----------------------------
+    # UMA DAS condições precisa ser verdadeira
+    - name: "Ubuntu OU Debian"
+      ansible.builtin.debug:
+        msg: "📦 Sistema baseado em Debian - usando apt"
+      # "or" = ou uma, ou outra
+      when: ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
+
+    # ---- CONDIÇÃO COM RESULTADO DE TAREFA ----------------------
+    - name: "Verificar se arquivo existe"
+      ansible.builtin.stat:
+        path: /tmp/ansible-demo/config.txt
+      register: arquivo_config
+
+    - name: "Só roda SE o arquivo existir"
+      ansible.builtin.debug:
+        msg: "📄 Arquivo config.txt encontrado!"
+      # .stat.exists = True se existe, False se não existe
+      when: arquivo_config.stat.exists
+
+    - name: "Só roda SE o arquivo NÃO existir"
+      ansible.builtin.debug:
+        msg: "❌ Arquivo config.txt não existe - precisa criar!"
+      when: not arquivo_config.stat.exists

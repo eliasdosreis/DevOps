@@ -1,0 +1,73 @@
+# ==============================================================
+# ARQUIVO: templates/nginx.conf.j2
+# MÓDULO 2 - Intermediário
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Um template é como um FORMULÁRIO com espaços em branco.
+# "Nome: _____, Idade: _____"
+# O Ansible preenche os espaços com as variáveis certas!
+# {{ variavel }} = espaço em branco que será preenchido
+# ==============================================================
+
+# Configuração Nginx gerada automaticamente pelo Ansible
+# Gerado em: {{ ansible_date_time.date | default('hoje') }}
+# Ambiente: {{ ambiente | upper }}
+
+# Número de processos (igual ao número de CPUs do servidor)
+worker_processes {{ ansible_processor_vcpus | default(1) }};
+
+events {
+    # Máximo de conexões simultâneas
+    worker_connections {{ max_conexoes | default(1024) }};
+}
+
+http {
+
+    # ---- Configuração do servidor principal -------------------
+    server {
+        # Porta que o Nginx vai escutar
+        listen {{ porta_http | default(80) }};
+        
+        # Nome do servidor (domínio)
+        server_name {{ dominio | default('localhost') }};
+
+        # Pasta raiz dos arquivos web
+        root {{ pasta_web | default('/var/www/html') }};
+        index index.html;
+
+        # ---- Bloco condicional: só se SSL estiver ativo ------
+        # {% if %} = condição no template (como "when" no playbook)
+        {% if ssl_habilitado | default(false) %}
+        # Redirecionar HTTP para HTTPS
+        return 301 https://$server_name$request_uri;
+        {% endif %}
+
+        # ---- Loop: criar múltiplos locations -----------------
+        # {% for %} = loop no template
+        {% for rota in rotas_app | default([]) %}
+        location {{ rota.caminho }} {
+            proxy_pass {{ rota.destino }};
+            proxy_set_header Host $host;
+        }
+        {% endfor %}
+
+        # Configuração de logs
+        access_log /var/log/nginx/{{ nome_app | default('app') }}_access.log;
+        error_log  /var/log/nginx/{{ nome_app | default('app') }}_error.log;
+    }
+
+    # ---- Servidor HTTPS (só se SSL habilitado) ---------------
+    {% if ssl_habilitado | default(false) %}
+    server {
+        listen 443 ssl;
+        server_name {{ dominio | default('localhost') }};
+
+        ssl_certificate     /etc/ssl/certs/{{ dominio | default('localhost') }}.crt;
+        ssl_certificate_key /etc/ssl/private/{{ dominio | default('localhost') }}.key;
+
+        root {{ pasta_web | default('/var/www/html') }};
+        index index.html;
+    }
+    {% endif %}
+}

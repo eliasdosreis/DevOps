@@ -1,0 +1,60 @@
+---
+# ==============================================================
+# ARQUIVO: roles/app/tasks/nginx.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# O Nginx funciona como RECEPCIONISTA do hotel.
+# O visitante chega na porta 80/443 (Nginx).
+# O Nginx encaminha para o quarto certo (porta 8000 da app).
+# A app nunca fica exposta diretamente na internet!
+# Isso se chama "proxy reverso".
+# ==============================================================
+
+# Remover configuração padrão do Nginx (vem na instalação)
+- name: "Nginx: Remover site padrão"
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Reiniciar nginx
+
+# Criar configuração do virtual host da aplicação via template
+- name: "Nginx: Criar configuração do site"
+  ansible.builtin.template:
+    src: nginx_vhost.conf.j2        # Template com variáveis
+    dest: "/etc/nginx/sites-available/{{ app_nome }}.conf"
+    mode: '0644'
+    owner: root
+    group: root
+    # Validar sintaxe antes de aplicar!
+    validate: "nginx -t -c %s"
+  notify: Reiniciar nginx
+
+# Ativar o site criando symlink em sites-enabled
+# sites-available = existe mas desabilitado
+# sites-enabled = habilitado (tem symlink aqui)
+- name: "Nginx: Habilitar site"
+  ansible.builtin.file:
+    src: "/etc/nginx/sites-available/{{ app_nome }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ app_nome }}.conf"
+    state: link                    # Criar como symlink
+  notify: Reiniciar nginx
+
+# Testar configuração completa do Nginx
+- name: "Nginx: Testar configuração"
+  ansible.builtin.command:
+    cmd: nginx -t
+  register: nginx_test
+  changed_when: false
+
+- name: "Nginx: Resultado do teste"
+  ansible.builtin.debug:
+    msg: "{{ nginx_test.stderr_lines }}"
+
+# Garantir que Nginx está rodando e inicia no boot
+- name: "Nginx: Habilitar e iniciar serviço"
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true

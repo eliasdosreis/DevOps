@@ -1,0 +1,62 @@
+# ==============================================================
+# ARQUIVO: roles/app/templates/app.service.j2
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Este arquivo "cadastra" nossa app no systemd.
+# Systemd = o gerente que cuida de todos os serviços do servidor.
+# Com este arquivo, nossa app vira um serviço oficial!
+# Pode usar: systemctl start/stop/restart/status {{ app_nome }}
+# ==============================================================
+
+[Unit]
+# Descrição que aparece no "systemctl status"
+Description={{ app_nome }} - Aplicação Web (Gerenciado pelo Ansible)
+
+# "After" = só inicia DEPOIS que a rede e o banco estiverem prontos
+After=network.target postgresql.service
+
+# "Requires" = se o banco cair, a app também para
+Requires=postgresql.service
+
+[Service]
+# Tipo: "simple" = processo principal é o que inicia
+Type=simple
+
+# Usuário e grupo que rodarão a aplicação (NUNCA root!)
+User={{ app_usuario }}
+Group={{ app_grupo }}
+
+# Pasta de trabalho = onde a app está instalada
+WorkingDirectory={{ app_dir }}/current
+
+# Carregar variáveis de ambiente do .env
+EnvironmentFile={{ app_dir }}/current/.env
+
+# Comando para iniciar a aplicação
+# Gunicorn = servidor WSGI Python (para apps Django/Flask)
+ExecStart={{ app_dir }}/current/venv/bin/gunicorn \
+    --workers {{ gunicorn_workers }} \
+    --bind {{ gunicorn_bind }} \
+    --timeout {{ gunicorn_timeout }} \
+    --access-logfile {{ app_dir }}/logs/access.log \
+    --error-logfile {{ app_dir }}/logs/error.log \
+    wsgi:application
+
+# Reiniciar automaticamente se a app travar ou dar erro
+Restart=always
+
+# Aguardar 5 segundos antes de tentar reiniciar
+RestartSec=5
+
+# Número máximo de reinicializações em 60 segundos (evita loop infinito)
+StartLimitBurst=3
+StartLimitInterval=60
+
+# Timeout para iniciar (se demorar mais que isso, considera falha)
+TimeoutStartSec=60
+
+[Install]
+# "WantedBy=multi-user.target" = iniciar no boot normal do servidor
+WantedBy=multi-user.target

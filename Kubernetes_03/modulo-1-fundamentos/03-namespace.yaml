@@ -1,0 +1,90 @@
+# ============================================================
+# ARQUIVO: 03-namespace.yaml
+# O QUE É UM NAMESPACE?
+#
+# Imagine um grande prédio de apartamentos:
+# - O PRÉDIO = Cluster Kubernetes
+# - Os ANDARES = Namespaces
+# - Os APARTAMENTOS = Pods
+#
+# Sem namespaces, tudo ficaria misturado no mesmo espaço.
+# Com namespaces, você separa: dev, staging, produção, time-A, etc.
+#
+# Namespaces padrão que já existem:
+#   - default      --> onde ficam seus recursos se não especificar
+#   - kube-system  --> componentes internos do Kubernetes
+#   - kube-public  --> recursos públicos
+# ============================================================
+
+# ---
+# O "---" separa múltiplos recursos no mesmo arquivo YAML
+# Podemos criar vários recursos de uma vez!
+
+apiVersion: v1
+kind: Namespace             # Tipo: Namespace
+
+metadata:
+  name: desenvolvimento     # Nome do namespace
+                            # Convenção: letras minúsculas, hífens
+
+  labels:                   # Labels no namespace também!
+    ambiente: dev           # Identifica que é ambiente de dev
+    time: backend           # Identifica o time dono
+
+---
+# ============================================================
+# Segundo namespace no mesmo arquivo
+# ============================================================
+
+apiVersion: v1
+kind: Namespace
+
+metadata:
+  name: producao            # Namespace de produção separado
+
+  labels:
+    ambiente: prod          # Label diferente: prod
+    time: backend
+
+---
+# ============================================================
+# Pod criado DENTRO de um namespace específico
+# ============================================================
+
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: pod-no-namespace
+  namespace: desenvolvimento    # AQUI dizemos em qual namespace
+                                # Se não colocar, vai para "default"
+  labels:
+    app: minha-app
+
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.25
+      ports:
+        - containerPort: 80
+
+# ============================================================
+# COMANDOS IMPORTANTES:
+#
+# Criar os namespaces:
+#   kubectl apply -f 03-namespace.yaml
+#
+# Ver pods em um namespace específico:
+#   kubectl get pods -n desenvolvimento
+#   kubectl get pods -n producao
+#
+# Ver pods em TODOS os namespaces:
+#   kubectl get pods --all-namespaces
+#   kubectl get pods -A   (atalho)
+#
+# PERGUNTA DE ENTREVISTA:
+# "Namespaces fornecem isolamento de rede?"
+# RESPOSTA: NÃO por padrão! Namespaces são isolamento
+# lógico/organizacional. Para isolamento de rede real,
+# você precisa de NetworkPolicies (veremos no Módulo 3!)
+# ============================================================

@@ -1,0 +1,99 @@
+# ============================================================
+# ARQUIVO: 04-configmap.yaml
+# O QUE É UM CONFIGMAP?
+#
+# Imagine as regras da escola:
+# - "Uniforme obrigatório"
+# - "Entrada às 7h30"
+# - "Proibido celular em sala"
+#
+# Essas regras ficam num mural (ConfigMap).
+# Se mudar uma regra, você muda SÓ o mural.
+# Não precisa mudar toda a estrutura da escola (rebuild da imagem)!
+#
+# ConfigMap = Configurações SEPARADAS do código
+# ============================================================
+
+apiVersion: v1
+kind: ConfigMap             # Tipo: ConfigMap
+
+metadata:
+  name: config-da-app       # Nome do ConfigMap
+
+data:                       # Aqui ficam as configurações
+                            # Formato: chave: valor
+
+  # Variáveis simples de ambiente
+  APP_ENV: "producao"       # Ambiente atual
+  APP_PORT: "8080"          # Porta da aplicação
+  LOG_LEVEL: "info"         # Nível de log
+  MAX_CONNECTIONS: "100"    # Máximo de conexões
+
+  # Você também pode colocar arquivos inteiros!
+  nginx.conf: |             # | permite texto multilinha
+    server {
+      listen 80;
+      server_name localhost;
+      location / {
+        root /usr/share/nginx/html;
+        index index.html;
+      }
+    }
+
+---
+# ============================================================
+# Pod que USA o ConfigMap
+# ============================================================
+
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: pod-usando-configmap
+  labels:
+    app: usa-config
+
+spec:
+  containers:
+    - name: app
+      image: nginx:1.25
+
+      # JEITO 1: Carregar TODAS as chaves como env vars
+      envFrom:
+        - configMapRef:
+            name: config-da-app   # Nome do ConfigMap acima
+
+      # JEITO 2: Carregar chaves ESPECÍFICAS
+      env:
+        - name: MINHA_ENV         # Nome da variável no container
+          valueFrom:
+            configMapKeyRef:
+              name: config-da-app # De qual ConfigMap
+              key: APP_ENV        # Qual chave específica
+
+      # JEITO 3: Montar como ARQUIVO no container
+      volumeMounts:
+        - name: volume-config     # Nome do volume
+          mountPath: /etc/nginx/conf.d   # Onde montar no container
+
+  volumes:
+    - name: volume-config         # Definição do volume
+      configMap:
+        name: config-da-app       # Usa o ConfigMap como volume
+
+# ============================================================
+# DIFERENÇA IMPORTANTE:
+#
+# ConfigMap como ENV VAR:
+#   ✓ Fácil de usar
+#   ✗ Se mudar o ConfigMap, precisa REINICIAR o pod
+#
+# ConfigMap como VOLUME (arquivo):
+#   ✓ Atualiza AUTOMATICAMENTE no container
+#   ✗ Demora alguns minutos para propagar
+#
+# ENTREVISTA:
+# "ConfigMap é seguro para senhas?"
+# RESPOSTA: NÃO! ConfigMap é em texto puro (base64 não é).
+# Para senhas e dados sensíveis, use SECRET.
+# ============================================================

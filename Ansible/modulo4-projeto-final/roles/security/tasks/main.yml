@@ -1,0 +1,31 @@
+---
+# ==============================================================
+# ARQUIVO: roles/security/tasks/main.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Esta role é o SEGURANÇA DO SHOPPING.
+# Controla quem entra, bloqueia suspeitos,
+# e garante que só as portas certas ficam abertas.
+# ==============================================================
+
+# --- Índice: importar sub-arquivos de tarefas ----------------
+# Separar em arquivos pequenos = mais fácil de manter!
+
+- name: "Importar: Hardening do SSH"
+  ansible.builtin.import_tasks: ssh.yml
+  tags: [security, ssh]
+
+- name: "Importar: Configurar Firewall (UFW)"
+  ansible.builtin.import_tasks: firewall.yml
+  tags: [security, firewall]
+
+- name: "Importar: Instalar Fail2Ban"
+  ansible.builtin.import_tasks: fail2ban.yml
+  tags: [security, fail2ban]
+  when: security_fail2ban_instalar | bool
+
+- name: "Importar: Atualizações de Segurança"
+  ansible.builtin.import_tasks: updates.yml
+  tags: [security, updates]

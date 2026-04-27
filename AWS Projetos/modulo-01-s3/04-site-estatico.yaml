@@ -1,0 +1,162 @@
+# ============================================================
+# ARQUIVO: 04-site-estatico.yaml
+# O QUE FAZ: Configura o bucket S3 para hospedar um site estático
+#
+# ANALOGIA: É como transformar sua caixa postal em uma vitrine
+#           de loja — qualquer um na internet pode ver o conteúdo.
+#
+# O QUE É UM SITE ESTÁTICO?
+# Arquivos prontos: HTML, CSS, JS, imagens
+# O servidor NÃO processa nada — entrega o arquivo como está
+# Sem banco de dados, sem PHP, sem Node.js rodando no servidor
+# Perfeito para: portfólios, landing pages, SPAs (React/Vue/Angular)
+#
+# CUSTO: ~$0.00 — Free Tier cobre uso básico
+# ⚠️  O acesso público PRECISA ser habilitado para sites estáticos
+#
+# PRÉ-REQUISITO: Entenda o 01-bucket-s3.yaml primeiro
+# CONCEITO NOVO: Static Website Hosting, Index Document, Error Document
+# ============================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  MÓDULO 1 - PASSO 4: Bucket S3 configurado para hospedar site estático.
+  Acessível via URL pública. Para produção, use CloudFront na frente.
+  Conceitos: Static Website Hosting, Public Access, Website Endpoint
+
+Parameters:
+
+  NomeBucket:
+    Type: String
+    Description: Nome único do bucket (será parte da URL do site)
+
+  Ambiente:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+
+Resources:
+
+  # ----------------------------------------------------------
+  # BUCKET PARA SITE ESTÁTICO
+  # DIFERENÇA do bucket privado: PublicAccessBlock DESABILITADO
+  # e WebsiteConfiguration ADICIONADA
+  # ----------------------------------------------------------
+  BucketSiteEstatico:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Ref NomeBucket
+      
+      # ----------------------------------------------------------
+      # BLOCK PUBLIC ACCESS — DESABILITADO para site público
+      # ⚠️  Só desabilite quando o objetivo é acesso público!
+      # Para dados sensíveis: NUNCA desabilite
+      # ----------------------------------------------------------
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false          # Permite ACLs públicas
+        BlockPublicPolicy: false        # Permite políticas públicas
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false    # Permite acesso público
+      
+      # ----------------------------------------------------------
+      # WEBSITE CONFIGURATION — O que transforma o bucket em site
+      # Index Document: arquivo padrão ao acessar a raiz "/"
+      # Error Document: página exibida em erros 4xx (404, 403...)
+      # ----------------------------------------------------------
+      WebsiteConfiguration:
+        IndexDocument: index.html       # Arquivo principal do site
+        ErrorDocument: error.html       # Página de erro (404, etc.)
+        
+        # RoutingRules (opcional): redireciona URLs antigas para novas
+        # Útil para migração de sites ou URLs amigáveis
+        # RoutingRules:
+        #   - RoutingRuleCondition:
+        #       HttpErrorCodeReturnedEquals: '404'
+        #     RedirectRule:
+        #       ReplaceKeyPrefixWith: '#!/'  # Redireciona SPA
+      
+      # Criptografia mesmo em buckets públicos é boa prática
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+            BucketKeyEnabled: true
+      
+      # Versionamento para proteger o conteúdo do site
+      VersioningConfiguration:
+        Status: Enabled
+      
+      OwnershipControls:
+        Rules:
+          # BucketOwnerPreferred (não Enforced) permite ACLs
+          # necessário para compatibilidade com alguns uploads
+          - ObjectOwnership: BucketOwnerPreferred
+      
+      # CORS — Necessário se o site fizer chamadas a APIs na AWS
+      # (API Gateway, por exemplo)
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"                     # Aceita qualquer header
+            AllowedMethods:
+              - GET                     # Leitura de recursos
+              - HEAD                    # Verificar metadados
+            AllowedOrigins:
+              - "*"                     # Qualquer origem (⚠️ restringir em produção!)
+            MaxAge: 3600               # Cache preflight por 1 hora
+      
+      Tags:
+        - Key: Modulo
+          Value: "01-S3"
+        - Key: Tipo
+          Value: SiteEstatico
+        - Key: Ambiente
+          Value: !Ref Ambiente
+
+  # ----------------------------------------------------------
+  # BUCKET POLICY — Permite leitura pública de TODOS os objetos
+  # Sem esta policy, mesmo com PublicAccessBlock desabilitado,
+  # os objetos retornam 403 Forbidden
+  # ----------------------------------------------------------
+  PoliticaPublicaLeitura:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BucketSiteEstatico
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PermitirLeituraPublica   # Identificador (legível)
+            Effect: Allow                  # ALLOW ou DENY
+            Principal: "*"                 # "*" = qualquer pessoa no mundo
+            Action: s3:GetObject           # Permissão de leitura de objetos
+            Resource:
+              # !Sub substitui ${BucketSiteEstatico} pelo nome real
+              # /* = todos os objetos dentro do bucket
+              - !Sub "arn:aws:s3:::${BucketSiteEstatico}/*"
+
+Outputs:
+
+  URLSiteEstatico:
+    Description: URL do site estático (use esta URL no navegador!)
+    Value: !GetAtt BucketSiteEstatico.WebsiteURL
+    # Exemplo: http://meu-site.s3-website-us-east-1.amazonaws.com
+
+  URLBucketS3:
+    Description: URL S3 padrão (diferente da WebsiteURL)
+    Value: !Sub "https://${NomeBucket}.s3.${AWS::Region}.amazonaws.com"
+
+  NomeBucket:
+    Description: Nome do bucket para upload de arquivos
+    Value: !Ref BucketSiteEstatico
+
+  ProximosPasso:
+    Description: Comandos para fazer upload do site
+    Value: !Sub |
+      Após criar a stack, faça upload do site:
+      
+      aws s3 cp index.html s3://${NomeBucket}/
+      aws s3 cp error.html s3://${NomeBucket}/
+      aws s3 sync ./site/ s3://${NomeBucket}/
+      
+      Acesse em: http://${NomeBucket}.s3-website-${AWS::Region}.amazonaws.com

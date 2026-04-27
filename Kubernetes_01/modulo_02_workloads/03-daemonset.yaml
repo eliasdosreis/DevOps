@@ -1,0 +1,93 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um DaemonSet, usado exclusivamento para colocar exatamente
+# 1 instancia de um Pod por cada Nó físico do cluster.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Imagine um hospital imenso (O Cluster). O Deployment é como os Médicos Ortopedistas:
+# se quebram pernas no 2º andar, o Deployment manda os 3 ortopedistas p/ o 2º andar.
+# O DaemonSet é como o **Vigia da Recepção** (ou a luz do Corredor): Obrigatoriamente
+# tem que existir exata e unicamente 1 cópia em CADA andar do hospital de plantão.
+# Se construírem um Anexo Predial Novo, uma cópia do vigia instantaneamente aparece lá.
+
+# 2. O QUE É (definição técnica Senior)
+# O DaemonSet garante que TODOS (ou alguns) nós executem uma cópia de um Pod. 
+# À medida que os nós são adicionados ao cluster, Pods são adicionados a eles. 
+# Quando nós são removidos, esses Pods são ejetados com garbage collection.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: coletor-de-logs-fluentbit # Ótimo caso de uso: Logs, Agentes Segurança e Rede.
+  namespace: kube-system          # Muito comum daemonsets morarem no namespace de sitema
+  labels:
+    app: fluentbit-agent
+spec:
+  # ATENÇÃO: Cadê o campo 'replicas = 3' aqui??
+  # R: Não existe em DaemonSet! O número de réplicas é sempre igual ao número de Nós!
+  selector:
+    matchLabels:
+      name: fluentbit-agent
+  
+  template:
+    metadata:
+      labels:
+        name: fluentbit-agent
+    spec:
+      # Tolerations: Os daemonSets de sistema muitas vezes precisam "Tolerar" rodar
+      # até no nó 'Control Plane' (que normalmente barra pods comuns).
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      containers:
+        - name: fluentbit
+          image: fluent/fluent-bit:2.1
+          resources:
+            limits:
+              memory: 200Mi # Sempre limite memoria de DaemonSets p/ não esmagar o nó.
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplicar o arquivo:
+#    kubectl apply -f 03-daemonset.yaml
+#
+# 2. Listar e confirmar que se você tem 1 nó (kind Worker, ele criou 1):
+#    kubectl get daemonset -n kube-system
+#
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# Como ver exatamente em quais nós ele caiu "espalhado"?:
+#    kubectl get pods -n kube-system -o wide | grep fluentbit
+# O "-o wide" é um truque genial de Mestre para mandar o terminal imprimir qual Nó físico
+# cada Pod está ancorado.
+#
+# O maior pesadelo no Daemonset é ele NÃO criar o pod no seu nó Worker XYZ.
+# Quando isso ocorre, quase sempre nós dizemos que o Nó possui "Taints" 
+# (Máculas/Veneno, como Nó Mestre ou Nó com GPU cara). O DaemonSet respeita isso e 
+# foge pra não subir. Você precisará de 'Tolerations' para forçar a barra.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# Seniors nunca instalam aplicações do negócio (Microserviços) num DaemonSet!
+# DaemonSet é exclusivo de ferramental infra (Agentes de Log - Fluentd, Splunk; 
+# CNI's de Rede - Calico/Cilium; Monitores de HW - NodeExporter/Datadog). 
+# Eles têm "permissões excessivas", pois frequentemente requerem `hostNetwork: true` 
+# ou `hostPID: true` para grampear os logs pesados do Host físico / var / log.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Sendo que o Kube-Scheduler decide em qual nó o Pod vai, como o DaemonSet 
+# sabe que precisa ir em todos?"
+# Resposta Esperada: "Até a versão ~1.12, o DaemonSet bypassava o Kube-Scheduler! Ele 
+# mesmo injetava uma flag chamada NodeName nos Pods e empurrava goela abaixo do kubelet.
+# Devido a problemas, a arquitetura moderna do Kubernetes parou com esse anti-pattern. 
+# Hoje o DaemonSet obedece o ciclo global, aplicando uma série de "NodeAffinities" aos 
+# seus Pods dizendo: Requesito restrito = Vá para o Nó A. E o Kube-Scheduler os roteia."

@@ -1,0 +1,60 @@
+---
+# ==============================================================
+# ARQUIVO: roles/security/tasks/ssh.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# SSH é a "porta dos fundos" para acessar o servidor.
+# Hardening = colocar fechadura extra nessa porta!
+# Desativar root = ninguém entra como "chefe" direto.
+# Só chave SSH = como ter um crachá biométrico.
+# ==============================================================
+
+# Garantir que pacote OpenSSH está instalado
+- name: "SSH: Instalar openssh-server"
+  ansible.builtin.apt:
+    name: openssh-server
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+# Aplicar configuração segura do SSH via template
+- name: "SSH: Aplicar configuração hardened"
+  ansible.builtin.template:
+    # Template com as configurações de segurança
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    mode: '0600'       # Só root lê/escreve (muito restrito!)
+    owner: root
+    group: root
+    # Validar sintaxe ANTES de aplicar (evita travar o servidor!)
+    validate: /usr/sbin/sshd -t -f %s
+    backup: true       # Guardar cópia do arquivo anterior
+  # Notifica o handler para reiniciar o SSH
+  notify: Reiniciar sshd
+
+# Desabilitar login do root via SSH
+- name: "SSH: Garantir que root não pode logar via SSH"
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    # Procura a linha com PermitRootLogin e substitui
+    regexp: '^#?PermitRootLogin'
+    line: "PermitRootLogin no"
+    state: present
+  notify: Reiniciar sshd
+
+# Desabilitar autenticação por senha (só chave SSH!)
+- name: "SSH: Desabilitar login por senha"
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication'
+    line: "PasswordAuthentication no"
+  notify: Reiniciar sshd
+
+# Verificar se o SSH está rodando corretamente
+- name: "SSH: Verificar status do serviço"
+  ansible.builtin.service:
+    name: sshd
+    state: started
+    enabled: true

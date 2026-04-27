@@ -1,0 +1,78 @@
+# ============================================================
+# ARQUIVO: 05-service-nodeport.yaml
+# NODEPORT - Acessando de FORA do cluster
+#
+# ClusterIP: Só dentro do cluster (cozinha do restaurante)
+# NodePort: Abre uma porta no servidor para o mundo ver (cardápio)
+#
+# Como funciona:
+# [Usuário na Internet] --> [IP do Servidor:30080] --> [Pod:80]
+#                               ↑
+#                           NodePort (30000-32767)
+# ============================================================
+
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: app-web-publica
+  labels:
+    app: web-publica         # Label que o Service vai buscar
+
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.25
+      ports:
+        - containerPort: 80
+
+---
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: service-nodeport      # Nome do service
+
+spec:
+  type: NodePort              # TIPO: NodePort
+                              # Abre uma porta em TODOS os nós
+                              # do cluster (diferente do ClusterIP!)
+
+  selector:
+    app: web-publica          # Busca pods com este label
+
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80                # Porta interna do cluster
+                              # (usada por outros serviços)
+
+      targetPort: 80          # Porta do container/pod
+
+      nodePort: 30080         # Porta externa no nó (servidor)
+                              # Range: 30000-32767
+                              # Se não especificar, K8s escolhe
+
+# ============================================================
+# COMO ACESSAR:
+#
+# Minikube:
+#   minikube service service-nodeport --url
+#   # Vai mostrar a URL para acessar no navegador
+#
+# Cluster normal:
+#   http://<IP-DO-NO>:30080
+#
+# QUANDO USAR NodePort vs LoadBalancer?
+#
+# NodePort   --> Desenvolvimento, testes, ambientes simples
+# LoadBalancer --> Produção na nuvem (AWS, GCP, Azure)
+#                 Cria um IP externo dedicado automaticamente
+#
+# ENTREVISTA SÊNIOR:
+# "NodePort tem alguma limitação?"
+# RESPOSTA: Sim! Range limitado (30000-32767), expõe porta
+# em TODOS os nós (mesmo sem pod naquele nó), não ideal
+# para produção. Em produção, use LoadBalancer + Ingress.
+# ============================================================

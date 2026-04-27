@@ -1,0 +1,129 @@
+---
+# ==============================================================
+# ARQUIVO: 01-variaveis-tipos.yml
+# MÓDULO 2 - Intermediário
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Variáveis são como CAIXINHAS com etiquetas.
+# Você guarda uma informação na caixinha, coloca uma etiqueta,
+# e quando precisar, basta chamar pelo nome da etiqueta!
+# "caixinha_nome" = "Maria" → {{ caixinha_nome }} → Maria
+#
+# ▶️  COMO RODAR:
+# ansible-playbook -i ../modulo1-fundamentos/01-inventory-simples.ini 01-variaveis-tipos.yml
+# ==============================================================
+
+- name: "Tipos de Variáveis no Ansible"
+  hosts: localhost
+  gather_facts: true
+
+  # ---- TIPO 1: Variáveis simples (string, número, booleano) ---
+  vars:
+    # String = texto entre aspas
+    nome_app: "MinhaAplicacao"
+    versao: "2.5.1"
+    ambiente: "producao"
+
+    # Número = sem aspas
+    porta_http: 80
+    porta_https: 443
+    max_conexoes: 1000
+
+    # Booleano = verdadeiro ou falso
+    ssl_habilitado: true
+    debug_modo: false
+    backup_automatico: true
+
+    # ---- TIPO 2: Lista (como uma lista de compras) -------------
+    # Colchetes [] = lista
+    servidores_dns:
+      - "8.8.8.8"
+      - "8.8.4.4"
+      - "1.1.1.1"
+
+    pacotes_web:
+      - nginx
+      - certbot
+      - python3
+
+    # ---- TIPO 3: Dicionário (como uma ficha cadastral) ---------
+    # Chave: Valor = dicionário
+    configuracao_banco:
+      host: "db.minhaapp.com"
+      porta: 5432
+      nome: "producao_db"
+      usuario: "app_user"
+      max_conexoes: 50
+
+    # ---- TIPO 4: Lista de dicionários (tabela!) ----------------
+    # Cada item tem vários campos - como uma planilha
+    servidores:
+      - nome: "web1"
+        ip: "192.168.1.10"
+        funcao: "frontend"
+        cpus: 4
+      - nome: "web2"
+        ip: "192.168.1.11"
+        funcao: "frontend"
+        cpus: 4
+      - nome: "db1"
+        ip: "192.168.1.20"
+        funcao: "database"
+        cpus: 8
+
+  tasks:
+
+    # ---- Usando variáveis simples --------------------------------
+    - name: "Mostrar variáveis simples"
+      ansible.builtin.debug:
+        msg:
+          - "App: {{ nome_app }} v{{ versao }}"
+          - "Ambiente: {{ ambiente }}"
+          - "Porta HTTP: {{ porta_http }}"
+          - "SSL ativo: {{ ssl_habilitado }}"
+
+    # ---- Usando lista -------------------------------------------
+    - name: "Mostrar lista de DNS"
+      ansible.builtin.debug:
+        msg: "DNS: {{ servidores_dns }}"
+
+    # Acessar item específico da lista (índice começa em 0!)
+    - name: "Acessar primeiro DNS da lista"
+      ansible.builtin.debug:
+        msg: "DNS primário: {{ servidores_dns[0] }}"
+
+    # ---- Usando dicionário --------------------------------------
+    - name: "Mostrar configuração do banco"
+      ansible.builtin.debug:
+        msg:
+          # Acessa campo do dicionário com "."
+          - "Host BD: {{ configuracao_banco.host }}"
+          - "Porta BD: {{ configuracao_banco.porta }}"
+          - "Nome BD: {{ configuracao_banco.nome }}"
+
+    # ---- Usando lista de dicionários ----------------------------
+    - name: "Listar todos os servidores"
+      ansible.builtin.debug:
+        msg: "Servidor: {{ item.nome }} | IP: {{ item.ip }} | Função: {{ item.funcao }}"
+      loop: "{{ servidores }}"
+      loop_control:
+        label: "{{ item.nome }}"
+
+    # ---- FILTROS Jinja2: transformando variáveis ----------------
+    # Filtros = transformações. Como um liquidificador de dados!
+    - name: "Demonstrar filtros úteis"
+      ansible.builtin.debug:
+        msg:
+          # upper = maiúsculo
+          - "Maiúsculo: {{ nome_app | upper }}"
+          # lower = minúsculo
+          - "Minúsculo: {{ nome_app | lower }}"
+          # length = tamanho da lista
+          - "Qtd servidores DNS: {{ servidores_dns | length }}"
+          # join = juntar lista em string
+          - "DNS em linha: {{ servidores_dns | join(', ') }}"
+          # default = valor padrão se variável não existir
+          - "Variável inexistente: {{ variavel_que_nao_existe | default('valor padrão') }}"
+          # int/string = converter tipo
+          - "Porta como texto: {{ porta_http | string }}"

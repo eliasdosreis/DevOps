@@ -1,0 +1,104 @@
+# ============================================================
+# ARQUIVO: 03-deployment-rollout.yaml
+# ROLLOUT SEM DOWNTIME - O Segredo do Zero Downtime Deploy
+#
+# Cenário: Você tem a v1 rodando. Quer atualizar para v2.
+# Com RollingUpdate, o Kubernetes substitui pods gradualmente.
+# Usuários não percebem a atualização!
+#
+# Linha do tempo:
+# Início:    [v1] [v1] [v1]          (3 pods v1)
+# Passo 1:   [v1] [v1] [v1] [v2]    (surge: +1 v2)
+# Passo 2:   [v1] [v1] [v2]         (remove 1 v1)
+# Passo 3:   [v1] [v1] [v2] [v2]    (surge: +1 v2)
+# Passo 4:   [v1] [v2] [v2]         (remove 1 v1)
+# Fim:       [v2] [v2] [v2]          (3 pods v2)
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: app-rollout
+  # ANOTAÇÕES são como post-its no recurso
+  # Não afetam comportamento, mas são úteis para histórico
+  annotations:
+    kubernetes.io/change-cause: "Deploy versao v2 com nova feature X"
+    # Aparece no: kubectl rollout history deployment/app-rollout
+
+  labels:
+    app: minha-app
+
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: minha-app
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1           # Pode ter 1 pod EXTRA durante update
+      maxUnavailable: 0     # ZERO pods podem ficar indisponíveis
+                            # Garante zero downtime!
+
+  template:
+    metadata:
+      labels:
+        app: minha-app
+
+    spec:
+      # -------------------------------------------------------
+      # terminationGracePeriodSeconds
+      # Tempo para o pod terminar requisições em andamento
+      # antes de ser forcadamente encerrado
+      # -------------------------------------------------------
+      terminationGracePeriodSeconds: 30   # 30 segundos para finalizar
+
+      containers:
+        - name: app
+          image: nginx:1.25    # <-- Mude para nginx:1.26 para simular update!
+
+          ports:
+            - containerPort: 80
+
+          # lifecycle: O que fazer antes de morrer?
+          lifecycle:
+            preStop:            # Executado ANTES do container parar
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - "sleep 5"   # Espera 5s para novas conexões pararem
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            # SEM readiness probe: pods novos podem receber tráfego
+            # antes de estarem prontos -> erros para o usuário!
+
+# ============================================================
+# FLUXO COMPLETO DE DEPLOY:
+#
+# 1. Editar a imagem no YAML (ex: nginx:1.25 -> nginx:1.26)
+# 2. kubectl apply -f 03-deployment-rollout.yaml
+# 3. Acompanhar: kubectl rollout status deployment/app-rollout
+# 4. Ver histórico: kubectl rollout history deployment/app-rollout
+# 5. Se der errado: kubectl rollout undo deployment/app-rollout
+#
+# OU atualizar direto na linha de comando (sem editar YAML):
+# kubectl set image deployment/app-rollout app=nginx:1.26
+#
+# ENTREVISTA SÊNIOR DIFÍCIL:
+# "Como garantir zero downtime no deploy?"
+# RESPOSTA: Combinação de:
+# 1. RollingUpdate com maxUnavailable: 0
+# 2. Readiness probe configurada corretamente
+# 3. preStop hook para drenar conexões
+# 4. terminationGracePeriodSeconds adequado
+# 5. Replicas >= 2 (nunca 1 réplica em produção!)
+# ============================================================

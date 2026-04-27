@@ -1,0 +1,103 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Define a Readiness Probe ("Sonda de Prontidão" / Readiness). Ensina o
+# Kubernetes a só repassar clientes de negócio / conexões web pro
+# Pod se ele de fato, jurar que estiver "Pronto pra Atender".
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# A Aula Anterior era a "LivenessProbe" = "O Vigia ta acordado pra não ser demitido"?
+# O **ReadinessProbe** é igual ao "Atendente do Guichê e o Painel de Senha do Banco".
+# A Agência abriu as portas e o Atendente (Pod) LIGOU o PC dele e Clico no icone do sisema do banco... 
+#
+# Enquanto o "Wording" inicial de Boot da máquina do atendente está ocorrendo, 
+# se a recepcionista botar do nada um Clientão VVIP na frente dele, vai gerar constrangimento da empresa 
+# (Request Failed: Endpoint desativado!). Então o ReadinessProbe PINGA o atendente e diz: 
+# "Quando a janelinha verde do seu sistema de caixa acender, me avisa. Enquanto isso, eu o Service PABX, 
+# NAO VOU MANDAR NENHUM CONVIDADO (TRAFEGO) PRA VOCÊ. Vou mandar pros outros caixas que ja estão com luz verde".
+# Assim nenhum usuário seu recebe tela preta.
+
+# 2. O QUE É (definição técnica Senior)
+# ReadinessProbe indica explicitamente se o conteiner está pronto para lidar com REQUESTS HTTP ou de Rede.
+# Se a sonda de Readiness der FALHA, o controlador de Endpoint do Service VIRTUAL do cluster 
+# RE-MO-VE imediatamente o IP sujo/apagão do Pod dos Endpoints balanceáveis  
+# de LoadBalance e ingress. Diferente da Liveness, ELA NAO "MATA" o container! 
+# Ela apenas bota ele de "Escanteio temporário da rede".
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: container-com-escudo-de-trafego
+  namespace: meu-primeiro-projeto
+  labels:
+    app: backend-loja         # Uma label pronta pra amarração do PABX/Service
+spec:
+  containers:
+    - name: api-escudada
+      image: nginx:1.24
+      
+      # MÁGICA: A SONDA DE PRONTIDÃO ("O Service pode encaminhar os clientes?")
+      readinessProbe:
+        httpGet:
+          path: /index.html   
+          port: 80
+        
+        # Assim que o container Bootar e a imgem começar a inflar na ram...  
+        # Espere 5 segundos pra ir checar se a tela HTML "verde" do front  
+        # ou Banco ja subiu para colocar a Label "Endpoint: IP(Ready)" no Service! 
+        initialDelaySeconds: 5  
+        periodSeconds: 5      # De tempo em tempo eu olho pra luz dele pra ver se apagou
+        successThreshold: 1   # Precisou apenas 1 sucesso para liberar a Catraca 
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Crie o container blindado de tráfego quebrado:
+#    kubectl apply -f 03-readiness-probe.yaml
+#
+# 2. Observe uma coisa FUNDAMENTAL no Get Pods do terminal abaixo:
+#    kubectl get pods container-com-escudo-de-trafego -n meu-primeiro-projeto
+#    (Na aba REAL 'READY', estará marcado "0/1" nos primeiros instantes. Mesmo que  
+#     a coluna STATUS ao lado já mostre bonito "Running"! Running não é Ready! 
+#     Running é vivacidade nua. Ready "1/1" é quando a Readiness Probe que criamos retornou 200!).
+
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# O erro mais comum em Deployments Multiplos.
+# A Tela de GetPods do DEV diz 'STATUS: Running'. E ele jura que o Ingress na nuvem e o sistema
+# Service DNS PABX não acham o Pod. Dá erro 502/Gateway na Tela do Google Chrome.
+# Vá lá e observe a Coluna "READY: 0/1" pra sempre travada. O "Service"
+# e os PABXs Loadbalancers CORTAM as pernas de todos os pods  
+# que a "ReadinessProbe" retorna erro 400, 500 ou timeout. 
+# SEMPRE conserte a sonda do seu Readiness pra sua AWS funcionar!
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# Nós podemos usar o Readiness de forma inteligente para Gerenciar BackPressure 
+# (Proteção anti-DDoS da própria aplicação). Como a Readiness NAO MATA o contêiner ao falhar  
+# nós podemos programá-la num Endpoint `/ready` no seu Python FastAPI para que... 
+# Se a Queue do SQS da aplicação da amazon estiver com  2.000 mensagens (Lotada Quase Morreno)...
+# O Python retorna na Probre 1 HTTP "429 Too Many Requests"(!). 
+# ISSO FAZ o Kubernetes ARRANCAR IMEDIATAMENTE a sua API entupida do fluxo da Tela dos usuários... 
+# Assim ngm novo entra por 2 minutos. Quando o python esvaziar a Queue pra 0, ele retoma em "/ready" 
+# e devolvemos HTTP 200 OK. E O Kubernetes magicamente RE-ACOPLA o trafego nela! Elegante d+.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Se LivenessProbe pinga internamento e ReadinessProbe pinga tráfego. Eu 
+# não poderia botar a MESMA rota HTTP (`/health`) em AMBOS os spec no mesmo Container, 
+# já que no final das contas ambos checam a saude?"
+# Resposta Esperada: "Você pode. Mas é contra o livro do Kubernetes se a verificação 
+# envolver amarras pesadas a recursos externos (Banco etc) !!
+# O Seu Banco MySQL da rede remota desconectou da empresa momentaneamente. E você usou no `/health` 
+# com *Select 1* ligado ao Banco em Liveness e Readiness. Resultando: A Readiness falhou e tirou do PABX 
+# (Perfeito! Usuários resguardados de tela de crash DB).
+# Mas... como você copiou sua rota também A LivenessProbe MATA sua WebAPI. Ela tentará BOOTAR por Restart repetidamente 100x na maquina... 
+# O BD continua caido. Daqui a 1 hora a maquina trava por excesso brusco de Startups e CrashLoops.
+# A melhor conduta: Liveness verifica APENAS CPU Local (`/ping -> Pong`), e Readiness checa Banco (`/banco -> Ok`)."

@@ -1,0 +1,160 @@
+# ============================================================
+# ARQUIVO: 04-lambda-role.yaml
+# O QUE FAZ: Cria a Role IAM que a Lambda usa para acessar outros serviços
+#
+# ANALOGIA: É como dar um crachá de funcionário ao garçom.
+#           O crachá define: quais áreas do restaurante ele pode entrar,
+#           quais coisas pode pegar, e o que é proibido.
+#           Sem o crachá, o garçom não pode fazer nada.
+#
+# CONCEITO CRÍTICO: Lambda PRECISA de uma Role IAM para existir.
+#                   A Role define O QUE a Lambda pode fazer.
+#                   Uma Lambda SEM permissões não pode acessar nem o CloudWatch!
+#
+# CUSTO: $0.00 — IAM é sempre gratuito
+# CONCEITO NOVO: Execution Role, Trust Policy, Permission Policy
+# ============================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  MÓDULO 2 - PASSO 4: Role IAM para execução da Lambda.
+  Define QUAIS serviços a Lambda pode acessar e com QUAIS permissões.
+  Conceitos: Trust Policy, Permission Policy, Least Privilege
+
+Parameters:
+  
+  NomeBucket:
+    Type: String
+    Description: Nome do bucket S3 que a Lambda pode acessar
+  
+  NomeRole:
+    Type: String
+    Description: Nome da Role IAM que será criada
+    Default: role-lambda-modulo-02
+
+Resources:
+
+  # ----------------------------------------------------------
+  # EXECUTION ROLE DA LAMBDA
+  # Toda Lambda precisa de uma Role com:
+  # 1. Trust Policy: permite que o serviço Lambda "assuma" esta role
+  # 2. Permission Policies: o que a Lambda pode fazer
+  # ----------------------------------------------------------
+  RoleLambda:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref NomeRole
+      
+      # --------------------------------------------------------
+      # TRUST POLICY (AssumeRolePolicyDocument)
+      # "Quem pode USAR esta role?"
+      # lambda.amazonaws.com = o serviço AWS Lambda pode assumir esta role
+      # Sem isto, a Lambda não consegue usar as permissões abaixo
+      # --------------------------------------------------------
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PermitirLambdaAssumir
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com    # O serviço Lambda
+            Action: sts:AssumeRole             # Ação de assumir a role
+      
+      # --------------------------------------------------------
+      # POLÍTICAS GERENCIADAS PELA AWS
+      # Use quando a política da AWS já tem o que precisa.
+      # AWSLambdaBasicExecutionRole = permite escrever no CloudWatch Logs
+      # SEMPRE adicione esta — sem ela, a Lambda não gera logs!
+      # --------------------------------------------------------
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        # ^ Permissões: logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents
+      
+      # --------------------------------------------------------
+      # POLÍTICAS INLINE — Permissões adicionais específicas
+      # Usar inline quando as permissões são muito específicas
+      # para uma política gerenciada existente
+      # --------------------------------------------------------
+      Policies:
+        
+        # POLÍTICA 1: Acesso ao S3
+        - PolicyName: AcessoS3Especifico
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              
+              # Permite LEITURA de objetos no bucket específico
+              # Princípio do Least Privilege: só as ações necessárias!
+              - Sid: LerDoS3
+                Effect: Allow
+                Action:
+                  - s3:GetObject       # Ler um objeto específico
+                  - s3:HeadObject      # Verificar metadados sem baixar
+                Resource:
+                  - !Sub "arn:aws:s3:::${NomeBucket}/entrada/*"    # Só na pasta "entrada/"
+              
+              # Permite ESCRITA de objetos na pasta de saída
+              - Sid: EscreverNoS3
+                Effect: Allow
+                Action:
+                  - s3:PutObject       # Criar/sobrescrever objeto
+                  # s3:DeleteObject   # Não damos permissão de deletar!
+                Resource:
+                  - !Sub "arn:aws:s3:::${NomeBucket}/saida/*"     # Só na pasta "saida/"
+              
+              # Permite listar objetos (necessário para aws s3 ls via código)
+              - Sid: ListarS3
+                Effect: Allow
+                Action:
+                  - s3:ListBucket      # Listar objetos no bucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${NomeBucket}"             # No bucket (não /*)
+                Condition:
+                  StringLike:
+                    s3:prefix:          # Só pode listar dentro dessas pastas
+                      - "entrada/*"
+                      - "saida/*"
+        
+        # POLÍTICA 2: CloudWatch Metrics customizadas (opcional)
+        - PolicyName: CloudWatchMetrics
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: PublicarMetricas
+                Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricData   # Enviar métricas customizadas
+                Resource: '*'   # cloudwatch:PutMetricData não suporta ARN específico
+      
+      Tags:
+        - Key: Modulo
+          Value: "02-Lambda"
+        - Key: Propósito
+          Value: ExecutionRole
+
+Outputs:
+
+  ARNRole:
+    Description: ARN da Role (use no template da Lambda)
+    Value: !GetAtt RoleLambda.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-role-arn"
+
+  NomeRole:
+    Description: Nome da Role
+    Value: !Ref RoleLambda
+    Export:
+      Name: !Sub "${AWS::StackName}-role-nome"
+
+  ExplicacaoRole:
+    Description: O que esta Role permite
+    Value: |
+      Esta Role permite que a Lambda:
+      ✅ Escrever logs no CloudWatch (AWSLambdaBasicExecutionRole)
+      ✅ Ler objetos de s3://BUCKET/entrada/*
+      ✅ Escrever objetos em s3://BUCKET/saida/*
+      ✅ Listar objetos em s3://BUCKET/ (apenas entrada/ e saida/)
+      ✅ Publicar métricas customizadas no CloudWatch
+      ❌ Deletar objetos (não permitido)
+      ❌ Acessar outros buckets (não permitido)
+      ❌ Criar/modificar tabelas DynamoDB (não permitido)

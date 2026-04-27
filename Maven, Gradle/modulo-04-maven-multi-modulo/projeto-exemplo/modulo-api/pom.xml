@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ============================================================
+  ARQUIVO: modulo-api/pom.xml
+
+  O QUE ESTE MÓDULO FAZ:
+  Define as INTERFACES, DTOs e contratos do sistema.
+  Não tem implementação — apenas o "contrato" que outros
+  módulos devem seguir.
+
+  POR QUE SEPARAR A API?
+  Outros projetos podem depender de modulo-api sem precisar
+  de modulo-core (a implementação). Isso permite:
+  - Trocar a implementação sem quebrar os clientes da API
+  - Ter múltiplas implementações (mock, real, cloud, etc.)
+  - Reduzir o acoplamento entre módulos
+  ============================================================ -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- ═══════════════════════════════════════════════════════
+    SEÇÃO: parent (INHERITANCE)
+    Aponta para o POM pai. O filho herda:
+    - properties (Java version, encoding, versões de libs)
+    - dependencyManagement (versões sem precisar declará-las)
+    - pluginManagement (versões dos plugins)
+    - plugins configurados no pai (enforcer, etc.)
+    ═══════════════════════════════════════════════════════ -->
+  <parent>
+    <!-- GAV do POM pai — deve ser exato -->
+    <groupId>com.curso</groupId>
+    <artifactId>meu-sistema</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <!-- relativePath: caminho relativo para o pom.xml do pai -->
+    <!-- ".." significa "pasta acima desta" -->
+    <!-- Se omitido, Maven procura no repositório local (funciona mas é lento) -->
+    <!-- Sempre declare o relativePath explicitamente para desenvolvimento local -->
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <!-- ─────────────────────────────────────────────────────
+    artifactId: único neste projeto
+    groupId e version são HERDADOS do pai (não precisa repetir)
+    ───────────────────────────────────────────────────── -->
+  <artifactId>modulo-api</artifactId>
+
+  <!-- packaging padrão = jar (herdado e usado) -->
+  <name>Meu Sistema - API Module</name>
+  <description>Interfaces, DTOs e contratos do sistema</description>
+
+  <!-- ═══════════════════════════════════════════════════════
+    Dependências específicas deste módulo.
+    Versões não declaradas aqui vêm do <dependencyManagement> do pai.
+    ═══════════════════════════════════════════════════════ -->
+  <dependencies>
+
+    <!-- SLF4J API — usada nas interfaces/contratos de logging -->
+    <!-- SEM VERSION: herdada do pai via dependencyManagement -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <!-- <version> omitida — vem do pai! -->
+    </dependency>
+
+    <!-- JUnit para testes do módulo API -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+      <!-- <version> omitida — vem do junit-bom importado no pai -->
+    </dependency>
+
+  </dependencies>
+
+</project>

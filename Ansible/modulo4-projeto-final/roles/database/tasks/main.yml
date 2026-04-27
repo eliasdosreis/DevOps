@@ -1,0 +1,27 @@
+---
+# ==============================================================
+# ARQUIVO: roles/database/tasks/main.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Esta role instala e configura o PostgreSQL.
+# Banco de dados é como o "armário de arquivos" da aplicação.
+# Precisa estar sempre organizado, seguro e com backup!
+# ==============================================================
+
+- name: "Importar: Instalação do PostgreSQL"
+  ansible.builtin.import_tasks: instalar.yml
+  tags: [database, install]
+
+- name: "Importar: Configuração do PostgreSQL"
+  ansible.builtin.import_tasks: configurar.yml
+  tags: [database, config]
+
+- name: "Importar: Criar banco e usuário"
+  ansible.builtin.import_tasks: criar_db.yml
+  tags: [database, setup]
+
+- name: "Importar: Configurar backup automático"
+  ansible.builtin.import_tasks: backup.yml
+  tags: [database, backup]

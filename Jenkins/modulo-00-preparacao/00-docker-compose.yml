@@ -1,0 +1,75 @@
+# ============================================================
+# MÓDULO 0 — PREPARAÇÃO DO AMBIENTE
+# Arquivo: 00-docker-compose.yml
+#
+# O QUE ESTE ARQUIVO FAZ:
+# Sobe o Jenkins Controller de forma isolada via Docker Compose.
+# Vantagem: não instala nada na sua máquina — apenas um container.
+# Ao parar o container, nada fica para trás (exceto o volume de dados).
+#
+# ANALOGIA DO DIA A DIA:
+# Imagine que o Jenkins é um escritório. O Docker é o prédio onde
+# esse escritório funciona. O docker-compose.yml é a planta baixa
+# do prédio — define quantas salas existem, quais portas estão
+# abertas, onde ficam os arquivos guardados.
+# ============================================================
+
+version: '3.8'  # Versão do formato do Docker Compose (use 3.8 para compatibilidade máxima)
+
+services:
+
+  jenkins:                              # Nome do serviço (você pode chamar de qualquer nome)
+    image: jenkins/jenkins:lts-jdk21   # Imagem oficial Jenkins LTS com Java 21 (mais estável)
+    container_name: jenkins-controller  # Nome fixo do container (facilita docker exec e logs)
+    restart: unless-stopped             # Reinicia automaticamente se o Docker reiniciar (ex: após reboot)
+    privileged: true                    # Necessário para executar Docker dentro do Jenkins (Docker-in-Docker)
+    user: root                          # (Importante) Jenkins precisa de root para usar o Docker socket
+
+    ports:
+      - "8080:8080"   # Porta principal da interface web: http://localhost:8080
+      - "50000:50000" # Porta JNLP para agentes remotos se conectarem ao Controller
+
+    volumes:
+      - jenkins_home:/var/jenkins_home          # Volume persistente: salva todos os dados do Jenkins
+      - /var/run/docker.sock:/var/run/docker.sock  # Compartilha o Docker da máquina host com o Jenkins
+      # ATENÇÃO: O socket do Docker permite que o Jenkins crie containers.
+      # Em produção, use um socket protegido ou Docker-in-Docker isolado.
+
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false  # (Opcional) Pula o wizard de instalação inicial
+      # Remova a linha acima se quiser passar pelo wizard manualmente (recomendado para aprendizado)
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/login"]  # Verifica se Jenkins está respondendo
+      interval: 30s    # Verifica a cada 30 segundos
+      timeout: 10s     # Espera até 10s pela resposta
+      retries: 5       # Tenta 5 vezes antes de marcar como unhealthy
+      start_period: 60s # Aguarda 60s antes de começar as verificações (Jenkins demora para iniciar)
+
+volumes:
+  jenkins_home:   # Volume nomeado — Docker gerencia o armazenamento automaticamente
+    driver: local  # Armazena localmente na máquina host
+
+# ============================================================
+# COMANDOS PARA USAR ESTE ARQUIVO:
+#
+# Subir o Jenkins:
+#   docker-compose up -d
+#
+# Ver os logs em tempo real:
+#   docker-compose logs -f jenkins
+#
+# Pegar a senha inicial de admin:
+#   docker exec jenkins-controller cat /var/jenkins_home/secrets/initialAdminPassword
+#
+# Parar sem destruir dados:
+#   docker-compose stop
+#
+# Destruir tudo (CUIDADO: apaga o volume e todos os dados):
+#   docker-compose down -v
+#
+# ACESSO:
+#   Interface Web: http://localhost:8080
+#   Usuário inicial: admin
+#   Senha: resultado do comando cat acima
+# ============================================================

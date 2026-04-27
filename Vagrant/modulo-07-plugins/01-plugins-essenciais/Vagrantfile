@@ -1,0 +1,80 @@
+# ============================================================
+# MÓDULO 7 — PLUGINS ESSENCIAIS
+# O QUE ESTE ARQUIVO FAZ:
+#   Demonstra o uso dos plugins mais importantes do Vagrant
+#   com boas práticas como verificação de disponibilidade
+#   e degradação graciosa (funciona mesmo sem plugins).
+# ============================================================
+
+# ============================================================
+# VERIFICAÇÃO DE PLUGINS OBRIGATÓRIOS
+# Este bloco deve aparecer ANTES do Vagrant.configure
+# Verifica todos os plugins e instala se não estiverem presentes
+# ============================================================
+REQUIRED_PLUGINS = %w[
+  vagrant-vbguest
+  vagrant-hostsupdater
+]
+
+# Verifica cada plugin e instala se necessário
+plugins_to_install = REQUIRED_PLUGINS.select { |p| !Vagrant.has_plugin?(p) }
+
+unless plugins_to_install.empty?
+  puts "\n⚠️  Plugins necessários não encontrados: #{plugins_to_install.join(', ')}"
+  puts "Instalando automaticamente..."
+  plugins_to_install.each do |plugin|
+    system("vagrant plugin install #{plugin}")
+  end
+  puts "✅ Plugins instalados! Execute 'vagrant up' novamente.\n"
+  exit
+end
+
+# ============================================================
+# VAGRANTFILE PRINCIPAL
+# ============================================================
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-plugins"
+
+  config.vm.network "private_network", ip: "192.168.56.90"
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PLUGIN vagrant-vbguest
+  # Mantém os VirtualBox Guest Additions da VM sincronizados
+  # com a versão do VirtualBox instalada no host.
+  # Sem isso, synced folders e clipboard podem parar de funcionar
+  # após atualizar o VirtualBox.
+  # -----------------------------------------------------------
+  if Vagrant.has_plugin?("vagrant-vbguest")
+    config.vbguest.auto_update = true       # Atualiza Guest Additions automaticamente
+    config.vbguest.no_remote   = false      # Permite baixar da internet se necessário
+    config.vbguest.installer_options = { allow_kernel_upgrade: true }
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PLUGIN vagrant-hostsupdater
+  # Adiciona/remove entradas no /etc/hosts do HOST
+  # automaticamente com vagrant up / vagrant halt
+  # -----------------------------------------------------------
+  if Vagrant.has_plugin?("vagrant-hostsupdater")
+    config.hostsupdater.aliases          = ["meu-app.local", "api.meu-app.local"]
+    config.hostsupdater.remove_on_suspend = true   # Remove ao suspended
+  end
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-plugins-demo"
+    vb.memory = "1024"
+    vb.cpus   = 1
+  end
+
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update -q && apt-get install -y -q nginx
+    systemctl start nginx
+    echo "<h1>Plugins funcionando!</h1>" > /var/www/html/index.html
+    echo "✅ VM com plugins configurada!"
+    echo "   Acesse: http://meu-app.local (se vagrant-hostsupdater instalado)"
+    echo "   Ou:     http://192.168.56.90"
+  SHELL
+
+end

@@ -1,0 +1,92 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um ConfigMap. Ele desacopla as configurações (textos,
+# variáveis, e até arquivos inteiros) da imagem Docker da sua aplicação.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Você tem um robô de limpeza aspirador (O seu Container Docker).
+# Você precisa que ele limpe a casa às "15h" na potência "Máxima".
+# Solução Jr: Colar um post-it DENTRO do circuito interno do rôbo colado na placa mãe.
+# Se quiser mudar para as 16h, você vai ter que jogar fora o robô e construir outro
+# na fábrica (Re-Buildar a Imagem Docker `1.0` pra `2.0`). Isso demora horas na CI/CD.
+#
+# Solução Senior: Você cola o Post-it na "Pareda da Cozinha". O Robô acorda,
+# lê a parede e faz o que está lá. Se amanhã precisar mudar a hora, você apenas
+# troca o post-it da parede sem mexer no Robô. O "Post-it da parede" é o ConfigMap.
+
+# 2. O QUE É (definição técnica Senior)
+# ConfigMap é um objeto/dicionário Key-Value da API focado em armazenar 
+# dados NÃO confidenciais. Podem ser consumidos injetados em Pods como
+# Variáveis de Ambiente (Env Vars), Argumentos de Linha de Comando, 
+# ou arquivos físicos montados no disco (Volumes).
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configuracoes-da-minha-loja
+  namespace: meu-primeiro-projeto
+# `data` contém o dicionário limpo. Chave: Valor.
+data:
+  # Dados simples, ideais para Envs:
+  idioma_padrao: "pt-BR"
+  tema_do_site: "escuro"
+  limite_de_requisicoes: "5000"
+  
+  # Magia: Podemos injetar ARQUIVOS grandes inteiros no YAML usando ' | '
+  # Isso evita você precisar "Embutir" arquivos estáticos em imagens Nginx/Node.
+  nginx-custom.conf: |
+    server {
+        listen 80;
+        server_name _;
+        location / {
+            root /usr/share/nginx/html;
+            index index.html;
+        }
+    }
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Cole o post-it na parede do servidor:
+#    kubectl apply -f 01-configmap.yaml
+#
+# 2. Leia o post-it do jeito bonitinho para humanos:
+#    kubectl describe configmap configuracoes-da-minha-loja -n meu-primeiro-projeto
+#    (Ele vai literalmente printar as keys e o arquivo GIGANTE dentro do log).
+#
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# O erro fatal do Configmap é criar ele num `namespace` diferente do Pod que precisará 
+# consumir o dado! Configmaps são objetos Nativos em nomes isolados. 
+# Se um App do backend pedir os dados no namespace `producao`, o Configmap TEM que 
+# estar criado lá obrigatoriamente. O Kubelet vai travar a subida do pod e cuspir 
+# "ConfigMapNotfound" se ele olhar pra parede errada.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# Configmaps são estáticos se forçados como Variáveis de ambiente na "Spec". 
+# Se a sua aplicação Java subiu lendo o configmap e você editar o ConfigMap agora e 
+# dar `kubectl apply` mudando o limite de 5000 para 6000... o Java NÃO será atualizado (!).
+# EnvsVars são passadas no `boot` do container no kernel Linux (PID 1).
+# Para atualizações "HotReload" vivas, o Senior NUNCA usa `EnvVar`. Ele injeta o 
+# ConfigMap na Spec como um *Volume* de arquivo no HD do contêiner. O Kubelet a cada 
+# 1 minuto atualiza os arquivos na pasta sem restartar o Pod, e o Java (se for feito pra isso)
+# lerá o arquivo novo na branch e aplicará sozinho.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Se eu tiver um password do meu banco de dados Postgres. Eu posso 
+# colocar no seu yaml do Configmap na chave `senha: 12345` tranquilamente já 
+# que nós codificamos ele em Base64 para ficar de dificil leitura na tela?"
+# Resposta Esperada: "Nunca! Configmaps são por design artefatos livres em plain-text,
+# sem tratamento do Control-Plane de ofuscação técnica no banco etcd. Para senhas
+# sensíveis e certificados chaves SSL (Mesmo que em base64) usa-se obrigatoriamente 
+# o recurso `Secret`, que desliga a exibição de dumps, proíbe Logs padrão do sistema 
+# e ativa encriptação em repouso real em alto-nível (KMS Encryption Provider)."

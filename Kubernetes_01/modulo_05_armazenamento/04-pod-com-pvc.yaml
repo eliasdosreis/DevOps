@@ -1,0 +1,98 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Junta a teoria com a prática: Constrói um Deploy completo (MySQL) 
+# amarrado no PVC criado anteriormente, garantindo de uma vez por todas
+# que nem o k8s matando o pod nós perderemos o database.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Nós fomos ao Vendedor "AWS", pedimos um Contrato de lote (PVC) com tamanho de 5G...
+# Isso gerou um bloco físico cortado com muro do lado de fora longe da VM.
+# AGORA O ÚLTIMO PASSO é amarrar isso no App.
+# É semelhante a pegarmos aquele gigantesco Pen-Drive mágico que compramos,
+# e plugar no chassi/bunda do Container/Pod na hora em que ele subir, 
+# e criar uma linha de link (Mount) que diz: 
+# "Tudo que você Container do DB for salvar na pasta interna nativa C:/mysql/dados..  
+# na verdade, você não salvará dentro do Docker. Esse cano joga fisicamente os dados DENTRO daquele pendrive!".
+# Fechando o Lifecycle.
+
+# 2. O QUE É (definição técnica Senior)
+# Você anexa PVCs ao Pod referenciando o claim exato dentro da declaração base  
+# 'volumes: ' . Isto por sua vez mapeia no 'volumeMounts' das defs do bloco containers.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bd-loja-resistente
+  namespace: meu-primeiro-projeto
+spec:
+  replicas: 1                             # Bancos em Deployments via de regra usam 1 replica limpa
+  selector:
+    matchLabels:
+      app: mysql-persistent
+  template:
+    metadata:
+      labels:
+        app: mysql-persistent
+    spec:
+      containers:
+        - name: meu-mysql-container
+          image: mysql:8.0                # MySQL Oficial
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: root_master_123      # Em prods reais injete Secrets (Aula 04) aqui!
+              
+          ports:
+            - containerPort: 3306
+            
+          # O Fio Condutor: Plugando a pasta do Contêiner -> ao HD Falso listado no chassi inferior
+          volumeMounts:
+            - name: disco-falso-do-pvc     # O nome da abstração inventada abaixo  !
+              mountPath: /var/lib/mysql    # É AQUI QUE O ARQUIVO SALVA. Se mudar essa VAR, o mount isola do db e vaza os dados ao reboot!
+              
+      # No Chassi do Pod isolado as Configurações GERAIS do HD que serão mapeadas acima:
+      volumes:
+        - name: disco-falso-do-pvc         # O nome da abstração inventada pra ligar na linha 44
+          persistentVolumeClaim:           # Tipo de disco: "Busca um Contrato de PVC Registrado na rua"
+            claimName: meu-contrato-de-disco-5gb # O RG/Nome Exato do PVC criado na Aula 03.
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Antes, verifique que `03-persistentvolumeclaim.yaml` rodou antes perfeitamente sem erros.
+#    E aplique nosso YAML do BD imortal:
+#    kubectl apply -f 04-pod-com-pvc.yaml
+#
+# 2. ASSISTA O HORROR DO JUNIOR ACONTECENDO! (Aperte Ctrl+C após confirmar a Running)
+#    kubectl get pods -n meu-primeiro-projeto -w
+#
+# 3. Copie o nome exato daquele pod 'bd-loja-resistente-xxxxxx' da sua tela do passo dois E:
+#    MATE ESSE POD DIRETO NA ARTÉRIA DELE (Simulando um BUG/Panic OOM Linux da maquina física):
+#    kubectl delete pod db-loja-resistente-xxxxxx -n meu-primeiro-projeto
+#
+# 4. Como é um Deployment, o k8s instantâneament evocou um novo POD recriado de nome difrente "xxxx2". 
+#    A mágica inteira ocorreu oculta! Fique calmo. O novo POD conjourou, buscou o pendrive PVC intacto da cloud  e injetou nele 
+#    de novo com os Gigas contidos do banco no momento da morte sem derrubar o Estado de tabela! 
+
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# Muitos PV/PVC travam em "Pending" ou o pod falha com "AttachVolume.Attach failed / timeout".
+# Principal causa: Você colocou PVC ReadWriteONCE na Cloud. Mas os nós das maquinas tão cheios. 
+# O Nó (A) crashou. Mas o PV por problemas de latência EC2 ainda constava no Driver CSI amazon
+# como 'Apertado/Attached' ao hardware estragado A.
+# O Scheduler manda O POD pro nó sadio (B). O Nó B tenta enfiar o cabo no pendrive por software EC2, e diz
+# "Oxe, tá em uso". E fica em Deadlock infinitamente quebrando seu dia de trabalho. Fique atento.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# Ao montar o `mountPath: /var/lib/mysql` de um pvc na cloud (Como EBS/AWS ou Disk/Google) você deve notar 
+# que o disco por nativo da cloud subirá FORMATADO num EXT4 LVM normal, possuindo como Default
+# o grupo file-permission de chown: `root:root`. 
+# Se sua empresa for Sênior de Segurança usando `securityContext: runAsUser: 999 (NonRoot)` no spec container.
+# Você fatalmente ganhará crashs Permission Denied. Seniors criam Hooks iniciais de InitContainers chown-ando a 
+# rota var/lib/mysql antes do pod subir principal p/ que o mysql tenha perm de escrita na montagem remota!

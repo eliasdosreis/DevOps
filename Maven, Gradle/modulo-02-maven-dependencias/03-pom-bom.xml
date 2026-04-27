@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ============================================================
+  ARQUIVO: 03-pom-bom.xml
+  RENOMEIE PARA: pom.xml
+
+  O QUE ESTE ARQUIVO FAZ:
+  Demonstra o uso de BOM (Bill of Materials) e a seção
+  <dependencyManagement> para gerenciar versões centralmente.
+
+  ANALOGIA:
+  Um BOM é como um "cardápio com preços fixos" de um restaurante.
+  O restaurante já definiu que "frango = R$25, peixe = R$35".
+  Você pede "quero frango" — sem precisar falar o preço.
+  Se o restaurante mudar o preço, muda em um só lugar (o cardápio).
+
+  No Maven:
+  - O BOM define "spring-core = 6.1.1, spring-beans = 6.1.1, etc."
+  - Você declara a dependência SEM a versão
+  - A versão vem do BOM automaticamente
+  - Para atualizar o Spring, muda APENAS a versão do BOM
+
+  DEFINIÇÃO TÉCNICA:
+  BOM = Bill of Materials. É um POM especial (packaging=pom)
+  que declara versões consistentes de um conjunto de artefatos
+  relacionados via <dependencyManagement>. Elimina conflitos
+  de versão em frameworks que têm muitos módulos (Spring, etc.)
+  ============================================================ -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.curso</groupId>
+  <artifactId>hello-bom</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- Versões dos BOMs que vamos importar -->
+    <!-- Mude APENAS aqui para atualizar todo o ecossistema Spring -->
+    <spring-boot.version>3.2.0</spring-boot.version>
+    <junit-bom.version>5.10.1</junit-bom.version>
+  </properties>
+
+  <!-- ═══════════════════════════════════════════════════════
+    SEÇÃO: dependencyManagement
+
+    Defines versões de dependências CENTRALMENTE.
+    As dependências declaradas aqui NÃO são adicionadas ao
+    projeto automaticamente — elas APENAS definem a versão.
+
+    Diferença fundamental:
+    - <dependencies>: adiciona a dependência ao projeto
+    - <dependencyManagement>: apenas declara versões (sem adicionar)
+
+    Quando você declara uma dependência em <dependencies>
+    SEM especificar a versão, o Maven procura no
+    <dependencyManagement> e usa a versão declarada lá.
+    ═══════════════════════════════════════════════════════ -->
+  <dependencyManagement>
+    <dependencies>
+
+      <!-- ─────────────────────────────────────────────────────
+        IMPORTANDO UM BOM (Bill of Materials)
+
+        scope=import + type=pom: instrução especial que significa
+        "copie todo o <dependencyManagement> deste POM para cá"
+
+        Resultado: todos os módulos do Spring Boot têm suas
+        versões definidas automaticamente, em versões compatíveis
+        entre si (testadas juntas pelo time do Spring).
+        ───────────────────────────────────────────────────── -->
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <!-- type=pom: é um POM, não um JAR -->
+        <type>pom</type>
+        <!-- scope=import: "importe as definições de versão deste POM" -->
+        <scope>import</scope>
+        <!--
+          ATENÇÃO: scope=import APENAS funciona dentro de
+          <dependencyManagement>. Não funciona em <dependencies>!
+        -->
+      </dependency>
+
+      <!-- Importando o BOM do JUnit 5 -->
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit-bom.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- ─────────────────────────────────────────────────────
+        DEFINIÇÃO DE VERSÃO INDIVIDUAL
+        Você também pode definir versões individuais de dependências
+        que não fazem parte de nenhum BOM
+        ───────────────────────────────────────────────────── -->
+      <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>2.10.1</version>
+        <!-- Sem scope=import aqui — só definindo a versão -->
+      </dependency>
+
+    </dependencies>
+  </dependencyManagement>
+
+  <!-- ═══════════════════════════════════════════════════════
+    SEÇÃO: dependencies
+    Aqui você declara as dependências REAIS do projeto.
+    Note que NÃO precisamos de <version> para as libs
+    gerenciadas pelo BOM — a versão vem do dependencyManagement!
+    ═══════════════════════════════════════════════════════ -->
+  <dependencies>
+
+    <!-- spring-boot-starter: define spring-mvc, tomcat, logging, etc. -->
+    <!-- SEM VERSION → vem do spring-boot-dependencies BOM -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter</artifactId>
+      <!-- <version>: não precisa! Gerenciada pelo spring-boot-dependencies BOM -->
+    </dependency>
+
+    <!-- SEM VERSION → vem do spring-boot-dependencies BOM -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- JUnit Jupiter API → vem do junit-bom -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+      <!-- SEM VERSION → vem do junit-bom -->
+    </dependency>
+
+    <!-- Spring Boot Test → vem do spring-boot-dependencies BOM -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Gson → versão definida manualmente no dependencyManagement -->
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <!-- SEM VERSION → vem da definição manual no dependencyManagement -->
+    </dependency>
+
+  </dependencies>
+
+</project>
+
+<!--
+  ═══════════════════════════════════════════════════════════
+  CONCEITO SENIOR — POR QUE BOMs EXISTEM?
+
+  Problema real: O Spring Framework tem DEZENAS de módulos
+  (spring-core, spring-beans, spring-context, spring-aop, etc.)
+  Cada um tem sua própria versão. Usar versões incompatíveis
+  entre módulos causa erros sutis e difíceis de debugar.
+
+  Sem BOM (errado):
+    spring-core:6.0.0
+    spring-beans:6.1.0   ← versão diferente! Pode causar problemas
+    spring-aop:5.3.0     ← ainda mais velha! Bug garantido
+
+  Com BOM (certo):
+    spring-boot-dependencies:3.2.0  ← define TODAS as versões
+    spring-core: (gerenciada → 6.1.x)
+    spring-beans: (gerenciada → 6.1.x)
+    spring-aop: (gerenciada → 6.1.x)
+    Todas compatíveis e testadas juntas!
+
+  CRIANDO SEU PRÓPRIO BOM (avançado):
+  Um BOM é simplesmente um POM com:
+    <packaging>pom</packaging>
+    <dependencyManagement>...</dependencyManagement>
+
+  BOMs famosos no mercado:
+  - spring-boot-dependencies (Spring Boot)
+  - quarkus-bom (Quarkus)
+  - micronaut-bom (Micronaut)
+  - jackson-bom (Jackson JSON)
+  - aws-java-sdk-bom (AWS SDK)
+
+  PERGUNTA DE ENTREVISTA:
+  "O que é um BOM no Maven e como ele difere de declarar
+  versões diretamente em <dependencies>?"
+  ═══════════════════════════════════════════════════════════
+-->

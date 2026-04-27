@@ -1,0 +1,106 @@
+# ============================================================
+# ARQUIVO: 02-configmap.yaml
+# PROJETO FINAL - Configurações centralizadas
+#
+# Separamos as configs em 2 ConfigMaps:
+# 1. config-geral    -> configs compartilhadas por todos
+# 2. config-api      -> configs específicas da API
+#
+# Regra: Se é sensível (senha, token) -> Secret
+#        Se não é sensível (URL, porta, flag) -> ConfigMap
+# ============================================================
+
+# ConfigMap 1: Configurações gerais compartilhadas
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: config-geral             # Nome do ConfigMap
+  namespace: ecommerce           # Namespace do projeto
+
+data:
+  # Ambiente
+  APP_ENV: "production"          # Ambiente atual
+  LOG_LEVEL: "info"             # Nível de log (debug/info/warn/error)
+  LOG_FORMAT: "json"            # Formato de log (json é ideal para ELK)
+
+  # Banco de dados (sem senha - senha fica no Secret!)
+  DB_HOST: "postgres-service"   # Nome do Service do PostgreSQL
+  DB_PORT: "5432"               # Porta padrão do PostgreSQL
+  DB_NAME: "ecommerce_db"       # Nome do banco
+
+  # Redis
+  REDIS_HOST: "redis-service"   # Nome do Service do Redis
+  REDIS_PORT: "6379"            # Porta padrão do Redis
+  REDIS_TTL: "3600"             # Tempo de expiração do cache (1h)
+
+  # Features flags (ativar/desativar funcionalidades sem redeploy)
+  FEATURE_PAGAMENTO_PIX: "true"
+  FEATURE_CUPOM_DESCONTO: "true"
+  FEATURE_NOTIFICACAO_EMAIL: "false"  # Desabilitado temporariamente
+
+---
+# ConfigMap 2: Configurações específicas da API
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: config-api
+  namespace: ecommerce
+
+data:
+  # Servidor
+  PORT: "8080"                  # Porta que a API escuta
+  HOST: "0.0.0.0"              # Aceita conexões de qualquer IP
+
+  # Performance
+  MAX_CONNECTIONS: "100"        # Máximo de conexões simultâneas
+  REQUEST_TIMEOUT: "30s"        # Timeout por requisição
+  RATE_LIMIT: "1000"           # Requisições por minuto por IP
+
+  # CORS - Quem pode chamar a API
+  CORS_ORIGINS: "https://loja.empresa.com,https://admin.empresa.com"
+
+  # Arquivo de configuração do nginx (para o container nginx)
+  nginx.conf: |
+    # Arquivo de configuração montado como volume no nginx
+    worker_processes auto;          # Usa todos os CPUs disponíveis
+
+    events {
+      worker_connections 1024;      # Conexões por worker
+    }
+
+    http {
+      # Compressão gzip para economizar banda
+      gzip on;
+      gzip_types text/plain application/json;
+
+      server {
+        listen 8080;                # Porta que nginx escuta
+        server_name _;             # Qualquer hostname
+
+        location /health {
+          return 200 'OK';         # Endpoint de health check
+          add_header Content-Type text/plain;
+        }
+
+        location / {
+          proxy_pass http://localhost:3000;  # Repassa para o app
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+        }
+      }
+    }
+
+# ============================================================
+# DICA DE ARQUITETURA SÊNIOR:
+#
+# Separe ConfigMaps por responsabilidade:
+# - config-geral:   compartilhado por todos os services
+# - config-api:     específico do serviço de API
+# - config-nginx:   configuração do nginx
+#
+# Isso segue o princípio de separação de responsabilidades
+# e facilita auditoria (quem mudou o quê e quando).
+# Use git para versionar seus ConfigMaps!
+# ============================================================

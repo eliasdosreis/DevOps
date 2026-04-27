@@ -1,0 +1,114 @@
+# ============================================================
+# ARQUIVO: 02-bucket-versionamento.yaml
+# O QUE FAZ: Adiciona VERSIONAMENTO ao bucket S3
+#
+# ANALOGIA: Imagine que cada vez que você salva um documento
+#           no Word, o S3 guarda a versão antiga automaticamente.
+#           Mandou o arquivo errado? Restaure a versão anterior!
+#
+# CUSTO: ~$0.00 — Free Tier cobre os primeiros 5 GB
+#        ⚠️  CUIDADO: Versões antigas também ocupam espaço!
+#           Se você subir um arquivo de 1 MB 100 vezes = 100 MB
+#           Configure lifecycle para deletar versões antigas (Passo 3)
+#
+# PRÉ-REQUISITO: Execute 01-bucket-s3.yaml primeiro
+# CONCEITO NOVO: Versioning, Delete Markers, MFA Delete
+# ============================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  MÓDULO 1 - PASSO 2: Adiciona versionamento e MFA Delete ao bucket S3.
+  O versionamento protege contra deletar arquivos por acidente.
+  Conceitos: Versioning, Version IDs, Delete Markers, MFA Delete
+
+Parameters:
+
+  # Referencia o bucket criado no passo anterior
+  NomeBucket:
+    Type: String
+    Description: Nome do bucket criado no template 01-bucket-s3.yaml
+
+  # Habilitar MFA Delete adiciona proteção extra contra deletar versões
+  # Requer MFA para: deletar versões permanentemente e suspender versioning
+  HabilitarMFADelete:
+    Type: String
+    Description: |
+      Habilitar MFA Delete? Requer MFA para deletar versões permanentemente.
+      Recomendado para produção. Para aprendizado, use 'Disabled'.
+    Default: Disabled
+    AllowedValues:
+      - Enabled
+      - Disabled
+
+Resources:
+
+  # ----------------------------------------------------------
+  # RECURSO: Atualiza o bucket existente com Versionamento
+  #
+  # COMO FUNCIONA O VERSIONAMENTO:
+  # - Antes: arquivo.txt → 1 objeto
+  # - Depois: arquivo.txt → múltiplas versões com IDs únicos
+  #
+  # Ao "deletar" um arquivo versionado:
+  # - O S3 cria um "Delete Marker" (marcador de deleção)
+  # - O arquivo original NÃO é destruído!
+  # - Para restaurar: delete o Delete Marker
+  # - Para deletar de verdade: delete a versão específica
+  # ----------------------------------------------------------
+  BucketComVersionamento:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Ref NomeBucket
+      
+      # ----------------------------------------------------------
+      # VERSIONAMENTO — O coração deste template
+      # Status: Enabled = ativo | Suspended = pausado (não deleta versões)
+      # Atenção: Uma vez habilitado, não pode ser completamente desabilitado,
+      #          apenas suspendido (versões antigas são mantidas)
+      # ----------------------------------------------------------
+      VersioningConfiguration:
+        Status: Enabled       # OBRIGATÓRIO: Enabled ou Suspended
+        # MfaDelete: !Ref HabilitarMFADelete  # ← Descomentar em produção
+      
+      # Mantém configurações de segurança do template anterior
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+            BucketKeyEnabled: true
+      
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      
+      Tags:
+        - Key: Modulo
+          Value: "01-S3"
+        - Key: Versionamento
+          Value: "Ativo"
+
+Outputs:
+
+  StatusVersionamento:
+    Description: Status do versionamento do bucket
+    Value: "Enabled"
+
+  ExplicacaoVersionamento:
+    Description: Como funcionam as versões
+    Value: |
+      Com versionamento ativo:
+      - Cada PUT gera um VersionId único
+      - DELETE cria um Delete Marker (não apaga de verdade)
+      - Para restaurar: delete o Delete Marker
+      - Para apagar de verdade: especifique o VersionId
+      
+      Comandos úteis:
+      aws s3api list-object-versions --bucket NOME-DO-BUCKET
+      aws s3api get-object --bucket NOME-DO-BUCKET --key arquivo.txt --version-id VERSION-ID

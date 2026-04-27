@@ -1,0 +1,57 @@
+# ============================================================
+# GABARITO: O STACK.YML PRO SWARM MANAGER DITADOR
+# Focado em Replicas, Auto-Rollover, Limites de hardware e Constraints Mágicas.
+# Ele NÃO ACEITA 'build:'. Exige apenas que a imagme ja estaja assada e upada no Hub via tag.
+# ============================================================
+
+version: "3.8"
+
+services:
+  api_prod:
+    image: meurepo/minha_api:v7.4.1
+    ports:
+      - "3000:3000"
+    environment:
+      REDIS_HOST: cacheador_prod
+    
+    # MAGIC MAGIC MAGIC - O BLOCO DE DEPLOY EXCLUSIVO PARA O MANAGER DO SWARM LER
+    deploy:
+      # O App receberá 4 máquinas iguaizinhas trabalhando.
+      mode: replicated
+      replicas: 4
+      
+      # Regra de Hardware pra ngm quebrar O Host AWS de 60 dólares se o while infinito atacar.
+      resources:
+        limits:
+          cpus: '0.40'       # Ele nunca passara do uso basico de 40%
+          memory: 350M     
+        reservations:
+          cpus: '0.10'       # Mas exija de garantia minima q ele tenha 10% livre ao ligar senao nem de boot
+          memory: 50M
+
+      # Regra de Manutencao de Black Friday.
+      # Se uma cair, nao de load de nv da image corrompida travando no loop. Tente religar no maximo 3 vezes.
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+      # Atualizacao via `docker service update` sem Downtime.    
+      update_config:
+        parallelism: 1       # Mata 1 e liga 1 por vez no escadão.
+        delay: 10s           # Grace period pra ela voltar viva.
+        failure_action: rollback # Se a atualizacao v9 deu bug HTTP ao ligar la na CPU 2.. PARE O DEPLOY GLOBAL AGORA e volte O BKP v8 instantaneamente na AWS!.
+
+  cacheador_prod:
+    image: redis:alpine
+    deploy:
+      # REGRA DE OURO (CONSTRAINT) DO ARQUITETO.
+      # Swarm, espalhe meu node livremente por ai pela frança.. mas O REDIS..
+      # Se as maquinas nao tiverem atachado um SSD ultra fast, EU NAO QUERO ELE RODANDO NELAS.
+      # Aqui garantimos que o Banco s[o subirá naqueles nodes marcados pelo master como disco_ssd no metadado da nuvem.
+      placement:
+        constraints:
+          - node.labels.disk == ssd
+
+# Não precisamos de volumes no redis puro de cache session.

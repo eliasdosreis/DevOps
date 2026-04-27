@@ -1,0 +1,66 @@
+---
+# ==============================================================
+# ARQUIVO: 04-handlers.yml
+# MÓDULO 2 - Intermediário
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Handlers são como SEMÁFOROS INTELIGENTES.
+# Você só para no semáforo se ele ficou vermelho.
+# O handler só roda se a tarefa que o notificou MUDOU algo.
+# Se nada mudou = handler não roda (economiza tempo!)
+#
+# ▶️  COMO RODAR:
+# ansible-playbook -i ../modulo1-fundamentos/01-inventory-simples.ini 04-handlers.yml
+# ==============================================================
+
+- name: "Handlers - Ações Condicionais Inteligentes"
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    # ---- Tarefa que PODE notificar o handler ------------------
+    - name: "Criar arquivo de configuração"
+      ansible.builtin.copy:
+        content: |
+          # Configuração da aplicação
+          versao=2.0
+          timeout=30
+        dest: /tmp/ansible-demo/config/app.conf
+        mode: '0644'
+      # "notify" avisa o handler SOMENTE SE esta tarefa mudou algo
+      # Se o arquivo já existe e é igual = não notifica!
+      notify:
+        - Reiniciar aplicacao  # Nome do handler para chamar
+        - Validar configuracao  # Pode notificar múltiplos handlers
+
+    # ---- Tarefa que SEMPRE roda (sem handler) -----------------
+    - name: "Tarefa simples sem handler"
+      ansible.builtin.debug:
+        msg: "Esta tarefa não tem handler"
+
+    # ---- Tarefa que notifica outro handler --------------------
+    - name: "Atualizar arquivo de log"
+      ansible.builtin.lineinfile:
+        path: /tmp/ansible-demo/config/app.conf
+        line: "log_level=INFO"
+        create: true
+      notify: Validar configuracao
+
+  # ---- HANDLERS: rodam no final, apenas se notificados ------
+  # IMPORTANTE: handlers rodam UMA VEZ só, no final do play,
+  # mesmo que sejam notificados várias vezes!
+  handlers:
+
+    - name: "Reiniciar aplicacao"
+      ansible.builtin.debug:
+        msg: |
+          🔄 Handler: Aplicação seria reiniciada aqui!
+          Em produção seria: systemctl restart minhaapp
+
+    - name: "Validar configuracao"
+      ansible.builtin.debug:
+        msg: |
+          ✅ Handler: Validando configuração...
+          Em produção seria: /opt/minhaapp/bin/validate-config

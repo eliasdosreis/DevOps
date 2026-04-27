@@ -1,0 +1,52 @@
+---
+# =============================================================
+# PLAYBOOK PRINCIPAL — PROJETO FINAL SENIOR
+# Orquestra a configuração de todas as VMs do cluster
+# Cada VM recebe roles baseadas na sua função
+# =============================================================
+
+- name: Configurar todos os servidores do cluster
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Atualizar apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      tags: always
+
+    - name: Configurar timezone
+      timezone:
+        name: America/Sao_Paulo
+      tags: always
+
+  roles:
+    - role: common      # Aplica a todos os hosts
+
+- name: Configurar banco de dados
+  hosts: db-server
+  become: yes
+  roles:
+    - role: mysql-db
+
+- name: Configurar app server
+  hosts: app-server
+  become: yes
+  roles:
+    - role: nodejs-app
+
+- name: Configurar web servers
+  hosts:
+    - web1-server
+    - web2-server
+  become: yes
+  roles:
+    - role: nginx-web
+
+- name: Configurar load balancer
+  hosts: lb-server
+  become: yes
+  roles:
+    - role: nginx-lb

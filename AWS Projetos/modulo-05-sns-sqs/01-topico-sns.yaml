@@ -1,0 +1,139 @@
+# ============================================================
+# ARQUIVO: 01-topico-sns.yaml
+# O QUE FAZ: Cria um tópico SNS e uma subscrição de email
+#
+# ANALOGIA: Configura a estação de rádio (SNS) e diz para
+#           o seu email se inscrever como "ouvinte".
+#
+# CUSTO: $0.00 — Free Tier: 1M publicações + 1.000 emails/mês
+# CONCEITO NOVO: SNS Topic, Subscription, Protocol, FilterPolicy
+# ============================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  MÓDULO 5 - PASSO 1: Tópico SNS com subscrição de email.
+  Conceitos: Topic, Subscription, Protocol, ContentBasedDeduplication
+
+Parameters:
+
+  EmailNotificacoes:
+    Type: String
+    Description: Email para receber notificações do SNS
+    # Não validamos o formato aqui — SNS validará ao criar
+  
+  NomeTopico:
+    Type: String
+    Description: Nome do tópico SNS
+    Default: notificacoes-aprendizado
+
+Resources:
+
+  # ----------------------------------------------------------
+  # TÓPICO SNS
+  # O "canal de transmissão" que recebe publicações e
+  # distribui para todos os subscribers
+  # ----------------------------------------------------------
+  TopicoNotificacoes:
+    Type: AWS::SNS::Topic
+    Properties:
+    
+      TopicName: !Ref NomeTopico
+      
+      # DisplayName: aparece como remetente nos emails
+      DisplayName: "AWS Learning - Notificações"
+      
+      # KmsMasterKeyId: criptografa mensagens em repouso
+      # KmsMasterKeyId: alias/aws/sns   # Chave gerenciada AWS (gratuita)
+      
+      # FIFO Topic: garante ordem e deduplicação (só com SQS FIFO subscribers)
+      # FifoTopic: false   # Default: false
+      
+      # ContentBasedDeduplication: apenas em FIFO Topics
+      # ContentBasedDeduplication: false
+      
+      Tags:
+        - Key: Modulo
+          Value: "05-SNS-SQS"
+
+  # ----------------------------------------------------------
+  # SUBSCRIÇÃO EMAIL — "Inscreve" seu email no tópico
+  # ⚠️  IMPORTANTE: Você DEVE confirmar o email!
+  #               A AWS envia um email de confirmação.
+  #               Sem confirmar, o email NÃO receberá mensagens.
+  # ----------------------------------------------------------
+  SubscricaoEmail:
+    Type: AWS::SNS::Subscription
+    Properties:
+    
+      TopicArn: !Ref TopicoNotificacoes    # Qual tópico se inscrever
+      Protocol: email                       # email, sms, http, https, sqs, lambda
+      Endpoint: !Ref EmailNotificacoes      # Para onde enviar
+      
+      # FilterPolicy: filtra QUAIS mensagens este subscriber recebe
+      # Sem FilterPolicy: recebe TODAS as mensagens do tópico
+      # Com FilterPolicy: apenas mensagens que correspondem ao filtro
+      #
+      # Exemplo: só receber mensagens de "pedidos" com valor >= 100:
+      # FilterPolicy:
+      #   tipo_evento: ["pedido_criado", "pedido_atualizado"]
+      #   valor_minimo: [{"numeric": [">=", 100]}]
+      
+      # RedrivePolicy: manda mensagens com falha para uma fila SQS (DLQ)
+      # RedrivePolicy:
+      #   deadLetterTargetArn: !GetAtt FilaDLQ.Arn
+
+  # ----------------------------------------------------------
+  # POLÍTICA DO TÓPICO — Quem pode publicar neste tópico?
+  # Sem esta política: apenas a mesma conta pode publicar
+  # Com esta política: permite mais entidades (outros serviços, contas)
+  # ----------------------------------------------------------
+  PoliticaTopico:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref TopicoNotificacoes
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # Permite que os serviços CloudWatch e EventBridge publiquem
+          - Sid: PermitirServicoAWS
+            Effect: Allow
+            Principal:
+              Service:
+                - cloudwatch.amazonaws.com    # Para alarmes CloudWatch
+                - events.amazonaws.com        # Para EventBridge rules
+            Action: sns:Publish
+            Resource: !Ref TopicoNotificacoes
+          
+          # Permite que a própria conta publique
+          - Sid: PermitirContaPublicar
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: sns:Publish
+            Resource: !Ref TopicoNotificacoes
+
+Outputs:
+
+  ARNTopico:
+    Description: ARN do tópico SNS (use para publicar mensagens)
+    Value: !Ref TopicoNotificacoes
+    Export:
+      Name: !Sub "${AWS::StackName}-sns-arn"
+
+  ComandoPublicar:
+    Description: Comando para publicar uma mensagem de teste
+    Value: !Sub |
+      # Publicar uma mensagem simples:
+      aws sns publish \
+        --topic-arn ${TopicoNotificacoes} \
+        --subject "Teste de notificação AWS" \
+        --message "Esta é uma mensagem de teste do módulo 5!"
+      
+      # Publicar com atributos (para FilterPolicy):
+      aws sns publish \
+        --topic-arn ${TopicoNotificacoes} \
+        --message '{"pedido_id": "123", "valor": 299.90}' \
+        --message-attributes '{"tipo_evento": {"DataType": "String", "StringValue": "pedido_criado"}}'
+      
+      ⚠️  CONFIRME O EMAIL primeiro! Verifique sua caixa de entrada.

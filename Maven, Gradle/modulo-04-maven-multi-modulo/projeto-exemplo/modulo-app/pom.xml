@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ============================================================
+  ARQUIVO: modulo-app/pom.xml
+
+  O QUE ESTE MÓDULO FAZ:
+  É o módulo da aplicação executável — o "ponto de entrada"
+  do sistema. Depende de modulo-core (que já inclui modulo-api
+  como transitiva) e gera um fat-JAR executável.
+
+  CADEIA DE DEPENDÊNCIAS:
+  modulo-app → modulo-core → modulo-api
+  (modulo-api chega como dependência TRANSITIVA de modulo-core)
+  ============================================================ -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.curso</groupId>
+    <artifactId>meu-sistema</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>modulo-app</artifactId>
+  <name>Meu Sistema - Application</name>
+  <description>Aplicação executável principal</description>
+
+  <dependencies>
+
+    <!-- ─────────────────────────────────────────────────────
+      Depende do modulo-core (que traz modulo-api como transitiva)
+      Transitivas:
+      modulo-core → modulo-api → presente automaticamente
+      modulo-core → gson       → presente automaticamente
+      modulo-core → slf4j-api  → presente automaticamente
+      ───────────────────────────────────────────────────── -->
+    <dependency>
+      <groupId>com.curso</groupId>
+      <artifactId>modulo-core</artifactId>
+    </dependency>
+
+    <!-- Implementação de logging para produção -->
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <scope>runtime</scope>
+      <!-- runtime = Logback não é referenciado diretamente no código App -->
+      <!-- Ele é detectado pelo SLF4J automaticamente em runtime -->
+    </dependency>
+
+    <!-- Testes -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Fat JAR executável para este módulo (que agrega tudo) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.5.1</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <!-- Classe main do módulo app -->
+                  <mainClass>com.curso.app.Main</mainClass>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
+
+<!--
+  ═══════════════════════════════════════════════════════════
+  COMO FAZER O BUILD DO PROJETO COMPLETO:
+
+  1. Na raiz (pasta projeto-exemplo/, onde está o POM pai):
+     mvn clean install
+
+  2. Ordem de build determinada pelo Maven:
+     [INFO] Reactor Build Order:
+     [INFO] Meu Sistema - Parent POM    [pom]
+     [INFO] Meu Sistema - API Module    [jar]
+     [INFO] Meu Sistema - Core Module   [jar]
+     [INFO] Meu Sistema - Application   [jar]
+
+  3. Resultado em target/ de cada módulo:
+     modulo-api/target/modulo-api-1.0.0-SNAPSHOT.jar
+     modulo-core/target/modulo-core-1.0.0-SNAPSHOT.jar
+     modulo-app/target/modulo-app-1.0.0-SNAPSHOT.jar  ← fat jar executável
+
+  4. Executar:
+     java -jar modulo-app/target/modulo-app-1.0.0-SNAPSHOT.jar
+
+  COMANDOS ÚTEIS:
+  # Build apenas de um módulo (sem seus dependentes)
+  mvn clean install -pl modulo-core
+
+  # Build de um módulo E seus prerequisitos (--also-make)
+  mvn clean install -pl modulo-core -am
+
+  # Build de um módulo E o que depende dele (--also-make-dependents)
+  mvn clean install -pl modulo-core -amd
+
+  # Pular testes em todos os módulos
+  mvn clean install -DskipTests
+
+  # Build paralelo (cuidado com dependências)
+  mvn clean install -T 4C  # 4 threads por core de CPU
+  ═══════════════════════════════════════════════════════════
+-->

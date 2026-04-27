@@ -1,0 +1,34 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Apresenta a funcionalidade PROFILES. Como usar a mesma partitura
+# mas não mandar todo mundo tocar. Ligar bancos de teste e mocks 
+# CONDICIONALMENTE somene se passado flag.
+# ============================================================
+
+version: "3.9"
+
+services:
+  web_api:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    # Não possui profile. Faz parte do array DEFAULT do core. Se o dev der "up" cru. Essa api roda obrigatoriamente.
+    # Sem condicional exigida.
+
+  banco_dev_fake_mockado:
+    image: mongo
+    # Só vai ligar junto e entrar na rede se... e SOMENTE SE o o comando up for executado
+    # usando a flag: `docker compose --profile development up -d` !!
+    profiles:
+      - development
+
+  banco_de_metricas_estagie_beta:
+    image: elasticsearch:8
+    # Esse bicho pesa memoria atoa. Só suba para testar pipeline!
+    profiles:
+      - beta_testing
+      - pipeline_debug
+      
+# DICA DA ENTREVISTA:
+# Comando para rodar a base obrigatoria DE APP e SÓ o Mongo fake ignorando os testes beta do Elastic:
+# `docker compose --profile development up -d`

@@ -1,0 +1,96 @@
+---
+# ==============================================================
+# ARQUIVO: 01-vault-basico.yml
+# MÓDULO 3 - Avançado
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Vault é como um COFRE para suas senhas!
+# Você não deixa a senha do banco na geladeira, né?
+# Com o Vault, as senhas ficam criptografadas (embaralhadas)
+# e só quem tem a "chave do cofre" consegue abrir.
+#
+# COMANDOS IMPORTANTES DO VAULT:
+#
+# Criar arquivo criptografado:
+#   ansible-vault create secrets.yml
+#
+# Editar arquivo criptografado:
+#   ansible-vault edit secrets.yml
+#
+# Ver conteúdo criptografado:
+#   ansible-vault view secrets.yml
+#
+# Criptografar arquivo existente:
+#   ansible-vault encrypt meuarquivo.yml
+#
+# Descriptografar arquivo:
+#   ansible-vault decrypt meuarquivo.yml
+#
+# Criptografar só UMA string:
+#   ansible-vault encrypt_string 'minha_senha_secreta' --name 'db_password'
+#
+# ▶️  DEMONSTRAÇÃO (este arquivo é só explicativo):
+# ==============================================================
+
+# Este playbook demonstra COMO FICARIA um arquivo de secrets.
+# Em produção, este arquivo seria criptografado com:
+#   ansible-vault encrypt secrets.yml
+
+# ==============================================================
+# EXEMPLO: Como seria o arquivo secrets.yml ANTES de criptografar
+# (NÃO deixe assim em produção!)
+# ==============================================================
+
+# Conteúdo típico de um secrets.yml:
+#
+# ---
+# # Credenciais do banco de dados
+# db_host: "prod-db.minhaempresa.com"
+# db_usuario: "app_prod_user"
+# db_senha: "SenhaSuperSecreta@2024!"     ← ISSO seria criptografado
+#
+# # Chave de API
+# api_key: "sk-abc123def456"              ← E isso também
+#
+# # Senha do servidor SMTP
+# smtp_senha: "EmailPass#Seguro"          ← E isso
+#
+# ==============================================================
+# APÓS criptografar com ansible-vault encrypt secrets.yml:
+# O arquivo ficaria assim (exemplo):
+# ==============================================================
+#
+# $ANSIBLE_VAULT;1.1;AES256
+# 38623765336433383639646232363462663232663737623430343064393865616361616338363563
+# 6131356535343236343762313263303234383839623635310a393537613566393132623062323838
+# ... (linhas de texto embaralhado)
+
+- name: "Demonstração do Ansible Vault"
+  hosts: localhost
+  gather_facts: false
+
+  # Variáveis normais (NÃO secretas)
+  vars:
+    app_name: "MinhaApp"
+    ambiente: "producao"
+
+  tasks:
+
+    - name: "Explicar o que o Vault faz"
+      ansible.builtin.debug:
+        msg:
+          - "🔐 O Vault protege suas senhas com criptografia AES-256"
+          - "📁 O arquivo secrets.yml fica embaralhado no Git"
+          - "🔑 Só quem tem a senha do vault consegue usar"
+          - "✅ Seguro compartilhar no repositório!"
+
+    # ---- Como criar um vault na prática -----------------------
+    - name: "Instrução: Como criar seu vault"
+      ansible.builtin.debug:
+        msg:
+          - "1. Execute: ansible-vault create secrets.yml"
+          - "2. Digite uma senha para o cofre (guarde bem!)"
+          - "3. Adicione suas variáveis secretas"
+          - "4. Salve e feche"
+          - "5. Use com: ansible-playbook site.yml --ask-vault-pass"

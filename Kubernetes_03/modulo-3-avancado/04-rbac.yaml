@@ -1,0 +1,149 @@
+# ============================================================
+# ARQUIVO: 04-rbac.yaml
+# RBAC - Role-Based Access Control
+#
+# Quem pode fazer o quê no cluster?
+#
+# Analogia com um hospital:
+# - ServiceAccount = Crachá de identificação do funcionário
+# - Role           = Lista de permissões (o que pode fazer)
+# - RoleBinding    = Dar o crachá ao funcionário
+#
+# Sem RBAC, qualquer pod poderia:
+# - Ler secrets de outros times
+# - Deletar deployments
+# - Modificar configurações do cluster
+# Isso é um RISCO DE SEGURANÇA enorme!
+#
+# TIPOS:
+# Role + RoleBinding         = Permissões em 1 Namespace
+# ClusterRole + ClusterRoleBinding = Permissões em TODO o cluster
+# ============================================================
+
+# PARTE 1: ServiceAccount
+# É a "identidade" do pod dentro do Kubernetes
+# Pods usam isso para se autenticar na API do K8s
+
+apiVersion: v1
+kind: ServiceAccount
+
+metadata:
+  name: sa-minha-app            # Nome do ServiceAccount
+  namespace: default            # Em qual namespace
+
+---
+# PARTE 2: Role (permissões dentro de 1 namespace)
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+
+metadata:
+  name: role-leitura-pods       # Nome da Role
+  namespace: default            # Só vale neste namespace!
+
+rules:                          # Lista de permissões
+  - apiGroups: [""]             # "" = core API (pods, services, etc)
+    resources: ["pods"]         # Em quais recursos
+    verbs: ["get", "list", "watch"]  # Quais ações são permitidas
+
+  - apiGroups: [""]
+    resources: ["pods/log"]     # Logs dos pods
+    verbs: ["get"]              # Só leitura de logs
+
+  - apiGroups: ["apps"]         # apps = deployments, replicasets
+    resources: ["deployments"]
+    verbs: ["get", "list"]      # Pode ver deployments
+
+# VERBOS DISPONÍVEIS:
+# get, list, watch  --> leitura
+# create            --> criar recursos
+# update, patch     --> modificar recursos
+# delete            --> apagar recursos
+# "*"               --> TUDO (cuidado!)
+
+---
+# PARTE 3: RoleBinding (conecta Role ao ServiceAccount)
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+
+metadata:
+  name: bind-sa-role-leitura    # Nome do binding
+  namespace: default
+
+subjects:                       # QUEM recebe as permissões?
+  - kind: ServiceAccount
+    name: sa-minha-app          # O ServiceAccount que criamos
+    namespace: default
+
+roleRef:                        # QUAL permissão está sendo dada?
+  kind: Role
+  name: role-leitura-pods       # A Role que criamos
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# PARTE 4: ClusterRole (permissões em TODO o cluster)
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+
+metadata:
+  name: clusterrole-monitoramento   # Sem namespace! É cluster-wide
+
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "pods", "services", "endpoints"]
+    verbs: ["get", "list", "watch"]   # Leitura em todos namespaces
+
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list"]
+
+---
+# PARTE 5: ClusterRoleBinding
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+
+metadata:
+  name: bind-monitoramento
+
+subjects:
+  - kind: ServiceAccount
+    name: sa-minha-app
+    namespace: default
+
+roleRef:
+  kind: ClusterRole                    # ClusterRole, não Role!
+  name: clusterrole-monitoramento
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# PARTE 6: Pod usando o ServiceAccount
+
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: pod-com-rbac
+  labels:
+    app: com-rbac
+
+spec:
+  serviceAccountName: sa-minha-app    # USA o ServiceAccount criado!
+                                      # Se não especificar: usa "default"
+
+  containers:
+    - name: app
+      image: nginx:1.25
+
+# ============================================================
+# ENTREVISTA SÊNIOR:
+# "Qual o princípio de segurança por trás do RBAC?"
+# RESPOSTA: Principle of Least Privilege (menor privilégio).
+# Cada app/usuário tem APENAS as permissões que precisa.
+# Nada a mais. Isso limita o impacto de um pod comprometido.
+#
+# "Como verificar as permissões de um ServiceAccount?"
+# kubectl auth can-i list pods --as=system:serviceaccount:default:sa-minha-app
+# ============================================================

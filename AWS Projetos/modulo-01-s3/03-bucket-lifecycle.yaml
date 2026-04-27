@@ -1,0 +1,170 @@
+# ============================================================
+# ARQUIVO: 03-bucket-lifecycle.yaml
+# O QUE FAZ: Configura regras de ciclo de vida para mover
+#             objetos entre Storage Classes e deletar versões antigas
+#
+# ANALOGIA: É como uma política de arquivo em escritório:
+#   - Documentos recentes ficam na mesa (acesso rápido = Standard)
+#   - Documentos de 30 dias vão para a gaveta (Infrequent Access)
+#   - Documentos de 90 dias vão para o depósito (Glacier)
+#   - Documentos de 365 dias são triturados (Delete)
+#
+# CUSTO: ~$0.00 em aprendizado
+#        Em produção: Lifecycle REDUZ custos (dados migram para classes mais baratas)
+#
+# PRÉ-REQUISITO: Execute 01 e 02 primeiro
+# CONCEITO NOVO: Lifecycle Rules, Storage Classes, Transitions, Expiration
+# ============================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  MÓDULO 1 - PASSO 3: Regras de Lifecycle para otimização de custo.
+  Move objetos para classes de storage mais baratas conforme envelhecem.
+  Conceitos: Lifecycle Rules, Storage Classes, Transitions, Expiration
+
+Parameters:
+  NomeBucket:
+    Type: String
+    Description: Nome do bucket (deve ter versionamento ativo)
+
+Resources:
+
+  BucketComLifecycle:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Ref NomeBucket
+      
+      VersioningConfiguration:
+        Status: Enabled
+      
+      # ----------------------------------------------------------
+      # LIFECYCLE CONFIGURATION — O coração deste template
+      # Define "o que fazer com os objetos conforme eles envelhecem"
+      # ----------------------------------------------------------
+      LifecycleConfiguration:
+        Rules:
+        
+          # ====================================================
+          # REGRA 1: Ciclo de vida para OBJETOS ATUAIS (não versões)
+          # "Mesa → Gaveta → Depósito → Destruição"
+          # ====================================================
+          - Id: regra-objetos-correntes          # ID único da regra
+            Status: Enabled                     # Enabled ou Disabled
+            
+            # Aplica APENAS a objetos dentro desta "pasta" (prefixo)
+            # Prefixo vazio = aplica a todo o bucket
+            Prefix: uploads/                    # Apenas na pasta "uploads/"
+            
+            # TRANSITIONS — Quando mover para outra Storage Class
+            Transitions:
+            
+              # Após 30 dias → STANDARD_IA (acesso infrequente)
+              # Economia: de $0.023/GB para $0.0125/GB
+              # ATENÇÃO: Mínimo de 30 dias em Standard antes de transicionar
+              - TransitionInDays: 30
+                StorageClass: STANDARD_IA
+              
+              # Após 90 dias → GLACIER_INSTANT_RETRIEVAL
+              # Economia: de $0.0125/GB para $0.004/GB (3x mais barato!)
+              # Retrieval: milissegundos (como Standard, mas mais barato para dados raramente acessados)
+              - TransitionInDays: 90
+                StorageClass: GLACIER_INSTANT_RETRIEVAL
+              
+              # Após 180 dias → GLACIER_FLEXIBLE_RETRIEVAL
+              # Mais barato ainda: $0.0036/GB
+              # Retrieval: 1-5 minutos (expedited) ou 3-5 horas (standard)
+              - TransitionInDays: 180
+                StorageClass: GLACIER_FLEXIBLE_RETRIEVAL
+            
+            # EXPIRATION — Quando deletar definitivamente
+            # Após 365 dias, o objeto é deletado permanentemente
+            ExpirationInDays: 365
+          
+          # ====================================================
+          # REGRA 2: Ciclo de vida para VERSÕES ANTIGAS
+          # Sem esta regra, versões antigas ficam para sempre!
+          # (e cobram como Standard, independente da classe atual)
+          # ====================================================
+          - Id: regra-versoes-antigas
+            Status: Enabled
+            
+            # NoncurrentVersionTransitions: afeta versões NÃO-ATUAIS
+            # (versões antigas que não são a versão mais recente)
+            NoncurrentVersionTransitions:
+            
+              # Versões antigas após 30 dias → STANDARD_IA
+              - TransitionInDays: 30
+                StorageClass: STANDARD_IA
+              
+              # Versões antigas após 90 dias → GLACIER
+              - TransitionInDays: 90
+                StorageClass: GLACIER_FLEXIBLE_RETRIEVAL
+            
+            # Versões antigas são deletadas após 180 dias
+            # NoncurrentVersionExpiration: afeta versões não-atuais
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 180               # Deleta versões com 180+ dias
+              # NewerNoncurrentVersions: 3      # Mantém as 3 últimas versões (opcional)
+          
+          # ====================================================
+          # REGRA 3: Limpar Delete Markers e Uploads Incompletos
+          # Delete Markers "órfãos" acumulam e geram custo mínimo
+          # Multipart uploads incompletos cobram pelo armazenamento parcial!
+          # ====================================================
+          - Id: regra-limpeza-operacional
+            Status: Enabled
+            
+            # Deleta Delete Markers quando não há mais versões do objeto
+            # (garante que o "índice" fique limpo)
+            ExpiredObjectDeleteMarker: true
+            
+            # Aborta uploads multipart que ficaram incompletos
+            # (uploads de arquivos grandes em partes que travaram no meio)
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7            # Aborta após 7 dias sem completar
+      
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+            BucketKeyEnabled: true
+      
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      
+      Tags:
+        - Key: Modulo
+          Value: "01-S3"
+        - Key: Lifecycle
+          Value: "Configurado"
+
+Outputs:
+  ResumoLifecycle:
+    Description: Resumo das regras configuradas
+    Value: |
+      Regras de Lifecycle ativas:
+      
+      uploads/ (objetos correntes):
+        0-30 dias   → STANDARD     ($0.023/GB)
+        30-90 dias  → STANDARD_IA  ($0.0125/GB)
+        90-180 dias → GLACIER IR   ($0.004/GB)
+        180-365d    → GLACIER FR   ($0.0036/GB)
+        365+ dias   → DELETADO
+      
+      Versões antigas:
+        0-30 dias   → STANDARD
+        30-90 dias  → STANDARD_IA
+        90-180 dias → GLACIER FR
+        180+ dias   → DELETADO
+      
+      Operacional:
+        Delete Markers órfãos → Deletados automaticamente
+        Multipart incompleto  → Abortado após 7 dias

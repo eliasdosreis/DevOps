@@ -1,0 +1,54 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Implementa um conceito EXTREMAMENTE avançado e requisitado em vagas Seniors.
+# O "Multi-stage Build". É a arte de quebrar o Dockerfile em Duas Máquinas virtuais.
+# Uma "pesada", suja, enorme, com compiladores apenas para GERAR as pastas buidadas.
+# E uma segunda máquina "minúscula" e segura que ROUBA a pasta gerada na "primeira",
+# descartando os lixos de compilação para o infinito, e empacotando apenas ela para os clientes.
+# ============================================================
+
+
+# ############################################################
+# STAGE 1: MÁQUINA DE MANUFATURA / BUILDER 
+# Essa máquina tem o compilador de NodeJS inteirão que pesa muito.
+# Npms, node-gyp e etc estão aqui.
+# Demos o apelido a ela de "builder_stage".
+# ############################################################
+FROM node:20 AS builder_stage
+
+WORKDIR /app
+COPY package*.json ./
+# Instalamos TUDO. Com dependencias normais e de dependencias Dev de teste de pipeline.
+RUN npm install
+
+# Copiamos codigos fonte do FrontEnd (Next.JS / React) ou BackEnd (NestJS).
+COPY . .
+# Suponha que isto gere uma pasta interna chamada /app/dist 
+# com os htmls enxutos, CSS e codigos gerados unificados finais.
+RUN npm run build 
+
+# Nossos lixos de node_modules pesados estao todos na pasta /app dessa camada ainda.
+
+
+# ############################################################
+# STAGE 2: IMAGEM DE PRODUÇÃO (É o que realmente o Host usará)
+# O Docker automaticamente descarta TODA a sujeira da máquina 1 
+# pois nós puxamos um "FROM" novo do zero logo abaixo!!
+# ############################################################
+FROM node:20-alpine 
+
+# Configuramos essa imagem minuscula virgem que roda Node
+WORKDIR /home/node/app
+ENV NODE_ENV=production
+
+# O PULO DO GATO SENIOR: O comando COPY recebe o flag especial --from
+# para roubar através do espaço/tempo inter-maquina, buscando os arquivos já "assados" 
+# gerados na pasta /dist e descartando o restabte do projeto base e node_modules dev da build no esgoto de memoria.
+COPY --from=builder_stage /app/dist ./dist
+# (Podemos copiar tambem so os modulos de produção especificos pro container ligar dependendo da feature)
+
+# Garantia de segurança 
+USER node
+
+# Inicia purinho sem peso e rápido.
+CMD ["node", "dist/main.js"]

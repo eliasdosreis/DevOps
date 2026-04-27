@@ -1,0 +1,89 @@
+# ============================================================
+# MÓDULO 1 — VERSÕES DA API E RUBY NO VAGRANTFILE
+# O QUE ESTE ARQUIVO FAZ:
+#   Demonstra que o Vagrantfile é Ruby real, mostrando como usar
+#   variáveis, condicionais e boas práticas de organização.
+#   Propósito: entender o poder e responsabilidade de ter Ruby
+#   disponível na configuração de infraestrutura.
+# ============================================================
+
+# ============================================================
+# SEÇÃO: VARIÁVEIS DE CONFIGURAÇÃO
+# Centralizar configurações no topo facilita manutenção
+# Padrão profissional: extrair "magic numbers" para variáveis
+# ============================================================
+VM_NAME   = "vm-ruby-config"
+VM_MEMORY = "1024"
+VM_CPUS   = 2
+VM_BOX    = "ubuntu/jammy64"
+
+# Lê variável de ambiente do host para alterar perfil de recursos
+# Uso: VAGRANT_ENV=ci vagrant up  (para CI com menos recursos)
+AMBIENTE = ENV.fetch("VAGRANT_ENV", "dev")
+
+# Configuração condicional baseada no ambiente
+if AMBIENTE == "ci"
+  VM_MEMORY_FINAL = "512"
+  VM_CPUS_FINAL   = 1
+else
+  VM_MEMORY_FINAL = VM_MEMORY
+  VM_CPUS_FINAL   = VM_CPUS
+end
+
+# ============================================================
+# BLOCO PRINCIPAL
+# ============================================================
+Vagrant.configure("2") do |config|
+
+  # Usando as variáveis definidas acima
+  config.vm.box      = VM_BOX
+  config.vm.hostname = VM_NAME
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = VM_NAME
+    vb.memory = VM_MEMORY_FINAL
+    vb.cpus   = VM_CPUS_FINAL
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: SSH CUSTOMIZATION
+  # Configurações de acesso SSH à VM
+  # -----------------------------------------------------------
+
+  # Tempo máximo para a VM bootar antes do timeout
+  # Aumente se sua máquina for lenta ou a box for pesada
+  config.vm.boot_timeout = 300
+
+  # Usuário padrão para `vagrant ssh` (padrão: "vagrant")
+  # config.ssh.username = "vagrant"
+
+  # Desabilita a substituição da chave SSH insegura por uma segura
+  # FALSE em produção (default = true, mais seguro)
+  # TRUE apenas para boxes que não suportam a troca automática
+  config.ssh.insert_key = true
+
+  # -----------------------------------------------------------
+  # SEÇÃO: GRACEFUL HALT
+  # Tempo de espera para a VM desligar graciosamente
+  # -----------------------------------------------------------
+  config.vm.graceful_halt_timeout = 60
+
+end
+
+# ============================================================
+# SOBRE A VERSÃO DA API ("2"):
+#
+# Vagrant.configure("2") → API v2 (atual, desde Vagrant 1.1)
+# Vagrant.configure("1") → API v1 (obsoleta, não use)
+#
+# A string "2" é a versão da API de configuração,
+# NÃO a versão do software Vagrant instalado.
+#
+# Se um dia surgir API v3, o código com "2" continuará
+# funcionando, pois o Vagrant mantém retrocompatibilidade.
+#
+# SENIORIDADE:
+#   Sempre use variáveis para configurações que podem mudar.
+#   Sempre use ENV.fetch() em vez de ENV[] para ter um valor
+#   padrão seguro caso a variável não esteja definida.
+# ============================================================

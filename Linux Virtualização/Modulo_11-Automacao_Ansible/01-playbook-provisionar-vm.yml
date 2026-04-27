@@ -1,0 +1,167 @@
+---
+# Módulo 11 — Automação com Ansible: Gerenciando VMs como Código
+#
+# ==============================================================================
+# 1. ANALOGIA DO DIA A DIA
+#
+# Imagine que você é arquiteto de uma construtora e tem 200 apartamentos
+# para decorar identicamente. Você tem duas opções:
+#
+# Opção A (Manual/Scripts Shell): Você vai de apartamento em apartamento,
+# entra, pinta a parede, instala a tv, move os móveis... Repete 200x.
+# Se errar no apartamento 150, tem que voltar e desfazer.
+#
+# Opção B (Ansible/IaC): Você escreve uma PLANTA ARQUITETÔNICA precisa
+# descrevendo como o apartamento DEVE SER (estado desejado).
+# A construtora (Ansible) visita TODOS os apartamentos em paralelo,
+# compara a planta com a realidade atual e faz APENAS as mudanças necessárias.
+# Apartamento 37 já tem a TV? Pula essa etapa. Já está pintado de azul? Repinta.
+# Re-executar a planta = SEGURO = sempre chega no mesmo estado. IDEMPOTÊNCIA.
+#
+# ==============================================================================
+# 2. DEFINIÇÃO TÉCNICA SÊNIOR
+#
+# Ansible usa SSH (agentless) para conectar aos hosts gerenciados.
+# Playbooks YAML descrevem o ESTADO DESEJADO (declarativo) da infraestrutura.
+# A IDEMPOTÊNCIA é o princípio central: executar N vezes = mesmo resultado que 1x.
+# O módulo `community.libvirt` fornece tasks para gerenciar VMs via libvirt API.
+# ==============================================================================
+
+- name: "Módulo 11 — Provisionar VM KVM via Ansible (Playbook Exemplo)"
+  hosts: hypervisors          # Grupo de hosts KVM no inventory
+  become: true                # Equivalente a sudo
+  gather_facts: true          # Coleta informações do sistema (CPU arch, OS, etc.)
+
+  vars:
+    vm_name: "vm-web-producao-01"
+    vm_memory_mb: 4096
+    vm_vcpus: 4
+    vm_disk_size_gb: 50
+    vm_image_base: "/var/lib/libvirt/images/ubuntu-22.04-golden.qcow2"
+    vm_disk_path: "/var/lib/libvirt/images/{{ vm_name }}.qcow2"
+    vm_network: "default"
+    cloud_init_user: "elias-admin"
+    cloud_init_ssh_key: "ssh-rsa AAAAB3Nza... elias@workstation"
+
+  tasks:
+
+    # =========================================================================
+    # PASSO 1: Garantir dependências (IDEMPOTENTE — não reinstala se já existe)
+    # =========================================================================
+    - name: "Instalar pacotes KVM e libvirt"
+      ansible.builtin.package:
+        name:
+          - qemu-kvm
+          - libvirt-daemon-system
+          - virtinst
+          - python3-libvirt    # Necessário para o módulo community.libvirt
+          - cloud-image-utils  # cloud-localds para cloud-init seed
+        state: present         # Garante que estão instalados — não reinstala se já estiver
+
+    - name: "Garantir que libvirtd está rodando e habilitado"
+      ansible.builtin.service:
+        name: libvirtd
+        state: started
+        enabled: true
+
+    # =========================================================================
+    # PASSO 2: Criar disco via Linked Clone da Golden Image
+    # =========================================================================
+    - name: "Verificar se disco da VM já existe"
+      ansible.builtin.stat:
+        path: "{{ vm_disk_path }}"
+      register: vm_disk_stat   # Salva resultado na variável vm_disk_stat
+
+    - name: "Criar disco QCOW2 como Linked Clone (apenas se não existir)"
+      ansible.builtin.command:
+        cmd: >
+          qemu-img create -f qcow2
+          -b {{ vm_image_base }}
+          -F qcow2
+          {{ vm_disk_path }}
+      when: not vm_disk_stat.stat.exists  # CONDICIONAL: só executa se disco não existe
+      changed_when: true
+
+    # =========================================================================
+    # PASSO 3: Criar seed Cloud-Init (configuração automática do SO)
+    # =========================================================================
+    - name: "Criar user-data para cloud-init"
+      ansible.builtin.copy:
+        dest: "/tmp/{{ vm_name }}-user-data.yaml"
+        mode: "0600"
+        content: |
+          #cloud-config
+          hostname: {{ vm_name }}
+          users:
+            - name: {{ cloud_init_user }}
+              sudo: ALL=(ALL) NOPASSWD:ALL
+              ssh_authorized_keys:
+                - {{ cloud_init_ssh_key }}
+              lock_passwd: true
+          package_update: true
+          packages:
+            - qemu-guest-agent
+          runcmd:
+            - systemctl enable --now qemu-guest-agent
+
+    - name: "Criar meta-data para cloud-init"
+      ansible.builtin.copy:
+        dest: "/tmp/{{ vm_name }}-meta-data.yaml"
+        mode: "0600"
+        content: |
+          instance-id: {{ vm_name }}-001
+          local-hostname: {{ vm_name }}
+
+    - name: "Gerar seed ISO do cloud-init"
+      ansible.builtin.command:
+        cmd: >
+          cloud-localds
+          /tmp/{{ vm_name }}-seed.iso
+          /tmp/{{ vm_name }}-user-data.yaml
+          /tmp/{{ vm_name }}-meta-data.yaml
+      changed_when: true
+
+    # =========================================================================
+    # PASSO 4: Definir e iniciar a VM via libvirt
+    # =========================================================================
+    - name: "Verificar se VM já está definida no libvirt"
+      community.libvirt.virt:
+        command: list_vms
+      register: vm_list
+
+    - name: "Instalar VM com virt-install (apenas se não existir)"
+      ansible.builtin.command:
+        cmd: >
+          virt-install
+          --name {{ vm_name }}
+          --os-variant ubuntu22.04
+          --memory {{ vm_memory_mb }}
+          --vcpus {{ vm_vcpus }}
+          --disk path={{ vm_disk_path }},format=qcow2,bus=virtio
+          --disk path=/tmp/{{ vm_name }}-seed.iso,device=cdrom
+          --network network={{ vm_network }},model=virtio
+          --import
+          --noautoconsole
+      when: vm_name not in vm_list.list_vms
+      changed_when: true
+
+    - name: "Garantir que VM está rodando"
+      community.libvirt.virt:
+        name: "{{ vm_name }}"
+        state: running
+
+    # =========================================================================
+    # PASSO 5: Validar que VM está acessível
+    # =========================================================================
+    - name: "Aguardar VM ficar acessível via SSH (até 5 minutos)"
+      ansible.builtin.wait_for:
+        host: "{{ vm_name }}"
+        port: 22
+        delay: 10
+        timeout: 300
+        state: started
+      delegate_to: localhost  # Executa no control node, não no hypervisor
+
+    - name: "Confirmar deployment bem-sucedido"
+      ansible.builtin.debug:
+        msg: "✓ VM {{ vm_name }} provisionada e acessível via SSH!"

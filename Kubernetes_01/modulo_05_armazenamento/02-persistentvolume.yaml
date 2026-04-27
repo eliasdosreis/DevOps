@@ -1,0 +1,91 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um Volume Persistente (PV).
+# PV's são recortes LITERAIS num disco de verdade que foram 
+# provisionados antes de tudo pelo Administrador da Rede à mão livre, 
+# para depois alguém usar. 
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Pense no StorageClass (Aula 1) como o "Vendedor de Lotes de Varejo de Terra". 
+# Ele existe e faz a terrabrota na hora do pedido.
+# O **PersistentVolume (PV)** é diferente. O PV é quando o "Prefeito da Cidade" (Admin) 
+# já separou 10 Lotes no chão de 500 metros quadrados cada um, colocou muro em torno e deixou  
+# os 10 terrenos parados vazios lá ganhando mato. Eles existem, ocupam o espaço na cidade, 
+# mas não pertencem à casa nenhuma! (Atualmente o mercado odeia o uso de PV's manuais).
+
+# 2. O QUE É (definição técnica Senior)
+# O `PersistentVolume` (PV) é um pedaço de armazenamento no cluster que foi pré-provisionado   
+# por um administrador manualmente de forma estática. Ele é um recurso GLOBAL DO CLUSTER
+# (Não é fixado num Namespace). Quando o desenvolvedor pedir um disco, o K8s procurará um PV livre.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: PersistentVolume              # Criação ESTÁTICA de um Volume Físico.
+metadata:
+  # MÁGICA DE ISOLAMENTO: Reparou que não tem campo 'namespace:' aqui em cima? 
+  # Peças físicas globais de infra não respeitam fronteiras burocráticas lógicas.
+  name: grande-hd-estatico-10gb     
+spec:
+  capacity:
+    storage: 10Gi                   # Cotação exata: O Terreno físico pré-separado de 10GB
+  volumeMode: Filesystem            # Arquivos normais ou blocos CRUS (BlockMode p/ alta perfm db)
+  
+  # Acesso ao Disco (CRÍTICO NA ARQUITETURA DE CLUSTER)
+  # ReadWriteOnce (RWO): SÓ PODE ser acoplado fisicamente por 1 Node de cada vez (!).
+  # ReadWriteMany (RWX): Magia Multi-Ponto. Pode ser lido/escrito simultaneamente por Pods rodando em NÓS DIFERENTES FÍSICOS (Requer NFS na rede).
+  accessModes:
+    - ReadWriteOnce                
+    
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: disco-lento-default   # Nomeamos uma categoria aqui, para bater no Filtro do dev
+  
+  # Aqui nós mostramos ao Kubernetes em qual pasta do NOSSO SISTEMA OPERACIONAL Windows/Mac/Linux 
+  # real o docker do kind pode se apoiar pra escrever arquivos de verdade sem perdê-los:
+  hostPath:
+    path: "/tmp/dados-do-meu-hd-kind"     # A rota dentro do kind nó onde ele salva na raiz física
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Reserve os 10Gb estáticos no cluster:
+#    kubectl apply -f 02-persistentvolume.yaml
+#
+# 2. Liste os PV's do mundo (cluster):
+#    kubectl get pv
+#    E observe o Status dele: Ficará como `Available`. (Significa que é um Lote livre de terra sem dono).
+
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# O `hostPath` num K8s de produção real é BANIDO.
+# Nós usamos ele aqui no Kind apenas porque não temos uma Array EFS ou Cloud conectada 
+# no seu windows de treino. Como o Kind simula Nodes de Docker C/ Linux isolados... se você 
+# criar um Storage usando "hostPath /mnt/disco" num cluster de muitas máquinas....
+# E o seu POD de banco for derrubado do Nó "Worker 1" e tentar subir no "Worker 2"
+# procurando o dado na rota "/mnt/disco" ele encontrará um VAZIO TOTAL, e o banco virá limpo zeraod,
+# porque os Host-Paths não replicam. (Só use para LocalDev).
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# "Elias, mas ninguém cria PV Manualmente hoje?"
+# Depende. 95% das empresas aboliram manifestos 'Kind: PersistentVolume'. Os engenheiros 
+# modernos usam PROVISIONAMENTO DINÂMICO (Que veremos adiante no PVC). Ele cria a terra na hora.
+# Contudo, Corporações Jurássicas com VMWares e FileServers OnPremise 
+# (Sem integrações CSI modernas) ainda mantém Estagiários de Infraestrutura abrindo
+# CLI do PuralStorage, montando LUNs de disco cru e gerando manifestos PV.YAML à mão para
+# cada pedaço!
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Temos um PersistentVolume pré-provisionado de exatos 100Gi. Um Dev Junior submeteu
+# a requisição/claim PVC pedindo '45Gi'. O K8s pode pegar nosso PV de 100Gi, assinar com dono pro  
+# Junior, e os 55Gi de excedente do pedaço ser disponibilizado pra outro Dev paralelo em outro cluster?"
+# Resposta Esperada: "Nunca. Todo Acoplamento ou Binding (*Bound*) de Kubernetes em Volumes 
+# é inteiramente exclusivista 1x1. O Kubernetes até permitira o Match (Ele entrega a chave o lote do tamanho 100Gi pro pedido de 45),
+# mas ele travárá o PV INTEIRO! O desenvolvedor terá desperdiçado e jogado 55Gi pela janela
+# porque nenhum outro POD/Claim fará mult-sharing do montante residual em nível block sem ser RWX."

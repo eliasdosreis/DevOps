@@ -1,0 +1,59 @@
+# =============================================================
+# ARQUIVO: config.yml
+# PROPÓSITO: Configuração centralizada do projeto final
+# Todos os IPs, recursos e configurações ficam AQUI.
+# O Vagrantfile lê este arquivo e aplica as configurações.
+# PADRÃO SENIOR: nunca "magic numbers" espalhados pelo código.
+# =============================================================
+
+network:
+  base_ip: "192.168.100"      # Range da rede privada
+
+machines:
+  lb:
+    ip:       "192.168.100.10"
+    hostname: "lb-server"
+    memory:   512
+    cpus:     1
+    role:     "load_balancer"
+
+  web1:
+    ip:       "192.168.100.11"
+    hostname: "web1-server"
+    memory:   512
+    cpus:     1
+    role:     "web_server"
+
+  web2:
+    ip:       "192.168.100.12"
+    hostname: "web2-server"
+    memory:   512
+    cpus:     1
+    role:     "web_server"
+
+  app:
+    ip:       "192.168.100.13"
+    hostname: "app-server"
+    memory:   1024
+    cpus:     2
+    role:     "app_server"
+
+  db:
+    ip:       "192.168.100.14"
+    hostname: "db-server"
+    memory:   1024
+    cpus:     1
+    role:     "database"
+
+application:
+  name:     "vagrant-senior-project"
+  env:      "development"
+  web_port: 80
+  app_port: 3000
+
+database:
+  name:     "senior_app"
+  user:     "appuser"
+  # password: lido do arquivo .env (nunca no config.yml!)
+
+host_port: 8080   # Porta exposta no host → lb:80

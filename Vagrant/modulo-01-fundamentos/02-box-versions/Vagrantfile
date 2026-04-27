@@ -1,0 +1,71 @@
+# ============================================================
+# MÓDULO 1 — VERSIONAMENTO DE BOX
+# O QUE ESTE ARQUIVO FAZ:
+#   Demonstra como fixar a versão exata de uma Box para garantir
+#   reprodutibilidade total do ambiente entre diferentes membros
+#   do time e ao longo do tempo.
+#   CONCEITO CHAVE: Imutabilidade de ambientes
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  # -----------------------------------------------------------
+  # SEÇÃO: BOX COM VERSÃO FIXADA
+  # Prática essencial em times e projetos de longa duração
+  # -----------------------------------------------------------
+
+  # Box base
+  config.vm.box = "ubuntu/jammy64"
+
+  # Fixa a versão EXATA da box
+  # Sem isso, `vagrant up` pode baixar versões diferentes em momentos diferentes
+  # Formato: "MAJOR.MINOR.PATCH" ou constraints como ">= 1.0", "~> 2.0"
+  # RECOMENDADO: sempre fixar versão exata em projetos reais
+  config.vm.box_version = "20240301.0.0"
+
+  # Verifica se há atualização disponível para a box
+  # true = avisa quando há versão mais nova (não atualiza automaticamente)
+  # false = silencia os avisos de update (padrão em produção)
+  config.vm.box_check_update = true
+
+  # -----------------------------------------------------------
+  # SEÇÃO: BOX DE URL CUSTOMIZADA (comentado — apenas referência)
+  # Use quando hospedar boxes em servidor interno
+  # -----------------------------------------------------------
+
+  # config.vm.box_url = "https://seu-servidor.interno/boxes/ubuntu-22.04.box"
+
+  # Checksum para validar integridade da box baixada
+  # config.vm.box_download_checksum_type = "sha256"
+  # config.vm.box_download_checksum = "abc123..."
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PROVIDER
+  # -----------------------------------------------------------
+  config.vm.hostname = "vm-box-versionada"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-box-versions"
+    vb.memory = "512"
+    vb.cpus   = 1
+  end
+
+end
+
+# ============================================================
+# SENIORIDADE: Por que versionar a box?
+#
+# Um Junior usa: config.vm.box = "ubuntu/jammy64"
+# Um Senior usa: config.vm.box = "ubuntu/jammy64"
+#                config.vm.box_version = "20240301.0.0"
+#
+# A diferença: em 6 meses, o Junior vai ter um ambiente diferente
+# do que foi testado. O Senior garante que SEMPRE será o mesmo.
+#
+# COMANDOS ÚTEIS PARA GERENCIAR BOXES:
+#   vagrant box list                    → lista boxes instalados
+#   vagrant box add ubuntu/jammy64      → baixa sem criar VM
+#   vagrant box update                  → atualiza box do projeto
+#   vagrant box prune                   → remove versões antigas
+#   vagrant box remove ubuntu/jammy64   → remove completamente
+# ============================================================

@@ -1,0 +1,31 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Você pode literalmente copiar esse arquivo e hospedar a aplicação 
+# do seu cliente de verdade.
+# ============================================================
+
+FROM node:20-alpine
+
+# Definindo modo de producao para evitar logs de debug massivos do Express.js
+ENV NODE_ENV=production
+
+# Criamos a pasta no local correto root
+WORKDIR /app
+
+# OBRIGATÓRIO NA BOA PRATICA SÊNIOR:
+# Chown no COPY
+# Se esquecer a flag, o Docker fará a copia logado como ROOT ainda (que ta sendo usado na build step)
+# E quando o node bootar mais la embaixo... ele bate a cabeça da porta trancada q ele mesmo fez.
+COPY --chown=node:node package*.json ./
+
+RUN npm ci --omit=dev
+
+COPY --chown=node:node . .
+
+EXPOSE 3000
+
+# Aqui Ocorreu o "SU / SUDO -u node". Ele desiste do seu direito de Deus pra sempre.
+USER node
+
+# Nao use arrays sem "aspas". Mantenha o formato EXEC FORM puro do JSON.
+CMD ["node", "app.js"]

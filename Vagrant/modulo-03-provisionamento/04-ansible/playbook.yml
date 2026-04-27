@@ -1,0 +1,163 @@
+---
+# =============================================================
+# PLAYBOOK: playbook.yml
+# PROPÓSITO: Provisiona um servidor web completo com Nginx
+# IDEMPOTENTE: Sim — pode ser executado múltiplas vezes
+# COMPATÍVEL: Ubuntu 20.04 / 22.04
+# =============================================================
+
+- name: Provisionar servidor web com Nginx
+  hosts: all                    # Executa em todas as VMs no inventário
+  become: yes                   # Executa com privilégios de root (sudo)
+  gather_facts: yes             # Coleta informações do sistema antes de executar
+
+  # -----------------------------------------------------------
+  # VARIÁVEIS DO PLAYBOOK
+  # Podem ser sobrescritas via extra_vars no Vagrantfile
+  # -----------------------------------------------------------
+  vars:
+    nginx_port: "{{ app_port | default(80) }}"
+    web_root: /var/www/html
+    app_name: "vagrant-ansible-demo"
+
+  # -----------------------------------------------------------
+  # PRÉ-TASKS: Executadas antes de qualquer role ou task
+  # -----------------------------------------------------------
+  pre_tasks:
+    - name: Atualizar cache do apt
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600  # Não atualiza se o cache tiver menos de 1h
+      tags: always
+
+  # -----------------------------------------------------------
+  # TASKS PRINCIPAIS
+  # -----------------------------------------------------------
+  tasks:
+
+    # ---------------------------------------------------------
+    # BLOCO: Instalação de pacotes
+    # ---------------------------------------------------------
+    - name: Instalar pacotes essenciais
+      apt:
+        name:
+          - nginx
+          - curl
+          - git
+          - vim
+          - htop
+          - net-tools
+        state: present            # Garante que estão instalados
+      tags:
+        - packages
+        - nginx
+
+    # ---------------------------------------------------------
+    # BLOCO: Configuração do Nginx
+    # ---------------------------------------------------------
+    - name: Garantir que Nginx está rodando e habilitado no boot
+      service:
+        name:    nginx
+        state:   started
+        enabled: yes
+      tags: nginx
+
+    - name: Criar página HTML da aplicação
+      copy:
+        content: |
+          <!DOCTYPE html>
+          <html lang="pt-BR">
+          <head>
+            <meta charset="UTF-8">
+            <title>Vagrant + Ansible</title>
+            <style>
+              body { font-family: sans-serif; background: #0d1117; color: #c9d1d9;
+                     display: flex; align-items: center; justify-content: center;
+                     min-height: 100vh; margin: 0; }
+              .box { background: #161b22; padding: 50px; border-radius: 12px;
+                     border: 1px solid #30363d; text-align: center; max-width: 500px; }
+              h1 { color: #58a6ff; }
+              .tag { background: #21262d; color: #58a6ff; padding: 6px 14px;
+                     border-radius: 6px; display: inline-block; margin: 4px; }
+            </style>
+          </head>
+          <body>
+            <div class="box">
+              <h1>🤖 Vagrant + Ansible</h1>
+              <p>Provisionado via Ansible Playbook!</p>
+              <div>
+                <span class="tag">Idempotente</span>
+                <span class="tag">Reproduzível</span>
+                <span class="tag">Senior Level</span>
+              </div>
+              <p style="margin-top:20px;color:#8b949e;">
+                Ambiente: {{ environment | default('development') }}<br>
+                Porta: {{ nginx_port }}
+              </p>
+            </div>
+          </body>
+          </html>
+        dest:  "{{ web_root }}/index.html"
+        owner: www-data
+        group: www-data
+        mode:  '0644'
+      notify: Reiniciar Nginx      # Dispara o handler abaixo
+      tags:
+        - nginx
+        - content
+
+    # ---------------------------------------------------------
+    # BLOCO: Configurações de segurança
+    # ---------------------------------------------------------
+    - name: Criar usuário de aplicação
+      user:
+        name:  appuser
+        shell: /bin/bash
+        state: present
+        create_home: yes
+      tags: security
+
+    - name: Criar estrutura de diretórios da aplicação
+      file:
+        path:  "{{ item }}"
+        state: directory
+        owner: appuser
+        group: appuser
+        mode:  '0755'
+      loop:                        # Itera sobre a lista de diretórios
+        - /opt/app
+        - /opt/app/releases
+        - /opt/app/shared
+        - /opt/app/logs
+      tags: app
+
+  # -----------------------------------------------------------
+  # HANDLERS: Executados quando notificados por uma task
+  # Só executam UMA VEZ no final, mesmo se notificados várias vezes
+  # -----------------------------------------------------------
+  handlers:
+    - name: Reiniciar Nginx
+      service:
+        name:  nginx
+        state: restarted
+
+  # -----------------------------------------------------------
+  # POST-TASKS: Executadas após todas as tasks e handlers
+  # -----------------------------------------------------------
+  post_tasks:
+    - name: Verificar que Nginx está respondendo
+      uri:
+        url:            "http://localhost:{{ nginx_port }}"
+        return_content: no
+        status_code:    200
+      register: nginx_check
+      tags: verify
+
+    - name: Exibir sumário do provisionamento
+      debug:
+        msg:
+          - "✅ Provisionamento concluído com sucesso!"
+          - "Nginx: {{ ansible_facts.services['nginx.service'].state | default('ok') }}"
+          - "URL: http://192.168.56.33:{{ nginx_port }}"
+          - "Ambiente: {{ environment | default('development') }}"
+      tags: always

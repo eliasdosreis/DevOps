@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<!--
+  ARQUIVO: site/index.html
+  O QUE FAZ: Página HTML simples para testar a hospedagem no S3
+  
+  Este arquivo demonstra um site estático completo com:
+  - HTML semântico
+  - CSS inline (para simplificar o deploy)
+  - JavaScript básico
+  - Conexão com a AWS API Gateway (Módulo 3)
+-->
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Meu Site AWS — Módulo 1 S3</title>
+    <style>
+        /* Reset básico e fonte moderna */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+            max-width: 800px;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #e94560, #0f3460);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .info-box {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .badge {
+            display: inline-block;
+            background: #e94560;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin: 5px;
+            font-size: 0.9em;
+        }
+        button {
+            background: linear-gradient(45deg, #e94560, #0f3460);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        button:hover { transform: scale(1.05); }
+        #resultado {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,255,0,0.1);
+            border-radius: 8px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Site no Amazon S3!</h1>
+        <p style="font-size: 1.3em; color: #ccc; margin-bottom: 30px;">
+            Módulo 1 — Hospedagem Estática no S3
+        </p>
+        
+        <div class="info-box">
+            <h2 style="color: #e94560; margin-bottom: 15px;">✅ Funcionou!</h2>
+            <p>Este arquivo está sendo servido diretamente do <strong>Amazon S3</strong></p>
+            <p style="margin-top: 10px; color: #aaa;">
+                Sem servidor, sem EC2, sem pagar por "tempo de máquina"<br>
+                Você paga apenas pelo storage e pelas requisições
+            </p>
+        </div>
+        
+        <div class="info-box">
+            <h3 style="margin-bottom: 15px;">🏷️ Tecnologias usadas</h3>
+            <span class="badge">Amazon S3</span>
+            <span class="badge">Static Website</span>
+            <span class="badge">CloudFormation</span>
+            <span class="badge">AWS CLI</span>
+        </div>
+        
+        <div class="info-box">
+            <h3 style="margin-bottom: 10px;">📊 Informações do site</h3>
+            <p>⏰ Carregado em: <span id="timestamp">-</span></p>
+            <p>🌍 Região AWS: <strong>us-east-1</strong></p>
+            <p>💰 Custo estimado: <strong>~ $0.00</strong></p>
+        </div>
+        
+        <button onclick="testarConectividade()">
+            🧪 Testar Conectividade
+        </button>
+        
+        <div id="resultado">
+            <p>✅ Site acessível e funcionando!</p>
+            <p>Próximo passo: <strong>Módulo 2 — AWS Lambda</strong></p>
+        </div>
+    </div>
+    
+    <script>
+        // Exibe o timestamp atual (JavaScript no browser)
+        document.getElementById('timestamp').textContent = new Date().toLocaleString('pt-BR');
+        
+        // Função chamada ao clicar no botão
+        function testarConectividade() {
+            const resultado = document.getElementById('resultado');
+            resultado.style.display = 'block';
+            
+            // No Módulo 3, esta função chamará a API Gateway real!
+            console.log('✅ Site funcionando! Conecte a API Gateway no Módulo 3.');
+        }
+    </script>
+</body>
+</html>

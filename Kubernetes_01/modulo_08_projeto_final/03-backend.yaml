@@ -1,0 +1,79 @@
+# ============================================================
+# BLOCO LOGICO DE NEGÓCIO (BACKEND TIER)
+# Engloba: ConfigMap + Service + Deployment (+ Probes e Limits)
+# ============================================================
+
+# 1. Configurações textuais livres de Senha
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configuracoes-da-api
+  namespace: meu-primeiro-projeto
+data:
+  FILA_MAXIMA_KAFKA: "200"
+  # MAGIA ARQUITETURAL: Como o backend acha o banco de dados dinâmico sem eu saber o IP? 
+  # A gente usa o NOME CORD-DNS do service de ClusterIP (Aula 20 + Aula 03)!
+  DB_HOST: "svc-mysql-banco.meu-primeiro-projeto.svc.cluster.local"
+
+---
+
+# 2. O PABX Balanceador da API REST em si
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-api-rest                 # Nome CoreDNS p/ o FrontBater 
+  namespace: meu-primeiro-projeto
+spec:
+  type: ClusterIP                    # Trancado e Seguro da Internet Direta também!
+  selector:
+    camada: backend                  # O Imã procura o app
+  ports:
+    - port: 8080                     # Chamaremos ele na 8080 padrão J2EE
+    
+---
+
+# 3. Os 3 Robôs da API (Trabalhadores/Operarios)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-livraria-rest
+  namespace: meu-primeiro-projeto
+spec:
+  replicas: 2                        # Alta Disponibilidade (2 Maquinas no min pra sobreviver a down do node)
+  selector:
+    matchLabels:
+      camada: backend
+  template:
+    metadata:
+      labels:
+        camada: backend
+    spec:
+      containers:
+        - name: java-app-ficticio    # Simulando um Backend Java pesadinho
+          image: busybox:latest      # Usando busybox web server apenas pra nao dar erro puxando imgs complexas nossas
+          command: ["/bin/sh", "-c", "echo 'API V1 Rodando!' > /tmp/index.html && httpd -f -p 8080 -h /tmp"]
+          
+          # Lendo o Config de Negocio (Modulo 04)
+          envFrom:
+            - configMapRef:
+                name: configuracoes-da-api
+                
+          # Limite do Gastador Java pro Servidor Não Crashar (Modulo 06 - Limits)
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "180Mi"        # Se passsa de 180 a api toma tiro do OOM_Killed!
+
+          # Cão de Guarda Deadlock (Modulo 06 - Liveness)
+          livenessProbe:
+            httpGet:
+              path: /index.html
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 10
+            failureThreshold: 2      # Tolerância apertada! Travou por 20 seg (2x) o k8s já mata impiedosamente!
+
+          ports:
+            - containerPort: 8080

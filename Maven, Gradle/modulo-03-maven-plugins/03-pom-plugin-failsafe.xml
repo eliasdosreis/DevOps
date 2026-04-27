@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ============================================================
+  ARQUIVO: 03-pom-plugin-failsafe.xml
+  RENOMEIE PARA: pom.xml
+
+  O QUE ESTE ARQUIVO FAZ:
+  Demonstra como configurar testes de integração com o
+  maven-failsafe-plugin, separando testes unitários de
+  testes de integração.
+
+  ANALOGIA:
+  Testes unitários são como testar cada INGREDIENTE separado:
+  "Esta farinha está boa? Este açúcar está com a textura certa?"
+
+  Testes de integração são como testar o BOLO COMPLETO:
+  "Quando misturei tudo e assei, o bolo ficou saboroso?"
+
+  O maven-surefire-plugin faz os testes unitários (rápidos).
+  O maven-failsafe-plugin faz os testes de integração
+  (mais lentos, podem precisar de banco de dados, Redis, etc.)
+
+  DEFINIÇÃO TÉCNICA:
+  - maven-surefire-plugin: executa testes na fase "test"
+    (antes do package). Se falhar, o build para imediatamente.
+  - maven-failsafe-plugin: executa testes nas fases
+    "integration-test" e "verify" (após o package).
+    Se um teste falhar, o plugin NÃO para o build imediatamente
+    — ele deixa a fase "post-integration-test" executar primeiro
+    (para limpar recursos como containers Docker).
+  ============================================================ -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.curso</groupId>
+  <artifactId>hello-failsafe</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.1</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+
+      <!-- ═══════════════════════════════════════════════════
+        maven-surefire-plugin: TESTES UNITÁRIOS
+        Fase: test (antes do package)
+        Convenção de nomenclatura: *Test.java, *Tests.java
+        ═══════════════════════════════════════════════════ -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.2</version>
+        <configuration>
+          <!-- Inclui apenas arquivos que seguem a convenção surefire -->
+          <includes>
+            <include>**/*Test.java</include>
+            <include>**/*Tests.java</include>
+            <include>**/Test*.java</include>
+          </includes>
+          <!-- Exclui arquivos de IT (Integration Test) da fase de testes unitários -->
+          <excludes>
+            <exclude>**/*IT.java</exclude>
+            <exclude>**/*IntegrationTest.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <!-- ═══════════════════════════════════════════════════
+        maven-failsafe-plugin: TESTES DE INTEGRAÇÃO
+        Fases:
+          - integration-test: executa os testes de integração
+          - verify: verifica os resultados (decide se falha)
+
+        Convenção de nomenclatura para IT:
+          - *IT.java        (ServicoIT.java)
+          - *ITCase.java    (ServicoITCase.java)
+          - IT*.java        (ITServico.java)
+        ═══════════════════════════════════════════════════ -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>3.2.2</version>
+
+        <executions>
+          <!-- Execução 1: roda os testes de integração -->
+          <execution>
+            <id>integration-tests</id>
+            <phase>integration-test</phase>
+            <goals>
+              <!-- integration-test: executa os testes -->
+              <goal>integration-test</goal>
+            </goals>
+          </execution>
+
+          <!-- Execução 2: verifica os resultados (NECESSÁRIO!) -->
+          <execution>
+            <id>verify-integration-tests</id>
+            <phase>verify</phase>
+            <goals>
+              <!-- verify: analisa os resultados e falha o build se necessário -->
+              <!-- SEM este goal, falhas nos testes de IT são IGNORADAS! -->
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+
+        <configuration>
+          <!-- Padrões de arquivos que são testes de integração -->
+          <includes>
+            <include>**/*IT.java</include>
+            <include>**/*ITCase.java</include>
+            <include>**/IT*.java</include>
+            <include>**/*IntegrationTest.java</include>
+          </includes>
+        </configuration>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>
+
+<!--
+  ═══════════════════════════════════════════════════════════
+  CICLO DE VIDA COMPLETO COM TESTES DE INTEGRAÇÃO:
+
+  mvn verify (ou mvn clean verify em CI)
+
+  Fases executadas na ordem:
+  1. validate
+  2. compile         → compila código principal
+  3. test-compile    → compila código de testes
+  4. test            → surefire: executa testes UNITÁRIOS (*Test.java)
+  5. package         → cria o JAR
+  6. pre-integration-test  → (aqui você sobe Docker containers, etc.)
+  7. integration-test      → failsafe: executa testes de IT (*IT.java)
+  8. post-integration-test → (aqui você derruba Docker containers, etc.)
+  9. verify          → failsafe: verifica resultados → FALHA O BUILD se houve falha
+
+  POR QUE O FAILSAFE É MELHOR QUE SUREFIRE PARA IT?
+  O Surefire, quando um teste falha, para IMEDIATAMENTE o build.
+  Isso é um problema para testes de integração: se o teste
+  falha e há containers Docker rodando, eles ficam rodando
+  (vazamento de recurso).
+
+  O Failsafe garante que o post-integration-test sempre
+  executa, mesmo que um teste falhe. Assim você pode
+  derrubar os containers mesmo em caso de falha.
+
+  COMANDOS:
+  mvn test           → apenas testes unitários
+  mvn verify         → testes unitários + integração + verificação
+  mvn verify -DskipITs → pula apenas os ITs (mantém unitários)
+
+  PERGUNTA DE ENTREVISTA:
+  "Qual a diferença entre maven-surefire-plugin e maven-failsafe-plugin?"
+  Resposta: Surefire executa testes unitários na fase 'test' e
+  falha o build imediatamente quando um teste falha. Failsafe
+  executa testes de integração na fase 'integration-test' e
+  ADIA o report de falha até a fase 'verify', garantindo que
+  a fase 'post-integration-test' (limpeza de recursos como
+  containers) sempre execute. Isso previne vazamento de recursos.
+  ═══════════════════════════════════════════════════════════
+-->

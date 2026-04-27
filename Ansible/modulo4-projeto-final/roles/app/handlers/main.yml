@@ -1,0 +1,29 @@
+---
+# ==============================================================
+# ARQUIVO: roles/app/handlers/main.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Handlers da role de app.
+# São como "alarmes" que só tocam quando necessário.
+# Ex: só reinicia o Nginx se a configuração mudou.
+# ==============================================================
+
+# Reiniciar a aplicação Python/Gunicorn
+- name: "Reiniciar app"
+  ansible.builtin.systemd:
+    name: "{{ app_nome }}"
+    state: restarted
+    daemon_reload: true
+
+# Recarregar Nginx (sem derrubar conexões ativas)
+- name: "Reiniciar nginx"
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded    # reload = mais gentil que restart (sem downtime)
+
+# Recarregar systemd (quando adiciona/muda unit files)
+- name: "Recarregar systemd"
+  ansible.builtin.systemd:
+    daemon_reload: true

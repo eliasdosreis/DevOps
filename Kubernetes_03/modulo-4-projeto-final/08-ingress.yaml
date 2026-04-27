@@ -1,0 +1,124 @@
+# ============================================================
+# ARQUIVO: 08-ingress.yaml
+# PROJETO FINAL - Ingress com TLS e Roteamento
+#
+# Este é o PORTEIRO PRINCIPAL da aplicação.
+# Todo tráfego da internet passa por aqui primeiro.
+#
+# Regras:
+# loja.com/        --> Frontend (site da loja)
+# loja.com/api/*   --> API Backend (dados dinâmicos)
+#
+# TLS (HTTPS) é gerenciado pelo cert-manager (automático!)
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+metadata:
+  name: ingress-ecommerce     # Nome do ingress
+  namespace: ecommerce        # Mesmo namespace da app
+
+  annotations:
+    # --- Configurações do NGINX Ingress Controller ---
+
+    kubernetes.io/ingress.class: "nginx"
+    # Qual controller usar (pode ser traefik, kong, etc)
+
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Redireciona HTTP -> HTTPS automaticamente
+
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    # Tamanho máximo de upload: 10 megabytes
+    # Útil para upload de imagens de produtos
+
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    # Timeout para resposta do backend: 60 segundos
+
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    # Limite de requisições por segundo por IP
+    # Proteção básica contra DDoS e bots
+
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    # Habilita CORS para o frontend poder chamar a API
+
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://loja.com"
+    # Só permite CORS do nosso domínio
+
+    # Se usar cert-manager para TLS automático:
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+spec:
+  # -------------------------------------------------------
+  # TLS - Certificado HTTPS
+  # -------------------------------------------------------
+  tls:
+    - hosts:
+        - loja.com              # Domínio principal
+        - www.loja.com          # Com www também
+      secretName: tls-loja-com  # Secret com o certificado SSL
+                                # cert-manager cria este Secret
+                                # automaticamente!
+
+  # -------------------------------------------------------
+  # REGRAS DE ROTEAMENTO
+  # -------------------------------------------------------
+  rules:
+
+    # --- Domínio principal: loja.com ---
+    - host: loja.com
+      http:
+        paths:
+
+          # ROTA 1: /api/* vai para o Backend
+          - path: /api
+            pathType: Prefix    # Qualquer coisa começando com /api
+            backend:
+              service:
+                name: api       # Service da API (07-services.yaml)
+                port:
+                  number: 3000
+
+          # ROTA 2: /* vai para o Frontend (sempre por último!)
+          - path: /
+            pathType: Prefix    # Captura tudo que não foi acima
+            backend:
+              service:
+                name: frontend  # Service do Frontend
+                port:
+                  number: 80
+
+    # --- www.loja.com também funciona ---
+    - host: www.loja.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+
+# ============================================================
+# ORDEM DAS ROTAS IMPORTA!
+# Ingress avalia as rotas DE CIMA PARA BAIXO.
+# Coloque rotas MAIS ESPECÍFICAS antes de menos específicas.
+# /api (específico) ANTES de / (genérico)
+# Se inverter: tudo vai para o Frontend!
+#
+# TESTAR LOCALMENTE (sem domínio real):
+# 1. minikube addons enable ingress
+# 2. kubectl apply -f 08-ingress.yaml
+# 3. minikube ip  (pega o IP do cluster)
+# 4. Editar /etc/hosts:
+#    192.168.x.x  loja.com
+# 5. curl http://loja.com
+#
+# ENTREVISTA SÊNIOR:
+# "Como funciona o Ingress Controller por baixo?"
+# RESPOSTA: O Ingress Controller (ex: nginx) roda como pod.
+# Ele monitora objetos Ingress via API do K8s e reconfigura
+# o nginx dinamicamente. Cada regra Ingress vira um bloco
+# server{} no nginx.conf do controller.
+# ============================================================

@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ============================================================
+  ARQUIVO: 02-pom-dependencias-transitivas.xml
+  RENOMEIE PARA: pom.xml
+
+  O QUE ESTE ARQUIVO FAZ:
+  Demonstra como lidar com dependências transitivas e
+  como excluir dependências indesejadas.
+
+  ANALOGIA:
+  Imagine que você contratou um encanador para instalar
+  um chuveiro. O encanador vem com VÁRIOS assistentes que
+  você não contratou diretamente. Um desses assistentes
+  vai levar o cachorro dele também.
+  Você pode dizer: "Encanador pode vir, mas deixe o
+  cachorro do assistente em casa." → Isso é uma EXCLUSÃO.
+
+  DEFINIÇÃO TÉCNICA:
+  Dependências transitivas são dependências das suas
+  dependências. O Maven as resolve automaticamente, mas
+  às vezes você precisa excluir ou controlar versões.
+  ============================================================ -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.curso</groupId>
+  <artifactId>hello-transitivas</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+
+    <!-- ─────────────────────────────────────────────────────
+      EXEMPLO 1: Dependência simples (com transitivas implícitas)
+
+      Quando você adiciona spring-context, o Maven automaticamente
+      também inclui:
+      - spring-core (transitiva)
+      - spring-beans (transitiva)
+      - spring-aop (transitiva)
+      - spring-expression (transitiva)
+      - jcl-over-slf4j (transitiva)
+
+      Para VER as transitivas: mvn dependency:tree
+      ───────────────────────────────────────────────────── -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <version>6.1.1</version>
+    </dependency>
+
+    <!-- ─────────────────────────────────────────────────────
+      EXEMPLO 2: Exclusão de dependência transitiva
+
+      Cenário real: Você usa spring-context, mas ele traz
+      commons-logging (log antigo). Você quer usar SLF4J
+      em vez disso. Então você EXCLUI o commons-logging
+      para evitar conflito.
+
+      Por que excluir?
+      - Conflito com outra implementação de logging
+      - Dependência com vulnerabilidade de segurança
+      - Dependência desnecessária que infla o JAR
+      ───────────────────────────────────────────────────── -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+      <version>6.1.1</version>
+
+      <!-- <exclusions>: lista de dependências transitivas para EXCLUIR -->
+      <exclusions>
+        <exclusion>
+          <!-- Exclui o commons-logging que o Spring traz por padrão -->
+          <!-- porque vamos usar SLF4J/Logback no lugar -->
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+          <!--
+            NOTA: maven usa * para excluir tudo de um groupId:
+            <groupId>*</groupId><artifactId>*</artifactId>
+            Mas use com cuidado — pode excluir coisas necessárias!
+          -->
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- ─────────────────────────────────────────────────────
+      EXEMPLO 3: Dependência OPCIONAL
+
+      <optional>true</optional>:
+      Significa que esta dependência é usada internamente na lib,
+      mas ao USAR a lib como dependência em outro projeto,
+      esta dependência NÃO é incluída automaticamente.
+
+      Uso típico: frameworks que suportam múltiplas implementações
+      (ex: uma lib de cache que funciona com Ehcache OU Caffeine,
+      mas não força nenhum dos dois).
+
+      Como consumidor: se você usar a feature opcional, adicione
+      a dependência explicitamente no SEU pom.xml.
+      ───────────────────────────────────────────────────── -->
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>32.1.3-jre</version>
+      <optional>true</optional>
+      <!-- Não será propagada para outros projetos que nos usem como dependência -->
+    </dependency>
+
+    <!-- ─────────────────────────────────────────────────────
+      JUnit 5 para testes
+      ───────────────────────────────────────────────────── -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.1</version>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.2</version>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
+
+<!--
+  ═══════════════════════════════════════════════════════════
+  COMANDOS PARA ANALISAR DEPENDÊNCIAS:
+
+  # Ver árvore de dependências (incluindo transitivas)
+  mvn dependency:tree
+
+  # Ver com detalhes de conflitos e versões omitidas
+  mvn dependency:tree -Dverbose
+
+  # Filtrar por um artefato específico
+  mvn dependency:tree -Dincludes=org.springframework:*
+
+  # Analisar dependências: usadas mas não declaradas e
+  # declaradas mas não usadas
+  mvn dependency:analyze
+
+  # Copiar todas as dependências para target/dependency/ (útil para debug)
+  mvn dependency:copy-dependencies
+
+  EXEMPLO DE SAÍDA DE mvn dependency:tree:
+  [INFO] com.curso:hello-transitivas:jar:1.0.0-SNAPSHOT
+  [INFO] +- org.springframework:spring-context:jar:6.1.1:compile
+  [INFO] |  +- org.springframework:spring-aop:jar:6.1.1:compile
+  [INFO] |  +- org.springframework:spring-beans:jar:6.1.1:compile
+  [INFO] |  \- org.springframework:spring-expression:jar:6.1.1:compile
+  [INFO] \- org.junit.jupiter:junit-jupiter:jar:5.10.1:test
+  ═══════════════════════════════════════════════════════════
+
+  CONCEITO SENIOR — REGRAS DE RESOLUÇÃO DE TRANSITIVAS:
+
+  O Maven usa "Nearest Wins" (o mais próximo na árvore vence):
+  - Se A depende de B 1.0 e C 2.0
+  - Se B depende de D 1.0 (profundidade 2)
+  - Se C depende de D 2.0 (profundidade 2)
+  - Empate de profundidade: a primeira declarada vence
+  → D 1.0 vence (porque B é declarado antes de C)
+
+  Para FORÇAR uma versão específica independente da posição:
+  Declare a dependência explicitamente com a versão desejada
+  → Versões declaradas explicitamente têm profundidade 1
+  → Sempre vencem sobre transitivas (que têm profundidade 2+)
+
+  PERGUNTA DE ENTREVISTA:
+  "O que são dependências transitivas e como o Maven resolve
+   conflitos de versão?"
+  Resposta: Dependências transitivas são dependências das suas
+  dependências. O Maven resolve conflitos usando a regra
+  "Nearest Definition Wins" — a versão que está mais próxima
+  da raiz na árvore de dependências vence. Em caso de empate
+  de distância, a primeira declaração vence. Para ter controle
+  total sobre a versão, declare-a explicitamente no pom.xml
+  (isso garante que sua versão sempre vence por ter distância 1).
+  ═══════════════════════════════════════════════════════════
+-->

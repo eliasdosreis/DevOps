@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ============================================================
+  ARQUIVO: 03-pom-repositorios.xml
+  RENOMEIE PARA: pom.xml (na raiz do projeto)
+
+  O QUE ESTE ARQUIVO FAZ:
+  Demonstra como configurar repositórios no Maven.
+  Repositórios são onde o Maven busca (e onde você pode
+  publicar) dependências e plugins.
+
+  ANALOGIA:
+  Pense nos repositórios como mercados/lojas:
+    - ~/.m2 = sua despensa em casa (o que você já comprou)
+    - Maven Central = o supermercado principal da cidade
+    - Repositório privado = o atacado exclusivo da sua empresa
+  O Maven sempre verifica a "despensa" antes de ir ao mercado.
+
+  DEFINIÇÃO TÉCNICA:
+  Um repositório Maven é um diretório (local ou remoto) que
+  segue uma estrutura padrão para armazenar artefatos (JARs,
+  POMs) identificados por coordenadas GAV. O Maven busca
+  dependências na seguinte ordem:
+    1. Cache local (~/.m2/repository)
+    2. Repositórios declarados no pom.xml
+    3. Repositório central (Maven Central) — implícito
+  ============================================================ -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.curso</groupId>
+  <artifactId>hello-repositorios</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <!-- ═══════════════════════════════════════════════════════
+    SEÇÃO: repositories
+    Define onde o Maven vai buscar DEPENDÊNCIAS do projeto.
+
+    IMPORTANTE: O Maven Central (https://repo1.maven.org/maven2)
+    já está incluído implicitamente — você não precisa declará-lo.
+    Só declare repositórios ADICIONAIS aqui.
+    ═══════════════════════════════════════════════════════ -->
+  <repositories>
+
+    <!-- ─────────────────────────────────────────────────────
+      Repositório de SNAPSHOTS do Spring
+      Necessário quando você quer usar versões SNAPSHOT
+      do Spring Framework que ainda não foram para o Central
+      ───────────────────────────────────────────────────── -->
+    <repository>
+      <!-- ID único deste repositório — use um nome descritivo -->
+      <id>spring-snapshots</id>
+
+      <!-- Nome legível — aparece nos logs do Maven -->
+      <name>Spring Snapshots</name>
+
+      <!-- URL do repositório remoto -->
+      <url>https://repo.spring.io/snapshot</url>
+
+      <!-- releases: configuração para artefatos de release (versões estáveis) -->
+      <releases>
+        <!-- false = não buscar releases ESTÁVEIS neste repositório -->
+        <!-- (elas vêm do Maven Central) -->
+        <enabled>false</enabled>
+      </releases>
+
+      <!-- snapshots: configuração para artefatos SNAPSHOT -->
+      <snapshots>
+        <!-- true = buscar SNAPSHOTs neste repositório -->
+        <enabled>true</enabled>
+
+        <!-- Com que frequência verificar se há versão nova de um SNAPSHOT -->
+        <!-- always = sempre (mais lento, mais atual) -->
+        <!-- daily  = uma vez por dia (padrão recomendado) -->
+        <!-- never  = nunca reverificar (mais rápido mas pode desatualizar) -->
+        <updatePolicy>daily</updatePolicy>
+      </snapshots>
+    </repository>
+
+    <!-- ─────────────────────────────────────────────────────
+      Exemplo: Repositório PRIVADO da sua empresa
+      Usado quando a empresa tem um Nexus ou Artifactory interno
+      ───────────────────────────────────────────────────── -->
+    <!--
+    <repository>
+      <id>nexus-empresa</id>
+      <name>Nexus Corporativo</name>
+      <url>https://nexus.minhaempresa.com.br/repository/maven-public/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+    -->
+
+  </repositories>
+
+  <!-- ═══════════════════════════════════════════════════════
+    SEÇÃO: pluginRepositories
+    Define onde o Maven vai buscar PLUGINS.
+    Separado de <repositories> porque plugins têm seu próprio
+    ciclo de resolução no Maven.
+    ═══════════════════════════════════════════════════════ -->
+  <pluginRepositories>
+    <pluginRepository>
+      <id>spring-snapshots-plugins</id>
+      <name>Spring Plugin Snapshots</name>
+      <url>https://repo.spring.io/snapshot</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
+
+  <!-- ═══════════════════════════════════════════════════════
+    SEÇÃO: distributionManagement
+    Define ONDE o Maven vai PUBLICAR o artefato deste projeto
+    quando você executa "mvn deploy".
+
+    Analogia: é o endereço do mercado onde você vai VENDER,
+    não onde você vai COMPRAR.
+
+    OPCIONAL — só configure se você vai publicar artefatos
+    ═══════════════════════════════════════════════════════ -->
+  <distributionManagement>
+
+    <!-- Onde publicar versões ESTÁVEIS (releases) -->
+    <repository>
+      <id>nexus-releases</id>
+      <name>Nexus Release Repository</name>
+      <url>https://nexus.minhaempresa.com.br/repository/maven-releases/</url>
+    </repository>
+
+    <!-- Onde publicar versões em DESENVOLVIMENTO (snapshots) -->
+    <snapshotRepository>
+      <id>nexus-snapshots</id>
+      <name>Nexus Snapshot Repository</name>
+      <url>https://nexus.minhaempresa.com.br/repository/maven-snapshots/</url>
+    </snapshotRepository>
+
+  </distributionManagement>
+
+</project>
+
+<!--
+  ═══════════════════════════════════════════════════════════
+  CONCEITO SENIOR: Como o Maven resolve dependências
+
+  1. Maven verifica o CACHE LOCAL (~/.m2/repository)
+     → Se existe E não é SNAPSHOT (ou SNAPSHOT não expirou): usa o cache
+     → Se não existe ou é SNAPSHOT expirado: vai para o próximo passo
+
+  2. Maven consulta os repositórios na ORDEM em que aparecem no pom.xml
+     → Primeiro os declarados no pom.xml
+     → Depois o Maven Central (sempre o último)
+
+  3. Após baixar, salva no cache local para uso futuro
+
+  DICA SENIOR: Para forçar o Maven a re-baixar tudo (atualizar snapshots):
+    mvn clean install -U    (-U = --update-snapshots)
+
+  ESTRUTURA DO CACHE LOCAL (~/.m2/repository):
+  ~/.m2/repository/
+    com/
+      curso/
+        hello-maven/
+          1.0.0-SNAPSHOT/
+            hello-maven-1.0.0-SNAPSHOT.jar
+            hello-maven-1.0.0-SNAPSHOT.pom
+            _remote.repositories   ← Metadados sobre a origem do artefato
+  ═══════════════════════════════════════════════════════════
+-->

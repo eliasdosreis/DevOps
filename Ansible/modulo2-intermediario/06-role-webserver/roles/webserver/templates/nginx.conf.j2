@@ -1,0 +1,40 @@
+# nginx.conf - Gerenciado pelo Ansible (NÃO edite manualmente!)
+# Role: webserver | Ambiente: {{ ambiente | default('unknown') }}
+
+user www-data;
+worker_processes {{ webserver_workers }};
+pid /run/nginx.pid;
+
+events {
+    worker_connections 768;
+}
+
+http {
+    sendfile on;
+    tcp_nopush on;
+    types_hash_max_size 2048;
+
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    # Logs
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+
+    # Compressão gzip
+    gzip on;
+    gzip_disable "msie6";
+
+    server {
+        listen {{ webserver_porta }} default_server;
+        server_name _;
+        root {{ webserver_root }};
+        index index.html index.htm;
+
+        location / {
+            try_files $uri $uri/ =404;
+        }
+    }
+
+    include /etc/nginx/sites-enabled/*;
+}

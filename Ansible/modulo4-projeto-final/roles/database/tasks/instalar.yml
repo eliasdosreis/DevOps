@@ -1,0 +1,52 @@
+---
+# ==============================================================
+# ARQUIVO: roles/database/tasks/instalar.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Instalar PostgreSQL no Ubuntu.
+# O repositório oficial garante versão mais recente e suportada!
+# ==============================================================
+
+# Instalar dependências para adicionar repositório
+- name: "DB Install: Instalar dependências"
+  ansible.builtin.apt:
+    name:
+      - gnupg2           # Para verificar assinatura do repositório
+      - curl
+      - ca-certificates
+    state: present
+    update_cache: true
+
+# Adicionar chave GPG oficial do PostgreSQL
+# (Garante que o pacote é oficial e não foi adulterado)
+- name: "DB Install: Adicionar chave GPG do PostgreSQL"
+  ansible.builtin.apt_key:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    state: present
+
+# Adicionar repositório oficial do PostgreSQL
+- name: "DB Install: Adicionar repositório do PostgreSQL"
+  ansible.builtin.apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
+    state: present
+    filename: pgdg
+
+# Instalar o PostgreSQL na versão definida nas variáveis
+- name: "DB Install: Instalar PostgreSQL {{ db_versao }}"
+  ansible.builtin.apt:
+    name:
+      - "postgresql-{{ db_versao }}"         # Servidor principal
+      - "postgresql-client-{{ db_versao }}"  # Ferramentas cliente
+      - postgresql-contrib                    # Extensões extras
+      - python3-psycopg2                      # Módulo Python para Ansible gerenciar PG
+    state: present
+    update_cache: true
+
+# Garantir que PostgreSQL está rodando
+- name: "DB Install: Iniciar PostgreSQL"
+  ansible.builtin.service:
+    name: "postgresql@{{ db_versao }}-main"
+    state: started
+    enabled: true

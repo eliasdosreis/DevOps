@@ -1,0 +1,99 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Ponto onde finalmente mesclamos os conhecimentos separados!
+# Criamos o Pod e o Service no mesmo arquivo YAML unidos, 
+# demonstrando a conectividade em tempo real.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Agora montamos a Lanchonete completa do zero: 
+# 1. Contratamos os 2 chapeiros com crachá (Deployment com 2 réplicas e label 'app: lanche').
+# 2. Na porta da lanchonete afixamos a "Placa de Atendimento" (Service) dizendo 
+# aos motoboys do ifood "Chegou um pedido? Pode largar aqui e vou chamar 
+# quem tiver com o crachá 'app: lanche' pra preparar"
+
+# 2. O QUE É (definição técnica Senior)
+# O YAML aceita concatenação de objetos (Separados física e visualmente por `---`).
+# Aplicando via `kubectl apply`, isso se submete na Ordem do arquivo, ou de forma atômica se validado,
+# compondo uma aplicação de Tier completo (Ex: O Service e seu respectivo Deployment
+# nascendo de uma vez).
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-frontend          # O nome da placa de DNS interna ("Ramal do Ifood")
+  namespace: meu-primeiro-projeto
+spec:
+  selector:                   # O "Imã" mágico 
+    camada: frontend          # Todos os Pods que tenham adesivo 'camada: frontend' serão adotados
+  ports:
+    - port: 80                # Porta que bate no service
+      targetPort: 80          # Porta para despachar p/ o container de fato NGINX
+      
+---                           # Separação bruta no YAML: Abaixo é a arquitetura de outro Objeto
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: servidores-frontend
+  namespace: meu-primeiro-projeto
+spec:
+  replicas: 2                 # Queremos 2 "chapeiros" vivos
+  selector:
+    matchLabels:
+      camada: frontend        # Label imutável do feitor do Deployment
+  template:
+    metadata:
+      labels:                 # Adesivo OBRIGATÓRIO (aqui foi colado na camisa do operário real)
+        camada: frontend      
+    spec:
+      containers:
+        - name: website
+          image: nginx:1.25-alpine  # Contêiner simples pra testar acesso HTTP
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Declarar tudo pro cluster goela abaixo:
+#    kubectl apply -f 02-pod-com-service.yaml
+#
+# 2. Para ver as coisas unidas logicamente:
+#    kubectl get deploy,pods,svc -n meu-primeiro-projeto
+#
+# 3. (OPCIONAL/MÁGICA) Acesse o pod com um contêiner temporário (hackzinho)
+#    para dar "curl" lá de dentro do cluster na placa de PABX que criamos!
+#    `kubectl run teste -i --tty --image=curlimages/curl -- sh`
+#    -- (Dentro do shell maroto): `curl http://api-frontend.meu-primeiro-projeto` !!
+
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# Um erro absurdamente comum: As pessoas digitam ports trocadas entre 'Port' e 'TargetPort'.
+# TargetPort é quase sempre 8080/3000/80 (A porta literal do seu Java/Nodejs rodando cru).
+# A Port pura (apenas "port") é a beleza, ou seja: Não importa se o NodeJS
+# rodar na porta 3333, o Service usa "port: 80" para ninguém de fora ter que digitar ddp port, 
+# só chamando http limpo e o K8s faz o NAT dinâmico.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# Ao aplicarmos um manifesto longo como este em esteiras CI, se o K8s recusar a sintaxe  
+# do Deployment ali na linha 38, o Service na linha 8 vai ser criado de qualquer jeito?
+# Depende das validações Admission Controllers (Schema Validation), mas geralmente,
+# o Kubectl tenta interpretar sequencialmente se não houver dry-run. 
+# Empresas Sêniors abandonam "---" de arquivos longos em pastas manuais pelo uso 
+# da ferramenta 'Helm' que valida as templates e garante a transação em blocos.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "E se a minha 'api-frontend' subir, e meu banco de dados demorar 2 minutos 
+# para processar o Start-Up. O meu Load Balancer (Service) vai ficar 
+# despachando usuários da rede pro nada durante os 2 minutos quebrando a tela dos meus clientes?"
+# Resposta Esperada: "Aqui entram as famosas 'Readiness Probes'. O Service 
+# é cego para saber se o App por dentro iniciou lendo do HD. O Service injetará 
+# o Pod no seu Endpoints PÚBLICO apenas quando a condição de Readiness do Pod 
+# emitir status = TRUE."

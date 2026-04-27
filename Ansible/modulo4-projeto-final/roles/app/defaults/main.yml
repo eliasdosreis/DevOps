@@ -1,0 +1,23 @@
+---
+# ==============================================================
+# ARQUIVO: roles/app/defaults/main.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+app_porta: 8000
+app_dir: "/opt/seniorapp"
+app_usuario: "appuser"
+app_grupo: "appgroup"
+app_repo: "https://github.com/exemplo/seniorapp.git"
+app_branch: "main"
+app_versao: "latest"
+
+nginx_porta_http: 80
+nginx_porta_https: 443
+nginx_dominio: "seniorapp.com.br"
+nginx_worker_processes: auto
+nginx_ssl: false
+
+# Configurações do gunicorn (servidor WSGI Python)
+gunicorn_workers: 4
+gunicorn_timeout: 120
+gunicorn_bind: "0.0.0.0:{{ app_porta }}"

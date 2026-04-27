@@ -1,0 +1,79 @@
+---
+# ==============================================================
+# ARQUIVO: roles/database/tasks/backup.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Backup é como tirar FOTO dos seus dados.
+# Se algo der errado, você volta para a foto!
+# Sem backup = risco de perder TUDO.
+# Todo Sênior faz backup automático e TESTA a restauração!
+# ==============================================================
+
+# Criar pasta de backup com permissões corretas
+- name: "DB Backup: Criar pasta de backups"
+  ansible.builtin.file:
+    path: "{{ db_backup_dir }}"
+    state: directory
+    mode: '0750'           # Só postgres lê e escreve
+    owner: postgres
+    group: postgres
+
+# Criar script de backup que roda automaticamente
+- name: "DB Backup: Criar script de backup"
+  ansible.builtin.copy:
+    content: |
+      #!/bin/bash
+      # Script de backup do PostgreSQL
+      # Gerado pelo Ansible - NÃO edite manualmente!
+
+      # Variáveis
+      BACKUP_DIR="{{ db_backup_dir }}"
+      DB_NAME="{{ db_nome }}"
+      DATA=$(date +%Y%m%d_%H%M%S)  # Ex: 20240315_020000
+      ARQUIVO="$BACKUP_DIR/${DB_NAME}_${DATA}.sql.gz"
+      RETENCAO="{{ db_backup_retencao_dias }}"  # Dias para guardar
+
+      # Fazer o dump e comprimir ao mesmo tempo (economiza espaço!)
+      echo "Iniciando backup de $DB_NAME em $(date)"
+      pg_dump $DB_NAME | gzip > $ARQUIVO
+
+      # Verificar se o backup foi gerado corretamente
+      if [ $? -eq 0 ]; then
+          echo "✅ Backup criado: $ARQUIVO ($(du -sh $ARQUIVO | cut -f1))"
+      else
+          echo "❌ ERRO: Falha ao criar backup!" >&2
+          exit 1
+      fi
+
+      # Remover backups mais antigos que $RETENCAO dias
+      echo "Limpando backups com mais de $RETENCAO dias..."
+      find $BACKUP_DIR -name "${DB_NAME}_*.sql.gz" -mtime +$RETENCAO -delete
+      echo "Backup concluído em $(date)"
+
+    dest: /usr/local/bin/backup-postgresql.sh
+    mode: '0750'          # Executável pelo postgres
+    owner: postgres
+    group: postgres
+
+# Agendar backup automático via cron (todo dia de madrugada)
+- name: "DB Backup: Agendar cron de backup"
+  ansible.builtin.cron:
+    name: "Backup PostgreSQL {{ db_nome }}"
+    # "{{ db_backup_hora }}:{{ db_backup_minuto }}" = ex: 2:00 da manhã
+    minute: "{{ db_backup_minuto }}"
+    hour: "{{ db_backup_hora }}"
+    day: "*"              # Todo dia
+    month: "*"            # Todo mês
+    weekday: "*"          # Todo dia da semana
+    job: "/usr/local/bin/backup-postgresql.sh >> /var/log/postgresql/backup.log 2>&1"
+    user: postgres        # Rodar como usuário postgres
+    state: present
+
+- name: "DB Backup: Confirmar configuração"
+  ansible.builtin.debug:
+    msg:
+      - "✅ Backup agendado: {{ db_backup_hora }}:{{ db_backup_minuto | zfill(2) }} todos os dias"
+      - "📁 Destino: {{ db_backup_dir }}"
+      - "🗑️  Retenção: {{ db_backup_retencao_dias }} dias"

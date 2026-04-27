@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ============================================================
+  ARQUIVO: modulo-core/pom.xml
+
+  O QUE ESTE MÓDULO FAZ:
+  Contém a IMPLEMENTAÇÃO das interfaces definidas em modulo-api.
+  Depende de modulo-api (para ter as interfaces) e implementa
+  a lógica de negócio.
+
+  DEPENDÊNCIA ENTRE MÓDULOS:
+  modulo-core → depende de → modulo-api
+  Isso garante que o Maven builde modulo-api ANTES de modulo-core.
+  ============================================================ -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.curso</groupId>
+    <artifactId>meu-sistema</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>modulo-core</artifactId>
+  <name>Meu Sistema - Core Module</name>
+  <description>Implementação da lógica de negócio</description>
+
+  <dependencies>
+
+    <!-- ─────────────────────────────────────────────────────
+      DEPENDÊNCIA INTERNA: modulo-api
+      Este módulo usa as interfaces do modulo-api.
+      Versão gerenciada pelo pai (${project.version}).
+      ───────────────────────────────────────────────────── -->
+    <dependency>
+      <groupId>com.curso</groupId>
+      <artifactId>modulo-api</artifactId>
+      <!-- <version> vem do dependencyManagement do pai = "1.0.0-SNAPSHOT" -->
+      <!-- scope compile (padrão) = modulo-api entra no classpath de produção -->
+    </dependency>
+
+    <!-- Dependências de implementação (sem version — gerenciadas pelo pai) -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+    </dependency>
+
+    <!-- Testes -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Logback apenas para testes (em produção, o app define o logging) -->
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+</project>

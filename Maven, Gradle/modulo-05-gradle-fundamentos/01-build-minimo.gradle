@@ -1,0 +1,138 @@
+// ============================================================
+// ARQUIVO: 01-build-minimo.gradle
+// USO: Groovy DSL — renomeie para build.gradle
+//
+// O QUE ESTE ARQUIVO FAZ:
+// Configura o projeto Gradle mais básico possível.
+// build.gradle é o equivalente ao pom.xml do Maven —
+// descreve como construir e gerenciar o projeto.
+//
+// ANALOGIA:
+// Se o Maven usa XML como "formulário preenchível",
+// o Gradle usa uma LINGUAGEM DE PROGRAMAÇÃO (Groovy ou Kotlin).
+// É como a diferença entre preencher um formulário PDF
+// versus escrever um e-mail: o e-mail é mais expressivo.
+//
+// GROOVY DSL vs KOTLIN DSL:
+// build.gradle       = Groovy DSL (mais antigo, menos type-safe)
+// build.gradle.kts   = Kotlin DSL (moderno, type-safe, autocomplete)
+// Recomendação Senior: use Kotlin DSL em projetos novos.
+// ============================================================
+
+// ─────────────────────────────────────────────────────────────
+// SEÇÃO: plugins
+// Define as capacidades do projeto.
+// O plugin 'java' adiciona tasks: compileJava, test, jar, etc.
+// Equivalente Maven: o Maven já tem essas capacidades built-in
+// via maven-compiler-plugin, maven-surefire-plugin, etc.
+// ─────────────────────────────────────────────────────────────
+plugins {
+    // 'java': plugin oficial do Gradle para projetos Java
+    // Adiciona as tasks: compileJava, processResources,
+    //                    testClasses, test, jar, build, etc.
+    // OBRIGATÓRIO para projetos Java
+    id 'java'
+
+    // 'application': estende java com tasks para executar a app
+    // Adiciona: run, startScripts, distZip, distTar
+    // OPCIONAL — use se o projeto tem um main() executável
+    // id 'application'
+}
+
+// ─────────────────────────────────────────────────────────────
+// SEÇÃO: group, version (equivalente ao GAV do Maven)
+// group    = groupId do Maven
+// version  = version do Maven
+// name     = artifactId do Maven (definido em settings.gradle)
+// ─────────────────────────────────────────────────────────────
+
+// "Sobrenome" do projeto — convenção: domínio invertido
+group = 'com.curso'
+
+// Versão atual — SNAPSHOT = em desenvolvimento (convenção Maven)
+version = '1.0.0-SNAPSHOT'
+
+// ─────────────────────────────────────────────────────────────
+// SEÇÃO: java
+// Configurações específicas da compilação Java
+// ─────────────────────────────────────────────────────────────
+java {
+    // Define a versão do Java usada para compilar e executar
+    // Equivalente ao <maven.compiler.release>21</maven.compiler.release>
+    // toolchain: forma MODERNA e recomendada de configurar o Java no Gradle
+    // Garante que o JDK correto seja usado mesmo se o developer tiver outro
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+
+    // Alternativa mais simples (sem toolchain):
+    // sourceCompatibility = JavaVersion.VERSION_21
+    // targetCompatibility = JavaVersion.VERSION_21
+    // Mas toolchain é mais robusto — recomendado em projetos novos
+}
+
+// ─────────────────────────────────────────────────────────────
+// SEÇÃO: repositories
+// De onde o Gradle vai baixar as dependências
+// Equivalente a <repositories> no Maven
+// ─────────────────────────────────────────────────────────────
+repositories {
+    // Maven Central — repositório principal, o mais usado no mundo
+    // Equivalente ao implicit Maven Central do Maven
+    mavenCentral()
+
+    // Repositório local do Maven (~/.m2/repository)
+    // Útil para usar JARs instalados localmente com "mvn install"
+    // mavenLocal()  // CUIDADO: pode causar inconsistências em CI, use com moderação
+
+    // Repositório personalizado (Nexus, Artifactory da empresa):
+    // maven { url 'https://nexus.minhaempresa.com.br/repository/maven-public/' }
+}
+
+// ─────────────────────────────────────────────────────────────
+// SEÇÃO: dependencies
+// Lista as dependências do projeto
+// Equivalente a <dependencies> no Maven
+// ─────────────────────────────────────────────────────────────
+dependencies {
+    // 'implementation': dependência de compilação + runtime (não exposta via API)
+    // Equivalente ao scope 'compile' do Maven (mas com encapsulamento melhor)
+    // Veja Módulo 6 para detalhes sobre implementation vs api
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    // 'testImplementation': disponível apenas nos testes
+    // Equivalente ao scope 'test' do Maven
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+
+    // 'testRuntimeOnly': presente apenas no runtime dos testes
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// ─────────────────────────────────────────────────────────────
+// SEÇÃO: tasks
+// Customização de tasks existentes
+// ─────────────────────────────────────────────────────────────
+
+// Configura a task 'test' para usar o JUnit Platform (JUnit 5)
+// OBRIGATÓRIO para JUnit 5 funcionar com o Gradle
+tasks.named('test') {
+    useJUnitPlatform()  // "use o motor do JUnit 5 para executar os testes"
+
+    // Exibe eventos de teste no console durante a execução
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// COMO USAR (no terminal, na raiz do projeto):
+//
+// ./gradlew tasks              → lista todas as tasks disponíveis
+// ./gradlew compileJava        → compila o código fonte
+// ./gradlew test               → compila + executa os testes
+// ./gradlew build              → build completo (compile + test + jar)
+// ./gradlew clean              → limpa o diretório build/
+// ./gradlew clean build        → build limpa (recomendado)
+// ./gradlew jar                → gera apenas o JAR (sem testes)
+// ./gradlew dependencies       → mostra árvore de dependências
+// ─────────────────────────────────────────────────────────────

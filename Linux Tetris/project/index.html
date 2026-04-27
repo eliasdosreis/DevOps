@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Linux Tetris CLI - Educacional</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <div id="questionBox">Pergunta: <span id="question">Carregando...</span></div>
+      <div id="statusBar">
+        <div>Score: <span id="score">0</span></div>
+        <div>Nível: <span id="level">1</span></div>
+        <div>Combo: <span id="combo">0</span></div>
+      </div>
+    </header>
+
+    <main id="main">
+      <canvas id="game" width="240" height="480"></canvas>
+      <aside id="side">
+          <!-- Próxima peça removida (modo sem queda) -->
+        <div class="panel">
+          <h4>Opções</h4>
+          <div class="option-row">
+            <label>Música</label>
+            <button id="musicToggle" class="btn-small">On</button>
+          </div>
+        </div>
+        <div class="panel">
+          <h4>Controles</h4>
+          <ul>
+            <li>← → mover</li>
+            <li>↑ rotacionar</li>
+            <li>↓ acelerar</li>
+            <li>Enter enviar comando</li>
+          </ul>
+        </div>
+      </aside>
+    </main>
+
+    <footer id="inputArea">
+      <div id="terminal" class="terminal" aria-live="polite"></div>
+      <div id="cliLine" class="cli-line">
+        <span class="prompt">user@linux:~$</span>
+        <input id="cmd" placeholder="Digite o comando e pressione Enter" autocomplete="off" spellcheck="false">
+        <button id="submit">Enviar</button>
+      </div>
+      <div id="feedback" role="status"></div>
+    </footer>
+  </div>
+
+  <script src="questions.js"></script>
+  <script src="engine.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

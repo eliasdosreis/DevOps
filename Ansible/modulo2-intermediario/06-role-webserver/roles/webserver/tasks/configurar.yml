@@ -1,0 +1,56 @@
+---
+# ==============================================================
+# ARQUIVO: roles/webserver/tasks/configurar.yml
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Depois de instalar, é hora de CONFIGURAR.
+# Como montar um móvel: primeiro compra as peças (instalar),
+# depois segue o manual de montagem (configurar)!
+# ==============================================================
+
+# Gerar configuração do Nginx a partir do template
+- name: "Gerar nginx.conf via template"
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    mode: '0644'
+    owner: root
+    group: root
+    # Fazer backup do arquivo anterior (segurança!)
+    backup: true
+  # Notifica o handler para reiniciar o Nginx
+  notify: Reiniciar nginx
+
+# Remover configuração padrão (que vem com o nginx)
+- name: "Remover site padrão do nginx"
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Reiniciar nginx
+
+# Criar página index.html simples
+- name: "Criar página principal"
+  ansible.builtin.copy:
+    content: |
+      <!DOCTYPE html>
+      <html>
+      <head><title>{{ webserver_pacote | upper }} - Ansible Managed</title></head>
+      <body>
+        <h1>✅ Servidor configurado pelo Ansible!</h1>
+        <p>Ambiente: {{ ambiente | default('não definido') }}</p>
+        <p>Data: {{ ansible_date_time.date | default('hoje') }}</p>
+      </body>
+      </html>
+    dest: "{{ webserver_root }}/index.html"
+    mode: '0644'
+    owner: www-data
+    group: www-data
+
+# Testar configuração do Nginx (checar erros antes de reiniciar)
+- name: "Validar configuração do Nginx"
+  ansible.builtin.command:
+    cmd: nginx -t
+  changed_when: false
+  # "ignore_errors: false" garante que para se houver erro
+  register: nginx_teste

@@ -1,0 +1,127 @@
+# ============================================================
+# ARQUIVO: 06-statefulset.yaml
+# STATEFULSET - Para apps que têm identidade própria
+#
+# Deployment cria pods ANÔNIMOS e INTERCAMBIÁVEIS.
+# StatefulSet cria pods com IDENTIDADE FIXA e ORDEM.
+#
+# Analogia:
+# Deployment = Soldados genéricos (qualquer um serve)
+# StatefulSet = Membros de uma banda (cada um tem papel único)
+#   - pod-0 = guitarrista (primário/master)
+#   - pod-1 = baixista   (réplica)
+#   - pod-2 = baterista  (réplica)
+#
+# QUANDO USAR STATEFULSET?
+# - Bancos de dados (MySQL, PostgreSQL, MongoDB)
+# - Sistemas de cache com estado (Redis com persistence)
+# - Message brokers (Kafka, RabbitMQ)
+# - Qualquer app que precise de identidade de rede estável
+# ============================================================
+
+apiVersion: apps/v1
+kind: StatefulSet               # Tipo: StatefulSet
+
+metadata:
+  name: banco-mysql
+  labels:
+    app: mysql
+
+spec:
+  serviceName: "mysql-headless" # OBRIGATÓRIO! Nome do Headless Service
+                                # Usado para DNS estável dos pods
+
+  replicas: 3                   # 3 instâncias do MySQL
+
+  selector:
+    matchLabels:
+      app: mysql
+
+  # -------------------------------------------------------
+  # DIFERENÇA CHAVE: Pods têm nomes FIXOS e ORDENADOS
+  # banco-mysql-0  (sempre o primeiro a iniciar = MASTER)
+  # banco-mysql-1  (segundo)
+  # banco-mysql-2  (terceiro)
+  # -------------------------------------------------------
+
+  template:
+    metadata:
+      labels:
+        app: mysql
+
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "senha-root"     # Use Secret em produção!
+
+          ports:
+            - containerPort: 3306     # Porta padrão do MySQL
+
+          volumeMounts:
+            - name: dados-mysql       # Nome do volume (do VCT abaixo)
+              mountPath: /var/lib/mysql  # Onde o MySQL guarda dados
+
+  # -------------------------------------------------------
+  # volumeClaimTemplates - EXCLUSIVO do StatefulSet!
+  # Cria 1 PVC SEPARADO por pod automaticamente.
+  # banco-mysql-0 -> pvc dados-mysql-banco-mysql-0
+  # banco-mysql-1 -> pvc dados-mysql-banco-mysql-1
+  # banco-mysql-2 -> pvc dados-mysql-banco-mysql-2
+  # -------------------------------------------------------
+  volumeClaimTemplates:
+    - metadata:
+        name: dados-mysql           # Prefixo do nome do PVC
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi           # 10GB por pod
+
+---
+# HEADLESS SERVICE - Obrigatório para StatefulSet
+# Headless = ClusterIP: None
+# Permite acesso direto por DNS para cada pod:
+# banco-mysql-0.mysql-headless.default.svc.cluster.local
+# banco-mysql-1.mysql-headless.default.svc.cluster.local
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: mysql-headless            # Nome referenciado no serviceName
+
+spec:
+  clusterIP: None                 # NONE = Headless Service!
+                                  # Não cria IP virtual, resolve
+                                  # diretamente para IP do pod
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+
+# ============================================================
+# ENTREVISTA SÊNIOR DIFÍCIL:
+# "Qual a diferença entre Deployment e StatefulSet?"
+#
+# DEPLOYMENT:
+# - Pods intercambiáveis (pod-xyz123, pod-abc456)
+# - Sem ordem de inicialização garantida
+# - Compartilham o mesmo PVC (ou nenhum)
+# - Para apps STATELESS (APIs, frontends)
+#
+# STATEFULSET:
+# - Pods com identidade fixa (app-0, app-1, app-2)
+# - Inicia em ORDEM (0, depois 1, depois 2)
+# - Cada pod tem seu PRÓPRIO PVC
+# - DNS estável: pod-0.service.namespace.svc.cluster.local
+# - Para apps STATEFUL (bancos, brokers)
+#
+# "O que acontece quando você deleta um pod de StatefulSet?"
+# RESPOSTA: O K8s recria com o MESMO nome e MESMO PVC.
+# banco-mysql-1 morre -> nasce banco-mysql-1 com os mesmos dados!
+# ============================================================

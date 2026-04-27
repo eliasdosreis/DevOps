@@ -1,0 +1,143 @@
+# ============================================================
+# ARQUIVO: 01-bucket-s3.yaml
+# O QUE FAZ: Cria um bucket S3 privado básico
+#
+# ANALOGIA: Um bucket é como criar uma pasta no "HD infinito
+#           da nuvem", só que com nome único no mundo inteiro.
+#
+# CUSTO: ~$0.00 — Free Tier: 5 GB/mês por 12 meses
+#        Após isso: $0.023/GB na região us-east-1
+#
+# CONCEITO NOVO NESTE ARQUIVO: Bucket S3, nomenclatura, regiões
+# ============================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  MÓDULO 1 - PASSO 1: Cria um bucket S3 privado básico.
+  Este é o ponto de partida para entender o S3.
+  Conceitos: Bucket, Object Storage, Região, ARN
+
+# ============================================================
+# PARAMETERS — Variáveis que você define ao criar a Stack
+# Permite reutilizar o template em diferentes ambientes
+# ============================================================
+Parameters:
+
+  # O nome do bucket DEVE ser globalmente único em toda a AWS
+  # Se você usar o mesmo nome que outra pessoa, vai dar erro!
+  NomeBucket:
+    Type: String
+    Description: |
+      Nome único global do bucket (letras minúsculas, números e hífens).
+      Exemplo: meu-aprendizado-2024-joao
+    MinLength: 3
+    MaxLength: 63
+    # Regex força o padrão correto de nomes S3
+    AllowedPattern: '^[a-z0-9][a-z0-9\-]{1,61}[a-z0-9]$'
+    ConstraintDescription: |
+      Nome inválido! Use apenas: letras minúsculas, números e hífens.
+      Deve começar e terminar com letra ou número.
+
+  # Tag de ambiente para identificar a stack (opcional mas boa prática)
+  Ambiente:
+    Type: String
+    Description: Ambiente de deploy (dev, staging, prod)
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+# ============================================================
+# RESOURCES — Os recursos AWS que serão criados
+# ============================================================
+Resources:
+
+  # ----------------------------------------------------------
+  # RECURSO 1: O bucket S3 em si
+  # É como criar a "caixa postal" — o contêiner para os objetos
+  # ----------------------------------------------------------
+  MeuBucket:
+    Type: AWS::S3::Bucket   # Tipo do recurso: bucket S3
+    
+    # DeletionPolicy: o que acontece com o bucket ao DELETAR a stack?
+    # Retain = mantém o bucket (seguro, mas exige limpeza manual)
+    # Delete = deleta o bucket (só funciona se estiver VAZIO)
+    DeletionPolicy: Retain
+    
+    Properties:
+    
+      # Nome do bucket — usa o Parameter definido acima
+      # !Ref referencia o valor do Parameter
+      BucketName: !Ref NomeBucket
+      
+      # ----------------------------------------------------------
+      # BLOQUEIO DE ACESSO PÚBLICO (obrigatório em 2024!)
+      # A AWS exige que novos buckets bloqueiem acesso público por padrão
+      # Só desabilite se realmente precisar (hospedagem de site, etc.)
+      # ----------------------------------------------------------
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true          # Bloqueia ACLs públicas
+        BlockPublicPolicy: true        # Bloqueia políticas públicas
+        IgnorePublicAcls: true         # Ignora ACLs públicas existentes
+        RestrictPublicBuckets: true    # Garante bucket completamente privado
+      
+      # ----------------------------------------------------------
+      # CRIPTOGRAFIA EM REPOUSO (Server-Side Encryption - SSE)
+      # SSE-S3: AWS gerencia as chaves (grátis, mais simples)
+      # SSE-KMS: Você gerencia as chaves (mais controle, ~$1/mês por chave)
+      # Para aprendizado, SSE-S3 é suficiente
+      # ----------------------------------------------------------
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256    # SSE-S3 (gerenciado pela AWS, gratuito)
+            BucketKeyEnabled: true   # Reduz chamadas KMS (opcional, boa prática)
+      
+      # ----------------------------------------------------------
+      # OWNERSHIP CONTROL (configuração moderna obrigatória)
+      # BucketOwnerEnforced = desativa ACLs (use Bucket Policies no lugar)
+      # Esta é a recomendação atual da AWS (agosto 2021+)
+      # ----------------------------------------------------------
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced  # Desativa ACLs de objeto
+      
+      # ----------------------------------------------------------
+      # TAGS — Fundamentais para organização e billing
+      # Em produção: adicione tags de Time, CostCenter, Projeto
+      # ----------------------------------------------------------
+      Tags:
+        - Key: Modulo
+          Value: "01-S3"
+        - Key: Ambiente
+          Value: !Ref Ambiente
+        - Key: Propósito
+          Value: Aprendizado
+        - Key: ManagedBy
+          Value: CloudFormation
+
+# ============================================================
+# OUTPUTS — Exporta valores para uso em outros templates
+# ou para referência rápida após criar a stack
+# ============================================================
+Outputs:
+
+  # Nome do bucket — útil para scripts de upload
+  NomeBucket:
+    Description: Nome do bucket S3 criado
+    Value: !Ref MeuBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-bucket-nome"
+
+  # ARN do bucket — necessário para políticas IAM
+  ARNBucket:
+    Description: ARN do bucket S3 (use em políticas IAM)
+    Value: !GetAtt MeuBucket.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-bucket-arn"
+
+  # URL do bucket — para acesso via HTTP/HTTPS
+  UrlBucket:
+    Description: URL do bucket S3 (acesso via HTTPS)
+    Value: !Sub "https://${MeuBucket}.s3.${AWS::Region}.amazonaws.com"

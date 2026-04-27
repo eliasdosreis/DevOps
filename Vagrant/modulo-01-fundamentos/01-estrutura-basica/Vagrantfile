@@ -1,0 +1,53 @@
+# ============================================================
+# MÓDULO 1 — ESTRUTURA BÁSICA DO VAGRANTFILE
+# O QUE ESTE ARQUIVO FAZ:
+#   Demonstra a estrutura mínima e obrigatória de um Vagrantfile
+#   com comentários explicando cada elemento da DSL do Vagrant.
+#   Propósito: entender a anatomia de um Vagrantfile.
+# ============================================================
+
+# Todo Vagrantfile começa com este bloco.
+# "2" = versão da API de configuração do Vagrant (não a versão do software)
+# |config| = variável que representa o objeto de configuração
+Vagrant.configure("2") do |config|
+
+  # -----------------------------------------------------------
+  # SEÇÃO: BOX (OBRIGATÓRIO)
+  # O único campo verdadeiramente obrigatório no Vagrantfile
+  # -----------------------------------------------------------
+
+  # A "box" é a imagem base do sistema operacional.
+  # Formato: "usuario/nome-da-box" (vem do Vagrant Cloud)
+  # Alternativa local: "file:///caminho/para/box.box"
+  config.vm.box = "ubuntu/jammy64"
+
+  # -----------------------------------------------------------
+  # SEÇÃO: IDENTIDADE DA VM (OPCIONAL)
+  # -----------------------------------------------------------
+
+  # Hostname visível dentro do SO da VM
+  # Aparece no prompt: vagrant@minha-vm:~$
+  config.vm.hostname = "vm-estrutura-basica"
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PROVIDER (OPCIONAL — mas recomendado ser explícito)
+  # -----------------------------------------------------------
+
+  # Define configurações específicas do VirtualBox
+  # Sem este bloco, o Vagrant usa todos os padrões do provider
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-estrutura-basica"  # Nome no VirtualBox GUI
+    vb.memory = "512"                        # RAM mínima para aprendizado
+    vb.cpus   = 1                            # 1 CPU é suficiente
+  end
+
+end
+
+# ============================================================
+# COMO USAR:
+#   cd modulo-01-fundamentos/01-estrutura-basica/
+#   vagrant up       → cria e inicia a VM
+#   vagrant ssh      → acessa a VM
+#   vagrant halt     → desliga
+#   vagrant destroy  → remove permanentemente
+# ============================================================

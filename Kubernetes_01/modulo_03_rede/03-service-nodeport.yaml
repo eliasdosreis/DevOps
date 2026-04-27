@@ -1,0 +1,82 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um Service NodePort, a forma rudimentar do K8s de escancarar o app
+# para fora da "bolha" segura do cluster e ser alcançado externamente  
+# por qualquer dispositivo na mesma rede corporativa usando o IP do seu PC/VM física.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Lembra da Empresa e o "PABX/Ramal" interno (ClusterIP)?
+# Para quem estar fora do prédio conseguir ligar, a empresa precisa comprar na 
+# Anatel uma PORTA "Pública" na central de rua, digamos o número `30999`. 
+# Quando você, da sua casa, liga pro 30999, do lado de fora do prédio 
+# físico do hospital, a Telefonista o transfere pro "PABX Interno" que criamos antes.
+
+# 2. O QUE É (definição técnica Senior)
+# Expor "ExternalTraffic". O Service do tipo NodePort aloca estaticamente ou automaticamente 
+# uma porta TCP/UDP alta em absolutamente t-o-d-o-s os nós "Worker" físicos do cluster, na 
+# range canônica de `30000-32767`. Isso permite que roteadores On-Premise 
+# encaminhem tráfego TCP bruto aos nós do K8s batendo diretamente na aplicação.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: acesso-rua-frontend
+  namespace: meu-primeiro-projeto
+spec:
+  type: NodePort                # Alteração fundamental: Sai o ClusterIP, e entra o NodePort!
+  selector:
+    camada: frontend            # Reaproveitamos o Deployment (os Atendentes) do arquivo '02'
+  ports:
+    - port: 80
+      targetPort: 80
+      
+      # NodePort é onde ele arromba o IPTables do host host da VM externa (Seu Windows Host/Linux Server):
+      nodePort: 31000           # Forçamos a porta exata (se omitir ela será sorteada no range da > 30000 aleatoria)
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Certifique-se que você aplicou o arquivo 02 anterior. Em seguida, aplique:
+#    kubectl apply -f 03-service-nodeport.yaml
+#
+# 2. Verifique o mapeamento das portas no painel:
+#    kubectl get service acesso-rua-frontend -n meu-primeiro-projeto
+#    (Veja o `PORT(S)` mostrando `80:31000/TCP`. Entra na 31000 de fora, e cai na 80 do Service!
+#
+# 3. Teste o acesso da RUA do seu PC real!
+#    Abra seu Firefox e entre: http://localhost:31000/    ou    (IP_DA_MAQUINAVIRTUAL_/PC):31000/
+
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# Mágica do Kind: o Kind roda no docker de uma forma que esconde portas no NAT. 
+# Quando se cria um cluster `kind` você as vezes precisa mapear a porta `extraPortMappings` 
+# no momento q subir o cluster na config se quiser acessar nodeports de forma limpa,
+# senão precisa ver as configs do container do Docker `docker ps` pra acessar.
+# (Porém o conceito de produção On-Premises é irretocável, acessa pela LAN livremente).
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# "Elias, se eu acesso direto IP-DO-NÓ:31000 e ele me joga no aplicativo, pra 
+# que eu precisaria de Ingress Controllers e Nginx com nomes .com .br?"
+# Resposta Clássica: Segurança e SSL. Se o NodePort abre uma porta aleatória, 
+# imagine o cliente corporativo tentando acessar `meubanco.com.br:31923`. Não tem
+# como colocar "https://" (TLS) no NodePort de forma escalável e nativa para sites. 
+# Além de onerar o Firewall da rede local de liberar centenas de milhares de portas no SecurityGroup 
+# acima de 30000 de todos os nós aleatórios. Sempre preferimos "Ingress" batendo forte em serviços L7 SSL.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Se eu tiver 10 Worker Nodes, e o seu Deployment rodar os 3 Pods "camada: frontend" APENAS 
+# nos Nós (Workers) Nº 1, 2 e 3 (por falta de memória nos outros 7). Como o NodePort atuará em todos os nós?"
+# Resposta Esperada: "O Kube-Proxy vai mapear a porta 31000 nos 10(!) nós igualmente. 
+# Se uma chamada for entregue por algum motivo no Node Nº 9, ele aceita e fará um 
+# SNAT (Source Nat / Hairpinning), roteando pelo Backbone CNI (Calico, Weave) lá 
+# para o Nó 1 que contém o Pod vivo do App. Isso incorre em Hop "Network Hop Overhead" de 
+# performance gigante entre hosts, que resolvemos avançada-mente usando `externalTrafficPolicy: Local`."

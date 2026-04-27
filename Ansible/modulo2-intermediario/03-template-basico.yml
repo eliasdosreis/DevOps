@@ -1,0 +1,95 @@
+---
+# ==============================================================
+# ARQUIVO: 03-template-basico.yml
+# MÓDULO 2 - Intermediário
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Templates com Jinja2 são como "Mala Direta" do Word!
+# Você cria uma carta modelo com espaços.
+# O programa preenche automaticamente o nome de cada pessoa.
+# Resultado: carta personalizada para cada um!
+#
+# ▶️  COMO RODAR:
+# ansible-playbook -i ../modulo1-fundamentos/01-inventory-simples.ini 03-template-basico.yml
+# ==============================================================
+
+- name: "Templates Jinja2 - Configurações Dinâmicas"
+  hosts: localhost
+  gather_facts: true
+
+  vars:
+    nome_app: "MinhaApp"
+    ambiente: "producao"
+    dominio: "minhaapp.com.br"
+    porta_http: 80
+    pasta_web: "/var/www/minhaapp"
+    ssl_habilitado: true
+    max_conexoes: 2048
+
+    # Rotas da aplicação (lista de dicionários)
+    rotas_app:
+      - caminho: "/api"
+        destino: "http://localhost:3000"
+      - caminho: "/admin"
+        destino: "http://localhost:8080"
+
+  tasks:
+
+    # ---- Criar pasta de destino --------------------------------
+    - name: "Criar pasta para configurações"
+      ansible.builtin.file:
+        path: /tmp/ansible-demo/config
+        state: directory
+        mode: '0755'
+
+    # ---- Módulo TEMPLATE: preenche o .j2 com variáveis --------
+    # É o módulo mais poderoso para criar configurações dinâmicas!
+    - name: "Gerar configuração do Nginx a partir do template"
+      ansible.builtin.template:
+        # src = arquivo template (.j2) no seu computador
+        src: templates/nginx.conf.j2
+        # dest = onde salvar no servidor (já preenchido!)
+        dest: /tmp/ansible-demo/config/nginx.conf
+        mode: '0644'
+      # "notify" = avisar o handler quando esta tarefa mudar algo
+      notify: Mostrar arquivo gerado
+
+    # ---- Template inline: sem arquivo .j2 externo --------------
+    - name: "Criar arquivo de variáveis de ambiente (.env)"
+      ansible.builtin.copy:
+        # Aqui o template é escrito diretamente no playbook
+        content: |
+          # Arquivo .env gerado pelo Ansible
+          APP_NAME={{ nome_app }}
+          APP_ENV={{ ambiente }}
+          APP_URL=https://{{ dominio }}
+          APP_PORT={{ porta_http }}
+          {% if ssl_habilitado %}
+          SSL_ENABLED=true
+          {% else %}
+          SSL_ENABLED=false
+          {% endif %}
+        dest: /tmp/ansible-demo/config/app.env
+        mode: '0600'  # Arquivo secreto! Só o dono lê.
+
+    # ---- Verificar o arquivo gerado ----------------------------
+    - name: "Mostrar conteúdo do nginx.conf gerado"
+      ansible.builtin.command:
+        cmd: cat /tmp/ansible-demo/config/nginx.conf
+      register: conteudo_nginx
+      changed_when: false
+
+    - name: "Exibir configuração gerada"
+      ansible.builtin.debug:
+        msg: "{{ conteudo_nginx.stdout_lines }}"
+
+  # ---- HANDLERS: ações que só rodam quando notificadas -------
+  # 🧒 Handler é como o ALARME do despertador.
+  # Só toca se alguém o configurou para tocar!
+  # "notify" no task = configurar o alarme
+  # Handler = o que acontece quando o alarme toca
+  handlers:
+    - name: "Mostrar arquivo gerado"
+      ansible.builtin.debug:
+        msg: "📄 Arquivo nginx.conf foi gerado/atualizado com sucesso!"

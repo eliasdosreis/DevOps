@@ -1,0 +1,104 @@
+# ============================================================
+# MÓDULO 2 — FORWARDED PORTS (REDIRECIONAMENTO DE PORTAS)
+# O QUE ESTE ARQUIVO FAZ:
+#   Configura redirecionamento de portas do host para a VM.
+#   Você acessa serviços da VM através de portas do seu computador.
+#   Ex: localhost:8080 → VM:80 (Apache/Nginx)
+#       localhost:3306 → VM:3306 (MySQL)
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-forwarded-ports"
+
+  # -----------------------------------------------------------
+  # SEÇÃO: FORWARDED PORTS (REDIRECIONAMENTO DE PORTAS)
+  # Mapeia uma porta do host para uma porta da VM
+  # -----------------------------------------------------------
+
+  # FORMATO: config.vm.network "forwarded_port", guest: PORTA_VM, host: PORTA_HOST
+
+  # HTTP — Acesse http://localhost:8080 para acessar o serviço na porta 80 da VM
+  config.vm.network "forwarded_port",
+    guest: 80,      # Porta DENTRO da VM (onde o serviço roda)
+    host:  8080     # Porta NO SEU COMPUTADOR (onde você acessa)
+
+  # HTTPS
+  config.vm.network "forwarded_port",
+    guest: 443,
+    host:  8443
+
+  # MySQL/MariaDB
+  config.vm.network "forwarded_port",
+    guest: 3306,
+    host:  3306
+
+  # PostgreSQL
+  config.vm.network "forwarded_port",
+    guest: 5432,
+    host:  5432
+
+  # Node.js / App genérica
+  config.vm.network "forwarded_port",
+    guest: 3000,
+    host:  3000
+
+  # -----------------------------------------------------------
+  # FORWARDED PORT AVANÇADO: com opções de segurança
+  # -----------------------------------------------------------
+
+  # host_ip: vincula apenas ao localhost do host (mais seguro)
+  # Sem host_ip, fica acessível para toda a rede local!
+  config.vm.network "forwarded_port",
+    guest:   8888,
+    host:    8888,
+    host_ip: "127.0.0.1"  # Acesso permitido APENAS do localhost
+
+  # auto_correct: true → Vagrant resolve colisão de portas automaticamente
+  # Útil quando você tem várias VMs com as mesmas portas
+  config.vm.network "forwarded_port",
+    guest:        9200,   # Elasticsearch
+    host:         9200,
+    auto_correct: true    # Se 9200 estiver ocupada no host, usa 9201, etc.
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PROVIDER
+  # -----------------------------------------------------------
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-forwarded-ports"
+    vb.memory = "1024"
+    vb.cpus   = 1
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PROVISIONAMENTO — Instala Nginx para testar as portas
+  # -----------------------------------------------------------
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update -q
+    apt-get install -y -q nginx
+    systemctl start nginx
+    systemctl enable nginx
+    echo "✅ Nginx instalado! Acesse http://localhost:8080 no seu navegador."
+  SHELL
+
+end
+
+# ============================================================
+# COMO TESTAR:
+#   vagrant up
+#   → Acesse http://localhost:8080 no seu navegador
+#   → Você verá a página padrão do Nginx da VM!
+#
+# VERIFICAR PORTAS ATIVAS NO HOST (Windows):
+#   netstat -ano | findstr "8080"
+#
+# VERIFICAR PORTAS ATIVAS NO HOST (Linux/macOS):
+#   ss -tlnp | grep 8080
+#
+# SENIORIDADE:
+#   Sempre use host_ip: "127.0.0.1" em máquinas que ficam
+#   conectadas a redes compartilhadas (escritório, por exemplo).
+#   Sem isso, qualquer pessoa na sua rede local pode acessar
+#   os serviços da sua VM de desenvolvimento!
+# ============================================================

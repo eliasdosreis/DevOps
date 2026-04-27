@@ -1,0 +1,84 @@
+# ============================================================
+# MÓDULO 2 — PRIVATE NETWORK (REDE PRIVADA / HOST-ONLY)
+# O QUE ESTE ARQUIVO FAZ:
+#   Cria uma rede privada entre o host e a VM com IP fixo.
+#   A VM fica acessível pelo IP definido APENAS a partir do
+#   computador host — dispositivos externos não têm acesso.
+#   Propósito: base para comunicação multi-VM e desenvolvimento
+#   de APIs sem expor serviços externamente.
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-private-network"
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PRIVATE NETWORK — IP ESTÁTICO
+  # Cria um adaptador de rede host-only com IP fixo
+  # A VM será acessível no IP 192.168.56.10 a partir do host
+  # -----------------------------------------------------------
+
+  # ip: → endereço IP fixo atribuído à VM
+  # Range padrão do VirtualBox host-only: 192.168.56.0/24
+  # Você pode usar qualquer range privado: 10.x.x.x, 172.16.x.x, 192.168.x.x
+  config.vm.network "private_network",
+    ip: "192.168.56.10"
+
+  # -----------------------------------------------------------
+  # PRIVATE NETWORK — DHCP (IP automático)
+  # Use quando não precisar de IP fixo
+  # O VirtualBox atribuirá um IP automaticamente
+  # Menos previsível — evite em ambientes multi-VM
+  # -----------------------------------------------------------
+  # config.vm.network "private_network", type: "dhcp"
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PROVIDER
+  # -----------------------------------------------------------
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-private-network"
+    vb.memory = "1024"
+    vb.cpus   = 1
+
+    # Desabilita o serviço de resolução DNS do VirtualBox (performance)
+    # O host resolve os nomes DNS em vez da VM
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+    vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PROVISIONAMENTO — Instala Nginx e mostra o IP
+  # -----------------------------------------------------------
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update -q
+    apt-get install -y -q nginx net-tools
+    systemctl start nginx
+
+    # Mostra o IP da interface de rede privada
+    echo ""
+    echo "=========================================="
+    echo "VM configurada com sucesso!"
+    echo "IP da rede privada: $(ip addr show eth1 2>/dev/null | grep 'inet ' | awk '{print $2}' | cut -d/ -f1 || ip addr show enp0s8 2>/dev/null | grep 'inet ' | awk '{print $2}' | cut -d/ -f1)"
+    echo "Acesse: http://192.168.56.10"
+    echo "=========================================="
+  SHELL
+
+end
+
+# ============================================================
+# COMO TESTAR:
+#   vagrant up
+#   → Acesse http://192.168.56.10 diretamente no navegador
+#   → Sem necessidade de mapeamento de porta!
+#
+#   No SSH: vagrant ssh
+#   → ip addr show  (veja os adaptadores de rede)
+#   → Você verá: eth0 (NAT para internet), eth1 (private network)
+#
+# SENIORIDADE:
+#   O range 192.168.56.0/24 é o padrão do VirtualBox.
+#   Se você usa VMware, o range é diferente (172.16.x.x).
+#   Em projetos multi-VM, documente o esquema de IPs:
+#   Ex: web=56.10, app=56.11, db=56.12, lb=56.13
+# ============================================================

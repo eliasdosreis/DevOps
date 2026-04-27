@@ -1,0 +1,86 @@
+# ============================================================
+# MÓDULO 3 — FILE PROVISIONER
+# O QUE ESTE ARQUIVO FAZ:
+#   Copia arquivos e diretórios do host para a VM antes
+#   de executar outros provisioners.
+#   Ideal para: configs, certificados, chaves SSH, templates.
+#   IMPORTANTE: O file provisioner copia como usuário 'vagrant',
+#   não como root. Use shell para mover arquivos privilegiados.
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-file-provisioner"
+
+  config.vm.network "private_network", ip: "192.168.56.32"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-file-provisioner"
+    vb.memory = "1024"
+    vb.cpus   = 1
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: FILE PROVISIONER — COPIAR ARQUIVOS
+  # source: caminho no HOST (relativo ao Vagrantfile)
+  # destination: caminho na VM
+  # -----------------------------------------------------------
+
+  # Copia arquivo de configuração do Nginx
+  # DESTINO: home do usuário vagrant (tem permissão de escrita)
+  # Depois, um shell provisioner moverá para /etc/nginx/
+  config.vm.provision "file",
+    source:      "files/nginx.conf",
+    destination: "/home/vagrant/nginx.conf"
+
+  # Copia página HTML personalizada
+  config.vm.provision "file",
+    source:      "files/app.html",
+    destination: "/home/vagrant/app.html"
+
+  # Copia diretório inteiro (note a ausência de / no final = copia a pasta)
+  # Se source: "files/configs/" (com /) = copia o CONTEÚDO
+  # Se source: "files/configs"  (sem /) = copia a PASTA em si
+  # config.vm.provision "file",
+  #   source:      "files/configs",
+  #   destination: "/home/vagrant/configs"
+
+  # -----------------------------------------------------------
+  # SEÇÃO: SHELL — Move arquivos para os destinos corretos
+  # O file provisioner não tem permissão de root
+  # Use shell para mover para diretórios do sistema
+  # -----------------------------------------------------------
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update -q
+    apt-get install -y -q nginx
+
+    # Move o nginx.conf copiado para o lugar correto (como root)
+    cp /home/vagrant/nginx.conf /etc/nginx/sites-available/default
+    nginx -t && systemctl restart nginx
+
+    # Move o HTML para o webroot
+    cp /home/vagrant/app.html /var/www/html/index.html
+
+    echo "✅ Arquivos posicionados e Nginx reiniciado!"
+    echo "Acesse: http://192.168.56.32"
+  SHELL
+
+end
+
+# ============================================================
+# ATENÇÃO — LIMITAÇÕES DO FILE PROVISIONER:
+#
+# 1. Copia como usuário 'vagrant' → sem acesso a /etc, /usr, etc.
+#    Solução: copie para /home/vagrant/ e mova com shell (root)
+#
+# 2. NÃO é idempotente por padrão → sempre sobrescreve
+#    (isso é desejado em configs que devem ser atualizadas)
+#
+# 3. Não executa nada → só copia
+#    Para executar após copiar, use shell provisioner em seguida
+#
+# PADRÃO PROFISSIONAL (ordem correta):
+#   1. file provisioner  → copia configs para /home/vagrant/
+#   2. shell provisioner → move para destino final + valida
+# ============================================================

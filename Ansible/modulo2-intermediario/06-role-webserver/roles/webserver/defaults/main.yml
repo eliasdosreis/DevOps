@@ -1,0 +1,35 @@
+---
+# ==============================================================
+# ARQUIVO: roles/webserver/defaults/main.yml
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# "defaults" = valores padrão da role (plano B!)
+# Se ninguém definir a variável, usa o valor daqui.
+# É como o "sabor padrão" numa sorveteria:
+# Se você não escolher, recebe chocolate.
+#
+# IMPORTANTE: defaults têm a MENOR prioridade.
+# Qualquer outra variável definida em outro lugar "ganha"!
+# ==============================================================
+
+# Pacote do servidor web (pode ser sobrescrito!)
+webserver_pacote: nginx
+
+# Versão (latest = mais recente disponível)
+webserver_versao: latest
+
+# Porta padrão
+webserver_porta: 80
+
+# Pasta dos sites
+webserver_root: /var/www/html
+
+# Nome do serviço
+webserver_servico: nginx
+
+# Habilitar SSL por padrão? Não!
+webserver_ssl: false
+
+# Worker processes (auto = detecta automaticamente)
+webserver_workers: auto

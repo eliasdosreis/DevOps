@@ -1,0 +1,74 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um único Pod rodando um container NGINX na versão 1.25.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Pense no seu aplicativo (Ex: um site de supermercado) como o motorzinho do liquidificador.
+# O Container de Docker é o corpo de plástico que protege o motor para ele encaixar na base.
+# Mas o Kubernetes não lida diretamente com o corpo de plástico. Ele pede que você ponha 
+# isso dentro de uma "Caixa Transparente".
+# Essa caixa é o POD. O Kubernetes só sabe mover, criar e destruir as caixas inteiras, 
+# junto de quem quer que esteja dentro. Em 99% das vezes, há apenas 1 container Docker em 1 Pod.
+
+# 2. O QUE É (definição técnica Senior)
+# O Pod é o menor objeto de computação faturável e implantável (deployable) que pode ser 
+# criado e gerenciado no K8s. Um Pod representa um ambiente de execução e um processo.
+# Todos os containers de um mesmo Pod compartilham o mesmo endereço de IP (localhost) e 
+# o mesmo Volume (storage). 
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1            # Versão da API onde Pods são mapeados
+kind: Pod                 # O tipo de recurso: Literalmente o tijolo essencial
+metadata:                 # Identificação do Pod
+  name: meu-primeiro-pod  # O "RG" da caixa. (Obrigatório)
+  namespace: meu-primeiro-projeto # Em qual "Sala" (Namespace) esse Pod ficará isolado
+spec:                     # Especificações: Como é essa caixa por dentro?
+  containers:             # Lista de containers (lembre-se, quase sempre será apenas 1)
+    - name: servidor-web  # Nome interno contêiner Docker. 
+      image: nginx:1.25   # Qual imagem do DocketHub baixar (NUNCA usar :latest em Produção)
+      ports:              # Lista de portas que este container atende
+        - containerPort: 80 # A porta 80 ficará aguardando trafego (Dentro do Pod)
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Subir a aplicação usando a sala já criada (Namespace):
+#    kubectl apply -f 02-pod.yaml
+#
+# 2. Assistir o estado dele criando até mudar para Running:
+#    kubectl get pods -n meu-primeiro-projeto -w
+#
+# 3. Ver detalhes brutais internos do Pod:
+#    kubectl describe pod meu-primeiro-pod -n meu-primeiro-projeto
+#
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# Se a imagem quebrar ou estiver digitada errada ("nginxx:123"), o Kubernetes fará várias 
+# retentativas em loop. 
+#   - O status do pod ficará: 'ImagePullBackOff' ou 'ErrImagePull'. 
+# Outro Erro Mestre: 'CrashLoopBackOff'. Isso significa que baixou e rodou o app, mas o app 
+# retornava um erro "Fatal" de código e fechava na hora em que tentava dar BOOT, então o 
+# K8s morria e tentava subir de novo infinitamente. Para ver o erro exato:
+#   kubectl logs meu-primeiro-pod -n meu-primeiro-projeto
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# Quando utilizar vários containers em 1 único Pod? (Padrão Sidecar)
+# Juniors nunca fazem isso, Seniors amam! Exemplo: Um container (Site PHP antigo) gera 
+# logs em um arquivo físico no disco. Você pode botar um 2º container levíssimo (como Promtail / Fluentbit) 
+# rodando NO MESMO POD apenas para ler aquele arquivo do primeiro container e jogar na nuvem, 
+# já que eles compartilham o mesmo volume automaticamente por estarem juntos.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Se eu der um scale-up de Memória RAM na minha própria máquina enquanto meu 
+# Pod está rodando e reiniciá-lo, o Pod manterá o seu IP atual?"
+# Resposta Esperada: "Não. O Pod é fundamentalmente efêmero (mortal e descartável). 
+# Quando ele reinicia ou morre, um novo IP interno é assinado a ele de forma dinâmica 
+# pelo cluster. Depender do IP duro de um Pod fatalmente quebra infraestruturas. Devemos usar Services."

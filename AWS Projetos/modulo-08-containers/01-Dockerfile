@@ -1,0 +1,75 @@
+FROM python:3.12-slim
+
+# ============================================================
+# ARQUIVO: 01-Dockerfile
+# O QUE FAZ: Cria uma imagem Docker de uma API Flask simples
+#
+# CAMADAS DO DOCKER (layers):
+# Cada instrução cria uma camada. Docker cacheia camadas não-modificadas.
+# ORDEM IMPORTA: coloque o que muda menos PRIMEIRO (requirements)
+#                e o que muda mais DEPOIS (código fonte)
+# ISSO FAZ: rebuild muito mais rápido!
+#
+# BEST PRACTICES incluídas:
+#   1. Usuário não-root (segurança)
+#   2. Requirements antes do código-fonte (cache eficiente)
+#   3. .dockerignore para não copiar arquivos desnecessários
+#   4. HEALTHCHECK para o ECS monitorar se está vivo
+#   5. Imagem slim para menor tamanho
+# ============================================================
+
+# ARGUMENTO DE BUILD — pode ser passado em docker build --build-arg
+ARG PYTHON_VERSION=3.12
+
+# IMAGEM BASE — python:3.12-slim vs python:3.12-alpine vs python:3.12
+# slim:   Debian minimal (~150 MB) — melhor compatibilidade de bibliotecas
+# alpine: Alpine Linux (~50 MB) — menor, mas pode ter problemas con wheels C
+# full:   Debian completo (~900 MB) — quando precisar de ferramentas extras
+FROM python:3.12-slim
+
+# METADADOS da imagem (padrão OCI - Open Container Initiative)
+LABEL maintainer="AWS Learning <aprendizado@example.com>"
+LABEL version="1.0.0"
+LABEL description="API Flask para demonstração AWS ECS Fargate"
+
+# VARIÁVEIS DE AMBIENTE — disponíveis durante build E runtime
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    APP_PORT=8080 \
+    APP_ENV=production \
+    PYTHONPATH=/app
+
+# USUÁRIO NÃO-ROOT — boa prática de segurança!
+# Containers que rodam como root são um risco de segurança enorme.
+RUN groupadd --gid 1001 appgroup && \
+    useradd --uid 1001 --gid 1001 --no-create-home --shell /bin/false appuser
+
+# DIRETÓRIO DE TRABALHO
+WORKDIR /app
+
+# INSTALAÇÃO DE DEPENDÊNCIAS — ANTES de copiar o código
+# Assim, se só o código mudar, o Docker reutiliza esta camada cacheada
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# COPIA O CÓDIGO — por último para maximizar uso do cache
+COPY --chown=appuser:appgroup . .
+
+# TROCA PARA USUÁRIO NÃO-ROOT
+USER appuser
+
+# EXPÕE A PORTA — apenas documentação! Não abre porta na máquina host.
+# A abertura de porta é feita no docker run -p ou no ECS Task Definition.
+EXPOSE 8080
+
+# HEALTHCHECK — ECS usa isso para saber se o container está saudável
+# Se falhar 3 vezes: container é marcado como unhealthy → restart
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
+
+# COMANDO DE INICIALIZAÇÃO
+# Use ENTRYPOINT + CMD para flexibilidade:
+#   ENTRYPOINT: não sobrescrito facilmente
+#   CMD: pode ser sobrescrito em docker run ou ECS task override
+CMD ["python", "02-app.py"]

@@ -1,0 +1,30 @@
+# ============================================================
+# GABARITO: COMPOSE DE DESENVOLVIMENTO
+# Usado pelos Junior locais pra subirem a API pra dev de frontend 
+# na máquina deles com Reload ativo do codigo js via Bind Volume.
+# ============================================================
+
+version: "3.8"
+
+services:
+  api:
+    # Eles dao Build na hora na maquina do Estagiario
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      # O Cache usa esse endpoint com dns name
+      REDIS_HOST: cacheador
+    volumes:
+      # Modificados no host local (ex: usando VsCode) sobem diretos por cima do código copiado via COPY (Mas nao recarregam o daemon do node sem pm2/nodemon)
+      - .:/app
+      # Hack senior: Garante q o mapeamento acima nao destrua de fora pra dentro as modulos q o node instalou em ram/tmp no build la dentro.
+      - /app/node_modules
+    depends_on:
+      cacheador:
+        condition: service_started
+
+  cacheador:
+    image: redis:alpine
+    # Cache por definicao eh volatil, nao precisamos atachar named volumes nem guardar nada quando roda down aqui.
+

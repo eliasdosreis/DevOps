@@ -1,0 +1,23 @@
+---
+# ==============================================================
+# ARQUIVO: roles/webserver/tasks/main.yml
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Este arquivo é o "índice" das tarefas da role.
+# Em vez de colocar TUDO aqui, dividimos em arquivos menores.
+# "import_tasks" = incluir outro arquivo de tarefas.
+# É como um livro que referencia capítulos separados!
+# ==============================================================
+
+# Capítulo 1: Instalar pacotes
+- name: "Importar tarefas de instalação"
+  ansible.builtin.import_tasks: instalar.yml
+
+# Capítulo 2: Configurar o servidor
+- name: "Importar tarefas de configuração"
+  ansible.builtin.import_tasks: configurar.yml
+
+# Capítulo 3: Garantir que está rodando
+- name: "Importar tarefas de serviço"
+  ansible.builtin.import_tasks: servico.yml

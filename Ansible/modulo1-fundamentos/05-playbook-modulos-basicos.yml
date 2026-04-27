@@ -1,0 +1,103 @@
+---
+# ==============================================================
+# ARQUIVO: 05-playbook-modulos-basicos.yml
+# MÓDULO 1 - Fundamentos
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Módulos são como FERRAMENTAS na caixa do mecânico.
+# Chave de fenda, martelo, alicate = cada um faz uma coisa.
+# apt = instala programas | copy = copia arquivos | service = gerencia serviços
+#
+# ▶️  COMO RODAR (como root/sudo):
+# ansible-playbook -i 02-inventory-grupos.ini 05-playbook-modulos-basicos.yml -K
+# ==============================================================
+
+- name: "Módulos Básicos Essenciais do Ansible"
+  hosts: localhost
+  # "become: true" = rodar como administrador (sudo)
+  # É como pedir permissão de administrador no Windows
+  become: true
+  gather_facts: true  # Agora SIM coletamos informações do servidor
+
+  tasks:
+
+    # ---- MÓDULO: debug ------------------------------------------
+    # Serve para mostrar mensagens e valores de variáveis
+    - name: "DEBUG - Mostrar sistema operacional"
+      ansible.builtin.debug:
+        # ansible_distribution = variável automática com nome do SO
+        msg: "Sistema: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+
+    # ---- MÓDULO: command ----------------------------------------
+    # Roda qualquer comando no terminal do servidor
+    - name: "COMMAND - Ver usuário atual"
+      ansible.builtin.command:
+        cmd: whoami  # Comando Linux: mostra o usuário logado
+      # "register" guarda o resultado em uma variável chamada "usuario"
+      register: usuario
+      # "changed_when: false" = não marca como "mudou algo" (só leitura)
+      changed_when: false
+
+    - name: "DEBUG - Mostrar usuário"
+      ansible.builtin.debug:
+        # ".stdout" pega a saída de texto do comando
+        msg: "Rodando como: {{ usuario.stdout }}"
+
+    # ---- MÓDULO: shell ------------------------------------------
+    # Como "command" mas aceita pipes (|) e redirecionamentos (>)
+    - name: "SHELL - Contar arquivos na pasta /tmp"
+      ansible.builtin.shell:
+        cmd: ls /tmp | wc -l  # Lista /tmp e conta as linhas
+      register: qtd_arquivos
+      changed_when: false
+
+    - name: "DEBUG - Quantidade de arquivos em /tmp"
+      ansible.builtin.debug:
+        msg: "Arquivos em /tmp: {{ qtd_arquivos.stdout }}"
+
+    # ---- MÓDULO: file -------------------------------------------
+    # Cria/remove arquivos e pastas, muda permissões
+    - name: "FILE - Criar pasta de trabalho"
+      ansible.builtin.file:
+        path: /tmp/ansible-demo    # Caminho da pasta
+        state: directory           # "directory" = criar como pasta
+        mode: '0755'               # Permissões (rwxr-xr-x)
+        owner: root                # Dono da pasta
+        group: root                # Grupo da pasta
+
+    # ---- MÓDULO: copy -------------------------------------------
+    # Copia arquivos do seu computador para o servidor
+    - name: "COPY - Criar arquivo de configuração"
+      ansible.builtin.copy:
+        # "content" = escreve o texto diretamente (sem precisar de arquivo local)
+        content: |
+          # Arquivo criado pelo Ansible
+          app_name=MinhaApp
+          versao=1.0
+          ambiente=producao
+        dest: /tmp/ansible-demo/config.txt  # Onde salvar no servidor
+        mode: '0644'                         # Permissões do arquivo
+
+    # ---- MÓDULO: lineinfile -------------------------------------
+    # Adiciona, remove ou modifica UMA linha específica em um arquivo
+    - name: "LINEINFILE - Adicionar nova linha no config"
+      ansible.builtin.lineinfile:
+        path: /tmp/ansible-demo/config.txt
+        line: "data_criacao={{ ansible_date_time.date | default('hoje') }}"
+        # "create: true" = cria o arquivo se não existir
+        create: true
+
+    # ---- MÓDULO: stat -------------------------------------------
+    # Verifica informações de um arquivo (existe? é pasta? tamanho?)
+    - name: "STAT - Verificar se arquivo existe"
+      ansible.builtin.stat:
+        path: /tmp/ansible-demo/config.txt
+      register: info_arquivo
+
+    - name: "DEBUG - Mostrar informações do arquivo"
+      ansible.builtin.debug:
+        msg:
+          - "Arquivo existe: {{ info_arquivo.stat.exists }}"
+          - "Tamanho: {{ info_arquivo.stat.size }} bytes"
+          - "É arquivo: {{ info_arquivo.stat.isreg }}"

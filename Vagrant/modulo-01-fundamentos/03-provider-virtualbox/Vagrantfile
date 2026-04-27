@@ -1,0 +1,94 @@
+# ============================================================
+# MÓDULO 1 — PROVIDER VIRTUALBOX (CONFIGURAÇÕES AVANÇADAS)
+# O QUE ESTE ARQUIVO FAZ:
+#   Explora todas as configurações importantes do provider VirtualBox
+#   que um profissional Senior precisa conhecer e saber usar.
+#   Propósito: dominar as opções do provider VirtualBox.
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-provider-avancado"
+
+  # -----------------------------------------------------------
+  # SEÇÃO: CONFIGURAÇÕES DO VIRTUALBOX
+  # Tudo dentro deste bloco é específico do VirtualBox
+  # Se mudar para VMware, essas configs não se aplicam
+  # -----------------------------------------------------------
+  config.vm.provider "virtualbox" do |vb|
+
+    # Nome visível na interface gráfica do VirtualBox
+    # OPCIONAL — padrão: pasta_do_projeto_timestamp
+    vb.name = "vagrant-provider-avancado"
+
+    # -----------------------------------------------------------
+    # RECURSOS DE HARDWARE
+    # -----------------------------------------------------------
+
+    # Memória RAM em Megabytes
+    # 512  = mínimo para SO básico
+    # 1024 = recomendado para desenvolvimento
+    # 2048 = para apps mais pesadas
+    vb.memory = "1024"
+
+    # Quantidade de CPUs virtuais
+    # Não use mais CPUs do que o seu host físico tem
+    vb.cpus = 2
+
+    # Limitar uso de CPU do host pelo guest em porcentagem
+    # 50 = a VM pode usar no máximo 50% de cada CPU do host
+    # Útil para não travar sua máquina física
+    vb.customize ["modifyvm", :id, "--cpuexecutioncap", "50"]
+
+    # -----------------------------------------------------------
+    # EXIBIÇÃO
+    # -----------------------------------------------------------
+
+    # Abre a janela gráfica do VirtualBox (útil para debug)
+    # false = headless (sem janela) — padrão recomendado
+    vb.gui = false
+
+    # -----------------------------------------------------------
+    # REDE: CONFIGURAÇÕES DO ADAPTADOR (nível VirtualBox)
+    # -----------------------------------------------------------
+
+    # Tipo do adaptador de rede (virtio é o mais performático)
+    # "virtio" = paravirtualizado (melhor performance)
+    # "82540EM" = Intel (melhor compatibilidade)
+    vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
+
+    # -----------------------------------------------------------
+    # ARMAZENAMENTO E PERFORMANCE
+    # -----------------------------------------------------------
+
+    # Tipo de I/O do disco (AHCI = mais compatível, virtio-scsi = mais rápido)
+    # vb.customize ["modifyvm", :id, "--storagectl", "SATA", "--hostiocache", "on"]
+
+    # Habilita o nested virtualization (rodar VMs dentro da VM)
+    # Útil para estudar Kubernetes, Docker, etc. dentro do Vagrant
+    # vb.customize ["modifyvm", :id, "--nested-hw-virt", "on"]
+
+    # -----------------------------------------------------------
+    # LOGGING E DEBUG
+    # -----------------------------------------------------------
+
+    # Nível de verbosidade do VirtualBox (comentado por padrão)
+    # vb.customize ["modifyvm", :id, "--uart1", "0x3F8", "4"]
+
+  end
+
+end
+
+# ============================================================
+# REFERÊNCIA: Listar todas as opções do VirtualBox:
+#   VBoxManage modifyvm --help
+#
+# Ver configurações de uma VM existente:
+#   VBoxManage showvminfo "nome-da-vm"
+#
+# SENIORIDADE:
+#   O bloco vb.customize é a porta de escape para qualquer
+#   configuração que o Vagrant não expõe diretamente.
+#   Tudo que o VBoxManage suporta pode ser usado aqui.
+# ============================================================

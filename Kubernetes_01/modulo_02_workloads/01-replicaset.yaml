@@ -1,0 +1,85 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um ReplicaSet, o componente responsável por garantir que
+# um número específico de cópias de um Pod esteja sempre rodando.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Lembra que o Pod é a nossa "caixa transparente" com o App dentro?
+# Se você der um "kubectl apply" em um Pod sozinho, e ele morrer, ele morre
+# pra sempre.
+# O ReplicaSet é o *Feitor de Fábrica*. Você entrega a ele a planta de um
+# Pod e diz: "Eu quero que existam exatamente 3 réplicas dessa caixa na mesa.
+# Se uma caixa quebrar, crie outra igual". 
+
+# 2. O QUE É (definição técnica Senior)
+# O ReplicaSet (RS) é um objeto controlador que mantém um conjunto estável 
+# de réplicas de um Pod. Ele usa "Label Selectors" para contar os Pods atuais 
+# (loop de reconciliação). Se os Pods correspondentes (vivos e saudáveis)
+# forem menores que o `replicas` desejado, ele instancia mais via `PodTemplate`.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: meu-primeiro-replicaset
+  namespace: meu-primeiro-projeto
+spec:
+  replicas: 3               # Estado Desejado: Quero 3 Pods rodando.
+  selector:                 # Como o RS sabe quais pods ele "Adotou"? (O filtro da prancheta)
+    matchLabels:            # O RS vai buscar no cluster Pods com essas exatas labels
+      app: web-server
+  
+  # COMO ele cria os Pods caso falte algum? (A Planta/Template)
+  template:                 # Perceba que daqui pra baixo é EXATAMENTE um spec de Pod!
+    metadata:
+      labels:               # IMPORTANTE: A label do template tem que "casar" com o selector!
+        app: web-server
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.25 # Versão fixa, boa prática.
+          ports:
+            - containerPort: 80
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplicar o arquivo no cluster:
+#    kubectl apply -f 01-replicaset.yaml
+#
+# 2. Veja que ele gerou 3 pods:
+#    kubectl get pods -n meu-primeiro-projeto
+#
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# Tente APAGAR um dos Pods manualmente p/ "simular uma pane":
+#    kubectl delete pod <nome-do-pod> -n meu-primeiro-projeto
+# Logo em seguida rode "kubectl get pods". Você verá que um novo foi criado 
+# instantaneamente. O ReplicaSet não dorme.
+#
+# Erro fatal de YAML: Se a label do 'selector' for diferente da label
+# do 'template', o Kubernetes recusará a criação, pois senão o RS criaria Pods 
+# "orfãos" que ele mesmo não conseguiria gerenciar.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# O ReplicaSet puro, na prática... NÃO É MUITO USADO na vida real!
+# Por quê? Porque se você precisar ATUALIZAR a `image` de nginx:1.25 para nginx:1.26,
+# o ReplicaSet não reinicia os pods antigos! Ele só cria os novos com a nova 
+# versão SE os antigos morrerem. Essa limitação é contornada subindo mais 
+# um nível de orquestração: O famoso "Deployment", que falaremos no próximo YAML.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Se eu tiver um pod órfão rodando no cluster com a label `app=loja` e 
+# então eu aplicar um ReplicaSet pedindo 3 réplicas com o selector `app=loja`. 
+# Quantos novos pods o ReplicaSet vai criar?"
+# Resposta Esperada: "Apenas 2. O ReplicaSet vai usar seu Labal Selector e 
+# descobrir que já existe 1 pod vivo e saudável satisfazendo o contrato. Então ele 
+# o 'adota' automaticamente e cria apenas os 2 faltantes."

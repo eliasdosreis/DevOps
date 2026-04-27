@@ -1,0 +1,52 @@
+---
+# ==============================================================
+# ARQUIVO: roles/webserver/tasks/instalar.yml
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Este arquivo cuida SÓ da instalação.
+# Como um funcionário especializado: só instala, mais nada!
+# ==============================================================
+
+# Atualizar lista de pacotes (como F5 na loja do celular)
+- name: "Atualizar cache do apt"
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600  # Só atualiza se tiver +1h desatualizado
+  when: ansible_os_family == "Debian"
+
+# Instalar dependências primeiro
+- name: "Instalar pacotes dependentes"
+  ansible.builtin.apt:
+    name: "{{ webserver_dependencias }}"
+    state: present
+  when: ansible_os_family == "Debian"
+
+# Instalar o Nginx (a versão definida nas variáveis)
+- name: "Instalar {{ webserver_pacote }}"
+  ansible.builtin.apt:
+    name: "{{ webserver_pacote }}={{ webserver_versao }}"
+    state: present
+  when:
+    - ansible_os_family == "Debian"
+    - webserver_versao != "latest"
+
+- name: "Instalar {{ webserver_pacote }} (versão mais recente)"
+  ansible.builtin.apt:
+    name: "{{ webserver_pacote }}"
+    state: latest
+  when:
+    - ansible_os_family == "Debian"
+    - webserver_versao == "latest"
+
+# Criar estrutura de diretórios
+- name: "Criar diretórios necessários"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: www-data
+    group: www-data
+  loop: "{{ webserver_diretorios }}"
+  loop_control:
+    label: "{{ item }}"

@@ -1,0 +1,97 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Define "Requests" (Requisições Base) e "Limits" (Limites Máximos)
+# de CPU e Memória RAM para um Container. O Kubernetes precisa 
+# disso para não deixar um App engolir toda a máquina física.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Você vai levar o seu filho numa pizzaria "Rodízio".
+# REQUEST: O Garçom pergunta: "No mínimo, quantos pedaços ele come?". 
+# E você diz: "Ele come garantido uns 3 pedaços". (O K8s vai buscar uma mesa / Nó que tenha no mínimo espaço pra 3).
+# LIMITS: E o Garçom diz: "Mas e se a pizza tiver muito boa, até onde ele come?".
+# E você diz: "Cara, pode deixar ele comer livre o quanto aguentar, mas SE ele chegar
+# no limite de 10 pedaços, VOCÊ CORTA ele e tira ele da pizzaria pra não passar mal!"
+
+# 2. O QUE É (definição técnica Senior)
+# Cgroup (Control Groups) do Linux. O Kubelet diz ao Container Runtime (Docker)
+# que aplique travas duras do kernel na quantidade de `cpu/memory`.
+# Requests = Onde o Kube-Scheduler decide em que Nó da VM ele "Acha" espaço de RAM para colocar seu pod.
+# Limits = O teto de hardware estrito aplicado via CPU Throttling (Estrangulamento) ou OOM Killed.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: meu-pod-com-limites
+  namespace: meu-primeiro-projeto
+spec:
+  containers:
+    - name: api-devora-memoria
+      image: nginx:latest
+      
+      # O Coração do Hardware:
+      resources:
+        # REQUESTS (A GARANTIA BASE)
+        # O Kubernetes SÓ CONTRATARÁ este pod se achar um Nó (Worker) que
+        # tenha NESTE EXATO MOMENTO esses valores sobrando e livres para ele.
+        requests:
+          memory: "128Mi"   # Mebibytes (Aproximadamente 128 MB)
+          cpu: "250m"       # "m" = millicores. Significa 1/4 (0.25) de um núcleo de CPU Física.
+          
+        # LIMITS (O TETO DE PROTEÇÃO DO CLUSTER)
+        # O Container pode "Estourar" até o teto que está aqui. 
+        # Passou disso? Acontecerá coisas muito violentas.
+        limits:
+          memory: "256Mi"   # Seu Java passou de 256mb? Receberá OOM_KILLED (Morte súbita pelo Kernel sem aviso).
+          cpu: "500m"       # Metade de 1 Nucleo (0.5). Passou disso? Ele não morre. A CPU dele ficará "Throttled" lenta/travada.
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplique o pod com limites configurados:
+#    kubectl apply -f 01-resource-limits.yaml
+#
+# 2. Verifique o pod listado e preste atenção no status para ver se não deu PENDING:
+#    kubectl get pods -n meu-primeiro-projeto
+#
+# 3. Use o "describe" pra checar como o k8s agendou (QoS Class):
+#    kubectl describe pod meu-pod-com-limites -n meu-primeiro-projeto | grep QoS
+
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# O erro mais comum do dia-a-dia Kubernetes de Juniors: "O Pod ficou Pending". 
+# Se seu arquivo tivesse Request `memory: 64Gi` (64 Gigabytes de Ram exigido), e o seu 
+# Laptop/Kind tiver só 16Gb Físicos MÁXIMO instalados.... 
+# O Kube-Scheduler não arrumará uma vaga. O Pod ficará eterno no limbo `Pending` 
+# e nos Events constará: "0/1 nodes are available: 1 Insufficient memory".
+# 
+# Pior ainda: `OOMKILLED` (Out of Memory Killed). Você errou feio no Limits (Colocou baixo). 
+# A aplicação (ex Java/NodeJS) tentou crescer sua Heap de ram durante execução, encostou
+# no "Limites Máximos". O Kernel do computador hospede destruiu o Pod sem dó nem restart gracioso.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# Diferente do 'Limit', nós abusamos do 'Request' para manipular a Classificação de  
+# QoS (Quality of Service) nos Momentos de Escassez Extrema de uma VM!
+# Se o Host (O Nó Físico) acabar toda a Memória do hardware, ele começará a matar Pods alheios 
+# indiscriminadamente para o Robô do Kubelet respirar. Se o seu YAML não tiver 'Requests e Limits' declarados,  
+# a QoS do seu Pod será "BestEffort". Ou seja: Ele é o PRIMEIRO inofensivo que o K8s passa a Faca e Mata pra salvar o cluster.
+# Se o seu YAML tiver os requests/limits exatos como ali em cima, ele herda "QoS: Burstable" (Intermediário).
+# Para NUNCA ser morto pelo K8s em escassez, você faria Limits EXATAMENTE iguais ao Requests! "Guaranteed"!
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Para uma aplicação em Java rodando no K8S onde o JVM Heap é Xms e Xmx... 
+# O que causaria menos reinicializações de Morte Súbita no Kubernetes: Cortar a CPU via Limit, 
+# ou cortar a Memória RAM via Limit?"
+# Resposta Esperada: "A CPU é um recurso compressível (Throttleable). Se o Java estourar 
+# o Limit de CPU dele (os 500m), o kernel aplica CFS Quotas e deixa o java lento mas NÂO O MATA  
+# O tempo de resposta cairá vertiginosamente, mas ele ficará vivo. Já a RAM é baseada em Páginas 
+# (Recurso Incompressível). Se ele bater nos 256Mi o SystemD mandará SIGKILL absoluto resultando 
+# em um Restart total perdendo até conexões vivas OOM."

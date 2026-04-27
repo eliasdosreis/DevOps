@@ -1,0 +1,99 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Define a Startup Probe ("Sonda de Inicialização Lenta").
+# O recurso inventado na arquitetura Kubernetes 1.16+ 
+# pra salvar os Legados Lentos, Java Antigos e grandes blocos da morte prematura.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# A sonda base Liveness era quem? "O cara perguntando pro vigia a cada 10 segs, Acordou?".
+# A Readiness Probe ? "Painel de atendimento: Já ligo o PC Verde?".
+#
+# E a Mágica **Startup Probe**? Ela é o RH Da Empresa conversório. ELA ATUA ANTES de todos!
+# Imagina uma empresa cujo o Funcionário Novato é muito burro, e demore exatos 
+# DUAS HORAS pra conseguir fazer o Login no Windows antes de ficar "Pronto" pro sistema.
+# O "Liveness" mataria ele nos primeiros 5 mins de boot como aprendemos.
+# O **Startup Probe** assume e silencia Todo Mundo!. A Startup coloca a mão na arma do liveness
+# e diz: "Escutem as duas sondas atrasadas. Fiquem mutadas!!! O cara ta baixando gigas 
+# da internet da aplicação enorme, deem a ele DUAS HORAS.
+# SE ele responder que ta 200 OK finalizado nestas duas horas. AI SIM EU PASSO O BASTÃO 
+# DE GRAÇA pra vocês assumirem o loop natural".
+
+# 2. O QUE É (definição técnica Senior)
+# A StartupProbe protege Pods de inicialização pesada LENTA contra o próprio Kubelet matando-os
+# antes deles terminarem o boot e irem pro LivenessProbe (que tem timer impaciente). 
+# Caso ela engatilhe como SUCESSO. Ela desliga e some com louvor permanentemente, 
+# liberando a gestão do container para Liveness e Readiness. (Temos as 3 sondas atuando com escopo diferente).
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: container-super-legado-lento
+  namespace: meu-primeiro-projeto
+spec:
+  containers:
+    - name: java-gigantesco-ee
+      image: openjdk:11        # Imagem Gordinha pesada
+      command: ["/bin/sh", "-c", "echo Iniciando Tomcat Lento de 2 Minutos...; sleep 120; echo Acabei!; sleep 1000000"]
+      
+      # MÁGICA: A SONDA DE SHIELD INICIAL ("Cala boca geral do Liveliness que o Monstro ta Acordando")
+      startupProbe:
+        exec:
+          # Um comando bash maroto apenas pra não depender der webservice e testar logica bruta 
+          command:
+            - cat
+            - /tmp/arquivo-feito-quando-concluir-tudo.txt  # So existiria no final do tempo obvio (Mas nao deixei a criacao nesse log para provarmos o timeout falhando abaixo de proposito test).
+        # "Eu a startup sonda, vou checar até 30 vezzes, em loopings de 10 segs cada". (Ou seja 30x10= 300 segundos, O app tem CINCO minutos totais de Imunidade garantida pra nascer e acordar!
+        failureThreshold: 30
+        periodSeconds: 10
+        
+      # Só atuarão SE E SOMENTE SE o startup de cima bater sinal verde. 
+      livenessProbe:
+        exec:
+          command: ["cat", "/etc/os-release"]
+        initialDelaySeconds: 5  # < Nao existe mais o porquê chutar prazos grotescos aqui no unltialDelay mais! Fica limpo
+        periodSeconds: 10
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Empurre a infraestrutura lentíssima:
+#    kubectl apply -f 04-startup-probe.yaml
+#
+# 2. Liste os containers em vigia (E os eventos logo apos a criacao usando o --watch):
+#    kubectl get pods container-super-legado-lento -n meu-primeiro-projeto -w
+
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# O Troubleshooting não tem segredo, verás Logs nas abas em describe 
+# ("Events: Warning: Startup probe failed....").
+# Importante observar que, SE bater as 30x falhas do tempo imune absurdo dele...  
+# E aí sim se acabar a imunidade e der falha final o kubelet APLICA UM KIIL igualzinho no   
+# LivenessProbe e fará restart infinito da sua VM!
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# Porquê nós inventamos Cãrgos e Sondas diferentes, se o desenvolvedor Junior diz 
+# que "É só injetar *initialDelaySeconds: 300* " na liveness que da no mesmo (!)? 
+#
+# Isso era a GAMBIARRA do passado (!). Um Liveness com `initialDelaySeconds: 500` causa um 
+# efeito catastrófico e danoso silencioso à nuvem. Se sua aplicação "Terminou" de subir e bootoou 
+# brilhantemente em módicos **15 segundos**.  A sua Livelienss/Readiness tem a diretriz de pedra pra ficar travada cega 
+# sem testar nada em ninguem por absurdos `500 segundos (8 minutos!!). A Sua API tá on. Os usuarios tão usando 
+# A API Crsou por Deadlock do mal no minuto nº 2.. E O SEU KUBERNETES NAO VE NADA EM CEGUEIRA POIS TEM 500 SEG.. 
+# Demorando 8 min pra matar e corrigir.
+# Ao usar O STARTUP Probe de 500 seg... se no segudno de n 15 ele bater... O STARUP ABORTA OS TEMPOS DELE E ENCURTA TODO O LOOP PRA PROXIMA!!
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Startup probe executa simultaneamente e concorrentemente com Liveness e Readiness  
+# Probe checando a porta nas tres ferramentas ao mesmo tempo no Container?"
+# Resposta Esperada: "Não. As configurações de Liveness e Readiness Probe ficam completae 
+# e estritamente desativadas (Pausadas e com Bypass Completo) a nível control plane enquanto 
+# o 'StartupProbe' não concluir com marcação final igual a *Sucess=1* pela primeira vez na inicialização"

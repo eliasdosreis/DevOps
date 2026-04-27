@@ -1,0 +1,98 @@
+---
+# ==============================================================
+# ARQUIVO: roles/app/tasks/deploy.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Deploy = "levar a nova versão para produção".
+# Usamos a estratégia de SYMLINK:
+# Guardamos várias versões, e um "atalho" aponta para a atual.
+# Se der errado: muda o atalho para a versão anterior = rollback!
+# É como ter várias fotos e escolher qual exibir no porta-retrato.
+# ==============================================================
+
+# Definir nome único desta release (data + hora = sempre diferente)
+- name: "App Deploy: Definir nome da release"
+  ansible.builtin.set_fact:
+    # Ex: "20240315_143022" - cada deploy tem nome único!
+    release_name: "{{ ansible_date_time.date | replace('-','') }}_{{ ansible_date_time.time | replace(':','') }}"
+    release_path: "{{ app_dir }}/releases/{{ ansible_date_time.date | replace('-','') }}_{{ ansible_date_time.time | replace(':','') }}"
+
+- name: "App Deploy: Pasta desta release: {{ release_name }}"
+  ansible.builtin.debug:
+    msg: "📦 Deployando release: {{ release_name }} em {{ release_path }}"
+
+# Criar pasta específica para esta versão
+- name: "App Deploy: Criar pasta da release"
+  ansible.builtin.file:
+    path: "{{ release_path }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ app_usuario }}"
+    group: "{{ app_grupo }}"
+
+# Clonar código do repositório Git
+# "version" = branch, tag ou commit hash
+- name: "App Deploy: Clonar repositório"
+  ansible.builtin.git:
+    repo: "{{ app_repo }}"
+    dest: "{{ release_path }}"
+    version: "{{ app_branch }}"   # Branch definido nas variáveis
+    force: true                    # Sobrescrever mudanças locais
+    depth: 1                       # Shallow clone (mais rápido, só o último commit)
+  become_user: "{{ app_usuario }}"
+  become: true
+  ignore_errors: true  # Ignorar erro se repositório não existir (demo)
+  register: git_result
+
+- name: "App Deploy: Status do clone"
+  ansible.builtin.debug:
+    msg: "Git: {{ git_result.msg | default('Repositório clonado/atualizado') }}"
+
+# Criar arquivo .env da aplicação com variáveis do vault
+- name: "App Deploy: Criar arquivo de ambiente (.env)"
+  ansible.builtin.template:
+    src: app.env.j2
+    dest: "{{ release_path }}/.env"
+    mode: '0600'           # Apenas o dono lê! (contém senhas)
+    owner: "{{ app_usuario }}"
+    group: "{{ app_grupo }}"
+
+# Instalar dependências Python em ambiente virtual
+- name: "App Deploy: Criar virtualenv Python"
+  ansible.builtin.command:
+    cmd: "python3 -m venv {{ release_path }}/venv"
+    creates: "{{ release_path }}/venv"  # Só cria se ainda não existe
+  become_user: "{{ app_usuario }}"
+  become: true
+
+# Atualizar symlink "current" para apontar para a nova release
+# O Nginx e o systemd sempre apontam para "current"
+# Para rollback: basta mudar o symlink para release anterior!
+- name: "App Deploy: Atualizar symlink current → nova release"
+  ansible.builtin.file:
+    src: "{{ release_path }}"      # Aponta para a nova release
+    dest: "{{ app_dir }}/current"  # O symlink chamado "current"
+    state: link                    # Tipo: link simbólico (atalho)
+    force: true                    # Sobrescrever symlink anterior
+  notify:
+    - Reiniciar app
+    - Reiniciar nginx
+
+# Limpar releases antigas (guardar só as últimas 5)
+- name: "App Deploy: Listar releases existentes"
+  ansible.builtin.find:
+    paths: "{{ app_dir }}/releases"
+    file_type: directory
+  register: releases_existentes
+
+- name: "App Deploy: Remover releases antigas (manter 5 últimas)"
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  # Ordenar por data de modificação, pegar as mais antigas
+  loop: "{{ (releases_existentes.files | sort(attribute='mtime'))[:-5] }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when: releases_existentes.files | length > 5

@@ -1,0 +1,91 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Apresenta a versão "Deus Global" das Roles (ClusterRole).
+# Ensina como um administrador dá poderes que afetam a fazenda
+# inteira, e não estritamente para um projeto/sala apenas.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# A `Role` lá do '02.yaml' era o Supervisor de Andar. Você deixava colar pôsters
+# apenas no mural do seu Setor local `Namespace: meu-primeiro-projeto`.
+#
+# O **ClusterRole** é o CRACHÁ C.E.O DO PRÉDIO INTEIRO DA EMPRESA! 
+# Ele é ignorante ao conceito de "Salinhas" ou Namespaces. As regras dele cruzam
+# o servidor inteiro como um trem. Quando você veste um Bind desse paple CE.O, 
+# se sua regra diz MATA POD, você mata POD do DB Producao, do Dev de casa e até os pods de firewall 
+# do kube-system. Com grandes poderes vêm grandes responsabilidades.
+
+# 2. O QUE É (definição técnica Senior)
+# `ClusterRole` é idêntico em verbologia à de uma Role isolada de sintaxes (ApiGroup/Resources), 
+# com a brutal exclusão do campo 'namespace'. Eles mapeiam direitos à objetos 'Non-Namespaced' 
+# brutos (Ex Node, PV Global) OU concedem regras absoluidas por 'Namespaced Resources' espalhados em todo cluster 
+# (tipo listar TODOS os pods do banco Etcd).
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole                     # (O C.E.O. do Kube inteiro)!
+metadata:                             # (NOTE A AUSENCIA CHOCANTE E NECESSÁRIA DE `NAMESPACE: AQUI`)
+  name: deus-ex-lista-volumes
+rules:
+  - apiGroups: [""]
+  
+    # RECURSO CLUSTER WIDE - (Os discos PVS Globais da AWS/Azure/Kind)
+    resources: ["persistentvolumes"]  # Como esse PV Fisico Fixo nao tem Namespace... so da pra dar grant nele via C.E.O Cluster Role!
+    verbs: ["get", "list", "watch"]   
+    
+  - apiGroups: [""]
+    # Pode dar Get em Nodes Inteiros? SIM!
+    resources: ["nodes"]              
+    verbs: ["get", "list"]            
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Injete a grande regra C.E.O. no seu Kind Cluster global:
+#    kubectl apply -f 04-clusterrole.yaml
+#
+# 2. Olhe a grande listar de poderes globais escondidos dos robos originais do k8s q estao lado a lado
+#    com o seu (São mais de 50 originais de sistema):
+#    kubectl get clusterroles
+#
+# COMO EU USO O C.E.O?
+# Assim como a Role tinha o "RoleBinding". 
+# O "ClusterRole" exige um `kind: ClusterRoleBinding` (pra vestir a roupa no mundo 
+# global). Nós não criaremos um pra evitar sujar a raiz do seu teste pessoal... mas a sintaxe é IDENTICA .
+
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# Maior furo de segurança Junior das empresas: Eles tentam amarrar Usuários e Robôs 
+# na mais temida Role de Todo K8s que vem Padrão Original... O famoso: `cluster-admin`.
+# Dar a clusterRole de `cluster-admin` (Deus-SysRoot completo) via um Binding num POD
+# que tá expondo o Container Python num ingress online é sentença de Jailbreak.  
+# Um bug de Injection de parametro num Bashzinho / shellzinho do Python e vc perde controle do k8s AWS .
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# O Segredo sujo e malandrinho do Kubernetes:
+# Posso usar uma GRANDE REGRA C.E.O DO MUNDO INteiro (ClusterRole) para servir uma  
+# roupinha local do Andarzinho pequeno de `RoleBinding`?  
+#
+# Absolutamente SIM! E é a melhor pratica do universo SR! Se você crias o ClusterRole  
+# 'poder-ver-pods', e usar um 'RoleBinding local no RH' atrelando a ela em vez do ClusterRoleBinding.  
+# Você CASTRA o poder do C.E.O forçadamente apenas ao escopo isolado do seu namespace!
+# A utilidade? As empresas criam apenas 4 ClusterRoles limpos de matriz base 
+# "View-All, Edit-All, Deploy-Only, Logs-Only". E todas as 40 squads espalhadas usam 
+# `RoleBinding` locais referenciando aquela unica ClusterRole mestre central. Economiza milhares de yams Role por pastas!
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Se tivéssemos 2 objetos aplicados separados onde no "RoleBinding" local restrito
+#  está proibindo ver Segredos. E num "ClusterRoleBinding" acidental atrelado global 
+# as regras estao cedendo ver Segredos para a mesma pessoa.. E a pessoa executar um 
+# comando na namespace de Dev... Ela consegue ler o Secret ou o Local Sobrepõe Proibindo?"
+# Resposta Esperada: "Lembrando a Lei Matriz de Permissao de K8s: - Não existe DENY -.
+# As perms do K8s não se sobrepõem e nem desfazem uma à outra. Elas SÃO 100% ADITIVAS (Union Array).
+# O acesso Global garantiu o Yes de ler. O Local não citou (seria bloqueio). Logo, A Adição Union prevalece 
+# com resultado = True, YES. Ele lerá os segredos perigososamente global. Cuidado nas misturas globais!"

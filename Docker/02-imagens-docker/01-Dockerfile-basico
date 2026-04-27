@@ -1,0 +1,37 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Define uma receita padrão engessando o melhor uso de camadas de cache 
+# em um sistema moderno NodeJS com o uso de chroot, volumes temporarios e permições básicas.
+# ============================================================
+
+# 1. IMAGEM BASE (Puxa do Docker Hub).
+# "alpine" é uma distro minúscula especializada e com security surface pequena!
+FROM node:20-alpine
+
+# 2. DEFINIÇÃO DA "PASTA INICIAL" 
+# Equivalente a mandar o terminal dar um "mkdir /app && cd /app" em tempo de build
+WORKDIR /app
+
+# 3. MANUTENÇÃO DE CACHE DE DEPENDENCIAS SENIOR
+# Copiamos SOMENTE os manifestos de depedencia de projeto (1).
+# Em seguida, rodamos o comando que baixa megabytes eternos (2).
+# Desta fora, se você alterar codigo abaixo.. isso jamais rodará novamente
+# e voce ganhará anos da sua vida de brinde.
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+# 4. VOLATILIDADE
+# Seu código, que você salva a todo momento num CTRL+S 
+# Fica no rodapé do documento.
+COPY . .
+
+# 5. DOCUMENTAÇÃO HUMANA
+# Isso aqui de baixo é 100% INUTIL tecnicamente falando.
+# Server unicamente para um humano bater o olho e ja saber que o processo
+# la dentro vai pendurar o socket HTTP nesta bendita porta. Facilita sua vida.
+EXPOSE 3000
+
+# 6. PONTO DE VIDA / START
+# Como se alguem executasse com teclado dentro dessa bolha.
+# Pode ser sobescrito caso queira debugar o container em build na unha.
+CMD ["node", "server.js"]

@@ -1,0 +1,260 @@
+# ============================================================
+# ARQUIVO: 05-lambda-deploy.yaml
+# O QUE FAZ: Deploy completo da função Lambda via CloudFormation
+#
+# ESTE TEMPLATE CRIA:
+#   1. Role IAM para a Lambda (Execution Role)
+#   2. Log Group no CloudWatch (para os logs)
+#   3. A função Lambda em si
+#   4. Permission para S3 invocar a Lambda (para o trigger)
+#
+# CUSTO: $0.00 — Free Tier: 1M invocações + 400k GB-segundo/mês
+# PRÉ-REQUISITO: Bucket S3 criado (Módulo 1)
+# CONCEITO NOVO: AWS::Lambda::Function, Code inline vs S3, Layers
+# ============================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  MÓDULO 2 - PASSO 5: Função Lambda completa com Role IAM e CloudWatch Logs.
+  Deploy de Lambda com código inline (para funções simples) ou via S3.
+  Conceitos: Lambda Function, Execution Role, Log Group, Environment Variables
+
+Parameters:
+
+  NomeFuncao:
+    Type: String
+    Description: Nome da função Lambda
+    Default: lambda-hello-modulo02
+
+  NomeBucket:
+    Type: String
+    Description: Bucket S3 para triggers e leitura/escrita
+  
+  Ambiente:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  
+  MemoriaLambda:
+    Type: Number
+    Description: Memória em MB (128-10240). CPU escala proporcionalmente!
+    Default: 128
+    AllowedValues: [128, 256, 512, 1024, 2048]
+  
+  TimeoutSegundos:
+    Type: Number
+    Description: Timeout em segundos (máximo 900 = 15 minutos)
+    Default: 30
+    MinValue: 1
+    MaxValue: 900
+
+Resources:
+
+  # ----------------------------------------------------------
+  # RECURSO 1: CloudWatch Log Group
+  # Crie ANTES da Lambda para controlar a retenção de logs!
+  # Se não criar, a Lambda cria automaticamente com retenção INFINITA
+  # (logs infinitos = custo infinito em produção!)
+  # ----------------------------------------------------------
+  LogGroupLambda:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      # IMPORTANTE: O nome DEVE ser /aws/lambda/{NomeDaFuncao}
+      LogGroupName: !Sub "/aws/lambda/${NomeFuncao}"
+      
+      # Retenção de logs: quanto tempo guardar os logs?
+      # 7 dias para dev, 30 para staging, 90 para prod (ou mais)
+      RetentionInDays: !If
+        - EhProducao
+        - 90        # 90 dias em produção
+        - 7         # 7 dias em dev/staging
+      
+      Tags:
+        Modulo: "02-Lambda"
+        Ambiente: !Ref Ambiente
+
+  # ----------------------------------------------------------
+  # RECURSO 2: Role IAM da Lambda (Execution Role)
+  # ----------------------------------------------------------
+  RoleLambda:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "role-${NomeFuncao}-${Ambiente}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: AcessoS3
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [s3:GetObject, s3:PutObject, s3:ListBucket, s3:HeadObject]
+                Resource:
+                  - !Sub "arn:aws:s3:::${NomeBucket}"
+                  - !Sub "arn:aws:s3:::${NomeBucket}/*"
+      Tags:
+        - Key: Modulo
+          Value: "02-Lambda"
+
+  # ----------------------------------------------------------
+  # RECURSO 3: A função Lambda em si
+  # ----------------------------------------------------------
+  MinhaLambda:
+    Type: AWS::Lambda::Function
+    DependsOn: LogGroupLambda    # Garante que o Log Group existe primeiro
+    Properties:
+    
+      FunctionName: !Ref NomeFuncao
+      
+      # --------------------------------------------------------
+      # RUNTIME — qual linguagem/versão usar
+      # python3.12, nodejs20.x, java21, go1.x, dotnet8, ruby3.3
+      # --------------------------------------------------------
+      Runtime: python3.12
+      
+      # --------------------------------------------------------
+      # HANDLER — "arquivo.função"
+      # Para código inline: "index.handler"
+      # Para código em S3: "pasta/arquivo.funcao"
+      # --------------------------------------------------------
+      Handler: index.handler
+      
+      # --------------------------------------------------------
+      # ROLE — a Role IAM desta Lambda (criada acima)
+      # !GetAtt pega o ARN da Role
+      # --------------------------------------------------------
+      Role: !GetAtt RoleLambda.Arn
+      
+      # --------------------------------------------------------
+      # CODE — onde está o código da Lambda?
+      # OPÇÃO 1: Inline (máximo 4096 bytes — só para funções simples)
+      # OPÇÃO 2: ZipFile em S3 (para código maior ou com dependências)
+      # --------------------------------------------------------
+      Code:
+        # CÓDIGO INLINE — para demonstração; em produção use S3
+        # Substitua por Code: S3Bucket/S3Key/S3ObjectVersion para código real
+        ZipFile: |
+          import json
+          import logging
+          import os
+          from datetime import datetime
+          
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+          
+          AMBIENTE = os.environ.get('AMBIENTE', 'dev')
+          BUCKET_NOME = os.environ.get('BUCKET_NOME', 'desconhecido')
+          
+          def handler(event, context):
+              logger.info("Evento: %s", json.dumps(event))
+              
+              resposta = {
+                  'mensagem': f'Lambda funcionando em {AMBIENTE}!',
+                  'funcao': context.function_name,
+                  'bucket_configurado': BUCKET_NOME,
+                  'timestamp': datetime.utcnow().isoformat() + 'Z',
+                  'evento_recebido': event
+              }
+              
+              logger.info("Resposta: %s", json.dumps(resposta))
+              
+              return {
+                  'statusCode': 200,
+                  'headers': {'Content-Type': 'application/json'},
+                  'body': json.dumps(resposta, ensure_ascii=False)
+              }
+      
+      # --------------------------------------------------------
+      # PERFORMANCE — Memória e CPU
+      # DICA SÊNIOR: Mais memória = mais CPU = execução mais rápida
+      # Pode ser mais BARATO usar 512MB se executar em 200ms
+      # do que 128MB executando em 800ms (mesmo custo GB-segundo)
+      # --------------------------------------------------------
+      MemorySize: !Ref MemoriaLambda   # MB (128 até 10.240)
+      Timeout: !Ref TimeoutSegundos    # Segundos (1 até 900)
+      
+      # --------------------------------------------------------
+      # ENVIRONMENT VARIABLES — Configurações da função
+      # NUNCA coloque senha/chave aqui! Use Secrets Manager.
+      # Estes valores são visíveis para qualquer um com acesso à Lambda.
+      # --------------------------------------------------------
+      Environment:
+        Variables:
+          AMBIENTE: !Ref Ambiente
+          BUCKET_NOME: !Ref NomeBucket
+          LOG_LEVEL: !If [EhProducao, INFO, DEBUG]
+          MODULO: "02-Lambda"
+      
+      # --------------------------------------------------------
+      # ARQUITETURA — x86_64 ou arm64 (Graviton2)
+      # arm64 é ~20% mais barato e em muitos casos mais rápido!
+      # --------------------------------------------------------
+      Architectures:
+        - arm64    # Graviton2 — melhor custo-benefício
+      
+      # --------------------------------------------------------
+      # DEAD LETTER CONFIG — Para invocações assíncronas (S3, SNS, etc.)
+      # Se a Lambda falhar 2 vezes, o evento vai para esta fila SQS
+      # Sem DLQ: eventos com erro são PERDIDOS silenciosamente!
+      # --------------------------------------------------------
+      # DeadLetterConfig:
+      #   TargetArn: !Sub "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:fila-dlq"
+      
+      Tags:
+        Modulo: "02-Lambda"
+        Ambiente: !Ref Ambiente
+        ManagedBy: CloudFormation
+
+  # ----------------------------------------------------------
+  # RECURSO 4: Permissão para S3 invocar a Lambda
+  # Sem este recurso, S3 não pode chamar a Lambda (mesmo com trigger)
+  # "Resource-based Policy" — diferente de "Identity-based Policy"
+  # ----------------------------------------------------------
+  PermissaoS3InvocarLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref MinhaLambda
+      Action: lambda:InvokeFunction          # Permissão de invocar
+      Principal: s3.amazonaws.com            # Quem pode invocar: serviço S3
+      SourceArn: !Sub "arn:aws:s3:::${NomeBucket}"   # Apenas ESTE bucket
+      SourceAccount: !Ref AWS::AccountId     # Apenas da SUA conta (segurança!)
+
+# ============================================================
+# CONDITIONS — Lógica condicional no CloudFormation
+# ============================================================
+Conditions:
+  EhProducao: !Equals [!Ref Ambiente, "prod"]
+
+Outputs:
+
+  ARNLambda:
+    Description: ARN da função Lambda
+    Value: !GetAtt MinhaLambda.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-lambda-arn"
+
+  NomeLambda:
+    Description: Nome da função Lambda
+    Value: !Ref MinhaLambda
+    Export:
+      Name: !Sub "${AWS::StackName}-lambda-nome"
+
+  ComandoInvocar:
+    Description: Comando CLI para invocar a Lambda
+    Value: !Sub |
+      aws lambda invoke \
+        --function-name ${NomeFuncao} \
+        --payload '{"nome": "Estudante", "linguagem": "pt-BR"}' \
+        --cli-binary-format raw-in-base64-out \
+        /tmp/resposta.json && cat /tmp/resposta.json
+
+  URLLogs:
+    Description: Link para os logs no CloudWatch
+    Value: !Sub "https://console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#logsV2:log-groups/log-group//aws/lambda/${NomeFuncao}"

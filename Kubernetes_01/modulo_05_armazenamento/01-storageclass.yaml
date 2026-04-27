@@ -1,0 +1,85 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Apresenta a classe de armazenamento (StorageClass). 
+# Basicamente ensina o Kubernetes quais provedores de disco 
+# existem na Infraestrutura (Ex: "SSD Super Rápido AWS", "HDD Lento").
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Você vai montar um PC na loja de informática. Você diz ao  
+# vendedor: "Quero 1 TB de disco, mas precisa ser NVMe hiper rápido".
+# O StorageClass é a "Vitrine" da loja de informática. Ele é o menu que diz 
+# ao K8s quais tipos de Discos Rígidos ele sabe provisionar na vida real.
+# Você pode ter um StorageClass chamado "disco-barato" (Lento, usado pra logs) e um
+# outro chamado "ssd-premium" (Caro, usado pra Banco de Dados Postgres).
+
+# 2. O QUE É (definição técnica Senior)
+# StorageClass (SC) fornece aos administradores do cluster uma forma de descrever  
+# as "classes" (tiers) de armazenamento que oferecem. Os SCs encapsulam os provisioners 
+# dinâmicos nativos (como `kubernetes.io/aws-ebs` para AWS EBS, ou drivers modernos CSI). 
+# Quando um usuário submete um yaml pedindo um disco, ele cita qual StorageClass de I/O
+# ele quer.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  # É esse nome arbitrário que os programadores usarão nos seus arquivos
+  name: disco-veloz-ssd 
+
+# O "provisioner" é o PLUGIN mágico que de fato sabe mandar ordens elétricas 
+# para a sua máquina ou provedor de cloud para "Recortar" e criar a partiçāo.
+# Como usamos Kind/Docker local, usaremos o provisioner oficial de disco host do kind:
+provisioner: rancher.io/local-path 
+
+# RECLAIM POLICY: A linha que separa o Junior do Desemprego!
+# "Delete": Se o desenvolvedor apagar a requisição do disco (O YAML), apaga-se o HD físico para sempre!
+# "Retain": Mesmo se apagarem tudo no soft, o HD continua ocupando espaço físico esperando liberação humana
+reclaimPolicy: Retain 
+
+# Só crie o disco físico na Amazon/VM quando o primeiro Servidor (Pod) fizer boot pedindo ele
+volumeBindingMode: WaitForFirstConsumer
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplicando o cardápio de discos:
+#    kubectl apply -f 01-storageclass.yaml
+#
+# 2. Listando as vitrines de armazenamento disponíveis:
+#    kubectl get storageclass
+#    (Abreviação rápida: `kubectl get sc`).
+#    O Kind já traz um SC "standard" de fábrica! Se você não criar esse acima, 
+#    ele sempre usará o Standard por padrão.
+
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# Não tem muito "Bug" criando StorageClass pq ele apenas registra metadado. 
+# O problema ocorre na hora de INVOCAR a classe. O maior erro arquitetural:
+# Um dev submete um helm chart do banco 'Redis' num yaml e não avisa que precisava 
+# dum StorageClass especifico de SSD. O sistema fallback pro SC (default).
+# Você pode olhar no `get sc` quem tem a tag `(default)` afixado.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# Historicamente os "Provisioners" moravam intrínseca e monoliticiamente DENTRO do  
+# código em C/Go do Kube-Apiserver. Isso impedia empresas tipo a "Dell" de criar um driver de K8s 
+# para seus Storage Array gigantes corporativos a não ser que o projeto open source Kubernetes aceitasse  
+# o código DELES. O modernismo da v1.13 introduziu a arquitetura "CSI" (Container Storage Interface).
+# Hoje o StorageClass só cita "driver: csi.dell.com", e o kube apenas manda 1 RPC pro Plugin solto que interage com os HDs.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Sua arquitetura possui Storage Classes baseadas num array corporativo 
+# de rede (Ex: NFS/EFS na AWS). Porquê seria prudente usar Storage Classes 
+# com a política de `ReclaimPolicy: Retain` para bancos de dados do que `Delete`?"
+# Resposta Esperada: "A configuração `Delete` gera cascata de Exclusão (Cascading Deletion). 
+# Se alguém rodar um comando nocivo como `kubectl delete namespace producao`, ele levará todos os 
+# Deployments e consequentemente os Claims (Requisições) do disco. Com o `Delete`, o K8s fará
+# a chamada assíncrona p/ a Provedor e o disco/volume inteiro físico será destruído, sem chance de dump.
+# Retain garante o "Tombstone" e exige limpeza humana intencional."

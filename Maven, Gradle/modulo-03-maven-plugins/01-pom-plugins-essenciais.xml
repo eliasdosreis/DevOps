@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ============================================================
+  ARQUIVO: 01-pom-plugins-essenciais.xml
+  RENOMEIE PARA: pom.xml
+
+  O QUE ESTE ARQUIVO FAZ:
+  Demonstra os plugins Maven mais importantes e como
+  configurá-los corretamente para projetos Java modernos.
+
+  ANALOGIA:
+  Se o Maven fosse uma fábrica, os PLUGINS seriam as
+  MÁQUINAS da linha de produção. Cada máquina faz um
+  trabalho específico:
+  - Máquina de compilação (maven-compiler-plugin)
+  - Máquina de testes (maven-surefire-plugin)
+  - Máquina de empacotamento (maven-jar-plugin)
+  - Máquina de inspeção de qualidade (maven-enforcer-plugin)
+
+  DEFINIÇÃO TÉCNICA:
+  Plugins são extensões do Maven que fornecem goals que são
+  atrelados às fases do ciclo de vida. Um plugin = um conjunto
+  de goals (tarefas). O Maven em si faz pouco sozinho — quase
+  todo trabalho real é feito por plugins.
+  ============================================================ -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.curso</groupId>
+  <artifactId>hello-plugins</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.1</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <!-- ═══════════════════════════════════════════════════════
+    SEÇÃO: build
+    Contém toda a configuração de BUILD do projeto:
+    - plugins: configurações de plugins
+    - pluginManagement: gestão centralizada de versões de plugins
+    - resources: configuração de recursos
+    - sourceDirectory: onde está o código-fonte
+    ═══════════════════════════════════════════════════════ -->
+  <build>
+
+    <!-- ─────────────────────────────────────────────────────
+      pluginManagement: define VERSÕES de plugins centralmente
+      Similar ao dependencyManagement para dependências.
+      Os plugins declarados aqui não são ADICIONADOS ao build
+      automaticamente — apenas definem a versão padrão.
+      Muito útil em projetos multi-módulo (Módulo 4).
+      ───────────────────────────────────────────────────── -->
+    <pluginManagement>
+      <plugins>
+        <!-- Define versões dos plugins core do Maven -->
+        <!-- O Maven tem versões padrão mas podem ser antigas! -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.12.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.2.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.3.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>3.4.1</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <!-- ─────────────────────────────────────────────────────
+      plugins: plugins que são EFETIVAMENTE usados e configurados
+      ───────────────────────────────────────────────────── -->
+    <plugins>
+
+      <!-- ═══════════════════════════════════════════════════
+        PLUGIN 1: maven-compiler-plugin
+        Goal: compiler:compile (fase compile) e compiler:testCompile
+        Responsável por COMPILAR o código Java usando javac.
+
+        POR QUE CONFIGURAR: O Maven vem com uma versão antiga
+        deste plugin que pode usar Java 5 por padrão!
+        Sempre configure explicitamente para o Java desejado.
+        ═══════════════════════════════════════════════════ -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <!-- Versão vem do pluginManagement acima -->
+        <configuration>
+          <!-- release: flag --release do javac. Garante que: -->
+          <!--   1. O código-fonte seja compatível com essa versão -->
+          <!--   2. A bytecode gerada rode nessa versão da JVM -->
+          <!--   3. Não use APIs que não existiam nessa versão -->
+          <!-- PREFIRA release em vez de source+target (mais seguro) -->
+          <release>21</release>
+
+          <!-- Ativa o processamento de annotations (Lombok, MapStruct, etc.) -->
+          <!-- Maven 3.6+ com Java 11+ não precisa disso explicitamente -->
+          <!-- mas é bom documentar para clareza -->
+          <annotationProcessorPaths>
+            <!-- Exemplo: se usar Lombok -->
+            <!--
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>1.18.30</version>
+            </path>
+            -->
+          </annotationProcessorPaths>
+
+          <!-- Parâmetros extras do compilador (opcional) -->
+          <compilerArgs>
+            <!-- Ativa avisos de compilação (bom para detectar problemas) -->
+            <!-- <arg>-Xlint:all</arg> -->
+          </compilerArgs>
+
+          <!-- true: mostra detalhes da compilação nos logs -->
+          <verbose>false</verbose>
+        </configuration>
+      </plugin>
+
+      <!-- ═══════════════════════════════════════════════════
+        PLUGIN 2: maven-surefire-plugin
+        Goal: surefire:test (fase test)
+        Responsável por executar os TESTES UNITÁRIOS.
+
+        REGRA DE NOMEAÇÃO para testes (padrão surefire):
+        - **/*Test.java       (MinhaClasseTest.java)
+        - **/*Tests.java      (MinhaClasseTests.java)
+        - **/*TestCase.java   (MinhaClasseTestCase.java)
+        - **/Test*.java       (TestMinhaCLasse.java)
+        ═══════════════════════════════════════════════════ -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- Desabilita listeners de testes legados (JUnit 4 style) -->
+          <!-- Necessário para JUnit 5 funcionar corretamente -->
+
+          <!-- true: mostra testes pulados individualmente -->
+          <reportFormat>plain</reportFormat>
+
+          <!-- Padrões de arquivo de teste a incluir (opcional, já é o padrão) -->
+          <includes>
+            <include>**/*Test.java</include>
+            <include>**/*Tests.java</include>
+          </includes>
+
+          <!-- Como executar: forked (processo separado) ou inprocess -->
+          <!-- forkCount: quantos processos JVM para rodar testes em paralelo -->
+          <forkCount>1</forkCount>
+
+          <!-- Passa propriedades do sistema para os testes -->
+          <systemPropertyVariables>
+            <spring.profiles.active>test</spring.profiles.active>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+      <!-- ═══════════════════════════════════════════════════
+        PLUGIN 3: maven-jar-plugin
+        Goal: jar:jar (fase package)
+        Responsável por empacotar o projeto em um arquivo JAR.
+        ═══════════════════════════════════════════════════ -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <!-- Informações que vão no MANIFEST.MF do JAR -->
+            <manifest>
+              <!-- Adiciona informações de versão e classpath no manifesto -->
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+
+              <!-- Define a classe com o método main() para o JAR executável -->
+              <!-- Sem isso: java -jar meu-app.jar falha com "no main manifest attribute" -->
+              <mainClass>com.curso.App</mainClass>
+            </manifest>
+            <!-- Entradas adicionais no MANIFEST.MF -->
+            <manifestEntries>
+              <Build-Version>${project.version}</Build-Version>
+            </manifestEntries>
+          </archive>
+
+          <!-- Nome do JAR gerado (padrão: artifactId-version.jar) -->
+          <!-- <finalName>${project.artifactId}</finalName> -->
+        </configuration>
+      </plugin>
+
+      <!-- ═══════════════════════════════════════════════════
+        PLUGIN 4: maven-enforcer-plugin
+        Garante regras de qualidade no build (versões, etc.)
+        Fase: validate (falha CEDO se alguma regra for violada)
+        ═══════════════════════════════════════════════════ -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-rules</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <!-- Exige versão específica do Maven -->
+                <requireMavenVersion>
+                  <version>[3.8.0,)</version>
+                  <message>Maven 3.8.0 ou superior é necessário!</message>
+                </requireMavenVersion>
+                <!-- Exige versão específica do Java -->
+                <requireJavaVersion>
+                  <version>[17,)</version>
+                  <message>Java 17 ou superior é necessário!</message>
+                </requireJavaVersion>
+                <!-- Garante que não há conflitos de versão -->
+                <dependencyConvergence/>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>

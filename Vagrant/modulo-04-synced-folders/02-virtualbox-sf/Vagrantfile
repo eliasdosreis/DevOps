@@ -1,0 +1,94 @@
+# ============================================================
+# MÓDULO 4 — VIRTUALBOX SHARED FOLDERS
+# O QUE ESTE ARQUIVO FAZ:
+#   Configura pastas compartilhadas via VirtualBox Guest Additions.
+#   É o tipo mais simples de synced folder, mas tem limitações
+#   de performance em projetos com muitos arquivos.
+#   Perfeito para aprendizado e projetos pequenos.
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-vbox-sf"
+
+  config.vm.network "private_network", ip: "192.168.56.40"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-vbox-sf"
+    vb.memory = "1024"
+    vb.cpus   = 1
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: VIRTUALBOX SHARED FOLDER CUSTOMIZADA
+  # Além da /vagrant padrão, você pode criar outras
+  # -----------------------------------------------------------
+
+  # FORMATO:
+  # config.vm.synced_folder "CAMINHO_NO_HOST", "CAMINHO_NA_VM"
+
+  # Compartilha uma pasta de projetos do host
+  # "." = diretório do Vagrantfile | "/app" = ponto de montagem na VM
+  config.vm.synced_folder ".",
+    "/app",
+    owner: "vagrant",             # Dono dos arquivos na VM
+    group: "vagrant",             # Grupo dos arquivos na VM
+    mount_options: ["dmode=755", "fmode=644"]  # Permissões de dir/arquivo
+
+  # Compartilha pasta de logs (somente leitura a partir do host)
+  # A VM pode escrever, o host pode apenas ler
+  config.vm.synced_folder "./logs",
+    "/var/log/app",
+    create: true,                 # Cria a pasta no host se não existir
+    owner:  "root",
+    group:  "root"
+
+  # -----------------------------------------------------------
+  # SEÇÃO: DESABILITAR A PASTA PADRÃO (opcional)
+  # Quando você tem uma synced folder customizada mais adequada
+  # e não quer a /vagrant automática
+  # -----------------------------------------------------------
+  # config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PROVISIONAMENTO
+  # -----------------------------------------------------------
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update -q
+    apt-get install -y -q nginx
+
+    # Cria o diretório de logs se não existir
+    mkdir -p /var/log/app
+    chown vagrant:vagrant /var/log/app
+
+    echo "=== SYNCED FOLDERS ATIVAS ==="
+    echo "Host -> /app:"
+    ls -la /app/ | head -10
+    echo ""
+    echo "Host ./logs -> /var/log/app:"
+    ls -la /var/log/app/ || echo "(vazio)"
+    echo "============================="
+  SHELL
+
+end
+
+# ============================================================
+# TESTAR NA VM:
+#   vagrant ssh
+#   touch /app/arquivo-criado-na-vm.txt
+#   # O arquivo aparece no diretório do Vagrantfile no host!
+#
+#   echo "log entry" >> /var/log/app/app.log
+#   # O arquivo aparece em ./logs/app.log no host!
+#
+# PLUGIN vagrant-vbguest:
+#   Se os Guest Additions não estiverem atualizados, as synced
+#   folders podem falhar. Instale o plugin para auto-atualizar:
+#   vagrant plugin install vagrant-vbguest
+#
+# PERFORMANCE EM WINDOWS:
+#   VirtualBox SF é mais lento no Windows que no Linux/macOS
+#   devido à forma como o Windows mapeia chamadas de I/O.
+#   Para Node.js, evite ter node_modules dentro de synced folders.
+# ============================================================

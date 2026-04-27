@@ -1,0 +1,82 @@
+# ============================================================
+# MÓDULO 3 — MÚLTIPLOS PROVISIONERS (ORDEM E COMBINAÇÃO)
+# O QUE ESTE ARQUIVO FAZ:
+#   Demonstra como combinar múltiplos provisioners em ordem,
+#   com nomes, tags e controle de quando cada um executa.
+#   Este é o padrão usado em projetos reais complexos.
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-multi-provision"
+
+  config.vm.network "private_network", ip: "192.168.56.34"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-multi-provision"
+    vb.memory = "1024"
+    vb.cpus   = 1
+  end
+
+  # -----------------------------------------------------------
+  # ORDEM DE EXECUÇÃO DOS PROVISIONERS
+  # Os provisioners executam NA ORDEM em que são declarados
+  # -----------------------------------------------------------
+
+  # 1º PASSO: Copia arquivos de configuração
+  config.vm.provision "file",
+    source:      "scripts/app.conf",
+    destination: "/home/vagrant/app.conf"
+
+  # 2º PASSO: Executa bootstrap do sistema (como root)
+  config.vm.provision "shell",
+    name: "bootstrap",             # Nome para referenciar individualmente
+    path: "scripts/bootstrap.sh"
+
+  # 3º PASSO: Configura ambiente do usuário (sem root)
+  config.vm.provision "shell",
+    name:       "user-setup",
+    privileged: false,
+    inline: <<-SHELL
+      echo 'export PS1="\\[\\033[01;32m\\]vagrant@dev\\[\\033[00m\\]:\\[\\033[01;34m\\]\\w\\[\\033[00m\\]\\$ "' >> ~/.bashrc
+      echo 'alias ll="ls -lah --color=auto"' >> ~/.bashrc
+      echo 'alias gs="git status"' >> ~/.bashrc
+      echo "✅ Aliases e prompt configurados!"
+    SHELL
+
+  # 4º PASSO: Health check — roda SEMPRE para validar estado
+  config.vm.provision "shell",
+    name: "health-check",
+    run:  "always",                # Executa em todo vagrant up
+    inline: <<-SHELL
+      echo ""
+      echo "=== HEALTH CHECK ==="
+      echo "Nginx:  $(systemctl is-active nginx 2>/dev/null || echo 'não instalado')"
+      echo "Node:   $(node --version 2>/dev/null || echo 'não instalado')"
+      echo "IP:     $(ip addr show enp0s8 2>/dev/null | grep 'inet ' | awk '{print $2}' || echo 'N/A')"
+      echo "Uptime: $(uptime -p)"
+      echo "===================="
+    SHELL
+
+end
+
+# ============================================================
+# EXECUTAR PROVISIONER ESPECÍFICO POR NOME:
+#
+#   vagrant provision --provision-with bootstrap
+#   vagrant provision --provision-with health-check
+#   vagrant provision --provision-with user-setup,bootstrap
+#
+# PULAR PROVISIONERS DURANTE VAGRANT UP:
+#   vagrant up --no-provision
+#
+# EXECUTAR TODOS OS PROVISIONERS NOVAMENTE:
+#   vagrant provision
+#
+# SENIORIDADE — ESTRATÉGIA DE NOMES:
+#   Nomeie seus provisioners sempre que tiver mais de 2.
+#   Em pipelines de CI/CD, você pode rodar apenas
+#   provisioners específicos com --provision-with.
+#   É muito mais eficiente do que recriar toda a VM.
+# ============================================================

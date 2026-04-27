@@ -1,0 +1,196 @@
+---
+# Módulo 11 — Gerenciamento de Ciclo de Vida de VMs com Ansible
+# Playbooks para: iniciar, parar, snapshot, destruir e listar VMs
+
+# ==============================================================================
+# PLAYBOOK 1: Gerenciar estado de múltiplas VMs (start/stop/pause)
+# ==============================================================================
+- name: "Controle de Estado de VMs KVM"
+  hosts: hypervisors
+  become: true
+  gather_facts: false
+
+  vars:
+    # Lista de VMs e seus estados desejados (definir no inventory ou extra-vars)
+    vms_estado:
+      - name: "vm-web-01"
+        state: running       # Possíveis: running, shutdown, paused, undefined
+      - name: "vm-web-02"
+        state: running
+      - name: "vm-staging-01"
+        state: shutdown      # Desligar graciosamente após hours
+      - name: "vm-dev-efemero"
+        state: undefined     # DESTRUIR completamente (remove XML e disco)
+
+  tasks:
+
+    - name: "Garantir estado desejado para cada VM"
+      community.libvirt.virt:
+        name: "{{ item.name }}"
+        state: "{{ item.state }}"
+      loop: "{{ vms_estado }}"
+      loop_control:
+        label: "{{ item.name }} → {{ item.state }}"
+
+---
+# ==============================================================================
+# PLAYBOOK 2: Snapshot automatizado de múltiplas VMs
+# ==============================================================================
+- name: "Criar Snapshots de Produção (Pré-Manutenção)"
+  hosts: hypervisors
+  become: true
+  gather_facts: false
+
+  vars:
+    snapshot_name: "pre-manutencao-{{ ansible_date_time.date }}"
+    vms_para_snapshot:
+      - "vm-oracle-db"
+      - "vm-nginx-lb"
+      - "vm-app-server-01"
+      - "vm-app-server-02"
+
+  tasks:
+
+    - name: "Criar snapshot de cada VM de produção"
+      ansible.builtin.command:
+        cmd: >
+          virsh snapshot-create-as
+          {{ item }}
+          {{ snapshot_name }}
+          --description "Snapshot pré-manutenção {{ ansible_date_time.date }}"
+          --atomic
+      loop: "{{ vms_para_snapshot }}"
+      register: snapshot_result
+      failed_when: snapshot_result.rc != 0
+
+    - name: "Listar snapshots criados para validação"
+      ansible.builtin.command:
+        cmd: "virsh snapshot-list {{ item }} --tree"
+      loop: "{{ vms_para_snapshot }}"
+      register: snapshot_list
+
+    - name: "Exibir snapshots criados"
+      ansible.builtin.debug:
+        msg: "{{ item.stdout_lines }}"
+      loop: "{{ snapshot_list.results }}"
+      loop_control:
+        label: "Snapshots de {{ item.item }}"
+
+    - name: "Limpar snapshots com mais de 7 dias (retenção)"
+      ansible.builtin.shell: |
+        for snap in $(virsh snapshot-list {{ item }} --name); do
+          SNAP_DATE=$(virsh snapshot-dumpxml {{ item }} $snap | \
+            grep '<creationTime>' | sed 's/.*>\(.*\)<.*/\1/')
+          SNAP_AGE=$(( ($(date +%s) - $SNAP_DATE) / 86400 ))
+          if [ $SNAP_AGE -gt 7 ]; then
+            echo "Removendo snapshot $snap da VM {{ item }} ($SNAP_AGE dias)"
+            virsh snapshot-delete {{ item }} $snap
+          fi
+        done
+      loop: "{{ vms_para_snapshot }}"
+      changed_when: true
+
+---
+# ==============================================================================
+# PLAYBOOK 3: Inventário automático — gerar relatório de todas as VMs
+# ==============================================================================
+- name: "Gerar Inventário Completo de VMs KVM"
+  hosts: hypervisors
+  become: true
+  gather_facts: true
+
+  tasks:
+
+    - name: "Coletar lista de VMs (todas)"
+      ansible.builtin.command: "virsh list --all"
+      register: vm_list_all
+      changed_when: false
+
+    - name: "Coletar informações detalhadas de cada VM ativa"
+      ansible.builtin.command: "virsh dominfo {{ item }}"
+      loop: "{{ vm_list_all.stdout_lines | select('search', 'running') | map('split') | map('first') | list }}"
+      register: vm_details
+      changed_when: false
+      ignore_errors: true
+
+    - name: "Coletar uso de CPU/memória em tempo real"
+      ansible.builtin.command: "virsh domstats --state --vcpu --balloon"
+      register: vm_stats
+      changed_when: false
+
+    - name: "Salvar relatório em arquivo local"
+      ansible.builtin.copy:
+        dest: "/tmp/vm-inventory-{{ ansible_date_time.date }}.txt"
+        content: |
+          ============================================
+          INVENTÁRIO DE VMs KVM — {{ ansible_date_time.date }}
+          Host: {{ inventory_hostname }}
+          ============================================
+
+          === LISTA DE VMs ===
+          {{ vm_list_all.stdout }}
+
+          === ESTATÍSTICAS ===
+          {{ vm_stats.stdout }}
+
+          Gerado em: {{ ansible_date_time.iso8601 }}
+      changed_when: true
+
+    - name: "Exibir resumo"
+      ansible.builtin.debug:
+        msg: |
+          Inventário salvo em /tmp/vm-inventory-{{ ansible_date_time.date }}.txt
+          Total de VMs: {{ vm_list_all.stdout_lines | length - 3 }}
+
+---
+# ==============================================================================
+# PLAYBOOK 4: Rolling Update — Atualizar VMs com zero downtime via HA
+# ==============================================================================
+- name: "Rolling Update de VMs com Live Migration"
+  hosts: hypervisors
+  become: true
+  gather_facts: false
+  serial: 1              # CRUCIAL: executa um host por vez (rolling!)
+
+  tasks:
+
+    - name: "Verificar quantas VMs estão rodando neste nó"
+      ansible.builtin.command: "virsh list --state-running --name"
+      register: running_vms
+      changed_when: false
+
+    - name: "Migrar VMs para outro nó antes da manutenção"
+      ansible.builtin.command: >
+        virsh migrate --live --persistent --undefine
+        {{ item }}
+        qemu+ssh://{{ hostvars[groups['hypervisors'] | difference([inventory_hostname]) | first]['ansible_host'] }}/system
+      loop: "{{ running_vms.stdout_lines | select('!=', '') | list }}"
+      when: running_vms.stdout_lines | length > 0
+      changed_when: true
+
+    - name: "Aguardar confirmação de que migrações completaram"
+      ansible.builtin.command: "virsh list --state-running"
+      register: remaining_vms
+      until: remaining_vms.stdout_lines | length <= 2
+      retries: 30
+      delay: 10
+      changed_when: false
+
+    - name: "Aplicar atualizações do host (nó agora vazio)"
+      ansible.builtin.package:
+        name: "*"
+        state: latest
+      register: pkg_update
+
+    - name: "Reiniciar host se kernel foi atualizado"
+      ansible.builtin.reboot:
+        reboot_timeout: 300
+        test_command: "virsh list --all"
+      when: pkg_update.changed
+
+    - name: "Confirmar que libvirtd voltou após reboot"
+      ansible.builtin.service:
+        name: libvirtd
+        state: started
+      retries: 5
+      delay: 10

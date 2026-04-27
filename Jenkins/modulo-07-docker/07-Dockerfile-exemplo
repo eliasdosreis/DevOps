@@ -1,0 +1,85 @@
+# ============================================================
+# MÓDULO 7 — DOCKER E CONTAINERS
+# Arquivo: 07-Dockerfile-exemplo
+#
+# Multi-stage Dockerfile de exemplo para os pipelines deste módulo
+# ============================================================
+
+# =============================================
+# STAGE 1: BUILD (imagem pesada com ferramentas de build)
+# =============================================
+FROM maven:3.9-eclipse-temurin-21 AS builder
+
+# Copia apenas o pom.xml primeiro (otimiza cache Docker)
+# Se o código mudar mas o pom.xml não, esta camada fica em cache
+WORKDIR /app
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# Copia o código fonte
+COPY src/ ./src/
+
+# Compila e empacota (sem testes — já foram executados antes)
+RUN mvn package -B -DskipTests
+
+# =============================================
+# STAGE 2: PRODUCTION (imagem mínima sem ferramentas de build)
+# =============================================
+FROM eclipse-temurin:21-jre-alpine AS production
+# eclipse-temurin:21-jre-alpine = apenas o JRE (sem Maven, sem JDK completo)
+# Muito menor que a imagem builder!
+
+# Usuário não-root por segurança (nunca rode como root em produção)
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Cria diretório da app com permissões corretas
+WORKDIR /app
+RUN chown appuser:appgroup /app
+
+# Copia apenas o JAR do stage builder (não copia o código fonte!)
+COPY --from=builder /app/target/*.jar app.jar
+RUN chown appuser:appgroup app.jar
+
+# Muda para usuário não-root
+USER appuser
+
+# Documenta a porta que a aplicação usa (não expõe automaticamente)
+EXPOSE 8080
+
+# Health check para orquestradores (Kubernetes, Docker Swarm)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+
+# Metadados da imagem (OCI standard labels)
+LABEL org.opencontainers.image.title="Minha Aplicação"
+LABEL org.opencontainers.image.description="API REST da minha aplicação"
+LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.vendor="Minha Empresa"
+
+# Comando de inicialização
+# exec form (array): recomendado — recebe sinais do OS corretamente
+# shell form (string): NÃO recomendado em produção
+ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# Argumentos padrão (podem ser sobrescritos)
+CMD ["--spring.profiles.active=docker"]
+
+# ============================================================
+# BOAS PRÁTICAS DEMONSTRADAS:
+#
+# 1. Multi-stage build: imagem de produção mínima e limpa
+# 2. Cache otimizado: copia pom.xml antes do código fonte
+# 3. Usuário não-root: mais seguro em produção
+# 4. HEALTHCHECK: permite que orquestradores saibam se está saudável
+# 5. OCI labels: metadados padronizados da imagem
+# 6. ENTRYPOINT exec form: recebe SIGTERM para shutdown gracioso
+#
+# COMPARAÇÃO DE TAMANHO:
+#   maven:3.9-eclipse-temurin-21 → ~600MB (com ferramentas de build)
+#   eclipse-temurin:21-jre-alpine → ~180MB (apenas JRE)
+#   Redução: 70% de espaço!
+#
+# VERIFICAR VULNERABILIDADES:
+#   docker scout cves minha-org/minha-app:latest
+#   trivy image minha-org/minha-app:latest
+# ============================================================

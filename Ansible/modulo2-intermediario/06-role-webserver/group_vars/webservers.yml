@@ -1,0 +1,16 @@
+---
+# ==============================================================
+# ARQUIVO: group_vars/webservers.yml
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# group_vars = variáveis para um GRUPO de servidores.
+# Tudo que está aqui vale para TODOS os servidores do grupo "webservers".
+# É como uma regra da escola que vale para toda a turma!
+# ==============================================================
+
+# Variáveis específicas para todos os webservers
+ambiente: producao
+webserver_porta: 80
+webserver_workers: auto
+webserver_ssl: false

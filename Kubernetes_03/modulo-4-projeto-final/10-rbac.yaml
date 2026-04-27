@@ -1,0 +1,167 @@
+# ============================================================
+# ARQUIVO: 10-rbac.yaml
+# PROJETO FINAL - Segurança e Permissões (RBAC)
+#
+# Quem pode fazer o quê no nosso namespace "ecommerce"?
+#
+# PERSONAS deste arquivo:
+# 1. SA da API        -> Pode ler ConfigMaps e Secrets próprios
+# 2. SA do Frontend   -> Pode apenas ler sua própria config
+# 3. Role dev-viewer  -> Desenvolvedor pode VER (não editar)
+# ============================================================
+
+# -------------------------------------------------------
+# SERVICEACCOUNT 1: Identidade da API
+# -------------------------------------------------------
+apiVersion: v1
+kind: ServiceAccount
+
+metadata:
+  name: sa-api                # Crachá da API
+  namespace: ecommerce
+
+  labels:
+    app: api
+
+---
+# -------------------------------------------------------
+# SERVICEACCOUNT 2: Identidade do Frontend
+# -------------------------------------------------------
+apiVersion: v1
+kind: ServiceAccount
+
+metadata:
+  name: sa-frontend           # Crachá do Frontend
+  namespace: ecommerce
+
+  labels:
+    app: frontend
+
+---
+# -------------------------------------------------------
+# ROLE 1: Permissões para a API
+# A API precisa ler ConfigMaps e Secrets para funcionar
+# -------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+
+metadata:
+  name: role-api              # Nome da role
+  namespace: ecommerce
+
+rules:
+  # A API pode LER ConfigMaps (suas configurações)
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+    resourceNames: ["config-ecommerce"]  # SÓ este ConfigMap!
+    # Princípio do menor privilégio:
+    # limitamos a qual ConfigMap ela tem acesso
+
+  # A API pode LER Secrets (senhas do banco)
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+    resourceNames: ["secrets-ecommerce"]  # SÓ este Secret!
+
+  # A API pode ver seus próprios pods (para health check interno)
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+
+---
+# -------------------------------------------------------
+# ROLEBINDING 1: Dar a role para a API
+# -------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+
+metadata:
+  name: binding-api
+  namespace: ecommerce
+
+subjects:
+  - kind: ServiceAccount
+    name: sa-api              # O crachá da API
+    namespace: ecommerce
+
+roleRef:
+  kind: Role
+  name: role-api              # Recebe as permissões da role-api
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# -------------------------------------------------------
+# ROLE 2: Desenvolvedor - só pode VER (não alterar)
+# Boa prática: devs não têm acesso de escrita em produção!
+# -------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+
+metadata:
+  name: role-dev-readonly     # Somente leitura para devs
+  namespace: ecommerce
+
+rules:
+  - apiGroups: ["", "apps"]
+    resources:
+      - pods
+      - pods/log              # Ver logs dos pods
+      - deployments
+      - services
+      - configmaps
+    verbs: ["get", "list", "watch"]
+    # NÃO tem: create, delete, patch, update!
+
+  # Devs podem acessar o shell dos pods para debug
+  - apiGroups: [""]
+    resources: ["pods/exec"]  # kubectl exec
+    verbs: ["create"]
+
+  # Devs NÃO podem ver Secrets (dados sensíveis!)
+  # (simplesmente não listamos "secrets" aqui)
+
+---
+# -------------------------------------------------------
+# CLUSTERROLE: Para o sistema de monitoramento
+# Prometheus precisa de acesso em TODOS os namespaces
+# -------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+
+metadata:
+  name: clusterrole-monitoramento
+
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/proxy
+      - services
+      - endpoints
+      - pods
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["extensions", "networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+
+# ============================================================
+# RESUMO DE SEGURANÇA APLICADA:
+#
+# SA da API   -> Lê config e secret próprios APENAS
+# SA Frontend -> Lê apenas sua config
+# Devs        -> Veem tudo, editam nada (produção!)
+# Prometheus  -> Lê métricas de todos os namespaces
+#
+# O QUE NÃO FIZEMOS (propositalmente):
+# - Ninguém tem acesso * (admin total)
+# - Secrets não são acessíveis para devs
+# - API não pode criar/deletar outros pods
+#
+# ENTREVISTA SÊNIOR:
+# "Como auditar quem acessou o que no K8s?"
+# RESPOSTA: Audit Logs do API Server! Configure:
+# --audit-policy-file e --audit-log-path no kube-apiserver.
+# Registra quem (user/SA), fez o quê (verbo), em qual recurso.
+# ============================================================

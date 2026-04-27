@@ -1,0 +1,106 @@
+---
+# ==============================================================
+# ARQUIVO: 05-otimizacao-performance.yml
+# MÓDULO 3 - Avançado
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Imagine pintar 100 casas.
+# Amador: pinta 1 por vez = lento demais!
+# Sênior: 10 equipes pintam 10 por vez = 10x mais rápido!
+#
+# "forks" = quantas casas pintar ao mesmo tempo
+# "async" = deixar tarefa longa rodar e fazer outra enquanto espera
+# "tags"  = só pintar as casas que precisam (não todas!)
+#
+# ▶️  COMO RODAR:
+# ansible-playbook 05-otimizacao-performance.yml --tags "rapido"
+# ansible-playbook 05-otimizacao-performance.yml --tags "configurar"
+# ansible-playbook 05-otimizacao-performance.yml --skip-tags "lento"
+# ==============================================================
+
+- name: "Otimização e Performance Ansible"
+  hosts: localhost
+  gather_facts: false
+
+  # "serial" = quantos hosts processar de uma vez
+  # "30%" = processar 30% dos hosts por rodada (deploy gradual!)
+  # serial: "30%"
+
+  tasks:
+
+    # ---- TAGS: executar partes específicas -------------------
+    # Tags permitem rodar APENAS o que você quer
+    - name: "Instalar pacotes (tag: instalar)"
+      ansible.builtin.debug:
+        msg: "📦 Instalando pacotes..."
+      # "tags" rotula esta tarefa
+      tags:
+        - instalar
+        - rapido
+
+    - name: "Configurar serviços (tag: configurar)"
+      ansible.builtin.debug:
+        msg: "⚙️  Configurando serviços..."
+      tags:
+        - configurar
+
+    - name: "Deploy da aplicação (tag: deploy)"
+      ansible.builtin.debug:
+        msg: "🚀 Fazendo deploy..."
+      tags:
+        - deploy
+        - rapido
+
+    # ---- ASYNC: tarefas de longa duração --------------------
+    # "async" = roda em background (não trava o Ansible!)
+    # "poll" = verificar a cada X segundos (0 = não espera)
+    - name: "Tarefa longa em background (async)"
+      ansible.builtin.command:
+        cmd: "sleep 2"  # Simula processamento demorado
+      # async: 300 = aguardar no máximo 300 segundos
+      async: 300
+      # poll: 5 = checar a cada 5 segundos (0 = não checar = fire and forget)
+      poll: 5
+      register: tarefa_longa
+      changed_when: false
+      tags: lento
+
+    # ---- CHECK_MODE: simular sem executar -------------------
+    # É como um "dry-run" - mostra O QUE faria, mas NÃO faz!
+    # Execute com: ansible-playbook --check
+    - name: "Criar arquivo (simulação com --check)"
+      ansible.builtin.file:
+        path: /tmp/ansible-demo/teste-check-mode.txt
+        state: touch
+        mode: '0644'
+      tags: sempre
+
+    # ---- DELEGATE_TO: executar em outro host ----------------
+    # "delegate_to" roda a tarefa em um servidor diferente
+    # Ex: você está configurando web1, mas quer rodar algo no db1
+    - name: "Executar localmente (delegate_to localhost)"
+      ansible.builtin.debug:
+        msg: "Esta tarefa roda no CONTROLADOR, não no host alvo"
+      delegate_to: localhost
+      tags: sempre
+
+    # ---- RUN_ONCE: executar em apenas UM host do grupo ------
+    # Útil para: migrations de banco, seeds, tarefas únicas
+    - name: "Rodar migration (só uma vez no grupo)"
+      ansible.builtin.debug:
+        msg: "🗄️  Migration executada apenas UMA VEZ, no primeiro host"
+      run_once: true
+      tags: sempre
+
+    # ---- DICAS DE PERFORMANCE --------------------------------
+    - name: "Dicas de performance para Senior"
+      ansible.builtin.debug:
+        msg:
+          - "⚡ forks=20 no ansible.cfg acelera muito (padrão é 5)"
+          - "⚡ pipelining=True no ansible.cfg reduz conexões SSH"
+          - "⚡ gather_facts=false quando não precisar de fatos"
+          - "⚡ Use tags para rodar só o necessário"
+          - "⚡ async para tarefas longas (ex: compilar código)"
+          - "⚡ serial para deploy gradual (evitar queda total)"
+      tags: sempre

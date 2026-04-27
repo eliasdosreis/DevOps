@@ -1,0 +1,98 @@
+# ============================================================
+# ARQUIVO: 02-deployment.yaml
+# O QUE É UM DEPLOYMENT?
+#
+# Deployment é o RECURSO MAIS IMPORTANTE do Kubernetes.
+# Hierarquia: Deployment --> ReplicaSet --> Pods
+#
+# Deployment = Gerente Geral da fábrica
+# - Garante N funcionários (pods)
+# - Faz contratação gradual quando muda processo (rolling update)
+# - Pode voltar ao processo antigo se der problema (rollback)
+# - Guarda histórico das versões
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment            # Tipo: Deployment
+
+metadata:
+  name: deployment-app      # Nome do Deployment
+  labels:
+    app: minha-app
+    versao: "v1"
+
+spec:
+  replicas: 3               # Quantos pods queremos
+
+  selector:                 # Qual pods este Deployment gerencia?
+    matchLabels:
+      app: minha-app        # Pods com label app=minha-app
+
+  # -------------------------------------------------------
+  # ESTRATÉGIA DE ATUALIZAÇÃO - MUITO IMPORTANTE!
+  # -------------------------------------------------------
+  strategy:
+    type: RollingUpdate     # Atualiza GRADUALMENTE (padrão)
+                            # Outra opção: Recreate (derruba tudo e recria)
+
+    rollingUpdate:
+      maxSurge: 1           # Máximo de pods EXTRAS durante update
+                            # Ex: 3 réplicas + 1 extra = 4 pods no pico
+
+      maxUnavailable: 0     # Máximo de pods INDISPONÍVEIS durante update
+                            # 0 = zero downtime! Sempre tem 3 rodando
+
+  template:                 # Template dos pods (igual ao ReplicaSet)
+    metadata:
+      labels:
+        app: minha-app      # DEVE bater com selector!
+        versao: "v1"
+
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.25   # Mude para nginx:1.26 para testar update!
+
+          ports:
+            - containerPort: 80
+
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+
+# ============================================================
+# COMANDOS ESSENCIAIS DE DEPLOYMENT:
+#
+# Criar/Atualizar:
+#   kubectl apply -f 02-deployment.yaml
+#
+# Ver status do rollout:
+#   kubectl rollout status deployment/deployment-app
+#
+# Ver histórico de versões:
+#   kubectl rollout history deployment/deployment-app
+#
+# ROLLBACK (voltar versão anterior):
+#   kubectl rollout undo deployment/deployment-app
+#
+# Rollback para versão específica:
+#   kubectl rollout undo deployment/deployment-app --to-revision=2
+#
+# Pausar rollout:
+#   kubectl rollout pause deployment/deployment-app
+#
+# Continuar rollout:
+#   kubectl rollout resume deployment/deployment-app
+#
+# ENTREVISTA SÊNIOR:
+# "Explique RollingUpdate vs Recreate"
+# RESPOSTA:
+# RollingUpdate: substitui pods gradualmente. Zero downtime.
+#   Temporariamente tem duas versões rodando ao mesmo tempo.
+# Recreate: mata TODOS os pods e recria. Tem downtime.
+#   Útil quando duas versões NÃO podem rodar juntas.
+# ============================================================

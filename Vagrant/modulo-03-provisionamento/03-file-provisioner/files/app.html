@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vagrant - File Provisioner</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+    .container {
+      text-align: center;
+      padding: 60px 40px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      max-width: 600px;
+    }
+    .emoji { font-size: 4rem; margin-bottom: 20px; }
+    h1 { font-size: 2.2rem; margin-bottom: 16px; color: #a78bfa; }
+    p { font-size: 1.1rem; color: #c4b5fd; margin-bottom: 24px; }
+    .badges { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .badge {
+      background: rgba(167, 139, 250, 0.2);
+      border: 1px solid #a78bfa;
+      color: #a78bfa;
+      padding: 8px 20px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .info { margin-top: 30px; font-size: 0.85rem; color: #7c6f9f; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="emoji">📁</div>
+    <h1>File Provisioner</h1>
+    <p>Este arquivo foi copiado do HOST para a VM usando o <strong>file provisioner</strong> do Vagrant!</p>
+    <div class="badges">
+      <span class="badge">Vagrant ✅</span>
+      <span class="badge">Nginx ✅</span>
+      <span class="badge">File Provisioner ✅</span>
+    </div>
+    <p class="info">Módulo 3 — Provisionamento | IP: 192.168.56.32</p>
+  </div>
+</body>
+</html>

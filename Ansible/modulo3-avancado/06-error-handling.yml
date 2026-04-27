@@ -1,0 +1,122 @@
+---
+# ==============================================================
+# ARQUIVO: 06-error-handling.yml
+# MÓDULO 3 - Avançado
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Tratar erros é como ter um PLANO B!
+# Se você vai de carro e o pneu fura:
+#   BLOCK   = a viagem normal
+#   RESCUE  = o plano B (trocar pneu)
+#   ALWAYS  = o que você faz de qualquer jeito (ligar pro destino)
+#
+# Sêniors SEMPRE pensam no que fazer quando algo dá errado!
+#
+# ▶️  COMO RODAR:
+# ansible-playbook -i ../modulo1-fundamentos/01-inventory-simples.ini 06-error-handling.yml
+# ==============================================================
+
+- name: "Error Handling Avançado - Nível Sênior"
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+
+    # ---- 1. IGNORE ERRORS: continuar mesmo com falha ----------
+    - name: "Tentar comando que vai falhar (mas ignorar)"
+      ansible.builtin.command:
+        cmd: "ls /pasta/que/nao/existe"
+      # "ignore_errors: true" = não para o playbook se falhar
+      ignore_errors: true
+      register: resultado_ls
+
+    - name: "Verificar se falhou"
+      ansible.builtin.debug:
+        msg: "Falhou? {{ resultado_ls.failed }}"
+
+    # ---- 2. FAILED_WHEN: definir quando é falha --------------
+    - name: "Contar processos"
+      ansible.builtin.shell:
+        cmd: "ps aux | wc -l"
+      register: qtd_processos
+      # "failed_when" = eu defino quando considero falha
+      # Aqui: falha se tiver menos de 5 processos (improvável!)
+      failed_when: qtd_processos.stdout | int < 5
+      changed_when: false
+
+    - name: "Processos: {{ qtd_processos.stdout }}"
+      ansible.builtin.debug:
+        msg: "Sistema tem {{ qtd_processos.stdout }} processos rodando"
+
+    # ---- 3. BLOCK / RESCUE / ALWAYS: o trio poderoso ----------
+    - name: "Deploy com tratamento de erro completo"
+      block:
+        # BLOCO PRINCIPAL: tenta fazer o deploy
+
+        - name: "[BLOCK] Simular backup antes do deploy"
+          ansible.builtin.debug:
+            msg: "💾 Fazendo backup dos dados..."
+
+        - name: "[BLOCK] Simular deploy da aplicação"
+          ansible.builtin.debug:
+            msg: "🚀 Deployando versão 2.0..."
+
+        # Para testar o RESCUE, mude para: cmd: "comando_invalido"
+        - name: "[BLOCK] Executar script de deploy"
+          ansible.builtin.command:
+            cmd: "echo 'Deploy bem-sucedido!'"
+          register: resultado_deploy
+          changed_when: false
+
+        - name: "[BLOCK] Confirmar deploy"
+          ansible.builtin.debug:
+            msg: "✅ Deploy concluído: {{ resultado_deploy.stdout }}"
+
+      rescue:
+        # RESGATE: só roda se algo no BLOCK falhar
+        # É o seu plano B!
+
+        - name: "[RESCUE] ⚠️  Deploy falhou! Iniciando rollback..."
+          ansible.builtin.debug:
+            msg: "🔄 Revertendo para versão anterior..."
+
+        - name: "[RESCUE] Simular rollback"
+          ansible.builtin.command:
+            cmd: "echo 'Rollback para v1.9 executado'"
+          register: rollback
+          changed_when: false
+
+        - name: "[RESCUE] Notificar equipe sobre falha"
+          ansible.builtin.debug:
+            msg:
+              - "📧 Email enviado para: ops@empresa.com"
+              - "💬 Slack: #alertas-producao"
+              - "Rollback: {{ rollback.stdout }}"
+
+      always:
+        # SEMPRE: roda independente de sucesso ou falha
+        # É o que você FAZ DE QUALQUER JEITO!
+
+        - name: "[ALWAYS] Registrar resultado no log"
+          ansible.builtin.copy:
+            content: |
+              Deploy executado em: {{ ansible_date_time.date | default('hoje') }}
+              Status: {{ 'SUCESSO' if resultado_deploy is defined else 'FALHOU' }}
+            dest: /tmp/ansible-demo/deploy-log.txt
+            mode: '0644'
+          ignore_errors: true  # Log pode falhar mas não para nada
+
+        - name: "[ALWAYS] Limpeza de arquivos temporários"
+          ansible.builtin.debug:
+            msg: "🧹 Limpeza sempre executada, independente do resultado"
+
+    # ---- 4. ANY_ERRORS_FATAL: parar TUDO em caso de erro ------
+    # Útil quando um erro em 1 servidor não pode continuar nos outros
+    - name: "Verificação crítica de segurança"
+      ansible.builtin.debug:
+        msg: |
+          Em produção com múltiplos hosts, use:
+          any_errors_fatal: true
+          Isso para TODOS os servidores se um falhar.
+          Ideal para migrações de banco de dados!

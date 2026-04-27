@@ -1,0 +1,158 @@
+# ============================================================
+# MÓDULO 5 — CLUSTER COMPLETO (4 VMs)
+# O QUE ESTE ARQUIVO FAZ:
+#   Simula uma arquitetura de 4 camadas:
+#   - lb  (Load Balancer) : Nginx upstream  - 192.168.56.70
+#   - web1 (Web Server 1) : Nginx           - 192.168.56.71
+#   - app  (App Server)   : Node.js         - 192.168.56.72
+#   - db   (Database)     : MySQL           - 192.168.56.73
+#   Este é um ambiente de STAGING realista.
+# ============================================================
+
+# ============================================================
+# CONFIGURAÇÃO CENTRALIZADA — O padrão profissional
+# Altere aqui para refletir em todas as VMs
+# ============================================================
+NETWORK = {
+  "lb"   => { ip: "192.168.56.70", memory: "512",  cpus: 1 },
+  "web1" => { ip: "192.168.56.71", memory: "512",  cpus: 1 },
+  "app"  => { ip: "192.168.56.72", memory: "1024", cpus: 2 },
+  "db"   => { ip: "192.168.56.73", memory: "1024", cpus: 1 }
+}
+
+Vagrant.configure("2") do |config|
+
+  # -----------------------------------------------------------
+  # CONFIGURAÇÕES GLOBAIS
+  # -----------------------------------------------------------
+  config.vm.box              = "ubuntu/jammy64"
+  config.vm.box_check_update = false
+  config.vm.boot_timeout     = 300
+
+  # Desabilita a pasta /vagrant padrão (não necessária no cluster)
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  # -----------------------------------------------------------
+  # SEÇÃO: LOAD BALANCER (LB)
+  # -----------------------------------------------------------
+  config.vm.define "lb" do |lb|
+    lb.vm.hostname = "lb-server"
+    lb.vm.network "private_network", ip: NETWORK["lb"][:ip]
+
+    # Porta pública do cluster — acesse tudo por aqui
+    lb.vm.network "forwarded_port",
+      guest:   80,
+      host:    8080,
+      host_ip: "127.0.0.1"
+
+    lb.vm.provider "virtualbox" do |vb|
+      vb.name   = "cluster-lb"
+      vb.memory = NETWORK["lb"][:memory]
+      vb.cpus   = NETWORK["lb"][:cpus]
+    end
+
+    lb.vm.provision "file",
+      source:      "scripts/nginx-lb.conf",
+      destination: "/home/vagrant/nginx-lb.conf"
+
+    lb.vm.provision "shell", path: "scripts/setup-lb.sh",
+      env: {
+        "WEB1_IP" => NETWORK["web1"][:ip]
+      }
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: WEB SERVER (WEB1)
+  # -----------------------------------------------------------
+  config.vm.define "web1" do |web1|
+    web1.vm.hostname = "web1-server"
+    web1.vm.network "private_network", ip: NETWORK["web1"][:ip]
+
+    web1.vm.provider "virtualbox" do |vb|
+      vb.name   = "cluster-web1"
+      vb.memory = NETWORK["web1"][:memory]
+      vb.cpus   = NETWORK["web1"][:cpus]
+    end
+
+    web1.vm.provision "shell", path: "scripts/setup-web.sh",
+      env: {
+        "APP_IP"    => NETWORK["app"][:ip],
+        "SERVER_ID" => "web1"
+      }
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: APP SERVER
+  # -----------------------------------------------------------
+  config.vm.define "app" do |app|
+    app.vm.hostname = "app-server"
+    app.vm.network "private_network", ip: NETWORK["app"][:ip]
+
+    app.vm.provider "virtualbox" do |vb|
+      vb.name   = "cluster-app"
+      vb.memory = NETWORK["app"][:memory]
+      vb.cpus   = NETWORK["app"][:cpus]
+    end
+
+    app.vm.provision "shell", path: "scripts/setup-app.sh",
+      env: {
+        "DB_IP"   => NETWORK["db"][:ip],
+        "DB_NAME" => "meuapp",
+        "DB_USER" => "appuser",
+        "DB_PASS" => "senha_segura_123"
+      }
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: DATABASE
+  # primary: false, autostart: true (sobe com vagrant up)
+  # -----------------------------------------------------------
+  config.vm.define "db", autostart: true do |db|
+    db.vm.hostname = "db-server"
+    db.vm.network "private_network", ip: NETWORK["db"][:ip]
+
+    db.vm.provider "virtualbox" do |vb|
+      vb.name   = "cluster-db"
+      vb.memory = NETWORK["db"][:memory]
+      vb.cpus   = NETWORK["db"][:cpus]
+    end
+
+    db.vm.provision "shell", path: "scripts/setup-db.sh",
+      env: {
+        "DB_NAME"   => "meuapp",
+        "DB_USER"   => "appuser",
+        "DB_PASS"   => "senha_segura_123",
+        "APP_IP"    => NETWORK["app"][:ip]
+      }
+  end
+
+end
+
+# ============================================================
+# ARQUITETURA DO CLUSTER:
+#
+#   Internet / Host (localhost:8080)
+#         ↓
+#   [LB  - 192.168.56.70]  ← Nginx upstream
+#         ↓
+#   [WEB1 - 192.168.56.71]  ← Nginx (static/proxy)
+#         ↓
+#   [APP  - 192.168.56.72]  ← Node.js API
+#         ↓
+#   [DB   - 192.168.56.73]  ← MySQL
+#
+# INICIALIZAÇÃO RECOMENDADA:
+#   vagrant up db    → banco primeiro
+#   vagrant up app   → app depois
+#   vagrant up web1  → web depois
+#   vagrant up lb    → lb por último
+#
+# OU: vagrant up (paralelo, scripts têm retry)
+#
+# SENIORIDADE — USO DE HASH RUBY PARA CONFIGURAÇÃO:
+#   O hash NETWORK centraliza todos os IPs e recursos.
+#   Mudar um IP agora requer apenas uma linha.
+#   Em projetos reais, leia isso de um YAML externo:
+#   require 'yaml'
+#   CONFIG = YAML.load_file('config.yml')
+# ============================================================

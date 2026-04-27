@@ -1,0 +1,149 @@
+// ============================================================
+// ARQUIVO: 02-build-dependencias.gradle
+// USO: Groovy DSL — renomeie para build.gradle
+//
+// O QUE ESTE ARQUIVO FAZ:
+// Demonstra TODAS as configurações de dependência do Gradle,
+// incluindo a crucial diferença entre 'implementation' e 'api'.
+//
+// ANALOGIA:
+// Imagine que você é um fornecedor de uma peça de carro.
+// - 'implementation': você usa um material internamente,
+//   mas o cliente final do carro NÃO sabe (nem precisa saber)
+//   qual material você usou.
+// - 'api': você expõe o material para quem trabalha com a peça
+//   — quem monta o carro precisa saber o que é.
+//
+// DEFINIÇÃO TÉCNICA:
+// As "configurações" do Gradle definem como as dependências
+// são expostas para outros módulos que dependem deste módulo.
+// ============================================================
+
+plugins {
+    id 'java-library'  // java-library adiciona 'api' além de 'implementation'
+    // Use 'java-library' quando você está criando uma BIBLIOTECA
+    // Use 'java' (apenas) quando é uma APLICAÇÃO final
+}
+
+group = 'com.curso'
+version = '1.0.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    // ─────────────────────────────────────────────────────────
+    // 'api': dependência visível para quem depende deste módulo
+    //
+    // Quando usar 'api':
+    //   - O tipo da dependência APARECE nas assinaturas dos
+    //     métodos públicos deste módulo (parâmetros, retornos)
+    //   - Quem usa este módulo PRECISA da dependência no classpath
+    //
+    // Equivalente Maven: scope 'compile' (mas Maven não separa api/impl)
+    //
+    // REQUER plugin 'java-library' para usar 'api'
+    // ─────────────────────────────────────────────────────────
+    api 'org.slf4j:slf4j-api:2.0.9'
+    // Exemplo: método público da sua lib retorna Logger (do SLF4J)
+    // → quem usar sua lib precisa ter SLF4J no classpath
+    // → use 'api' neste caso
+
+    // ─────────────────────────────────────────────────────────
+    // 'implementation': dependência interna, NÃO exposta
+    //
+    // Quando usar 'implementation' (PADRÃO — prefira sempre):
+    //   - A dependência é usada INTERNAMENTE na implementação
+    //   - Não aparece em tipos públicos (retornos, parâmetros)
+    //   - Quem depende deste módulo NÃO precisa dessa dep
+    //
+    // VANTAGEM: Quando você muda uma dep 'implementation',
+    // apenas ESTE módulo precisa recompilar.
+    // Com 'api', todos os módulos dependentes recompilam!
+    //
+    // Equivalente Maven: basicamente 'compile' (Maven não distingue bem)
+    // ─────────────────────────────────────────────────────────
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'ch.qos.logback:logback-classic:1.4.14'
+    implementation 'com.google.guava:guava:32.1.3-jre'
+
+    // ─────────────────────────────────────────────────────────
+    // 'compileOnly': disponível para compilação, NÃO entra no JAR
+    //
+    // Equivalente Maven: scope 'provided'
+    // Uso típico: Lombok, annotations de framework que o servidor fornece
+    // ─────────────────────────────────────────────────────────
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+
+    // Para que Lombok funcione como annotation processor:
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    // ─────────────────────────────────────────────────────────
+    // 'runtimeOnly': disponível em runtime, NÃO disponível em compilação
+    //
+    // Equivalente Maven: scope 'runtime'
+    // Uso típico: drivers JDBC, implementações de SPI
+    // ─────────────────────────────────────────────────────────
+    runtimeOnly 'com.h2database:h2:2.2.224'
+
+    // ─────────────────────────────────────────────────────────
+    // 'testImplementation': disponível apenas para compilação e runtime dos TESTES
+    //
+    // Equivalente Maven: scope 'test'
+    // ─────────────────────────────────────────────────────────
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+    testImplementation 'org.mockito:mockito-core:5.7.0'
+    testImplementation 'org.assertj:assertj-core:3.24.2'
+
+    // ─────────────────────────────────────────────────────────
+    // 'testRuntimeOnly': apenas no runtime dos testes
+    // ─────────────────────────────────────────────────────────
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // ─────────────────────────────────────────────────────────
+    // 'testCompileOnly': apenas na compilação dos testes (raro)
+    // ─────────────────────────────────────────────────────────
+    // testCompileOnly '...'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+/*
+  ═══════════════════════════════════════════════════════════
+  RESUMO DE CONFIGURAÇÕES GRADLE vs MAVEN:
+
+  Gradle            │ Maven scope  │ Compile │ Runtime │ Transitiva
+  ──────────────────┼──────────────┼─────────┼─────────┼───────────
+  api               │ compile      │   SIM   │   SIM   │   SIM (visível)
+  implementation    │ compile      │   SIM   │   SIM   │   NÃO (oculta)
+  compileOnly       │ provided     │   SIM   │   NÃO   │   NÃO
+  runtimeOnly       │ runtime      │   NÃO   │   SIM   │   SIM
+  testImplementation│ test         │   NÃO   │   NÃO   │   NÃO
+  testRuntimeOnly   │ test runtime │   NÃO   │   NÃO   │   NÃO
+  compileClasspath  │ (interno)    │   —     │   —     │   —
+
+  REGRA DE OURO:
+  "Use 'implementation' por padrão. Use 'api' APENAS quando
+  o tipo da dependência aparece nas suas APIs públicas."
+
+  PERGUNTA DE ENTREVISTA:
+  "Qual a diferença entre 'implementation' e 'api' no Gradle?"
+  Resposta: 'api' expõe a dependência para todos os módulos
+  que dependem deste — eles enxergam e podem usar a classe
+  diretamente. 'implementation' encapsula a dependência — quem
+  depende deste módulo NÃO vê a dependência. Isso tem impacto
+  na PERFORMANCE: mudanças em deps 'implementation' causam
+  recompilação apenas do módulo atual. Mudanças em deps 'api'
+  causam recompilação de todos os módulos dependentes.
+  ═══════════════════════════════════════════════════════════
+*/

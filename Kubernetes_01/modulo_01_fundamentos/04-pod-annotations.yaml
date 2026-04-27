@@ -1,0 +1,91 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Demonstra qual a gigantesca diferença entre Labels, e
+# as Annotations (Anotações).
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Lembre-se, as Labels são como a *Cor do Carro* (vermelho) onde um policial
+# te vê de longe em uma batida que mandou parar "todos os vermelhos".
+#
+# Annotations seria o *Manual Técnico do porta-luvas* do carro.
+# Serve apenas pra você arquivar quem construiu (Data/Hora de Produção), 
+# quem revisou a documentação, ou uma nota longa de um mecânico sobre a embreagem. 
+# O Policial da estrada não consegue te filtrar olhando apenas pra isso de longe.
+
+# 2. O QUE É (definição técnica Senior)
+# Annotations são dicionários de chave/valor projetados especificamente 
+# para armazenar metadados não-identificadores em blocos enormes de string.
+# Diferente das Labels, as Ferramentas internas do Kubernetes não buscam 
+# objetos via Selectors de strings de Annotation. Ela serve primordialmente para 
+# ferramentas de automação externas gravarem dados complexos no próprio yaml vivo.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-super-anotado
+  namespace: meu-primeiro-projeto
+  # Este era o bloco anterior: Identificadores que servem pra fazer Buscas/Rede
+  labels:                    
+    aplicacao: worker-pdf
+  # AQUI ESTÁ A NOVIDADE: As anotações ricas de conhecimento humano ou ferramentas  
+  annotations:
+    autor.email: "elias@dominio.com.br"
+    revisao.git.hash: "6f5a3c9b4e"
+    documentacao.url: "https://minha-wiki.srv/pdf-worker.html"
+    # Anotações suportam blocos enormes, sem as duras regras das labels:
+    nota.do.dev: |
+      "Este componente fuma CPU e quebra facilmente se vier PDF zipado.
+       Rever ticket JIRA-4091 na próxima sprint de Março" 
+spec:
+  containers:
+    - name: worker-pdf
+      image: alpine:latest 
+      command: ["sleep", "3600"] # Comando só pra manter o pod vivo atoa.
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplicar o arquivo no cluster:
+#    kubectl apply -f 04-pod-annotations.yaml
+#
+# 2. Tente fazer uma busca pela anotação (ISSO VAI DAR ERRO PORQUE É PROIBIDO)
+#    kubectl get pods -l autor.email=elias@dominio.com.br -n meu-primeiro-projeto
+#
+# 3. Ler o conteúdo que está lá dentro, de forma completa com Output YAML Localho:
+#    kubectl get pod pod-super-anotado -n meu-primeiro-projeto -o yaml
+#
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# Você não costuma ter "crashing bugs" por conta de Annotations.
+# Mas elas têm limite: 256kb no Kubernetes vanilla por anotação (para não quebrar 
+# o banco de dados interno etcd explodindo o tamanho dos objetos na listagem pesada).
+# O limite de Labels, aliás, tem em média de chave máximo 63 caracteres.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# "Elias, se eu não consigo filtrar por Annotations, pra que diabos eu sênior usaria?"
+# Na vida real: Ferramentas de nuvem. Se você subir um Service "LoadBalancer" na AWS 
+# (Para abrir seu site pra internet), você é OBRIGADO a socar uma Annotation no seu yaml
+# no estilo: `service.beta.kubernetes.io/aws-load-balancer-type: "nlb"`.
+# Porquê? O motor do kubernetes em si vai ignorar isso por completo. MAS O ROBÔ DA AWS
+# C.C.M (Cloud Controller Manager) que ronda todos os clusters secretamente vai ler 
+# aquele yaml, ver a Annotation com o nome da própria AWS, e magicamente criar os 
+# hardwares na aba da conta AWS Billing. O ecossistema se comunica assim pelo mundo!
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Se eu preciso que meu Continuous Delivery mude algo em um Deployment 
+# antigo para forçar todos os Pods a reiniciar, sem alterar a imagem do container. Como faremos se 
+# não houver mudança formal de spec?"
+# Resposta Esperada: "Podemos alterar dinamicamente uma Annotation. Ao usar uma 
+# annotation de timestamp, por exemplo, o Kubernetes enxerga que o estado desejado 
+# (YAML) foi levemente alterado em metadados. Essa sútil mudança fará com que o
+# Rollout seja deflagrado de cima pra baixo e ele substituirá os antigos por recém 
+# nascidos graciosamente sem causar interrupção geral. É uma técnica muito validada para soft-restarts."

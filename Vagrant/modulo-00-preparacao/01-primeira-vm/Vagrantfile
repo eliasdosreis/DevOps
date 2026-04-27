@@ -1,0 +1,49 @@
+# ============================================================
+# MÓDULO 0 — PRIMEIRA VM
+# O QUE ESTE ARQUIVO FAZ:
+#   Sobe a sua primeira VM com Ubuntu 22.04 (Jammy Jellyfish)
+#   usando o VirtualBox como provider.
+#   Este é o Vagrantfile mais simples possível — apenas o
+#   essencial para você ver o Vagrant funcionando.
+# ============================================================
+
+# Vagrant.configure("2") → define a versão da API de configuração
+# "2" é a versão atual e obrigatória. Nunca use "1" (obsoleto).
+Vagrant.configure("2") do |config|
+
+  # -----------------------------------------------------------
+  # BOX BASE — A "imagem" do sistema operacional
+  # -----------------------------------------------------------
+  # config.vm.box → define qual SO será usado
+  # "ubuntu/jammy64" = Ubuntu 22.04 LTS (64-bit)
+  # Baixado automaticamente do Vagrant Cloud se não existir localmente
+  # OBRIGATÓRIO
+  config.vm.box = "ubuntu/jammy64"
+
+  # -----------------------------------------------------------
+  # HOSTNAME — Nome da máquina dentro do SO
+  # -----------------------------------------------------------
+  # Define como a VM se identifica na rede interna
+  # OPCIONAL, mas altamente recomendado para organização
+  config.vm.hostname = "primeira-vm"
+
+  # -----------------------------------------------------------
+  # PROVIDER — Quem vai criar e gerenciar a VM
+  # -----------------------------------------------------------
+  # VirtualBox é o provider padrão e gratuito
+  # OPCIONAL — sem este bloco, o Vagrant usa os padrões do VirtualBox
+  config.vm.provider "virtualbox" do |vb|
+
+    # Nome que aparece na interface do VirtualBox
+    vb.name = "primeira-vm-vagrant"
+
+    # Memória RAM em Megabytes
+    # 1024 MB = 1 GB
+    vb.memory = "1024"
+
+    # Quantidade de núcleos de CPU
+    vb.cpus = 1
+
+  end
+
+end

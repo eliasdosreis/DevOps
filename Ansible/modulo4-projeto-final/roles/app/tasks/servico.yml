@@ -1,0 +1,59 @@
+---
+# ==============================================================
+# ARQUIVO: roles/app/tasks/servico.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# O systemd é como o "gerente de turno" do servidor.
+# Ele garante que a aplicação:
+# - Inicia quando o servidor liga
+# - Reinicia sozinha se travar
+# - Pode ser controlada com: start/stop/restart/status
+# ==============================================================
+
+# Criar arquivo de serviço systemd para a aplicação
+- name: "Systemd: Criar unit file da aplicação"
+  ansible.builtin.template:
+    src: app.service.j2              # Template do serviço systemd
+    dest: "/etc/systemd/system/{{ app_nome }}.service"
+    mode: '0644'
+    owner: root
+    group: root
+  # Recarregar daemon depois de criar o arquivo
+  notify:
+    - Recarregar systemd
+    - Reiniciar app
+
+# Recarregar o systemd para reconhecer o novo serviço
+- name: "Systemd: Recarregar daemon"
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+# Habilitar e iniciar o serviço da aplicação
+- name: "Systemd: Habilitar e iniciar {{ app_nome }}"
+  ansible.builtin.systemd:
+    name: "{{ app_nome }}"
+    state: started
+    enabled: true           # Iniciar automaticamente no boot
+    daemon_reload: true     # Garantir que leu o arquivo mais recente
+
+# Aguardar a aplicação ficar disponível na porta
+- name: "Systemd: Aguardar aplicação iniciar (porta {{ app_porta }})"
+  ansible.builtin.wait_for:
+    host: localhost
+    port: "{{ app_porta }}"
+    timeout: 60             # Aguardar até 60 segundos
+    state: started
+
+# Verificar status do serviço
+- name: "Systemd: Verificar status do serviço"
+  ansible.builtin.command:
+    cmd: "systemctl status {{ app_nome }}"
+  register: servico_status
+  changed_when: false
+  ignore_errors: true
+
+- name: "Systemd: Status atual"
+  ansible.builtin.debug:
+    msg: "{{ servico_status.stdout_lines | default(['Serviço criado']) }}"

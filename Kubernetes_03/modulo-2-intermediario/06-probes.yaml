@@ -1,0 +1,117 @@
+# ============================================================
+# ARQUIVO: 06-probes.yaml
+# HEALTH CHECKS - Liveness, Readiness e Startup Probes
+#
+# Imagine um hospital com 3 tipos de verificação:
+#
+# LIVENESS PROBE = "O paciente está vivo?"
+#   Se não: mata e recria o container
+#   Use para detectar deadlocks, travamentos, estados inválidos
+#
+# READINESS PROBE = "O paciente está pronto para atender?"
+#   Se não: remove do Service (não recebe tráfego)
+#   Use para detectar se o app terminou de inicializar
+#
+# STARTUP PROBE = "O paciente está acordando do coma?"
+#   Dá tempo extra para apps LENTOS iniciarem
+#   Desativa Liveness/Readiness até o app iniciar
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: app-com-probes
+  labels:
+    app: com-probes
+
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: com-probes
+
+  template:
+    metadata:
+      labels:
+        app: com-probes
+
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.25
+          ports:
+            - containerPort: 80
+
+          # -----------------------------------------------
+          # STARTUP PROBE - Verifica se o app INICIOU
+          # -----------------------------------------------
+          startupProbe:
+            httpGet:
+              path: /         # Faz GET nesta URL
+              port: 80        # Nesta porta
+
+            failureThreshold: 30  # Máximo de falhas = 30
+            periodSeconds: 10     # Tenta a cada 10 segundos
+            # Total de tempo: 30 * 10 = 300s (5 min para iniciar)
+            # Durante esse tempo, Liveness não é verificado!
+
+          # -----------------------------------------------
+          # LIVENESS PROBE - "O app está vivo?"
+          # -----------------------------------------------
+          livenessProbe:
+            httpGet:
+              path: /healthz    # Endpoint de saúde (boas práticas!)
+              port: 80
+
+            initialDelaySeconds: 10  # Espera 10s antes de começar
+            periodSeconds: 15        # Verifica a cada 15 segundos
+            timeoutSeconds: 5        # Timeout de 5s para responder
+            failureThreshold: 3      # Após 3 falhas: RESTART do container
+            successThreshold: 1      # 1 sucesso = está vivo
+
+          # -----------------------------------------------
+          # READINESS PROBE - "O app está pronto?"
+          # -----------------------------------------------
+          readinessProbe:
+            httpGet:
+              path: /ready      # Endpoint diferente do liveness!
+              port: 80
+
+            initialDelaySeconds: 5   # Espera 5s antes de checar
+            periodSeconds: 10        # Verifica a cada 10 segundos
+            timeoutSeconds: 3        # Timeout de 3s
+            failureThreshold: 3      # Após 3 falhas: REMOVE do Service
+            successThreshold: 2      # 2 sucessos para voltar ao Service
+
+          # -----------------------------------------------
+          # Também pode usar TCP ou comando de shell:
+          # -----------------------------------------------
+          # livenessProbe:
+          #   tcpSocket:
+          #     port: 8080      # Verifica se a porta está aberta
+
+          # livenessProbe:
+          #   exec:
+          #     command:        # Executa um comando
+          #       - cat
+          #       - /tmp/healthy   # Se arquivo existe = saudável
+
+# ============================================================
+# DIFERENÇA CRUCIAL (ENTREVISTA GARANTIDA):
+#
+# Liveness falha  --> Container REINICIA
+# Readiness falha --> Container REMOVE do Service (mas não reinicia)
+#                     Continua rodando, só para de receber tráfego
+#
+# EXEMPLO PRÁTICO:
+# App de pagamento processando uma transação importante.
+# Readiness falha: não recebe NOVOS pagamentos.
+# Liveness OK: não reinicia (não perde a transação atual).
+#
+# BOAS PRÁTICAS:
+# - /healthz  --> liveness (simples, só diz "estou vivo")
+# - /ready    --> readiness (verifica dependências: DB, cache)
+# - Não faça liveness checar banco de dados!
+#   Se o banco cair, todos os containers reiniciam (caos!)
+# ============================================================

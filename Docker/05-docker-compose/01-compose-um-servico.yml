@@ -1,0 +1,20 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# O uso estrito minimo do Compose declarando que uma máquina web suba com 1 porta atrelada.
+# ============================================================
+
+# Recomendado Senior: Versão mais estavel do compose file format v3 (Para compose local e enxutamento compativel com swarm legados de prod. A v4 apenas descartou as quotes mas causa dores de cabeça atoa no parser de versões antigas do daemon em prod).
+version: "3.8"
+
+# Sessão onde declaramos as bolhas Isoladas/Containers
+services:
+  # "web" é o nome da nossa variavel do Host do DNS na infra inteira gerada
+  web:
+    # A imagem a se baixada default
+    image: nginx:alpine
+    # O -p do CLI shell clássico virou a estrutura de array ports.
+    ports:
+      - "8080:80"
+    # Adicionando uma configuração base de boa pratica: reinicie sempre!
+    # Lote de restart-police fará o daemon religar ele se um dev der stop no daemon pro boot do servidor fisico.
+    restart: always

@@ -1,0 +1,105 @@
+---
+# ==============================================================
+# ARQUIVO: roles/monitoring/tasks/main.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Monitoramento é como o PAINEL DE INSTRUMENTOS do carro.
+# Velocidade, temperatura, combustível = CPU, RAM, Disco.
+# Node Exporter = o "sensor" que coleta os dados do servidor.
+# Prometheus = o "painel" que exibe os dados.
+# Grafana = o "dashboard bonito" que todos veem.
+# ==============================================================
+
+# Criar usuário dedicado para o Node Exporter (segurança!)
+- name: "Monitoring: Criar usuário node_exporter"
+  ansible.builtin.user:
+    name: "{{ node_exporter_usuario }}"
+    system: true           # Usuário de sistema
+    shell: /bin/false      # Sem acesso ao shell
+    create_home: false
+    state: present
+
+# Verificar se já está instalado (idempotência!)
+- name: "Monitoring: Verificar se node_exporter existe"
+  ansible.builtin.stat:
+    path: /usr/local/bin/node_exporter
+  register: node_exporter_bin
+
+# Baixar o Node Exporter (só se não existe ou versão mudou)
+- name: "Monitoring: Baixar Node Exporter v{{ node_exporter_versao }}"
+  ansible.builtin.get_url:
+    url: "{{ node_exporter_url_base }}/v{{ node_exporter_versao }}/node_exporter-{{ node_exporter_versao }}.linux-amd64.tar.gz"
+    dest: "/tmp/node_exporter-{{ node_exporter_versao }}.tar.gz"
+    mode: '0644'
+  when: not node_exporter_bin.stat.exists
+
+# Extrair o arquivo baixado
+- name: "Monitoring: Extrair Node Exporter"
+  ansible.builtin.unarchive:
+    src: "/tmp/node_exporter-{{ node_exporter_versao }}.tar.gz"
+    dest: /tmp/
+    remote_src: true       # O arquivo já está no servidor remoto
+  when: not node_exporter_bin.stat.exists
+
+# Mover binário para pasta correta
+- name: "Monitoring: Instalar binário"
+  ansible.builtin.copy:
+    src: "/tmp/node_exporter-{{ node_exporter_versao }}.linux-amd64/node_exporter"
+    dest: /usr/local/bin/node_exporter
+    mode: '0755'
+    owner: "{{ node_exporter_usuario }}"
+    group: "{{ node_exporter_usuario }}"
+    remote_src: true       # Copiar de um lugar para outro no mesmo servidor
+  when: not node_exporter_bin.stat.exists
+  notify: Reiniciar node_exporter
+
+# Criar serviço systemd para o Node Exporter
+- name: "Monitoring: Criar serviço systemd"
+  ansible.builtin.copy:
+    content: |
+      [Unit]
+      Description=Node Exporter - Métricas do servidor para Prometheus
+      After=network.target
+
+      [Service]
+      User={{ node_exporter_usuario }}
+      Group={{ node_exporter_usuario }}
+      Type=simple
+      ExecStart=/usr/local/bin/node_exporter \
+          --web.listen-address=:{{ node_exporter_porta }} \
+          --collector.systemd \
+          --collector.processes
+      Restart=always
+      RestartSec=5
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/node_exporter.service
+    mode: '0644'
+  notify:
+    - Recarregar systemd monitoring
+    - Reiniciar node_exporter
+
+# Habilitar e iniciar o serviço
+- name: "Monitoring: Iniciar Node Exporter"
+  ansible.builtin.systemd:
+    name: node_exporter
+    state: started
+    enabled: true
+    daemon_reload: true
+
+# Verificar se está respondendo na porta correta
+- name: "Monitoring: Verificar porta {{ node_exporter_porta }}"
+  ansible.builtin.wait_for:
+    host: localhost
+    port: "{{ node_exporter_porta }}"
+    timeout: 15
+    state: started
+
+- name: "Monitoring: Node Exporter online!"
+  ansible.builtin.debug:
+    msg:
+      - "✅ Node Exporter rodando na porta {{ node_exporter_porta }}"
+      - "📊 Métricas disponíveis em: http://{{ ansible_default_ipv4.address | default('localhost') }}:{{ node_exporter_porta }}/metrics"

@@ -1,0 +1,147 @@
+# ============================================================
+# ARQUIVO: 04-redis-deployment.yaml
+# PROJETO FINAL - Redis (Cache e Sessões)
+#
+# Redis é usado para:
+# - Cache de respostas da API (mais rápido que ir ao banco)
+# - Armazenamento de sessões de usuário
+# - Rate limiting
+# - Pub/Sub entre serviços
+#
+# Usamos Deployment (não StatefulSet) pois:
+# - Cache pode ser perdido sem problema crítico (reconstroem)
+# - Redis sem persistência não precisa de StatefulSet
+# - Se persistência for necessária: use StatefulSet com PVC
+# ============================================================
+
+# Service do Redis
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: redis-service            # Nome referenciado no ConfigMap (REDIS_HOST)
+  namespace: ecommerce
+  labels:
+    app: redis
+    componente: cache
+
+spec:
+  type: ClusterIP                # Só acessível dentro do cluster
+                                 # Redis NUNCA deve ser exposto externamente!
+  selector:
+    app: redis
+
+  ports:
+    - name: redis
+      port: 6379                 # Porta padrão do Redis
+      targetPort: 6379
+
+---
+# Deployment do Redis
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: redis
+  namespace: ecommerce
+  labels:
+    app: redis
+    componente: cache
+
+spec:
+  replicas: 1                    # 1 réplica de Redis
+                                 # Para HA real: use Redis Sentinel ou Cluster
+
+  selector:
+    matchLabels:
+      app: redis
+
+  template:
+    metadata:
+      labels:
+        app: redis
+        componente: cache
+
+    spec:
+      securityContext:
+        runAsUser: 999           # Não rodar como root
+        runAsGroup: 999
+
+      containers:
+        - name: redis
+          image: redis:7-alpine  # Alpine = imagem menor (segurança + velocidade)
+
+          # Comando para iniciar redis com senha e configurações
+          command:
+            - redis-server
+            - "--requirepass"
+            - "$(REDIS_PASSWORD)"   # Referencia a env var abaixo
+            - "--maxmemory"
+            - "256mb"              # Limite de memória do Redis
+            - "--maxmemory-policy"
+            - "allkeys-lru"        # Remove chaves menos usadas quando cheio
+
+          ports:
+            - containerPort: 6379
+              name: redis
+
+          # Pega a senha do Secret
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: REDIS_PASSWORD
+
+          resources:
+            requests:
+              memory: "128Mi"    # Redis é eficiente com memória
+              cpu: "100m"
+            limits:
+              memory: "512Mi"    # Máximo de RAM para o Redis
+              cpu: "500m"
+
+          # Liveness: Redis responde a PING?
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                # redis-cli PING retorna PONG se estiver vivo
+                - redis-cli -a $(REDIS_PASSWORD) ping | grep PONG
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Readiness: Redis aceita comandos?
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - redis-cli -a $(REDIS_PASSWORD) ping | grep PONG
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+
+# ============================================================
+# PADRÕES DE USO DO REDIS EM PRODUÇÃO:
+#
+# Cache com TTL:
+#   SET usuario:123 "{...json...}" EX 3600   (expira em 1h)
+#
+# Rate limiting:
+#   INCR requisicoes:ip:192.168.1.1
+#   EXPIRE requisicoes:ip:192.168.1.1 60
+#
+# Pub/Sub:
+#   PUBLISH canal "mensagem"
+#   SUBSCRIBE canal
+#
+# ENTREVISTA:
+# "Qual política maxmemory-policy usar?"
+# allkeys-lru: Remove qualquer chave menos usada (cache geral)
+# volatile-lru: Remove apenas chaves com TTL (sessões + cache)
+# noeviction: Retorna erro quando cheio (para dados críticos)
+# ============================================================

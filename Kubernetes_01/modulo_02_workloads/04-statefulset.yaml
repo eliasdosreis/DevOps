@@ -1,0 +1,91 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um StatefulSet, o complexo mecanismo responsável por rodar 
+# Stateful Aplications (Aplicações com Estado / Bancos de Dados)
+# mantendo nomes ordinais rígidos e discos inamovíveis.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Imagine um time de Futebol. 
+# O "Deployment" é do tipo que se camisa "Atacante-XYZ23" sumir de campo, ele simplesmente
+# recria um "Atacante-LKM44", taca lá no meio com qualquer disco (qualquer chuteira) e foda-se a ordem.
+#
+# O "StatefulSet", por outro lado, é um Rei rígido e burocrático. Seus Pods têm ORDEM.
+# Subirá primeiro o "BancodeDados-0". Só quando o 0 estiver 100% é que sobe o "BancodeDados-1"...
+# E se o "-1" morrer durante o uso, ele RECRIA exatamente o "BancodeDados-1". E com uma 
+# magia genial: a chuteira (disco/PersistentVolume) continuará colada cirurgicamente no "-1".
+
+# 2. O QUE É (definição técnica Senior)
+# O StatefulSet (STS) gerencia a implantação e escala de Pods fornecendo 
+# garantias rigorosas sobre a ordenação (startup e termination order) e 
+# identidades de rede inconfundíveis (Identificadores Ordinais Fixos). 
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: meu-banco-mongo
+  namespace: meu-primeiro-projeto
+spec:
+  serviceName: "mongo-headless" # O STS requer um Service "sem cabeça" para amarração de DNS
+  replicas: 3
+  selector:
+    matchLabels:
+      app: meu-mongo
+  
+  template:
+    metadata:
+      labels:
+        app: meu-mongo
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:6.0
+          ports:
+            - containerPort: 27017
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplique o arquivo:
+#    kubectl apply -f 04-statefulset.yaml
+#
+# 2. ABRA UM OUTRO TERMINAL e rode e fique observando (mágica em progresso):
+#    kubectl get pods -w -n meu-primeiro-projeto
+# Perceba que os Pods subirão em O-R-D-E-M. 
+# "meu-banco-mongo-0" (Sua tag mestre), "meu-banco-mongo-1", "meu-banco-mongo-2".
+#
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# O Delete do StatefulSet é LENTO DE PROPÓSITO:
+# Se você pedir `kubectl scale statefulset meu-banco-mongo --replicas=0`, 
+# ele NÃO mata todos pra valer em série. Ele matará do Z ao A. Deletará
+# o "-2". Esperará o commit. Deletará o "-1"... Respeito mútuo a consistência.
+#
+# E a dor dos Discos?
+# Em cenários avançados usamos um bloco chamado `volumeClaimTemplates` onde 
+# o K8s injeta um disco na AWS para cada POD dinamicamente (1 disco pro -0, 1 pro -1).
+# Se você der delete no StatefulSet, OS DISCOS FICAM VIVOS pra sempre. O STS não
+# apaga volumes pra não você ser demitido! Eles são intocáveis salvo manualidade.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# Cluster de BD (ex: Galera/Cassandra) precisam de DNS preditivo. Quando um mongod 
+# Slave precisa se juntar ao Master, a qual IP ele manda tráfego? Ele não sabe IP's! 
+# Com STS nós geramos DNSs fixos perfeitos que dizem: O master está pra sempre em
+# `meu-banco-mongo-0.mongo-headless.meu-primeiro-projeto.svc.cluster.local`. 
+# O DNS não morrerá mais a cada boot falho de pod! Genialidade arquitetural.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "O que acontece se um nó-operário (Worker Node) falhar em um Cluster 
+# (Falta de energia, CPU offline), onde roda o seu Pod `mongo-0` gerado por StatefulSet? Ele recriará em outro Nó automaticamente rápido?"
+# Resposta Esperada: "Por padrão ABSOLUTO: Não (!). Se o Kubernetes não puder
+# ter a certeza matemática que o Nó morreu (Network Partition), o STS jamais
+# criará o `mongo-0` em outro servidor concorrentemente, pois ter 2 cópias ativas acessando o 
+# Mesmo Volume geraria "Data Corruption / Split Brain". Ele esperará uma intervenção."

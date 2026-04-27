@@ -1,0 +1,110 @@
+---
+# ==============================================================
+# ARQUIVO: 07-playbook-loops.yml
+# MÓDULO 1 - Fundamentos
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Loop é como lavar pratos!
+# Em vez de lavar 1 prato, guardar, pegar outro... você repete:
+# "Para CADA prato na pilha, lave e seque."
+# No Ansible: "Para CADA item da lista, execute esta tarefa."
+#
+# ▶️  COMO RODAR:
+# ansible-playbook -i 01-inventory-simples.ini 07-playbook-loops.yml
+# ==============================================================
+
+- name: "Loops no Ansible - Repetindo Tarefas"
+  hosts: localhost
+  become: true
+  gather_facts: false
+
+  vars:
+    # Lista de pacotes para instalar (como uma lista de compras!)
+    pacotes_necessarios:
+      - curl
+      - wget
+      - git
+      - vim
+      - htop
+
+    # Lista de pastas para criar
+    pastas_projeto:
+      - /tmp/ansible-demo/logs
+      - /tmp/ansible-demo/config
+      - /tmp/ansible-demo/backup
+      - /tmp/ansible-demo/scripts
+
+    # Lista de usuários para criar
+    usuarios_sistema:
+      - nome: alice
+        grupo: developers
+        shell: /bin/bash
+      - nome: bob
+        grupo: developers
+        shell: /bin/bash
+      - nome: charlie
+        grupo: ops
+        shell: /bin/sh
+
+  tasks:
+
+    # ---- LOOP SIMPLES: com lista de strings --------------------
+    # "loop" repete a tarefa para cada item da lista
+    # "{{ item }}" = o item atual do loop (substitui automaticamente)
+    - name: "Criar múltiplas pastas de uma vez"
+      ansible.builtin.file:
+        path: "{{ item }}"     # item = cada pasta da lista
+        state: directory
+        mode: '0755'
+      loop: "{{ pastas_projeto }}"   # Loop em cima da lista de pastas
+
+    # ---- LOOP COM DEBUG: ver o que está sendo processado -------
+    - name: "Mostrar cada pasta criada"
+      ansible.builtin.debug:
+        msg: "✅ Pasta criada: {{ item }}"
+      loop: "{{ pastas_projeto }}"
+
+    # ---- LOOP COM ÍNDICE: saber qual número é o item -----------
+    # "loop_control" personaliza o loop
+    - name: "Criar arquivos numerados"
+      ansible.builtin.copy:
+        content: "Arquivo número {{ idx + 1 }} de {{ pastas_projeto | length }}"
+        dest: "/tmp/ansible-demo/arquivo_{{ idx + 1 }}.txt"
+        mode: '0644'
+      loop: "{{ pastas_projeto }}"
+      loop_control:
+        index_var: idx    # "idx" vai ter o número (0, 1, 2, 3...)
+        label: "{{ item }}"  # Mostra o item no lugar de tudo no log
+
+    # ---- LOOP COM DICIONÁRIOS: listas com múltiplos campos -----
+    # Cada "item" agora tem vários campos (nome, grupo, shell)
+    - name: "Criar arquivos para cada usuário"
+      ansible.builtin.copy:
+        content: |
+          Usuario: {{ item.nome }}
+          Grupo: {{ item.grupo }}
+          Shell: {{ item.shell }}
+        dest: "/tmp/ansible-demo/usuario_{{ item.nome }}.txt"
+        mode: '0644'
+      loop: "{{ usuarios_sistema }}"
+      # Mostra só o nome no log (em vez de toda a estrutura)
+      loop_control:
+        label: "{{ item.nome }}"
+
+    # ---- LOOP COM CONDIÇÃO: pular itens específicos ------------
+    - name: "Processar só usuários do grupo developers"
+      ansible.builtin.debug:
+        msg: "👨‍💻 Developer encontrado: {{ item.nome }}"
+      loop: "{{ usuarios_sistema }}"
+      # Combina loop + condição: processa o item SE for developer
+      when: item.grupo == "developers"
+      loop_control:
+        label: "{{ item.nome }}"
+
+    # ---- RESUMO FINAL ------------------------------------------
+    - name: "Resumo do que foi criado"
+      ansible.builtin.debug:
+        msg:
+          - "📁 Pastas criadas: {{ pastas_projeto | length }}"
+          - "👥 Usuários processados: {{ usuarios_sistema | length }}"

@@ -1,0 +1,163 @@
+# ============================================================
+# ARQUIVO: 01-tabela-simples.yaml
+# O QUE FAZ: Cria uma tabela DynamoDB básica para uma lista de tarefas (todo-list)
+#
+# ANALOGIA: Criar a primeira gaveta do arquivo mágico.
+#           Cada ficha é uma tarefa, identificada pelo ID do usuário
+#           e pelo ID da tarefa.
+#
+# CUSTO: $0.00 — Free Tier: 25 GB + 25 WCU + 25 RCU SEMPRE
+# CONCEITO NOVO: Table, Partition Key, Sort Key, AttributeType
+# ============================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  MÓDULO 4 - PASSO 1: Tabela DynamoDB básica para todo-list.
+  Conceitos: Table, Primary Key, Partition Key, Sort Key, Billing Mode
+
+Parameters:
+
+  NomeTabela:
+    Type: String
+    Description: Nome único da tabela no DynamoDB
+    Default: tarefas-aprendizado
+
+  ModoCobranca:
+    Type: String
+    Description: |
+      PAY_PER_REQUEST: On-Demand — paga por uso real (melhor para tráfego imprevisível)
+      PROVISIONED: capacidade fixa em WCU/RCU (melhor custo para tráfego previsível)
+    Default: PAY_PER_REQUEST
+    AllowedValues:
+      - PAY_PER_REQUEST
+      - PROVISIONED
+
+Resources:
+
+  # ----------------------------------------------------------
+  # TABELA DYNAMODB — Todo-list simples
+  #
+  # DESIGN DA PK:
+  #   Partition Key (PK): usuarioId
+  #     → Todos os dados de um usuário ficam "juntos" fisicamente
+  #     → Query eficiente: "todas as tarefas do usuário X"
+  #   
+  #   Sort Key (SK): tarefaId
+  #     → Identifica unicamente cada tarefa dentro do usuário
+  #     → Permite: "tarefas que começam com 'tarefa-2024'"
+  #
+  # RESULTADO: GetItem(usuarioId, tarefaId) = O(1) ultrarrápido
+  # ----------------------------------------------------------
+  TabelaTarefas:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete    # Deleta a tabela ao deletar a stack (Ok para aprendizado)
+    Properties:
+    
+      TableName: !Ref NomeTabela
+      
+      # --------------------------------------------------------
+      # ATTRIBUTE DEFINITIONS — Define APENAS os atributos usados como keys
+      # DynamoDB é schema-less: outros atributos não precisam ser declarados aqui!
+      # Isso é uma diferença crucial em relação ao SQL
+      # --------------------------------------------------------
+      AttributeDefinitions:
+        
+        # Partition Key — tipo S=String, N=Number, B=Binary
+        - AttributeName: usuarioId    # Nome do atributo
+          AttributeType: S            # S = String (UUID, email, etc.)
+        
+        # Sort Key — permite ordenação e range queries
+        - AttributeName: tarefaId
+          AttributeType: S
+      
+      # --------------------------------------------------------
+      # KEY SCHEMA — Define qual atributo é PK e qual é SK
+      # HASH = Partition Key (não pode repetir DENTRO da PK combinada com SK)
+      # RANGE = Sort Key (pode repetir com PKs diferentes)
+      # --------------------------------------------------------
+      KeySchema:
+        - AttributeName: usuarioId
+          KeyType: HASH       # HASH = Partition Key
+        - AttributeName: tarefaId
+          KeyType: RANGE      # RANGE = Sort Key
+      
+      # --------------------------------------------------------
+      # BILLING MODE — Como a capacidade é cobrada
+      # PAY_PER_REQUEST: paga por request real (On-Demand)
+      #   - Sem provisioning, escala automaticamente até 0
+      #   - Melhor para: dev, tráfego imprevisível, iniciantes
+      #   - Custo: $1.25/M writes + $0.25/M reads (us-east-1)
+      #
+      # PROVISIONED: capacidade reservada (WCU/RCU por hora)
+      #   - Mais barato para tráfego alto e constante
+      #   - Free Tier: 25 WCU + 25 RCU inclusos
+      # --------------------------------------------------------
+      BillingMode: !Ref ModoCobranca
+      
+      # Só necessário se BillingMode = PROVISIONED:
+      # ProvisionedThroughput:
+      #   ReadCapacityUnits: 5     # 5 leituras de 4KB/segundo
+      #   WriteCapacityUnits: 5    # 5 escritas de 1KB/segundo
+      
+      # --------------------------------------------------------
+      # POINT-IN-TIME RECOVERY (PITR) — Backup contínuo
+      # Permite restaurar a tabela para qualquer ponto nos últimos 35 dias
+      # Em produção: SEMPRE habilite. Em aprendizado: opcional (grátis!)
+      # --------------------------------------------------------
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      
+      # --------------------------------------------------------
+      # SERVER-SIDE ENCRYPTION — Criptografia em repouso
+      # SSEEnabled: true usa a chave padrão AWS (KMS Managed — gratuito)
+      # Para usar CMK (Customer Managed Key): especifique KMSMasterKeyId
+      # --------------------------------------------------------
+      SSESpecification:
+        SSEEnabled: true    # Criptografia com chave AWS (gratuita)
+      
+      # --------------------------------------------------------
+      # TABLE CLASS — Standard vs Infrequent Access
+      # STANDARD: acesso frequente (default)
+      # STANDARD_INFREQUENT_ACCESS: dados raramente lidos (~60% mais barato em storage)
+      #   mas cobra por leitura — use para dados históricos/arquivos
+      # --------------------------------------------------------
+      TableClass: STANDARD
+      
+      Tags:
+        - Key: Modulo
+          Value: "04-DynamoDB"
+        - Key: Propósito
+          Value: Aprendizado
+
+Outputs:
+
+  NomeTabela:
+    Description: Nome da tabela DynamoDB
+    Value: !Ref TabelaTarefas
+    Export:
+      Name: !Sub "${AWS::StackName}-tabela-nome"
+  
+  ARNTabela:
+    Description: ARN da tabela (use em políticas IAM)
+    Value: !GetAtt TabelaTarefas.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-tabela-arn"
+  
+  ComandosUteis:
+    Description: Comandos CLI para testar a tabela
+    Value: !Sub |
+      # Inserir um item:
+      aws dynamodb put-item \
+        --table-name ${NomeTabela} \
+        --item '{"usuarioId": {"S": "user-001"}, "tarefaId": {"S": "tarefa-001"}, "titulo": {"S": "Estudar DynamoDB"}, "concluida": {"BOOL": false}}'
+      
+      # Ler um item:
+      aws dynamodb get-item \
+        --table-name ${NomeTabela} \
+        --key '{"usuarioId": {"S": "user-001"}, "tarefaId": {"S": "tarefa-001"}}'
+      
+      # Listar todas as tarefas de um usuário (Query):
+      aws dynamodb query \
+        --table-name ${NomeTabela} \
+        --key-condition-expression "usuarioId = :uid" \
+        --expression-attribute-values '{":uid": {"S": "user-001"}}'

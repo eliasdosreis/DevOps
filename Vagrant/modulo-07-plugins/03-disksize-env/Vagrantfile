@@ -1,0 +1,61 @@
+# ============================================================
+# MÓDULO 7 — DISKSIZE + ENV PLUGIN
+# O QUE ESTE ARQUIVO FAZ:
+#   Demonstra dois plugins muito úteis em projetos reais:
+#   1. vagrant-disksize: redimensiona o disco da VM (padrão ~10GB)
+#   2. vagrant-env: carrega variáveis de ambiente de arquivo .env
+#   Propósito: gerenciar configurações sensíveis e recursos.
+# ============================================================
+
+# vagrant plugin install vagrant-disksize
+# vagrant plugin install vagrant-env
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-disksize-env"
+  config.vm.network "private_network", ip: "192.168.56.92"
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PLUGIN vagrant-env
+  # Carrega variáveis do arquivo .env como variáveis de ambiente
+  # disponíveis no Vagrantfile (Ruby) e nos provisioners
+  # -----------------------------------------------------------
+  if Vagrant.has_plugin?("vagrant-env")
+    config.env.enable                      # Ativa o carregamento do .env
+    config.env.filename = ".env"           # Arquivo padrão (pode ser customizado)
+    # Após ativar, use ENV["VARIAVEL"] para acessar as variáveis
+  end
+
+  # Usando variáveis do .env (com fallback se plugin não estiver instalado)
+  vm_memory = ENV.fetch("VM_MEMORY", "1024")
+  vm_cpus   = ENV.fetch("VM_CPUS",   "1")
+  db_pass   = ENV.fetch("DB_PASSWORD", "senha_padrao_nao_use_em_prod")
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PLUGIN vagrant-disksize
+  # Redimensiona o disco da VM (padrão é ~10GB)
+  # Útil para: Docker, bancos de dados, builds grandes
+  # IMPORTANTE: Funciona apenas na CRIAÇÃO da VM (não no resize)
+  # -----------------------------------------------------------
+  if Vagrant.has_plugin?("vagrant-disksize")
+    config.disksize.size = "30GB"          # Disco de 30GB em vez dos 10GB padrão
+  end
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-disksize-env"
+    vb.memory = vm_memory    # Vem do .env ou usa fallback
+    vb.cpus   = vm_cpus      # Vem do .env ou usa fallback
+  end
+
+  config.vm.provision "shell", inline: <<-SHELL
+    echo "=== CONFIGURAÇÕES DO AMBIENTE ==="
+    echo "RAM:   #{vm_memory} MB"
+    echo "CPUs:  #{vm_cpus}"
+    echo "Disco: $(df -h / | awk 'NR==2 {print $2}')"
+    echo ""
+    echo "Verificando espaço em disco:"
+    df -h /
+  SHELL
+
+end

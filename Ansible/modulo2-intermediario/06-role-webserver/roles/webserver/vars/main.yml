@@ -1,0 +1,22 @@
+---
+# ==============================================================
+# ARQUIVO: roles/webserver/vars/main.yml
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# "vars" = variáveis FIXAS da role (plano A!)
+# Têm prioridade ALTA - difícil de sobrescrever.
+# Use para coisas que NÃO devem mudar facilmente.
+# ==============================================================
+
+# Pacotes obrigatórios para o webserver funcionar
+webserver_dependencias:
+  - curl
+  - openssl
+
+# Diretórios que SEMPRE precisam existir
+webserver_diretorios:
+  - /var/www/html
+  - /var/log/nginx
+  - /etc/nginx/sites-available
+  - /etc/nginx/sites-enabled

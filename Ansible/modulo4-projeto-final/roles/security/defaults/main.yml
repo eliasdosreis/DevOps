@@ -1,0 +1,29 @@
+---
+# ==============================================================
+# ARQUIVO: roles/security/defaults/main.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Valores padrão da role de segurança.
+# Podem ser sobrescritos nas group_vars sem problema.
+# ==============================================================
+
+# SSH
+security_ssh_porta: 22
+security_ssh_permitir_root: false
+security_ssh_permitir_senha: false  # Só chave SSH!
+security_ssh_max_tentativas: 3
+security_ssh_timeout: 300
+
+# Fail2Ban (bloqueia IPs que erram a senha muitas vezes)
+security_fail2ban_instalar: true
+security_fail2ban_max_tentativas: 5
+security_fail2ban_ban_tempo: 3600  # 1 hora em segundos
+
+# UFW Firewall
+security_ufw_instalar: true
+security_ufw_politica_padrao: deny  # Bloquear tudo por padrão
+
+# Atualizações automáticas de segurança
+security_atualizacoes_auto: true

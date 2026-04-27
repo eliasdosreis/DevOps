@@ -1,0 +1,114 @@
+version: '3.8'
+
+# ============================================================
+# MÓDULO 12 — MONITORAMENTO E OBSERVABILIDADE
+# Arquivo: 12-docker-compose-monitoring.yml
+#
+# Stack completa de monitoramento: Jenkins + Prometheus + Grafana
+#
+# Uso:
+#   docker-compose -f 12-docker-compose-monitoring.yml up -d
+# ============================================================
+
+services:
+
+  # ============================================================
+  # JENKINS
+  # ============================================================
+  jenkins:
+    image: jenkins/jenkins:lts-jdk21
+    container_name: jenkins
+    restart: unless-stopped
+    user: root
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - monitoring
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+
+  # ============================================================
+  # PROMETHEUS
+  # Coleta métricas do Jenkins e de outros serviços
+  # ============================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus-config:/etc/prometheus    # Pasta com prometheus.yml
+      - prometheus_data:/prometheus            # Dados históricos
+    networks:
+      - monitoring
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'   # Retém 15 dias de dados
+      - '--web.enable-lifecycle'               # Permite reload via API
+    depends_on:
+      - jenkins
+
+  # ============================================================
+  # GRAFANA
+  # Dashboards e visualizações de métricas
+  # ============================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - monitoring
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=jenkins123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+
+  # ============================================================
+  # ALERTMANAGER
+  # Gerencia e roteia alertas do Prometheus
+  # ============================================================
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  jenkins_home:
+  prometheus_data:
+  grafana_data:
+
+# ============================================================
+# ACESSOS:
+#
+# Jenkins:      http://localhost:8080
+# Prometheus:   http://localhost:9090
+# Grafana:      http://localhost:3000  (admin/jenkins123)
+# Alertmanager: http://localhost:9093
+#
+# PRIMEIRO USO DO GRAFANA:
+# 1. Acesse http://localhost:3000 (admin/jenkins123)
+# 2. Configuration → Data Sources → Add data source
+# 3. Prometheus → URL: http://prometheus:9090
+# 4. Save & Test
+# 5. + → Import → ID: 9964 (Jenkins Dashboard da comunidade)
+# ============================================================

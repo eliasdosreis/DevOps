@@ -1,0 +1,85 @@
+---
+# =============================================================
+# ROLE: common
+# TASKS PRINCIPAIS: common/tasks/main.yml
+# PROPÓSITO: Configurações base aplicadas a TODOS os servidores
+# =============================================================
+
+- name: Instalar pacotes essenciais em todos os servidores
+  apt:
+    name:
+      - curl
+      - wget
+      - git
+      - vim
+      - htop
+      - net-tools
+      - tree
+      - jq
+      - fail2ban
+      - unattended-upgrades
+    state: present
+  tags:
+    - common
+    - packages
+
+- name: Configurar hostname dinamicamente
+  hostname:
+    name: "{{ inventory_hostname }}"
+  tags: common
+
+- name: Configurar /etc/hosts com todos os nodes do cluster
+  lineinfile:
+    path:   /etc/hosts
+    regexp: "^{{ item.value.ip }}"
+    line:   "{{ item.value.ip }}  {{ item.value.hostname }}"
+    state:  present
+  loop: "{{ machines | dict2items }}"
+  when: machines is defined
+  tags:
+    - common
+    - hosts
+
+- name: Criar usuário de deploy
+  user:
+    name:        deploy
+    shell:       /bin/bash
+    groups:      sudo
+    state:       present
+    create_home: yes
+  tags:
+    - common
+    - security
+
+- name: Configurar sudoers sem senha para deploy (apenas dev)
+  lineinfile:
+    path:    /etc/sudoers.d/deploy
+    create:  yes
+    mode:    '0440'
+    line:    "deploy ALL=(ALL) NOPASSWD:ALL"
+    validate: "visudo -cf %s"
+  tags:
+    - common
+    - security
+
+- name: Configurar ulimits para performance
+  pam_limits:
+    domain: "*"
+    limit_type: "{{ item.type }}"
+    limit_item: "{{ item.item }}"
+    value:      "{{ item.value }}"
+  loop:
+    - { type: soft, item: nofile,   value: "65536" }
+    - { type: hard, item: nofile,   value: "65536" }
+    - { type: soft, item: nproc,    value: "65536" }
+  tags:
+    - common
+    - tuning
+
+- name: Verificar configuração base
+  debug:
+    msg:
+      - "Host: {{ inventory_hostname }}"
+      - "IP:   {{ ansible_default_ipv4.address }}"
+      - "OS:   {{ ansible_distribution }} {{ ansible_distribution_version }}"
+  tags: common

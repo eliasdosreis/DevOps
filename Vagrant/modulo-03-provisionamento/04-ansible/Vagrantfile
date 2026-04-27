@@ -1,0 +1,85 @@
+# ============================================================
+# MÓDULO 3 — ANSIBLE PROVISIONER
+# O QUE ESTE ARQUIVO FAZ:
+#   Usa o Ansible para provisionar a VM de forma idempotente
+#   e reutilizável. O Ansible roda NO HOST e conecta via SSH.
+#   Propósito: mostrar o padrão profissional mais usado em
+#   ambientes reais de desenvolvimento e produção.
+#
+#   PRÉ-REQUISITO: Ansible instalado no HOST
+#   Linux/macOS: pip install ansible  OU  apt install ansible
+#   Windows: Use WSL2 com Ansible instalado
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-ansible"
+
+  config.vm.network "private_network", ip: "192.168.56.33"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-ansible"
+    vb.memory = "1024"
+    vb.cpus   = 1
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: ANSIBLE PROVISIONER
+  # type: "ansible"       → Ansible instalado no HOST
+  # type: "ansible_local" → Ansible instalado na GUEST (VM)
+  # -----------------------------------------------------------
+
+  # ansible_local: instala Ansible NA VM e executa lá
+  # Ideal para Windows (onde Ansible não roda nativamente)
+  config.vm.provision "ansible_local" do |ansible|
+
+    # Caminho do playbook relativo ao Vagrantfile
+    ansible.playbook = "playbook.yml"
+
+    # Inventário customizado (opcional)
+    # ansible.inventory_path = "inventory"
+
+    # Verbose mode para debug
+    # ansible.verbose = "vvv"
+
+    # Modo de verificação — não faz mudanças, só simula
+    # ansible.check_mode = true
+
+    # Instala dependências do Galaxy antes de rodar
+    # ansible.galaxy_role_file = "requirements.yml"
+
+    # Variáveis extras passadas ao playbook
+    ansible.extra_vars = {
+      app_port:    80,
+      environment: "development"
+    }
+
+    # Tags para executar apenas tasks específicas
+    # ansible.tags = "nginx,ssl"
+
+    # Tags para PULAR tasks específicas
+    # ansible.skip_tags = "slow,optional"
+
+  end
+
+end
+
+# ============================================================
+# ANSIBLE vs ANSIBLE_LOCAL:
+#
+# ansible (roda no host):
+#   ✅ Mais rápido (sem instalar Ansible na VM)
+#   ✅ Mesma versão do Ansible para todas as VMs
+#   ❌ Requer Ansible no host (não funciona no Windows nativo)
+#
+# ansible_local (roda na VM):
+#   ✅ Funciona em qualquer host (sem Ansible no host)
+#   ✅ VM auto-suficiente
+#   ❌ Instala Ansible na VM (mais lento no primeiro boot)
+#   ❌ Cada VM precisa ter Ansible instalado
+#
+# RECOMENDAÇÃO:
+#   Windows host     → use ansible_local
+#   Linux/macOS host → use ansible (mais rápido e limpo)
+# ============================================================

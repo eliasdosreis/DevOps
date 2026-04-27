@@ -1,0 +1,46 @@
+---
+# ==============================================================
+# ARQUIVO: 04-playbook-hello.yml
+# MÓDULO 1 - Fundamentos
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Um playbook é uma RECEITA DE BOLO.
+# Você escreve os passos, e o Ansible segue na ordem certinha.
+# "---" no início é como dizer "começa aqui a receita!"
+#
+# ▶️  COMO RODAR:
+# ansible-playbook -i 01-inventory-simples.ini 04-playbook-hello.yml
+# ==============================================================
+
+# "- name" começa um novo "play" (uma seção da receita)
+- name: Meu Primeiro Playbook - Hello Ansible!
+
+  # "hosts" diz PARA QUAIS servidores este play vai rodar
+  # "localhost" = meu próprio computador (ótimo para treinar!)
+  hosts: localhost
+
+  # "gather_facts" coleta informações do servidor (SO, RAM, etc)
+  # "false" = não colete agora (mais rápido para este exemplo simples)
+  gather_facts: false
+
+  # "tasks" = a lista de tarefas (os passos da receita)
+  tasks:
+
+    # Tarefa 1: Verificar se o Ansible consegue se conectar
+    - name: "Passo 1 - Testar conexão (ping)"
+      # "ansible.builtin.ping" é um módulo que verifica conectividade
+      # Não é o ping de rede! É o ping do Ansible.
+      ansible.builtin.ping:
+
+    # Tarefa 2: Mostrar uma mensagem na tela
+    - name: "Passo 2 - Mostrar mensagem de boas-vindas"
+      # "debug" mostra mensagens durante a execução
+      ansible.builtin.debug:
+        # "msg" é a mensagem que vai aparecer
+        msg: "🎉 Parabéns! Seu primeiro playbook funcionou!"
+
+    # Tarefa 3: Mostrar data e hora atual
+    - name: "Passo 3 - Mostrar data atual"
+      ansible.builtin.debug:
+        msg: "📅 Hoje é: {{ ansible_date_time.date | default('data não disponível') }}"

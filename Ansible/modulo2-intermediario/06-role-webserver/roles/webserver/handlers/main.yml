@@ -1,0 +1,22 @@
+---
+# ==============================================================
+# ARQUIVO: roles/webserver/handlers/main.yml
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Handlers da role são os "técnicos de plantão".
+# Eles só agem quando chamados (notify) e apenas UMA vez,
+# no final de tudo, mesmo que chamados várias vezes!
+# ==============================================================
+
+# Handler chamado quando configuração muda
+- name: "Reiniciar nginx"
+  ansible.builtin.service:
+    name: "{{ webserver_servico }}"
+    state: restarted
+
+# Handler para recarregar sem derrubar conexões ativas
+- name: "Recarregar nginx"
+  ansible.builtin.service:
+    name: "{{ webserver_servico }}"
+    state: reloaded

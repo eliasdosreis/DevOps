@@ -1,0 +1,38 @@
+# ============================================================
+# ARQUIVO: 00-namespace.yaml
+# PROJETO FINAL - Namespace dedicado para o e-commerce
+#
+# Sempre crie um namespace dedicado para cada projeto!
+# Facilita: gestão, monitoramento, RBAC e isolamento.
+#
+# Boa prática: número no início do arquivo = ordem de aplicação
+# 00 = primeiro a ser aplicado (namespace deve existir antes!)
+# ============================================================
+
+apiVersion: v1
+kind: Namespace
+
+metadata:
+  name: ecommerce               # Namespace do nosso projeto
+
+  labels:
+    app.kubernetes.io/name: ecommerce       # Label padrão K8s
+    app.kubernetes.io/managed-by: kubectl   # Quem gerencia
+    ambiente: producao                      # Qual ambiente
+    time: plataforma                        # Qual time é dono
+
+  annotations:
+    # Anotações são metadados extras (não afetam comportamento)
+    description: "Namespace do sistema de ecommerce"
+    contact: "time-plataforma@empresa.com"
+    criado-em: "2024-01-01"
+
+# ============================================================
+# APÓS CRIAR O NAMESPACE, SEMPRE ESPECIFIQUE ELE:
+# kubectl apply -f . -n ecommerce
+# OU coloque namespace: ecommerce em cada arquivo
+#
+# VERIFICAR:
+# kubectl get namespace ecommerce
+# kubectl describe namespace ecommerce
+# ============================================================

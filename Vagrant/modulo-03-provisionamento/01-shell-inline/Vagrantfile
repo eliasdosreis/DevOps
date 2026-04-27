@@ -1,0 +1,112 @@
+# ============================================================
+# MÓDULO 3 — SHELL INLINE PROVISIONER
+# O QUE ESTE ARQUIVO FAZ:
+#   Usa o provisioner shell inline para instalar e configurar
+#   serviços diretamente no Vagrantfile, sem arquivos externos.
+#   Ideal para scripts curtos e configurações simples.
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-shell-inline"
+
+  config.vm.network "private_network", ip: "192.168.56.30"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-shell-inline"
+    vb.memory = "1024"
+    vb.cpus   = 1
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: SHELL INLINE PROVISIONER — BÁSICO
+  # inline: executa o script diretamente como string Ruby
+  # privileged: true → executa como root (padrão)
+  # -----------------------------------------------------------
+  config.vm.provision "shell", inline: <<-SHELL
+    echo "=========================================="
+    echo "Iniciando provisionamento..."
+    echo "=========================================="
+
+    # Atualiza lista de pacotes (-q = quiet, menos output)
+    apt-get update -q
+
+    # Instala pacotes de forma não-interativa
+    # DEBIAN_FRONTEND=noninteractive → evita prompts interativos
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -q \
+      nginx \
+      curl \
+      git \
+      htop \
+      tree \
+      vim
+
+    # Habilita e inicia o Nginx
+    systemctl enable nginx
+    systemctl start nginx
+
+    echo "✅ Provisionamento concluído!"
+    echo "Acesse: http://192.168.56.30"
+  SHELL
+
+  # -----------------------------------------------------------
+  # SEÇÃO: SHELL INLINE — COMO USUÁRIO VAGRANT (não root)
+  # privileged: false → executa como usuário 'vagrant'
+  # -----------------------------------------------------------
+  config.vm.provision "shell",
+    privileged: false,          # Executa como usuário 'vagrant', não root
+    inline: <<-SHELL
+      echo "Configurando ambiente do usuário vagrant..."
+
+      # Configura Git globalmente para o usuário vagrant
+      git config --global user.name  "Vagrant Dev"
+      git config --global user.email "dev@vagrant.local"
+      git config --global init.defaultBranch main
+
+      # Cria diretório de projetos
+      mkdir -p ~/projetos
+
+      echo "✅ Ambiente do usuário configurado!"
+    SHELL
+
+  # -----------------------------------------------------------
+  # SEÇÃO: SHELL INLINE COM run: "always"
+  # Executa TODA VEZ que a VM inicia (não só na criação)
+  # Útil para: status, health-checks, setup de ambiente temporário
+  # -----------------------------------------------------------
+  config.vm.provision "shell",
+    run:    "always",           # Roda em cada vagrant up, não só na criação
+    inline: <<-SHELL
+      echo ""
+      echo "=== STATUS DA VM ==="
+      echo "Data/Hora: $(date)"
+      echo "Uptime: $(uptime -p)"
+      echo "IP: $(ip addr show enp0s8 2>/dev/null | grep 'inet ' | awk '{print $2}' | cut -d/ -f1)"
+      echo "Nginx: $(systemctl is-active nginx)"
+      echo "===================="
+    SHELL
+
+end
+
+# ============================================================
+# DIFERENÇAS DE run:
+#   run: "once"   → padrão, executa apenas na primeira criação
+#   run: "always" → executa em todo vagrant up
+#   run: "never"  → nunca executa automaticamente (manual com
+#                   vagrant provision --provision-with nome)
+#
+# SENIORIDADE — IDEMPOTÊNCIA NO SHELL:
+#
+# NÃO idempotente (falha na segunda execução):
+#   useradd deploy
+#
+# Idempotente (funciona sempre):
+#   id deploy &>/dev/null || useradd deploy
+#
+# NÃO idempotente:
+#   mkdir /app
+#
+# Idempotente:
+#   mkdir -p /app  (-p não falha se já existir)
+# ============================================================

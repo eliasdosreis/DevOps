@@ -1,0 +1,62 @@
+# ============================================================
+# MÓDULO 6 — CRIANDO UMA BOX CUSTOMIZADA
+# O QUE ESTE ARQUIVO FAZ:
+#   Cria uma VM base que será empacotada como uma Box customizada.
+#   A box conterá: Ubuntu 22.04 + Docker + ferramentas DevOps
+#   Para distribuir para o time sem precisar instalar tudo.
+#   Propósito: criar uma "golden image" reutilizável.
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box          = "ubuntu/jammy64"
+  config.vm.box_version  = "20240301.0.0"      # Base conhecida e estável
+  config.vm.hostname     = "base-box-builder"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-box-builder"
+    vb.memory = "2048"   # Mais RAM para compilações durante build
+    vb.cpus   = 2
+  end
+
+  # -----------------------------------------------------------
+  # PROVISIONAMENTO: Prepara a VM para se tornar uma box
+  # -----------------------------------------------------------
+  config.vm.provision "shell",
+    path: "scripts/prepare-box.sh"
+
+end
+
+# ============================================================
+# FLUXO COMPLETO PARA CRIAR SUA BOX:
+#
+# PASSO 1: Suba e provisione a base
+#   vagrant up
+#   vagrant ssh   (verifique que tudo está instalado)
+#
+# PASSO 2: Prepare a VM para empacotamento
+#   vagrant ssh
+#   sudo /vagrant/scripts/prepare-box.sh  (se precisar reexecutar)
+#   exit
+#
+# PASSO 3: Empacote a box (VM deve estar ligada ou desligada)
+#   vagrant halt
+#   vagrant package --output minha-devbox-ubuntu2204.box
+#   # Aguarde... pode demorar alguns minutos
+#
+# PASSO 4: Adicione a box localmente para teste
+#   vagrant box add devbox-ubuntu2204 minha-devbox-ubuntu2204.box
+#   vagrant box list   (deve aparecer)
+#
+# PASSO 5: Teste a nova box
+#   mkdir /tmp/teste-box && cd /tmp/teste-box
+#   vagrant init devbox-ubuntu2204
+#   vagrant up
+#   vagrant ssh   (verifique os pacotes instalados)
+#
+# PASSO 6: Distribua
+#   a) Copie o arquivo .box para servidor interno
+#   b) Compartilhe a URL via config.vm.box_url nos projetos
+#
+# TAMANHO ESPERADO: 1-2 GB (Ubuntu base ~500MB + Docker + tools)
+# ============================================================

@@ -1,0 +1,101 @@
+# ============================================================
+# MÓDULO 2 — HOSTNAME E DNS
+# O QUE ESTE ARQUIVO FAZ:
+#   Configura hostname personalizado na VM e demonstra como
+#   integrar com o /etc/hosts do host para acesso por nome
+#   (sem precisar lembrar IPs).
+#   Ex: acessar http://meu-app.local em vez de http://192.168.56.10
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box = "ubuntu/jammy64"
+
+  # -----------------------------------------------------------
+  # SEÇÃO: HOSTNAME
+  # Define o nome da máquina dentro do SO
+  # Aparece no prompt: vagrant@meu-app-server:~$
+  # Também é usado pelo plugin vagrant-hostsupdater
+  # -----------------------------------------------------------
+  config.vm.hostname = "meu-app-server"
+
+  # -----------------------------------------------------------
+  # SEÇÃO: REDE PRIVADA COM IP FIXO
+  # O IP fixo é necessário para o /etc/hosts ter um destino
+  # -----------------------------------------------------------
+  config.vm.network "private_network", ip: "192.168.56.20"
+
+  # -----------------------------------------------------------
+  # SEÇÃO: HOSTS FILE (COM PLUGIN vagrant-hostsupdater)
+  # O plugin vagrant-hostsupdater adiciona automaticamente
+  # entradas no /etc/hosts do HOST ao fazer vagrant up
+  # e remove ao fazer vagrant halt/destroy
+  # -----------------------------------------------------------
+
+  # Aliases são domínios adicionais que apontam para o mesmo IP
+  # Requer: vagrant plugin install vagrant-hostsupdater
+  if Vagrant.has_plugin?("vagrant-hostsupdater")
+    config.hostsupdater.aliases = [
+      "meu-app.local",        # domínio principal
+      "api.meu-app.local",    # subdomínio da API
+      "admin.meu-app.local"   # painel admin
+    ]
+    config.hostsupdater.remove_on_suspend = true
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PROVIDER
+  # -----------------------------------------------------------
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-hostname-dns"
+    vb.memory = "1024"
+    vb.cpus   = 1
+
+    # Melhora a resolução DNS dentro da VM
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PROVISIONAMENTO
+  # Configura hosts manualmente (fallback sem o plugin)
+  # -----------------------------------------------------------
+  config.vm.provision "shell", inline: <<-SHELL
+    # Instala utilitários de rede
+    apt-get update -q
+    apt-get install -y -q nginx dnsutils net-tools
+
+    # Mostra configuração de rede atual
+    echo ""
+    echo "=========================================="
+    echo "Hostname configurado: $(hostname)"
+    echo "IP privado: $(ip addr show enp0s8 2>/dev/null | grep 'inet ' | awk '{print $2}' | cut -d/ -f1 || echo 'Verifique com: ip addr show')"
+    echo ""
+    echo "Para acessar por nome SEM o plugin, adicione ao"
+    echo "/etc/hosts do SEU COMPUTADOR HOST:"
+    echo "  192.168.56.20  meu-app-server meu-app.local"
+    echo "=========================================="
+  SHELL
+
+end
+
+# ============================================================
+# COMO ADICIONAR ENTRADA NO /etc/hosts MANUALMENTE:
+#
+# Windows (como Administrador):
+#   Abra: C:\Windows\System32\drivers\etc\hosts
+#   Adicione: 192.168.56.20  meu-app.local  meu-app-server
+#
+# Linux/macOS:
+#   sudo nano /etc/hosts
+#   Adicione: 192.168.56.20  meu-app.local  meu-app-server
+#
+# TESTAR RESOLUÇÃO DNS:
+#   ping meu-app.local
+#   curl http://meu-app.local
+#
+# SENIORIDADE:
+#   O plugin vagrant-hostsupdater automatiza a gestão do
+#   /etc/hosts, mas requer permissão de admin.
+#   Em times maiores, use dnsmasq ou um servidor DNS local
+#   para gerenciar domínios .local sem modificar cada /etc/hosts.
+# ============================================================

@@ -1,0 +1,33 @@
+{
+  "name": "meutime/devbox-ubuntu2204",
+  "description": "Box DevOps Ubuntu 22.04 com Docker, Node.js e ferramentas essenciais. Versão gerenciada pelo time de infraestrutura.",
+  "short_description": "Ubuntu 22.04 DevOps Box",
+  "versions": [
+    {
+      "version": "1.0.0",
+      "status": "active",
+      "description_html": "<p>Versão inicial com Docker 24.x e Node.js 20.x</p>",
+      "providers": [
+        {
+          "name": "virtualbox",
+          "url": "http://servidor-interno.empresa.com/boxes/devbox-ubuntu2204-1.0.0.box",
+          "checksum_type": "sha256",
+          "checksum": "SUBSTITUA_PELO_CHECKSUM_REAL_DO_ARQUIVO_BOX"
+        }
+      ]
+    },
+    {
+      "version": "1.1.0",
+      "status": "active",
+      "description_html": "<p>Adicionado kubectl e helm para desenvolvimento Kubernetes</p>",
+      "providers": [
+        {
+          "name": "virtualbox",
+          "url": "http://servidor-interno.empresa.com/boxes/devbox-ubuntu2204-1.1.0.box",
+          "checksum_type": "sha256",
+          "checksum": "SUBSTITUA_PELO_CHECKSUM_REAL_DO_ARQUIVO_BOX"
+        }
+      ]
+    }
+  ]
+}

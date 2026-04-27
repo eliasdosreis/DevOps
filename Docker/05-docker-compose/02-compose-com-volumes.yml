@@ -1,0 +1,26 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Configura banco de dados resiliente e o conceito Global no yaml,
+# separando volumes Root-Level para os containers enxergarem.
+# ============================================================
+
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16 # Sempre cravar a versão do DB. Alpine em DB em prod gera dor de cabeça de glibc e libs basicas faltantes no crash debugging as 3 da matina. Use o full.
+    environment:
+      POSTGRES_PASSWORD: senha
+    volumes:
+      # Lado Esquerdo o NOME do Volume. Lado direito a Pasta absoluta. (Bind de Volume Nomeado)
+      - pgdata:/var/lib/postgresql/data
+
+# SESSÃO GLOBAL ROOT: Obrigatório.
+# Essa sessão em Nivel Principal ROOT (fora de services) informa 
+# ao "Maestro Compose" que no momento de startar a orquestra, ele PODE 
+# ir la no CLI e dar o comando "docker volume create pgdata" por nós antes!
+# Se tirar isso, ou usar uma db existente.. você dita como ele se engata as chaves.
+volumes:
+  pgdata:
+    # Se marcarmos aqui como 'external: true', ele NAO vai criar se faltar, 
+    # vai esperar que já pre-exista manualmente no host dando erro se não achar, otimo pra bases legadas fixas de sysadmin.

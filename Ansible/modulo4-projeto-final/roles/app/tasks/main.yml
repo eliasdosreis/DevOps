@@ -1,0 +1,30 @@
+---
+# ==============================================================
+# ARQUIVO: roles/app/tasks/main.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Esta role cuida da aplicação web.
+# Pensa como um restaurante:
+# 1. Preparar a cozinha (sistema)
+# 2. Instalar os utensílios (dependências)
+# 3. Trazer o chef (deploy da app)
+# 4. Abrir o restaurante (Nginx + Gunicorn)
+# ==============================================================
+
+- name: "Importar: Preparar sistema"
+  ansible.builtin.import_tasks: preparar.yml
+  tags: [app, prepare]
+
+- name: "Importar: Deploy da aplicação"
+  ansible.builtin.import_tasks: deploy.yml
+  tags: [app, deploy]
+
+- name: "Importar: Configurar Nginx"
+  ansible.builtin.import_tasks: nginx.yml
+  tags: [app, nginx]
+
+- name: "Importar: Configurar serviço systemd"
+  ansible.builtin.import_tasks: servico.yml
+  tags: [app, service]

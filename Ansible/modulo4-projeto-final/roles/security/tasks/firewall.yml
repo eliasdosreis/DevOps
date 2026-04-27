@@ -1,0 +1,60 @@
+---
+# ==============================================================
+# ARQUIVO: roles/security/tasks/firewall.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Firewall é como o PORTEIRO do prédio.
+# Ele tem uma lista de quem pode entrar (portas permitidas).
+# Todos os outros = bloqueados na porta!
+# UFW = Uncomplicated Firewall (Firewall descomplicado)
+# ==============================================================
+
+# Instalar UFW (Uncomplicated Firewall)
+- name: "Firewall: Instalar UFW"
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+  when: ansible_os_family == "Debian"
+
+# Definir política padrão: BLOQUEAR tudo que entrar
+- name: "Firewall: Política padrão = negar tudo"
+  community.general.ufw:
+    policy: deny        # Nega por padrão (whitelist!)
+    direction: incoming # Para conexões que chegam no servidor
+
+# Definir política padrão: PERMITIR tudo que sai
+- name: "Firewall: Política padrão = permitir saída"
+  community.general.ufw:
+    policy: allow
+    direction: outgoing
+
+# Abrir portas da lista "firewall_portas_permitidas" (do vars.yml)
+# Loop em cada porta da lista!
+- name: "Firewall: Abrir portas necessárias"
+  community.general.ufw:
+    rule: allow                    # Regra: permitir
+    port: "{{ item.porta }}"      # Porta da lista
+    proto: "{{ item.protocolo }}" # tcp ou udp
+    comment: "{{ item.descricao }}" # Comentário para identificar
+  # Loop na lista definida em group_vars
+  loop: "{{ firewall_portas_permitidas }}"
+  loop_control:
+    label: "{{ item.descricao }} ({{ item.porta }}/{{ item.protocolo }})"
+
+# Ativar o firewall (e garantir que inicia no boot)
+- name: "Firewall: Ativar UFW"
+  community.general.ufw:
+    state: enabled   # Ligar o firewall agora!
+
+# Verificar status
+- name: "Firewall: Verificar status"
+  ansible.builtin.command:
+    cmd: ufw status verbose
+  register: ufw_status
+  changed_when: false
+
+- name: "Firewall: Mostrar regras ativas"
+  ansible.builtin.debug:
+    msg: "{{ ufw_status.stdout_lines }}"

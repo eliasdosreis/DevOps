@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ============================================================
+  ARQUIVO: 02-pom-plugin-shade.xml
+  RENOMEIE PARA: pom.xml
+
+  O QUE ESTE ARQUIVO FAZ:
+  Demonstra como criar um "uber-JAR" ou "fat JAR" executável
+  usando o maven-shade-plugin.
+
+  ANALOGIA:
+  Um JAR normal é como uma receita de bolo que diz
+  "você vai precisar de farinha, ovos e açúcar" (dependências).
+  Um fat-JAR é como um kit completo que vem com todos
+  os ingredientes já embalados. Você apenas abre e usa,
+  sem precisar comprar nada separado.
+
+  Por que isso importa?
+  Microserviços modernos precisam ser deployados como um
+  único arquivo auto-contido. É o padrão do Spring Boot,
+  Quarkus, Micronaut, etc.
+
+  DEFINIÇÃO TÉCNICA:
+  Um uber-JAR (fat-JAR) é um arquivo JAR que contém não apenas
+  o código do projeto, mas também TODAS as suas dependências
+  (classes e recursos de todas as libs) dentro de um único
+  arquivo JAR executável.
+
+  ALTERNATIVAS:
+  - maven-shade-plugin (Maven)
+  - maven-assembly-plugin (Maven — mais antigo)
+  - spring-boot-maven-plugin (para Spring Boot especificamente)
+  - Gradle Shadow plugin (Gradle — vemos no Módulo 8)
+  ============================================================ -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.curso</groupId>
+  <artifactId>hello-shade</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <!-- Dependência de exemplo para incluir no fat-JAR -->
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.10.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>2.0.9</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.4.14</version>
+      <scope>runtime</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.12.1</version>
+        <configuration>
+          <release>21</release>
+        </configuration>
+      </plugin>
+
+      <!-- ═══════════════════════════════════════════════════
+        maven-shade-plugin
+        Goal: shade:shade (fase package)
+
+        O que faz:
+        1. Empacota seu código + TODAS as dependências em 1 JAR
+        2. Pode relocalizar pacotes para evitar conflitos
+        3. Pode filtrar classes indesejadas
+        4. Configura o Main-Class no MANIFEST.MF
+        ═══════════════════════════════════════════════════ -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.5.1</version>
+
+        <executions>
+          <execution>
+            <!-- ID único para esta execução do plugin -->
+            <id>criar-fat-jar</id>
+
+            <!-- Fase onde este goal será executado -->
+            <phase>package</phase>
+
+            <!-- Goal a executar nesta fase -->
+            <goals>
+              <goal>shade</goal>
+            </goals>
+
+            <configuration>
+
+              <!-- ─────────────────────────────────────────
+                createDependencyReducedPom:
+                true = gera um pom com as dependências removidas
+                (porque elas já estão dentro do fat-JAR)
+                Útil se você vai publicar o fat-JAR como lib
+                ───────────────────────────────────────────── -->
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+
+              <!-- ─────────────────────────────────────────
+                filters: controla o que entra no JAR final
+                Evita incluir arquivos desnecessários ou
+                assinaturas digitais que causam conflitos
+                ───────────────────────────────────────────── -->
+              <filters>
+                <filter>
+                  <!-- Aplica a TODAS as dependências -->
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <!-- Exclui arquivos de assinatura digital (causam erros) -->
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                    <!-- Exclui arquivos de módulo (podem causar conflitos) -->
+                    <exclude>META-INF/MANIFEST.MF</exclude>
+                    <!-- Exclui arquivos de licença duplicados -->
+                    <exclude>**/LICENSE*</exclude>
+                    <exclude>**/NOTICE*</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+
+              <!-- ─────────────────────────────────────────
+                transformers: processa recursos que poderiam
+                conflitar quando múltiplas libs têm o mesmo arquivo
+
+                Exemplo clássico: services/ files do META-INF
+                Se duas libs registram o mesmo serviço Java SPI,
+                os arquivos precisam ser MESCLADOS, não substituídos.
+                ───────────────────────────────────────────── -->
+              <transformers>
+
+                <!-- ManifestResourceTransformer: configura o MANIFEST.MF -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <!-- Define qual classe tem o método main() -->
+                  <!-- Sem isso: java -jar meu-app.jar → erro "no main manifest attribute" -->
+                  <mainClass>com.curso.App</mainClass>
+                </transformer>
+
+                <!-- ServicesResourceTransformer: mescla arquivos em META-INF/services/ -->
+                <!-- Necessário para Java SPI (Service Provider Interface) funcionar -->
+                <!-- Exemplo: drivers JDBC, codecs, parsers registrados via SPI -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+
+                <!-- AppendingTransformer: CONCATENA arquivos repetidos em vez de substituir -->
+                <!-- Necessário para frameworks que usam Spring.handlers e Spring.schemas -->
+                <!--
+                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                  <resource>META-INF/spring.handlers</resource>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                  <resource>META-INF/spring.schemas</resource>
+                </transformer>
+                -->
+
+              </transformers>
+
+              <!-- ─────────────────────────────────────────
+                relocations: muda o package de uma dependência
+                dentro do fat-JAR para evitar conflitos.
+
+                CENÁRIO: Seu fat-JAR usa Guava 32. Mas outro sistema
+                que vai carregar seu JAR também usa Guava 28.
+                Se ambos usam "com.google.common", pode haver conflito.
+
+                Solução: relocar o Guava para "sombra.com.google.common"
+                dentro do seu JAR. Assim não conflita com nada externo.
+
+                NOTA: Use com cautela — complica debug e logs de stack trace.
+                ───────────────────────────────────────────── -->
+              <!--
+              <relocations>
+                <relocation>
+                  <pattern>com.google.common</pattern>
+                  <shadedPattern>sombra.com.google.common</shadedPattern>
+                </relocation>
+              </relocations>
+              -->
+
+              <!-- Nome do fat-JAR gerado -->
+              <!-- Padrão: artifactId-version.jar (substituindo o original) -->
+              <!-- <finalName>${project.artifactId}-fat</finalName> -->
+
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>
+
+<!--
+  ═══════════════════════════════════════════════════════════
+  COMO USAR:
+
+  1. Build: mvn clean package
+  2. Resultado: target/hello-shade-1.0.0-SNAPSHOT.jar
+  3. Executar: java -jar target/hello-shade-1.0.0-SNAPSHOT.jar
+
+  TAMANHO:
+  - JAR normal (sem dependências): ~10 KB
+  - Fat JAR (com todas as deps): pode ser > 10 MB
+  - É esperado e normal — contém TUDO que precisa para executar
+
+  DIFERENÇA: maven-shade vs spring-boot-maven-plugin
+  - maven-shade: todas as classes ficam FLAT no JAR raiz
+  - spring-boot: dependências ficam em BOOT-INF/lib/ (JARs dentro de JAR)
+  A abordagem do Spring Boot (nested JARs) é tecnicamente mais limpa
+  mas requer o Spring Boot loader para funcionar.
+
+  QUANDO USAR FAT JAR:
+  - CLI tools: distribuir um único executável
+  - Lambdas AWS, Azure Functions
+  - Microserviços simples
+  - Qualquer lugar que precisa: java -jar app.jar e funciona
+  ═══════════════════════════════════════════════════════════
+-->

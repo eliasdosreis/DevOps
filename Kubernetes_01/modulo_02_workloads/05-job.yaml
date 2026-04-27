@@ -1,0 +1,88 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um Job, usado para rodar um container que fará um trabalho
+# processual com começo, meio e fim (Uma migração de banco por ex).
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# O Deployment é um "Garçom" do restaurante, você contrata e ele serve mesas 
+# PARA SEMPRE (rodando infinitamente). Se você mandar ele parar de servir e sentar,
+# o restaurante (Kubernetes) fala "Ei, ele morreu, contrata ele de novo" (Restart infinito).
+#
+# O "Job" é o "Entregador de Cimento". Você contrata ele, ele descarrega 100 
+# pacotes na obra e vai embora para casa. É uma tarefa finita. Se ele terminou = Sucesso.
+# O Kubernetes não sobe ele se recriando infinitamente (Ele altera a regra de reboot padrão).
+
+# 2. O QUE É (definição técnica Senior)
+# Um Job cria um ou mais Pods e garantirá de forma controlada que um 
+# número especificado deles termine de forma exata (Success Output e Exit 0). 
+# Pods de jobs não ficam aguardando novas requisições. Suas políticas de restart são 
+# normalmente mapeadas para "Never" (Nunca) ou "OnFailure" (Só religue se pânico ocorrer).
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: batch/v1          # Mudamos de apps para o subsistema Batch
+kind: Job
+metadata:
+  name: job-calculo-ir-fim-de-ano
+  namespace: meu-primeiro-projeto
+spec:
+  backoffLimit: 4             # O Job pode tentar 4x antes de declarar Status=Failed.
+  activeDeadlineSeconds: 100  # Tempo maximo vivo: Se bater 100 segs, mate-o (Timeout/Stuck).
+  completions: 1              # O Job precisa ser perfeitamente concluído quantas vezes? (10x?, 1x?)
+  
+  template:
+    spec:
+      # ESSENCIAL PARA JOBS: Desligue o restart loop infinito (padrão Always)! 
+      restartPolicy: Never    
+      
+      containers:
+        - name: math-engine
+          image: perl:5.34    # Uma imagem rodando Perl apenas 
+          # Comando falso e rapido: Conta Pi ate a casa 2000
+          command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. "Contratar o Trabalhador":
+#    kubectl apply -f 05-job.yaml
+#
+# 2. Veja o trabalhador (Container) começar seu estado, e de repente mudar de 
+# Running para 'Completed':
+#    kubectl get pods -n meu-primeiro-projeto  
+#
+# 3. Liste a categoria de jobs:
+#    kubectl get jobs -n meu-primeiro-projeto
+#    (Ele mostrará "Completions 1/1" se obteve sucesso ou "0/1" em progresso/falha)
+
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# O pulo do gato? Jobs mantêm os logs MESMO depois de mortos para as suas auditorias.
+# Ache o Pod marcado como "(Completed)" via `kubectl get pods`, e pegue o Log lá dele:
+#    kubectl logs pod-calculo-xxx -n meu-primeiro-projeto
+# Ele renderizará o Pi lindo na tela. Para deletar de vez o lixo finalizado no PC: 
+#    kubectl delete job job-calculo-ir-fim-de-ano -n meu-primeiro-projeto
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# "Elias, se eu precisar escalar o poder de processamento pra ser rápido?"
+# A Magia da fila em batch no K8s usa Jobs Múltiplos! 
+# Se colocarmos `completions: 10` (A conta necessitaria ocorrer 10 vezes completas para a vitoria) 
+# E botarmos a mágica: `parallelism: 5`.
+# O K8s irá explodir instantaneamente 5 "Trabalhadores de cimento" paralelos (Pods rodando juntos)
+# usando todos os Cores do sistema inteiro, e assim que 1 acabar, o proximo entra na esteira até 
+# bater os exatos totais 10 concluídos. Imbatível para Machine Learning!
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Em um Deploy de Produção CI/CD na esteira Jenkins, precisamos rodar 
+# os Scripts SQL de 'DB-Migration/Flyway'. Devemos por como container extra ou no Job?"
+# Resposta Esperada: "No Job é mandatório! Além de separarmos a semântica 
+# (Deploy WebServer x Tool Finita), podemos amarrar em um hook via Helm onde 
+# o Deployment do APP NOVO em si SÓ SUBIRÁ do C.I. se o Helm checar "Status==Completed" no Job 
+# de Migração do Banco. Previne o app novo e cru acessando o DB com a tabela não migrada."

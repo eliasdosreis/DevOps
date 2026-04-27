@@ -1,0 +1,97 @@
+# ============================================================
+# BLOCO DE EXIBIÇÃO & MUNDO (FRONTEND TIER & RECPÇÃO)
+# Engloba: Service + Deployment + INGRESS ROUTING (L7)
+# ============================================================
+
+# 1. O PABX Local que Segura o Site
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-vuejs-frontend                # PABX do Front
+  namespace: meu-primeiro-projeto
+spec:
+  type: ClusterIP                         # O Ingress exigem os nós serem do tipo Default interno
+  selector:
+    camada: frontend                      # Imã acha a aplicacao web JS
+  ports:
+    - port: 80
+
+---
+# 2. O Site VUE.JS ou REACT rodando pelo NGINX WebServer
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: site-livraria-ui
+  namespace: meu-primeiro-projeto
+spec:
+  replicas: 2                             # Alta disponibilidade L7
+  selector:
+    matchLabels:
+      camada: frontend
+  template:
+    metadata:
+      labels:
+        camada: frontend
+    spec:
+      containers:
+        - name: nginx-server
+          image: nginx:alpine             # Nginx levíssimo servindo front-end estatico 
+          ports:
+            - containerPort: 80
+
+---
+# 3. O GRAN-FINALE! A RECEPÇÃO ELEGANTE COM URL PÚBLICA (Módulo 03)
+# O Ingress unindo o Mundo Exterior -> PABX Interno.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gateway-recepcao-livraria
+  namespace: meu-primeiro-projeto
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  # Se voce tiver usando Ingress do Kind ou minikube default:
+  ingressClassName: nginx 
+  
+  rules:
+    # URL 1: O Usuario que digitar o site limpo ".com.br" bate no frontend Nginx (Tela e UI)
+    - host: livraria-sincera.com.br
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: svc-vuejs-frontend  # CAI NO PABX 01 DESTA PAGINA!
+                port:
+                  number: 80
+                  
+    # URL 2: O proprio site vue via AXIOS Javascript, chama a URL `api.livraria...` !
+    # O Ingress intercepta, le o HostHead. "Ele quer o host da API? Entao... Corta pro APP JAVA"
+    - host: api.livraria-sincera.com.br
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: svc-api-rest       # MAGIA: CAI NO PABX SEGREDO CRIADO LA NA AULA 03!!
+                port:
+                  number: 8080
+
+# ============================================================
+# DEPOIS DE CRIAR TUDO DA AULA 1, 2, 3 e 4. VOCÊ VERÁ ISSO QUANDO DER:
+# `kubectl get all -n meu-primeiro-projeto` 
+#
+# pod/db-mysql-livraria-7f5b...         1/1     Running   (Blindado, Sem ngm saber onde ta)
+# pod/api-livraria-rest-5bf5...         1/1     Running   (Com Limit Ram e Cão de Guarda vivo)
+# pod/api-livraria-rest-5bf5...         1/1     Running   
+# pod/site-livraria-ui-954f...          1/1     Running   
+# pod/site-livraria-ui-954f...          1/1     Running   
+# ... (Lista todos replicasets de update logico em ZERO-DOWNTIME etc)
+#
+# Este é o Absoluto Pico do Mercado Senior!
+# Uma Arquitetura de Microsserviços 100% Desacoplada, Resiliente com HD 
+# Fisico Salvo, DNS Magico Interno e Exposição com VirtualHosts Seguras 
+# sem portas abertas esquisitas do NodePort!
+# ============================================================

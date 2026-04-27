@@ -1,0 +1,60 @@
+---
+# ==============================================================
+# ARQUIVO: group_vars/all/vars.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# "group_vars/all" = variáveis que valem para TODOS os servidores.
+# É como as regras da empresa que todo funcionário segue.
+# Não-secretas ficam aqui. Secretas ficam no secrets.yml (vault)!
+# ==============================================================
+
+# ---- Informações da Aplicação --------------------------------
+app_nome: "SeniorApp"
+app_versao: "3.2.1"
+app_porta: 8000
+app_usuario: "appuser"
+app_grupo: "appgroup"
+app_dir: "/opt/seniorapp"
+
+# ---- Configurações do Nginx ----------------------------------
+nginx_porta_http: 80
+nginx_porta_https: 443
+nginx_worker_processes: auto
+nginx_worker_connections: 1024
+nginx_dominio: "seniorapp.com.br"
+
+# ---- Configurações do Banco de Dados -------------------------
+# (Senhas estão no secrets.yml criptografado!)
+db_nome: "seniorapp_db"
+db_usuario: "seniorapp_user"
+db_porta: 5432
+db_max_conexoes: 100
+db_backup_dir: "/var/backups/postgresql"
+db_backup_retencao_dias: 7
+
+# ---- Configurações de Segurança ------------------------------
+ssh_porta: 22
+ssh_permitir_root: false
+ssh_max_tentativas: 3
+firewall_portas_permitidas:
+  - { porta: 22,  protocolo: tcp, descricao: "SSH" }
+  - { porta: 80,  protocolo: tcp, descricao: "HTTP" }
+  - { porta: 443, protocolo: tcp, descricao: "HTTPS" }
+  - { porta: 9100, protocolo: tcp, descricao: "Node Exporter" }
+
+# ---- Configurações de Monitoramento --------------------------
+node_exporter_versao: "1.7.0"
+node_exporter_porta: 9100
+
+# ---- Usuários do Sistema ------------------------------------
+usuarios_sistema:
+  - nome: deploy
+    grupos: [sudo, docker]
+    shell: /bin/bash
+    chave_ssh: "ssh-rsa AAAA... deploy@empresa.com"
+  - nome: monitoring
+    grupos: []
+    shell: /bin/false
+    chave_ssh: ""

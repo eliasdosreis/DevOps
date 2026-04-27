@@ -1,0 +1,14 @@
+---
+# ==============================================================
+# ARQUIVO: roles/security/handlers/main.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+- name: "Reiniciar sshd"
+  ansible.builtin.service:
+    name: sshd
+    state: restarted
+
+- name: "Reiniciar fail2ban"
+  ansible.builtin.service:
+    name: fail2ban
+    state: restarted

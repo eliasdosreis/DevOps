@@ -1,0 +1,95 @@
+# ============================================================
+# MÓDULO 5 — DUAS VMs SIMPLES
+# O QUE ESTE ARQUIVO FAZ:
+#   Cria duas VMs independentes no mesmo Vagrantfile.
+#   Introduz a sintaxe config.vm.define para multi-machine.
+#   Propósito: entender a estrutura básica antes de sistemas
+#   complexos. Server01 e Server02 podem se comunicar via rede.
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  # -----------------------------------------------------------
+  # CONFIGURAÇÕES GLOBAIS (aplicam-se a TODAS as VMs abaixo)
+  # -----------------------------------------------------------
+  config.vm.box              = "ubuntu/jammy64"   # Box padrão para todas as VMs
+  config.vm.boot_timeout     = 300
+  config.ssh.insert_key      = true
+
+  # -----------------------------------------------------------
+  # SEÇÃO: DEFINIÇÃO DA VM 01 — SERVIDOR 01
+  # -----------------------------------------------------------
+  config.vm.define "server01" do |server01|
+
+    # Configurações específicas desta VM
+    server01.vm.hostname = "server01"
+    server01.vm.network "private_network", ip: "192.168.56.51"
+
+    # Provider específico para esta VM
+    server01.vm.provider "virtualbox" do |vb|
+      vb.name   = "vagrant-server01"
+      vb.memory = "512"
+      vb.cpus   = 1
+    end
+
+    # Provisioner específico desta VM
+    server01.vm.provision "shell", inline: <<-SHELL
+      echo "Sou o Server01 - IP: 192.168.56.51"
+      apt-get update -q
+      apt-get install -y -q nginx
+      systemctl start nginx
+      echo "<h1>Server 01</h1><p>IP: 192.168.56.51</p>" > /var/www/html/index.html
+    SHELL
+
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: DEFINIÇÃO DA VM 02 — SERVIDOR 02
+  # -----------------------------------------------------------
+  config.vm.define "server02" do |server02|
+
+    server02.vm.hostname = "server02"
+    server02.vm.network "private_network", ip: "192.168.56.52"
+
+    server02.vm.provider "virtualbox" do |vb|
+      vb.name   = "vagrant-server02"
+      vb.memory = "512"
+      vb.cpus   = 1
+    end
+
+    # Este provisioner verifica comunicação com server01
+    server02.vm.provision "shell", inline: <<-SHELL
+      echo "Sou o Server02 - IP: 192.168.56.52"
+      apt-get update -q
+      apt-get install -y -q curl
+
+      echo ""
+      echo "=== TESTANDO COMUNICAÇÃO COM SERVER01 ==="
+      if curl -s --connect-timeout 5 http://192.168.56.51 > /dev/null; then
+        echo "✅ Server02 consegue acessar Server01!"
+      else
+        echo "⚠️  Server01 ainda não está pronto ou sem Nginx"
+      fi
+      echo "========================================="
+    SHELL
+
+  end
+
+end
+
+# ============================================================
+# COMANDOS PARA ESTE VAGRANTFILE:
+#
+#   vagrant up                   → sobe AMBAS as VMs
+#   vagrant up server01          → sobe apenas server01
+#   vagrant up server02          → sobe apenas server02
+#   vagrant ssh server01         → acessa server01
+#   vagrant ssh server02         → acessa server02
+#   vagrant halt server01        → desliga apenas server01
+#   vagrant destroy -f server02  → remove apenas server02
+#
+# NA VM server02, teste a comunicação:
+#   vagrant ssh server02
+#   curl http://192.168.56.51    → deve retornar "Server 01"
+#   ping 192.168.56.51           → deve responder
+# ============================================================

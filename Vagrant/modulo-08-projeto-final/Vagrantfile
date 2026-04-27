@@ -1,0 +1,147 @@
+# =============================================================
+# VAGRANTFILE — PROJETO FINAL SENIOR
+# PROPÓSITO: Ambiente multi-máquina completo e profissional
+# NÍVEL: Senior — demonstra todas as boas práticas aprendidas
+#
+# ESTA É A SÍNTESE DO CURSO:
+#   ✅ Ruby DSL avançado (leitura de YAML)
+#   ✅ Configuração centralizada (config.yml)
+#   ✅ Múltiplas VMs com roles específicas
+#   ✅ Rede privada com IPs fixos
+#   ✅ Provisioner Ansible (idempotente)
+#   ✅ Triggers para monitoramento
+#   ✅ Uso de plugins condicionalmente
+#   ✅ Variáveis de ambiente (.env)
+#   ✅ Health checks integrados
+# =============================================================
+
+require 'yaml'
+
+# =============================================================
+# CARREGA CONFIGURAÇÃO CENTRALIZADA
+# Lê o config.yml e disponibiliza como objeto Ruby
+# =============================================================
+CONFIG = YAML.load_file(File.join(File.dirname(__FILE__), "config.yml"))
+
+# =============================================================
+# VERIFICA PLUGINS NECESSÁRIOS
+# =============================================================
+REQUIRED_PLUGINS = %w[vagrant-vbguest]
+
+plugins_missing = REQUIRED_PLUGINS.reject { |p| Vagrant.has_plugin?(p) }
+unless plugins_missing.empty?
+  puts "⚠️  Instalando plugins necessários: #{plugins_missing.join(', ')}"
+  plugins_missing.each { |p| system("vagrant plugin install #{p}") }
+  puts "✅ Plugins instalados! Execute vagrant up novamente."
+  exit
+end
+
+# =============================================================
+# VAGRANTFILE PRINCIPAL
+# =============================================================
+Vagrant.configure("2") do |config|
+
+  # -----------------------------------------------------------
+  # CONFIGURAÇÕES GLOBAIS
+  # Aplicam-se a TODAS as VMs (podem ser sobrescritas por VM)
+  # -----------------------------------------------------------
+  config.vm.box              = "ubuntu/jammy64"
+  config.vm.box_check_update = false
+  config.vm.boot_timeout     = 300
+
+  # Desabilita pasta padrão /vagrant em todas as VMs
+  # Cada VM recebe apenas o que precisa via Ansible
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  # Configuração SSH global
+  config.ssh.insert_key = true
+
+  # -----------------------------------------------------------
+  # PLUGIN: vbguest (global para todas as VMs)
+  # -----------------------------------------------------------
+  if Vagrant.has_plugin?("vagrant-vbguest")
+    config.vbguest.auto_update = false  # Desabilita em prod (mais rápido)
+  end
+
+  # -----------------------------------------------------------
+  # TRIGGERS GLOBAIS — executam para todas as VMs
+  # -----------------------------------------------------------
+  config.trigger.before :up do |trigger|
+    trigger.name = "Pre-Up Logger"
+    trigger.run = {
+      inline: "echo '[$(date)] vagrant up iniciado' >> .vagrant/vagrant.log 2>/dev/null || true"
+    }
+  end
+
+  config.trigger.after :destroy, type: :command do |trigger|
+    trigger.name = "Post-Destroy Cleanup"
+    trigger.info = "Ambiente destruído. Limpando estado local..."
+    trigger.run  = {
+      inline: "echo '[$(date)] Ambiente destruído' >> .vagrant/vagrant.log 2>/dev/null || true"
+    }
+    trigger.on_error = :continue
+  end
+
+  # -----------------------------------------------------------
+  # LOOP SOBRE MÁQUINAS DO CONFIG.YML
+  # Cria automaticamente todas as VMs definidas em config.yml
+  # Este é o padrão mais DRY possível para multi-machine
+  # -----------------------------------------------------------
+  CONFIG["machines"].each do |vm_name, vm_config|
+
+    config.vm.define vm_name,
+      primary:   (vm_name == "web1"),    # web1 é a VM padrão do vagrant ssh
+      autostart: true do |machine|
+
+      # Configurações básicas da VM
+      machine.vm.hostname = vm_config["hostname"]
+      machine.vm.network "private_network", ip: vm_config["ip"]
+
+      # Porta pública só no Load Balancer
+      if vm_name == "lb"
+        machine.vm.network "forwarded_port",
+          guest:   80,
+          host:    CONFIG["host_port"],
+          host_ip: "127.0.0.1",
+          auto_correct: true
+      end
+
+      # Provider (lê recursos do config.yml)
+      machine.vm.provider "virtualbox" do |vb|
+        vb.name   = "senior-#{vm_name}"
+        vb.memory = vm_config["memory"].to_s
+        vb.cpus   = vm_config["cpus"]
+        vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+        vb.customize ["modifyvm", :id, "--natdnsproxy1",        "on"]
+      end
+
+      # -----------------------------------------------------------
+      # PROVISIONAMENTO COM ANSIBLE (apenas na última VM do loop)
+      # Roda o playbook UMA VEZ para configurar TODAS as VMs
+      # Isso é mais eficiente que rodar Ansible em cada VM
+      # -----------------------------------------------------------
+      if vm_name == CONFIG["machines"].keys.last
+        machine.vm.provision "ansible_local" do |ansible|
+          ansible.playbook       = "ansible/playbook.yml"
+          ansible.limit          = "all"           # Aplica a todas as VMs
+          ansible.become         = true
+          ansible.verbose        = false
+          ansible.install        = true            # Instala Ansible na VM se necessário
+          ansible.install_mode   = "default"
+
+          ansible.extra_vars = {
+            app_name:    CONFIG.dig("application", "name"),
+            app_env:     CONFIG.dig("application", "env"),
+            app_port:    CONFIG.dig("application", "app_port"),
+            db_name:     CONFIG.dig("database", "name"),
+            db_user:     CONFIG.dig("database", "user"),
+            db_password: ENV.fetch("DB_PASSWORD", "vagrant_dev_pass_123"),
+            machines:    CONFIG["machines"]
+          }
+        end
+      end
+
+    end
+  end
+
+end

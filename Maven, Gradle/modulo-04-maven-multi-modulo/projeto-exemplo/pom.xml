@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ============================================================
+  ARQUIVO: projeto-exemplo/pom.xml (POM PAI)
+
+  O QUE ESTE ARQUIVO FAZ:
+  Define o POM pai de um projeto multi-módulo.
+  Este projeto simula uma aplicação real com separação de:
+  - API (interfaces e DTOs)
+  - Core (implementação)
+  - App (aplicação executável)
+
+  ESTRUTURA DO PROJETO:
+  meu-sistema/               ← Raiz (este POM)
+  ├── pom.xml                ← POM PAI (você está aqui)
+  ├── modulo-api/            ← Interfaces, DTOs, contratos
+  │   └── pom.xml
+  ├── modulo-core/           ← Implementação das interfaces do api
+  │   └── pom.xml
+  └── modulo-app/            ← Aplicação final executável
+      └── pom.xml
+  ============================================================ -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- ═══════════════════════════════════════════════════════
+    Coordenadas GAV do POM PAI
+    Os filhos vão declarar este GAV no bloco <parent>
+    ═══════════════════════════════════════════════════════ -->
+  <groupId>com.curso</groupId>
+  <artifactId>meu-sistema</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+
+  <!-- ─────────────────────────────────────────────────────
+    packaging=pom: OBRIGATÓRIO para POMs pai/agregadores
+    POMs pai não geram JAR nem WAR — apenas organizam o build
+    ───────────────────────────────────────────────────── -->
+  <packaging>pom</packaging>
+
+  <name>Meu Sistema - Parent POM</name>
+  <description>POM pai do projeto multi-módulo meu-sistema</description>
+
+  <!-- ═══════════════════════════════════════════════════════
+    SEÇÃO: modules (AGGREGATION)
+    Lista os módulos filhos.
+    O valor de cada <module> é o NOME DO DIRETÓRIO do filho
+    (relativo à localização deste pom.xml).
+
+    AO EXECUTAR "mvn clean install" NA RAIZ:
+    1. Maven lê estes módulos
+    2. Analisa as dependências entre eles (DAG)
+    3. Executa na ordem correta: api → core → app
+    ═══════════════════════════════════════════════════════ -->
+  <modules>
+    <module>modulo-api</module>
+    <module>modulo-core</module>
+    <module>modulo-app</module>
+  </modules>
+
+  <!-- ═══════════════════════════════════════════════════════
+    SEÇÃO: properties (herdadas por todos os filhos)
+    Filhos herdam estas properties automaticamente.
+    ═══════════════════════════════════════════════════════ -->
+  <properties>
+    <!-- Java version — todos os módulos usarão Java 21 -->
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- Versões de dependências centralizadas aqui no pai -->
+    <!-- Os filhos usam ${junit.version} sem precisar declarar a versão -->
+    <junit.version>5.10.1</junit.version>
+    <slf4j.version>2.0.9</slf4j.version>
+    <logback.version>1.4.14</logback.version>
+    <gson.version>2.10.1</gson.version>
+  </properties>
+
+  <!-- ═══════════════════════════════════════════════════════
+    SEÇÃO: dependencyManagement (INHERITANCE)
+    Centraliza as VERSÕES das dependências.
+    Filhos HERDAM estas definições de versão.
+    Os filhos NÃO precisam declarar <version> nas dependências
+    que estão listadas aqui.
+    ═══════════════════════════════════════════════════════ -->
+  <dependencyManagement>
+    <dependencies>
+
+      <!-- JUnit 5 BOM — define versões consistentes para todos módulos JUnit -->
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- Dependências dos módulos internos — versão gerenciada pelo pai -->
+      <!-- Os filhos podem declarar modulo-api sem especificar a versão -->
+      <dependency>
+        <groupId>com.curso</groupId>
+        <artifactId>modulo-api</artifactId>
+        <version>${project.version}</version>
+        <!-- ${project.version} = versão do projeto pai = "1.0.0-SNAPSHOT" -->
+        <!-- Isso garante que TODOS os módulos usam a mesma versão -->
+      </dependency>
+
+      <dependency>
+        <groupId>com.curso</groupId>
+        <artifactId>modulo-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- Dependências externas com versão gerenciada -->
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>${logback.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>${gson.version}</version>
+      </dependency>
+
+    </dependencies>
+  </dependencyManagement>
+
+  <!-- ═══════════════════════════════════════════════════════
+    SEÇÃO: build > pluginManagement
+    Centraliza as VERSÕES dos plugins.
+    Filhos herdam e podem configurar sem precisar especificar versão.
+    ═══════════════════════════════════════════════════════ -->
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.12.1</version>
+          <configuration>
+            <!-- Configuração herdada por todos os filhos -->
+            <release>21</release>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.2.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.3.0</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <!-- ─────────────────────────────────────────────────────
+      plugins aqui se aplicam a TODOS os módulos filhos.
+      Use com cuidado — pode ser que um filho não precise.
+      ───────────────────────────────────────────────────── -->
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.4.1</version>
+        <executions>
+          <execution>
+            <id>enforce-rules</id>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <requireMavenVersion>
+                  <version>[3.8.0,)</version>
+                </requireMavenVersion>
+                <requireJavaVersion>
+                  <version>[17,)</version>
+                </requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

@@ -1,0 +1,50 @@
+# /etc/ssh/sshd_config
+# Gerenciado pelo Ansible - NÃO edite manualmente!
+# Role: security | Data: {{ ansible_date_time.date | default('hoje') }}
+
+# ---- Porta e Protocolo ---------------------------------------
+Port {{ security_ssh_porta }}
+Protocol 2                   # Sempre protocolo 2 (mais seguro)
+
+# ---- Autenticação -------------------------------------------
+# Proibir login direto como root
+PermitRootLogin no
+
+# Proibir autenticação por senha (só chave SSH!)
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+UsePAM yes
+
+# Número máximo de tentativas de autenticação
+MaxAuthTries {{ security_ssh_max_tentativas }}
+
+# Tempo máximo para autenticar (5 minutos)
+LoginGraceTime {{ security_ssh_timeout }}
+
+# ---- Segurança Extra ----------------------------------------
+# Checar permissões do diretório home antes de logar
+StrictModes yes
+
+# Desabilitar encaminhamento de X11 (interface gráfica) - não precisamos
+X11Forwarding no
+
+# Desabilitar encaminhamento de porta TCP (evita túneis maliciosos)
+AllowTcpForwarding no
+
+# ---- Configurações de Sessão --------------------------------
+# Tempo sem atividade antes de desconectar (5 minutos)
+ClientAliveInterval 300
+ClientAliveCountMax 2
+
+# ---- Log ----------------------------------------------------
+# Logar com mais detalhes (para auditoria)
+LogLevel VERBOSE
+SyslogFacility AUTH
+
+# ---- Métodos de Autenticação --------------------------------
+# Apenas chave pública é aceita
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+
+# ---- Mensagem de Banner -------------------------------------
+Banner /etc/ssh/banner.txt

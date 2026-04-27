@@ -1,0 +1,84 @@
+---
+# ==============================================================
+# ARQUIVO: site.yml - PLAYBOOK MESTRE
+# MÓDULO 4 - Projeto Final Sênior
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Este arquivo é o MAESTRO da orquestra!
+# Ele não toca nenhum instrumento sozinho,
+# mas coordena QUEM toca, QUANDO e em qual ORDEM.
+# Cada "play" abaixo é um grupo de músicos (servidores).
+#
+# ▶️  COMO RODAR (exemplos):
+#
+# Deploy completo:
+#   ansible-playbook -i inventories/producao site.yml --ask-vault-pass
+#
+# Só segurança:
+#   ansible-playbook -i inventories/producao site.yml --tags security
+#
+# Dry-run (simular sem executar):
+#   ansible-playbook -i inventories/producao site.yml --check
+#
+# Verbose (ver detalhes):
+#   ansible-playbook -i inventories/producao site.yml -v
+# ==============================================================
+
+# ============================================================
+# PLAY 1: Configurações base em TODOS os servidores
+# Roda primeiro em todos, antes de qualquer role específica
+# ============================================================
+- name: "PLAY 1: Configuração Base (todos os servidores)"
+  hosts: all              # Aplica em TODOS os hosts do inventário
+  become: true            # Precisa de sudo
+  gather_facts: true      # Coletar CPU, RAM, SO, etc.
+
+  roles:
+    # Role de segurança roda em TODOS (hardening base)
+    - role: security
+      tags: [security, base]  # Tag dupla: security e base
+
+# ============================================================
+# PLAY 2: Configurar os servidores web
+# ============================================================
+- name: "PLAY 2: Webservers (Nginx + Aplicação)"
+  hosts: webservers       # Só nos servidores web
+  become: true
+  gather_facts: true
+
+  # "serial: 1" = atualizar UM servidor de cada vez
+  # Garante que sempre tem servidores no ar (zero downtime!)
+  serial: 1
+
+  roles:
+    - role: app
+      tags: [app, web, deploy]
+
+# ============================================================
+# PLAY 3: Configurar bancos de dados
+# ============================================================
+- name: "PLAY 3: Banco de Dados (PostgreSQL)"
+  hosts: databases
+  become: true
+  gather_facts: true
+
+  # "any_errors_fatal: true" = se um DB falhar, para TUDO
+  # Banco de dados corrompido é pior que sistema fora do ar!
+  any_errors_fatal: true
+
+  roles:
+    - role: database
+      tags: [database, db]
+
+# ============================================================
+# PLAY 4: Configurar monitoramento
+# ============================================================
+- name: "PLAY 4: Monitoramento (Node Exporter)"
+  hosts: all              # Monitoramento em TODOS os servidores
+  become: true
+  gather_facts: false     # Já coletamos no Play 1, economizar tempo
+
+  roles:
+    - role: monitoring
+      tags: [monitoring, observability]

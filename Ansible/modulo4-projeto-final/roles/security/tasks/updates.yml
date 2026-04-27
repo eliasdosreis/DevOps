@@ -1,0 +1,56 @@
+---
+# ==============================================================
+# ARQUIVO: roles/security/tasks/updates.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Atualizações de segurança são como vacinas do servidor!
+# Quando descobrem uma falha (vírus novo), lançam a correção.
+# Se você não atualiza, fica vulnerável. Simples assim!
+# ==============================================================
+
+# Atualizar lista de pacotes disponíveis
+- name: "Updates: Atualizar cache do apt"
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 86400  # Só atualiza se tiver +24h desatualizado
+  when: ansible_os_family == "Debian"
+
+# Instalar apenas atualizações de SEGURANÇA (não tudo!)
+# "upgrade=safe" = não remove pacotes, só atualiza sem risco
+- name: "Updates: Aplicar atualizações de segurança"
+  ansible.builtin.apt:
+    upgrade: safe          # Seguro: não remove nada
+    update_cache: false    # Já atualizamos acima
+  when:
+    - ansible_os_family == "Debian"
+    - security_atualizacoes_auto | bool
+  register: resultado_upgrade
+
+- name: "Updates: Resultado das atualizações"
+  ansible.builtin.debug:
+    msg: "Pacotes atualizados: {{ resultado_upgrade.stdout | default('Nenhum') }}"
+  when: resultado_upgrade is defined
+
+# Instalar unattended-upgrades (atualizações automáticas de segurança)
+- name: "Updates: Instalar unattended-upgrades"
+  ansible.builtin.apt:
+    name:
+      - unattended-upgrades
+      - apt-listchanges
+    state: present
+  when: ansible_os_family == "Debian"
+
+# Configurar para aplicar atualizações de segurança automaticamente
+- name: "Updates: Configurar atualização automática"
+  ansible.builtin.copy:
+    content: |
+      // Configuração de atualizações automáticas
+      // Gerado pelo Ansible
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    mode: '0644'
+  when: ansible_os_family == "Debian"

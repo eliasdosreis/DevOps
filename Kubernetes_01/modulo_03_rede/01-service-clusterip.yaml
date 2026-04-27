@@ -1,0 +1,84 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um Service do tipo ClusterIP. Ele fornece uma rede 
+# interna fixa (Nome DNS + IP) para que outros Pods achem sua 
+# aplicação, sem a necessidade de acessar os Pods efêmeros diretamente.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Imagine um Call Center de Suporte Básico.
+# Os atendentes vêm e vão todos os dias (Pods nascendo e morrendo). 
+# Você como cliente, não decora o celular pessoal (IP do Pod) de João nem de Maria.
+# Você liga para o número geral (o Service da Empresa) e pede "Quero o suporte!".
+# O Service é o PABX/Ramal. Ele tem um número fixo e eterno. Toda vez que você liga, 
+# ele repassa a sua ligação de forma balanceada para qualquer atendente que estiver online 
+# respirando na hora (Label Selector + iptables vivo do Kubernetes).
+
+# 2. O QUE É (definição técnica Senior)
+# O Service ClusterIP expõe o serviço em um IP interno estável do rede K8s. 
+# Esse tipo torna o serviço atingível APENAS por dentro do cluster. É o padrão oficial.
+# O `kube-proxy` rodando em cada nó aticamente reescreve pacotes iptables/IPVS 
+# para desviar o tráfego do VIP (Virtual IP do serviço) para os endpoints (Pods).
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: meu-backend-fixo        # O "Ramal PABX" ganhará automaticamente o DNS de "meu-backend-fixo"
+  namespace: meu-primeiro-projeto
+spec:
+  type: ClusterIP               # (Padrão) A rede é isolada para funcionar apenas entre os componentes do K8s
+  
+  # COMO O SERVIÇO ACHA OS ATENDENTES (PODS)? 
+  # A Mágica de Selectors que estudamos no Módulo 1!
+  selector:
+    app: api-interna            # Ele grampeará automaticamente QUALQUER Pod que tenha ESSA label exata.
+  
+  ports:
+    - name: http                # Um nome descritivo amigável para a porta
+      port: 80                  # Qual porta o "Service PABX" atende (Porta pública virtual)
+      targetPort: 8080          # Para qual porta C do Pod (Container real) ele encaminhará a rede?
+      protocol: TCP             # TCP, UDP, SCTP
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplique o Arquivo:
+#    kubectl apply -f 01-service-clusterip.yaml
+#
+# 2. Inspecione o serviço criado:
+#    kubectl get service meu-backend-fixo -n meu-primeiro-projeto
+#    (Repare que ele ganhou um IP Fixo, algo como 10.96.x.x)
+#
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# O Serviço não está mandando requisições? Ele não "achou" seus Pods?
+# Este é o comando DEFINITIVO. Sempre olhe os ENDPOINTS do Service:
+#    kubectl get endpoints meu-backend-fixo -n meu-primeiro-projeto
+# Se a lista de 'ENDPOINTS' do terminal voltar <none>, significa que seu "selector" do  
+# Service não deu "Match" nas labels de nenhum Pod do cluster. 
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# No K8s o CoreDNS é divino. Se amanhã o desenvolvedor Junior destruir seu banco 
+# de dados MySQL e criar outro novamente, o IP Virtual do Service novo VAI mudar. 
+# Por isso Seniors numca amarram aplicações nos IPs de Services!. O CoreDNS crava o nome! 
+# Basta seu Pod-Spring/Node acessar HTTP em `http://meu-backend-fixo`. A engine DNS do 
+# k8s resolve pro IP automaticamente. Nada de IPs hardcoded nas configs de prod.
+# Além disso, o Kube-Proxy não é um proxy real moderno (não fica entre cliente/servidor segurando payload), 
+# ele literalmente escreve regras diretas de iptables no Kernel Linux do host! Rápido sem latência.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Se nós temos um Service apontado para um Deployment com 5 Réplicas de Pods
+# e o algoritimo de Load Balancer Round-Robin bater na porta do Service. É o Service quem
+# roteia do jeito L7 Nginx balanceando?"
+# Resposta Esperada: "Não. O Service nativo em modo 'iptables' na verdade não é um 
+# componente ativo rodando software em um load balancer inteligente, ele não pesa request.
+# Ele delega uma seleção randômica não-inteligente nas regras do Netfilter do kernel Linux. Se quiser LB 
+# inteligente nivel L7 (Http Path, Cookies), precisa usar Ingress ou ServiceMesh (Istio/Linkerd)."

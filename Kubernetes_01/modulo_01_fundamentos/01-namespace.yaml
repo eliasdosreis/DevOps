@@ -1,0 +1,66 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um Namespace, que no Kubernetes serve para isolar e 
+# organizar os seus recursos logicamente.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Pense no Cluster Kubernetes como um Grande Prédio Comercial.
+# Se todas as 500 empresas ficassem misturadas em um grande salão sem paredes, 
+# seria um caos. Nomes de pessoas e mesas seriam repetidos.
+# Um Namespace é como construir uma sala, colocar uma porta e batizar de "Empresa A". 
+# Lá dentro, eles podem ter o "Servidor X". Na "Empresa B", pode haver um "Servidor X" tbm.
+# O Kubernetes isola as coisas logicas.
+
+# 2. O QUE É (definição técnica Senior)
+# Namespace fornece um escopo para Names. Nomes de recursos precisam ser únicos dentro
+# de um namespace, mas não através de múltiplos namespaces.
+# Namespaces não garantem isolamento de rede ou processamento por padrão! É puramente lógico.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1               # Versão da API principal do K8s
+kind: Namespace              # O tipo de recurso que estamos criando
+metadata:                    # Informações que vão identificar esse Namespace
+  name: meu-primeiro-projeto # Nome que ele receberá. Deve ser único no Cluster inteiro.
+  labels:                    # Opcional - Etiquetas de "categorização"
+    ambiente: estudos        # Exemplo: um label dizendo que é um namespace de estudos
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplicar o arquivo no cluster:
+#    kubectl apply -f 01-namespace.yaml
+#
+# 2. Listar os namespaces existentes (ele vai mostrar o default, kube-system etc):
+#    kubectl get namespaces
+#     (ou a abreviação: kubectl get ns)
+#
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# Se quisermos ver tudo que tem "dentro" dessa sala agora (vazio):
+#    kubectl get all -n meu-primeiro-projeto
+#
+# Erro Comum: "Error from server (AlreadyExists)"
+# Se você der um "kubectl create" num namespace que já existe, ele não deixa.
+# O "kubectl apply" é declarativo; se já existe, ele não reclama, só diz "unchanged".
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# Um Dev Junior cria tudo no Namespace "default". Se o cluster estragar, ninguém
+# sabe de qual time é aquele banco de dados.
+# O modo Sênior é: Cada produto de software ou equipe corporativa ganha seu Namespace.
+# Além disso, usamos as "ResourceQuotas" amarradas ao Namespace para dizer: 
+# "A equipe Financeira (Namespace-Financeiro) só pode gastar no máximo 10 CPUs do Cluster". 
+# Ou NetworkPolicies dizendo que um Namespace não pode falar na rede do outro.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Se eu tiver um Pod chamado 'web' no namespace 'dev', posso criar outro 
+# Pod chamado 'web' no namespace 'prod'?"
+# Resposta Esperada: "Sim, completamente possível. Os namespaces delimitam o 
+# escopo dos nomes, permitindo ambientes separados rodarem as mesmas aplicações lado a lado".

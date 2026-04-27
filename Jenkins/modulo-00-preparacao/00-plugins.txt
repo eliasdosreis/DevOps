@@ -1,0 +1,113 @@
+# ============================================================
+# MÓDULO 0 — PLUGINS ESSENCIAIS
+# Arquivo: 00-plugins.txt
+#
+# O QUE ESTE ARQUIVO FAZ:
+# Lista os plugins essenciais para um Jenkins profissional.
+# Use este arquivo como referência na tela de instalação de plugins
+# ou para automação via Jenkins Configuration as Code (JCasC).
+#
+# ANALOGIA DO DIA A DIA:
+# Plugins são como aplicativos no seu celular. O Jenkins puro é
+# o sistema operacional — funcional, mas limitado. Os plugins
+# adicionam superpoderes específicos: integração com Git, Docker,
+# Slack, SonarQube, etc.
+# ============================================================
+
+# ============================================================
+# CATEGORIA: PIPELINE E SCM (Source Control Management)
+# Estes plugins são OBRIGATÓRIOS para trabalho com Pipelines
+# ============================================================
+
+workflow-aggregator        # Pipeline plugin — habilita todo o sistema de Pipelines Declarativos
+git                        # Integração com repositórios Git (GitHub, GitLab, Bitbucket)
+github                     # Integração específica com GitHub (webhooks, status checks)
+gitlab-plugin              # Integração específica com GitLab
+bitbucket                  # Integração específica com Bitbucket
+github-branch-source       # Suporte a Multibranch Pipeline com GitHub
+gitlab-branch-source       # Suporte a Multibranch Pipeline com GitLab
+pipeline-stage-view        # Visualização gráfica dos stages no build (Blue Ocean alternativo)
+blueocean                  # Interface moderna do Jenkins (recomendada para times)
+
+# ============================================================
+# CATEGORIA: CREDENTIALS E SEGURANÇA
+# ============================================================
+
+credentials                # Sistema base de gerenciamento de credentials
+credentials-binding        # Permite usar credentials como variáveis de ambiente no pipeline
+plain-credentials          # Suporte a secret text e outros tipos simples
+ssh-credentials            # Suporte a chaves SSH no credential store
+role-strategy              # RBAC — Role-Based Access Control (controle granular de permissões)
+matrix-auth                # Autorização baseada em matriz de permissões
+audit-trail                # Registra todas as ações dos usuários (auditoria)
+
+# ============================================================
+# CATEGORIA: BUILD E TESTES
+# ============================================================
+
+maven-plugin               # Integração com Apache Maven
+gradle                     # Integração com Gradle
+nodejs                     # Gerenciamento de versões Node.js no Jenkins
+junit                      # Publicação e visualização de relatórios JUnit
+jacoco                     # Cobertura de código Java com JaCoCo
+warnings-ng                # Análise estática — agrupa avisos de vários analisadores
+sonar                      # Integração com SonarQube para quality gates
+cobertura                  # Relatórios de cobertura de código (Python, Ruby, etc.)
+htmlpublisher              # Publica relatórios HTML no build (coverage, docs, etc.)
+
+# ============================================================
+# CATEGORIA: DOCKER E CONTAINERS
+# ============================================================
+
+docker-plugin              # Agentes Docker efêmeros e integração geral com Docker
+docker-workflow            # Suporte a Docker no Jenkinsfile (docker.build, docker.push, etc.)
+kubernetes                 # Agentes Kubernetes (pods efêmeros como agents)
+kubernetes-cli             # Acesso ao kubectl dentro do pipeline
+
+# ============================================================
+# CATEGORIA: DEPLOY E INFRAESTRUTURA
+# ============================================================
+
+ssh-agent                  # Usa chaves SSH como agentes de autenticação no pipeline
+publish-over-ssh           # Envia arquivos e executa comandos via SSH
+ansible                    # Integração com Ansible para automação de deploy
+pipeline-aws               # Integração com AWS (S3, ECR, ECS, EKS, Lambda, etc.)
+
+# ============================================================
+# CATEGORIA: NOTIFICAÇÕES
+# ============================================================
+
+email-ext                  # Email avançado com templates HTML personalizáveis
+slack                      # Notificações no Slack (sucesso, falha, aprovação)
+office-365-connector        # Notificações no Microsoft Teams
+telegram-notifications     # Notificações via Telegram (opcional)
+
+# ============================================================
+# CATEGORIA: MONITORAMENTO E OBSERVABILIDADE
+# ============================================================
+
+prometheus                 # Expõe métricas do Jenkins para Prometheus (/prometheus endpoint)
+monitoring                 # Plugin de monitoramento interno do Jenkins
+build-monitor-plugin       # Dashboard visual de status dos builds em tempo real
+jobConfigHistory           # Rastreia histórico de mudanças nas configurações de jobs
+
+# ============================================================
+# CATEGORIA: UTILIDADES E QUALIDADE DE VIDA
+# ============================================================
+
+timestamper                # Adiciona timestamp em cada linha do log do build
+ansicolor                  # Renderiza cores ANSI no log (saída colorida de ferramentas)
+build-timeout              # Define timeout máximo para builds (evita builds travados infinitamente)
+rebuild                    # Permite reexecutar um build com os mesmos parâmetros
+copy-artifact              # Copia artefatos entre jobs Jenkins
+lockable-resources         # Cria locks para recursos compartilhados (evita race conditions)
+throttle-concurrents       # Limita builds concorrentes por job ou categoria
+configuration-as-code      # Jenkins Configuration as Code (JCasC) — infra como código
+
+# ============================================================
+# PLUGINS MÍNIMOS PARA COMEÇAR (se quiser ir devagar):
+#
+# workflow-aggregator, git, pipeline-stage-view,
+# credentials, credentials-binding, docker-plugin,
+# docker-workflow, email-ext, timestamper, ansicolor
+# ============================================================

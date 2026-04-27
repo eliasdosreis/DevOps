@@ -1,0 +1,109 @@
+# ==============================================================
+# ARQUIVO: roles/app/templates/nginx_vhost.conf.j2
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+# Configuração Nginx gerada pelo Ansible
+# Domínio: {{ nginx_dominio }} | Ambiente: {{ ambiente }}
+# NÃO edite manualmente!
+# ==============================================================
+
+# ---- Definir grupo de servidores da aplicação ---------------
+# "upstream" = o backend (nossa aplicação Python/Node/etc)
+upstream {{ app_nome }}_backend {
+    # Endereço onde nossa aplicação está escutando
+    server 127.0.0.1:{{ app_porta }};
+
+    # keepalive = reutilizar conexões (mais rápido!)
+    keepalive 32;
+}
+
+# ---- Servidor HTTP (porta 80) --------------------------------
+server {
+    listen 80;
+    server_name {{ nginx_dominio }} www.{{ nginx_dominio }};
+
+    {% if nginx_ssl | default(false) %}
+    # SSL ativo: redirecionar HTTP → HTTPS
+    return 301 https://$server_name$request_uri;
+
+    {% else %}
+    # Sem SSL: servir aplicação direto na porta 80
+
+    # Pasta raiz para arquivos estáticos
+    root {{ app_dir }}/current/static;
+
+    # Logs específicos desta aplicação
+    access_log /var/log/nginx/{{ app_nome }}_access.log;
+    error_log  /var/log/nginx/{{ app_nome }}_error.log warn;
+
+    # Aumentar timeout para operações longas
+    proxy_read_timeout 120s;
+    proxy_connect_timeout 10s;
+
+    # Arquivos estáticos servidos diretamente pelo Nginx (rápido!)
+    location /static/ {
+        alias {{ app_dir }}/current/static/;
+        expires 30d;                    # Cache de 30 dias no browser
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Uploads e arquivos de mídia
+    location /media/ {
+        alias {{ app_dir }}/current/media/;
+        expires 7d;
+    }
+
+    # Tudo mais vai para a aplicação (proxy reverso)
+    location / {
+        proxy_pass http://{{ app_nome }}_backend;
+
+        # Headers importantes para a aplicação saber o IP real do usuário
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Suporte a WebSocket (se necessário)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+    {% endif %}
+}
+
+{% if nginx_ssl | default(false) %}
+# ---- Servidor HTTPS (porta 443) - só se SSL ativo -----------
+server {
+    listen 443 ssl http2;
+    server_name {{ nginx_dominio }} www.{{ nginx_dominio }};
+
+    # Certificados SSL (gerados pelo Let's Encrypt/certbot)
+    ssl_certificate     /etc/letsencrypt/live/{{ nginx_dominio }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{ nginx_dominio }}/privkey.pem;
+
+    # Configurações de segurança SSL modernas
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+
+    # HSTS: forçar HTTPS por 1 ano (segurança extra)
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    root {{ app_dir }}/current/static;
+    access_log /var/log/nginx/{{ app_nome }}_access.log;
+    error_log  /var/log/nginx/{{ app_nome }}_error.log warn;
+
+    location /static/ {
+        alias {{ app_dir }}/current/static/;
+        expires 30d;
+    }
+
+    location / {
+        proxy_pass http://{{ app_nome }}_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+}
+{% endif %}

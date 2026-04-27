@@ -1,0 +1,71 @@
+# ============================================================
+# MÓDULO 4 — PASTA PADRÃO /vagrant (DEFAULT SYNCED FOLDER)
+# O QUE ESTE ARQUIVO FAZ:
+#   Demonstra o comportamento da synced folder padrão do Vagrant
+#   que mapeia automaticamente o diretório do Vagrantfile para
+#   /vagrant dentro da VM — sem nenhuma configuração adicional.
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-default-sync"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-default-sync"
+    vb.memory = "512"
+    vb.cpus   = 1
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: A PASTA PADRÃO /vagrant
+  # Não precisa de configuração — existe automaticamente!
+  # O diretório do Vagrantfile no host = /vagrant na VM
+  # -----------------------------------------------------------
+
+  # Esta linha NÃO é necessária — é apenas para documentar
+  # que a pasta padrão existe e suas opções:
+  # config.vm.synced_folder ".", "/vagrant"
+
+  # -----------------------------------------------------------
+  # COMO DESABILITAR A PASTA PADRÃO
+  # Útil quando não precisa de compartilhamento ou afeta performance
+  # -----------------------------------------------------------
+  # config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  # -----------------------------------------------------------
+  # PROVISIONAMENTO: Demonstra o uso da pasta padrão
+  # -----------------------------------------------------------
+  config.vm.provision "shell", inline: <<-SHELL
+    echo ""
+    echo "=== CONTEÚDO DE /vagrant (espelho do seu projeto) ==="
+    ls -la /vagrant/
+    echo ""
+    echo "O diretório /vagrant na VM é o mesmo que:"
+    echo "$(cat /vagrant/Vagrantfile | head -3)"
+    echo ""
+    echo "Agora você pode:"
+    echo "  - Editar arquivos no HOST com seu editor favorito"
+    echo "  - Executar os arquivos DENTRO da VM via /vagrant"
+    echo "  Exemplo: cd /vagrant && bash scripts/meu-script.sh"
+  SHELL
+
+end
+
+# ============================================================
+# COMO USAR A PASTA PADRÃO:
+#
+#   vagrant ssh
+#   cd /vagrant
+#   ls -la    # Você verá todos os arquivos do seu projeto!
+#
+# CASOS DE USO:
+#   - Desenvolver no host (VS Code) e testar na VM Linux
+#   - Executar scripts Bash do projeto dentro da VM
+#   - Compilar código nativo Linux a partir do host Windows/macOS
+#
+# IMPORTANTE:
+#   A pasta padrão usa VirtualBox Shared Folders.
+#   Para projetos grandes (node_modules, vendor/), use
+#   NFS (Linux) ou rsync para melhor performance.
+# ============================================================

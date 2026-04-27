@@ -1,0 +1,91 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um PersistentVolumeClaim (PVC). 
+# Este é o Recurso de ouro OBRIGATÓRIO (O Contrato) que um Programador 
+# usa para de fato REIVINDICAR e alugar espaço de armazenamento no K8s. 
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# A Aula 1 (StorageClass) foi a Vitrine Categoria de imóveis ("Lotamento em AlphaVille Rápido").
+# A Aula 2 (PersistentVolume - PV) mostramos como o Prefeito murou 10 Lotes 
+# e deixou vazios esperando (`Available`).
+#
+# AGORA O PVC (ESTE ARQUIVO) é o "COMPRADOR" assinando o Contrato na Mão.
+# O Programador e seu YAML criam esse PVC dizendo: "Amigão Kubernetes, 
+# quero agora 5Gb no contrato, que seja da Vitrine AlphaVille, e que tenha esgoto".
+# O Kubernetes age como o cartório: Ele anda pela cidade. Ele ACHOU um terreno pré-existente
+# igualzinho do prefeito da aula #2? Ele liga os dois (Faz BOUND em fração de seg).
+# Se ele NÂO acha lote livre pronto... mas tiver o Plugin Cloud CSI acoplado ao StorageClass.. ele MANDA O VENDEDOR 
+# GERAR TERRA DO CHÃO DO NADA (Dynamic Provisioning) e traz o disco cortadinho pra você.
+
+# 2. O QUE É (definição técnica Senior)
+# O `PersistentVolumeClaim` (PVC) é a solicitação imperativa/declarativa de armazenamento 
+# formulada por um usuário (Pod's Owner). 
+# Os pods consomem recursos de HD no Kubernetes ÚNICA e EXCLUSIVAMENTE passando através de PVCs 
+# referenciados nos seus templates, limitando e mascarando que as aplicações leiam  
+# drives diretos do hospedeiro evitando o anti-pattern.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: PersistentVolumeClaim              # CLAIM: Significa "Reivindicação"
+metadata:
+  # ATENÇÃO DE NOVO NO ISOLAMENTO: Reparou que AQUI tem namespace?!  
+  # PVCs SÃO objetos presos ao namespace do seu DEV que os requisitou. Diferentes do PV's global.
+  name: meu-contrato-de-disco-5gb
+  namespace: meu-primeiro-projeto
+spec:
+  # Filtro 1: A qualidade do Imóvel 
+  accessModes:
+    - ReadWriteOnce                      # Solicitei modo Exclusivista RWO (Conforme estudado Aula 02)
+    
+  # Filtro 2: A Categoria do Imovel (Ex: disco-lento-default era o exato titulo da Aula.02 onde o Prefeito murou o lote).
+  storageClassName: disco-lento-default  
+  
+  # Filtro 3: O Tamanho Exato
+  resources:
+    requests:
+      storage: 5Gi                       # O limite exato que o Pedreiro Dev exige. O Prefeito fez de 10Gi, então ele vai usar aquele e jogar fora 5.
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Gere o CONTRATO na mesa do administrador e obrigue o binding!
+#    kubectl apply -f 03-persistentvolumeclaim.yaml
+#
+# 2. VEJA A MAGIA EXATA DO STATUS E CASAMENTO OCORRENDO AO VIVO!
+#    kubectl get pvc,pv -n meu-primeiro-projeto
+#
+# EXPLICACAO DA TELA DE 'GET PVC,PV':
+# - O seu PVC ("meu-contrato") ficará com "STATUS: Bound" (Acoplado/Ligado).
+# - O PV Global ("grande-hd-estendido") da aula passada deixará de dizer `Available` livre..
+#   MUDANDO o status instantâneamente para "STATUS: Bound", marcando na coluna CLAIM para quem
+#   é o novo dono amarrado ("meu-primeiro-projeto/meu-contrato-de-disco-5gb").
+
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# Se o seu "kubectl get pvc" retornar STATUS "Pending" eternamente:
+# O seu K8s não tem provimento dinâmico de cloud, nem achou lotes que cumprissem a promessa (Não exitiu PV live RWO estático que coubesse no nome da StorageClass). O Pod ligado a ele não vai subir JAMAIS, travando todo o sistema de API.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# De novo: Nós raramente criamos aquele PV estático da aula #2. 
+# O mercado Sênior moderno hoje usa apenas StorageClass (Classe AWS/Azure) e PVC (Claim do Dev).
+# Você ignora a parte humana do meio. Você da apply nesse claim de 5Gb acima.  
+# Como o Kubernetes detecta o `nome` do plugin StorageClassAWS, ele na mesma 
+# hora chama o Control-Plane (Via IAM/Roles mágicas), pede a criação do Volume no datatacenter 
+# na porta USB do servidor da VM. E ele INJETA O OBJETO `PersistentVolume` sozinho dentro 
+# do Kubernetes escondido! Você só pediu e tudo se conjura e acopla automagicanente (Dynamic Provisioning).
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Se nós temos um Banco de Dados Postgres (PVC/Bound) rodando no Nó 'Worker-B'. 
+# Se rodarmos um Drop agressivo do nó no terminal expulsando o Pod, o Pod do Postgres e o Disco PVC serão destruidos juntos? "
+# Resposta Esperada: "O ciclo de vida de Pods e do StorageClaim de disco são 
+# propositalmente dissociados na premissa cloud-native. O fato do Pod morrer ou  
+# deslogar dum servidor em pane física NÂO DESTRÓI o PVC e seus preciosos dados contidos neles!  
+# Ao nascer num "Worker-Z" ele chamará livremente o Contrato Antigo com todo o HD integro de novo."

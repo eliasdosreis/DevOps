@@ -1,0 +1,129 @@
+# ============================================================
+# ARQUIVO: 02-hpa.yaml
+# HPA - Horizontal Pod Autoscaler
+#
+# Imagine uma lanchonete:
+# - Hora do almoço: fila enorme -> contratar mais atendentes
+# - 15h da tarde: vazio -> dispensar atendentes
+#
+# HPA faz exatamente isso com pods!
+# Monitora métricas (CPU, memória, custom) e:
+# - Aumenta pods quando a carga sobe (scale out)
+# - Diminui pods quando a carga cai (scale in)
+#
+# PRÉ-REQUISITO: Metrics Server instalado
+# Minikube: minikube addons enable metrics-server
+# ============================================================
+
+# Primeiro: o Deployment que o HPA vai gerenciar
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: app-para-escalar
+  labels:
+    app: escalavel
+
+spec:
+  replicas: 2               # HPA vai sobrescrever este valor!
+  selector:
+    matchLabels:
+      app: escalavel
+
+  template:
+    metadata:
+      labels:
+        app: escalavel
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.25
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "100m"       # OBRIGATÓRIO para HPA por CPU!
+              memory: "64Mi"    # HPA precisa saber o baseline
+            limits:
+              cpu: "300m"
+              memory: "128Mi"
+
+---
+# ---------------------------------------------------------------
+# O HPA
+# ---------------------------------------------------------------
+
+apiVersion: autoscaling/v2          # Use v2 para métricas avançadas
+kind: HorizontalPodAutoscaler
+
+metadata:
+  name: hpa-app-escalavel
+
+spec:
+  scaleTargetRef:                   # QUEM o HPA vai controlar?
+    apiVersion: apps/v1
+    kind: Deployment
+    name: app-para-escalar          # Nome do Deployment acima
+
+  minReplicas: 2                    # MÍNIMO de pods (nunca abaixo!)
+  maxReplicas: 10                   # MÁXIMO de pods (nunca acima!)
+
+  metrics:                          # QUAIS métricas usar?
+
+    # MÉTRICA 1: CPU
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization         # Porcentagem de uso
+          averageUtilization: 70    # Se média > 70%: escala!
+                                    # Se média < 70%: reduz!
+
+    # MÉTRICA 2: Memória
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: AverageValue        # Valor médio absoluto
+          averageValue: 100Mi       # Se média > 100Mi: escala!
+
+  # -------------------------------------------------------
+  # COMPORTAMENTO DE ESCALA (avançado)
+  # -------------------------------------------------------
+  behavior:
+    scaleUp:                        # Como escalar PARA CIMA
+      stabilizationWindowSeconds: 60  # Aguarda 60s antes de escalar
+                                      # Evita escalar por pico momentâneo
+      policies:
+        - type: Pods
+          value: 2                  # Adiciona máximo 2 pods por vez
+          periodSeconds: 60         # A cada 60 segundos
+
+    scaleDown:                      # Como reduzir pods
+      stabilizationWindowSeconds: 300  # Aguarda 5 min antes de reduzir
+                                       # Evita ficar subindo e descendo
+      policies:
+        - type: Pods
+          value: 1                  # Remove máximo 1 pod por vez
+          periodSeconds: 120        # A cada 2 minutos
+
+# ============================================================
+# COMO TESTAR O HPA:
+#
+# 1. Aplicar: kubectl apply -f 02-hpa.yaml
+# 2. Ver status: kubectl get hpa
+# 3. Gerar carga (em outro terminal):
+#    kubectl run -it --rm load-generator \
+#      --image=busybox -- /bin/sh
+#    # Dentro do container:
+#    while true; do wget -q -O- http://app-para-escalar; done
+# 4. Observar escala: watch kubectl get pods
+#
+# ENTREVISTA SÊNIOR:
+# "HPA vs VPA vs KEDA - quando usar cada um?"
+# RESPOSTA:
+# HPA: Escala HORIZONTAL (mais pods). Bom para stateless.
+# VPA: Escala VERTICAL (mais CPU/RAM por pod). Bom para DBs.
+# KEDA: Escala por métricas CUSTOMIZADAS (filas, eventos).
+#       Ex: escala baseado em tamanho da fila SQS/Kafka.
+# ============================================================

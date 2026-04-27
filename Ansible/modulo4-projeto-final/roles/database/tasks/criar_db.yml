@@ -1,0 +1,64 @@
+---
+# ==============================================================
+# ARQUIVO: roles/database/tasks/criar_db.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Depois de instalar o PostgreSQL, precisamos:
+# 1. Criar o usuário da aplicação (não usar o postgres root!)
+# 2. Criar o banco de dados
+# 3. Dar permissões certas
+#
+# Princípio de segurança: menor privilégio possível!
+# O usuário da app só acessa o banco DA app.
+# ==============================================================
+
+# Criar usuário do banco de dados para a aplicação
+# "become_user: postgres" = rodar como o usuário postgres do sistema
+- name: "DB Setup: Criar usuário do banco"
+  community.postgresql.postgresql_user:
+    name: "{{ db_usuario }}"              # Nome do usuário
+    password: "{{ vault_db_senha }}"      # Senha do vault (criptografada!)
+    role_attr_flags: NOSUPERUSER,NOCREATEDB,NOCREATEROLE  # Privilégios mínimos!
+    state: present
+  become: true
+  become_user: postgres   # Trocar para o usuário postgres para executar
+
+# Criar o banco de dados
+- name: "DB Setup: Criar banco de dados"
+  community.postgresql.postgresql_db:
+    name: "{{ db_nome }}"                 # Nome do banco
+    owner: "{{ db_usuario }}"            # Dono = usuário da aplicação
+    encoding: UTF-8                       # Codificação de caracteres
+    lc_collate: "pt_BR.UTF-8"            # Ordenação em português
+    lc_ctype: "pt_BR.UTF-8"             # Tipo de caracteres em português
+    template: template0                   # Template base limpo
+    state: present
+  become: true
+  become_user: postgres
+
+# Dar permissões completas no banco ao usuário da aplicação
+- name: "DB Setup: Conceder privilégios no banco"
+  community.postgresql.postgresql_privs:
+    db: "{{ db_nome }}"
+    privs: ALL           # Todas as permissões no banco
+    type: database       # Tipo: banco de dados
+    roles: "{{ db_usuario }}"
+    state: present
+  become: true
+  become_user: postgres
+
+# Verificar se banco foi criado
+- name: "DB Setup: Verificar banco criado"
+  community.postgresql.postgresql_query:
+    db: "{{ db_nome }}"
+    query: "SELECT version();"
+  become: true
+  become_user: postgres
+  register: pg_version
+  changed_when: false
+
+- name: "DB Setup: Versão do PostgreSQL"
+  ansible.builtin.debug:
+    msg: "✅ PostgreSQL rodando: {{ pg_version.query_result[0].version | default('OK') }}"

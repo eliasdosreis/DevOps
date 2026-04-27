@@ -1,0 +1,73 @@
+---
+# =============================================================
+# ROLE: mysql-db
+# PROPÓSITO: Instala e configura MySQL 8 para o cluster
+# IDEMPOTENTE: Sim
+# =============================================================
+
+- name: Instalar MySQL Server
+  apt:
+    name:
+      - mysql-server
+      - mysql-client
+      - python3-pymysql    # Necessário para o módulo mysql_* do Ansible
+    state: present
+  tags: mysql
+
+- name: Configurar MySQL para aceitar conexões externas
+  lineinfile:
+    path:    /etc/mysql/mysql.conf.d/mysqld.cnf
+    regexp:  "^bind-address"
+    line:    "bind-address = 0.0.0.0"
+  notify: Restart MySQL
+  tags: mysql
+
+- name: Garantir MySQL rodando e habilitado
+  service:
+    name:    mysql
+    state:   started
+    enabled: yes
+  tags: mysql
+
+- name: Criar banco de dados da aplicação
+  mysql_db:
+    name:          "{{ db_name }}"
+    state:         present
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  tags:
+    - mysql
+    - db-setup
+
+- name: Criar usuário de banco de dados
+  mysql_user:
+    name:     "{{ db_user }}"
+    password: "{{ db_password }}"
+    priv:     "{{ db_name }}.*:ALL"
+    host:     "%"
+    state:    present
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  no_log: true       # Não loga a senha no output do Ansible!
+  tags:
+    - mysql
+    - db-setup
+
+- name: Criar tabela de exemplo
+  mysql_query:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    login_db: "{{ db_name }}"
+    query: |
+      CREATE TABLE IF NOT EXISTS requests (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        host       VARCHAR(100),
+        path       VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+  tags:
+    - mysql
+    - db-setup
+
+handlers:
+  - name: Restart MySQL
+    service:
+      name:  mysql
+      state: restarted

@@ -1,0 +1,29 @@
+# ============================================================
+# MEMO BOARD DO SÊNIOR
+# Bind Mount (Direto em pasta do Host) vs named Volumes
+# Uso prático para não gaguejar com Arquitetos de Software.
+# ============================================================
+
+
+[ BIND MOUNTS ]
+Cintaxe   : -v /minha/pasta/no/desktop:/app_no_container
+Uso Real  : Dev Local. Subir live-reload de paginas web onde eu "Salvo 
+            o .js na IDE" e sem rebuild de build docker eu dou F5 no site.
+Contra    : Não escala. Permisões Linux conflitantes com os numeros de UID 
+            do usuário base do host vs processo 1 do container.
+
+
+[ NAMED VOLUMES ]
+Cintaxe   : -v db_volume:/var/lib/mysql
+Uso Real  : Produção absoluta. Deixar um banco MariaDB livre pelo Docker
+            em Host Remote AWS. 
+Prós      : Os Named Volumes adotam a permissão DO CONTAINER ao qual 
+            eles atacharam pela 1 vez. Eliminando 100% bugs de Chown/Readonly root.
+Contra    : Fica "escondida" a pasta lá dentro do isolamento do Daemon. 
+            É mais chato de um dev que só queria "ver a pasta no C:// direto" abrir e inspecionar.
+            Requer usar 'docker run' ativando bash com o volume atachado junto pra ver algo de dentro de forma clara.
+
+[ TMPFS ]
+Uso raro  : `-it --tmpfs /app`. Literalmente alocado direto no silício RAM.
+            Útil apenas e extramamente para cache servers gigantes (Redis e cia) ou processar 
+            tokens jwt hyper sigilosos que se encostarem em L3 Disk Cache SSD podem sofrer DataLeak.

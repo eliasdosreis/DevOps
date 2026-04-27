@@ -1,0 +1,80 @@
+# ============================================================
+# MÓDULO 6 — USO DE BOX COM METADATA CUSTOMIZADA
+# O QUE ESTE ARQUIVO FAZ:
+#   Demonstra como usar uma box hospedada internamente com
+#   suporte a versionamento via arquivo metadata.json.
+#   Propósito: simular distribuição corporativa de boxes.
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  # -----------------------------------------------------------
+  # USANDO BOX COM METADATA URL (VERSIONAMENTO AUTOMÁTICO)
+  # box_url aponta para o JSON de metadata, não para a box direta
+  # Isso permite: vagrant box update (detecta nova versão no JSON)
+  # -----------------------------------------------------------
+
+  # Nome da box (qualquer nome descritivo)
+  config.vm.box = "meutime/devbox-ubuntu2204"
+
+  # URL do arquivo metadata.json hospedado no servidor interno
+  # O Vagrant lerá esse JSON para saber qual .box baixar
+  config.vm.box_url = "http://servidor-interno.empresa.com/boxes/metadata.json"
+
+  # Versão mínima aceitável (não usará versões antigas)
+  config.vm.box_version = ">= 1.1.0"
+
+  # Verifica atualizações ao fazer vagrant up
+  config.vm.box_check_update = true
+
+  # -----------------------------------------------------------
+  # ALTERNATIVA: BOX DE ARQUIVO LOCAL
+  # Use quando está testando a box recém-criada
+  # -----------------------------------------------------------
+  # config.vm.box     = "minha-devbox-local"
+  # config.vm.box_url = "file:///C:/Users/Elias/boxes/minha-devbox.box"
+
+  config.vm.hostname = "devbox"
+  config.vm.network "private_network", ip: "192.168.56.80"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-devbox-from-metadata"
+    vb.memory = "2048"
+    vb.cpus   = 2
+  end
+
+  config.vm.provision "shell", inline: <<-SHELL
+    echo "=== AMBIENTE DevBox ==="
+    echo "Box: $(cat /etc/os-release | grep PRETTY_NAME | cut -d= -f2)"
+    echo "Docker: $(docker --version 2>/dev/null || echo 'não instalado')"
+    echo "Node:   $(node --version 2>/dev/null || echo 'não instalado')"
+    echo "Git:    $(git --version)"
+    echo "======================="
+  SHELL
+
+end
+
+# ============================================================
+# COMO GERAR O CHECKSUM DO ARQUIVO .box (para o metadata.json):
+#
+# Linux/macOS:
+#   sha256sum minha-devbox.box
+#
+# Windows (PowerShell):
+#   Get-FileHash minha-devbox.box -Algorithm SHA256
+#
+# FLUXO DE DISTRIBUIÇÃO CORPORATIVO:
+#
+#   1. DevOps cria/atualiza a box
+#   2. Upload para Artifactory/Nexus/servidor HTTP
+#   3. Atualiza metadata.json com nova versão e checksum
+#   4. Desenvolvedores executam: vagrant box update
+#   5. Próximo vagrant up usa a nova versão
+#
+# EM PROJETOS REAIS:
+#   Este processo pode ser automatizado em CI/CD:
+#   - Build da box em pipeline (Jenkins/GitHub Actions)
+#   - Upload automático para repositório
+#   - Atualização automática do metadata.json
+#   - Notificação para o time
+# ============================================================

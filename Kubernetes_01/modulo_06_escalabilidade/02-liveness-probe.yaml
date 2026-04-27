@@ -1,0 +1,96 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Define a Liveness Probe ("Sonda de Vivacidade"). Ensina o  
+# Kubernetes como saber investigar que a aplicação travou.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Você é o gestor de uma loja (O kubernetes). Você contratou um Vigia (Container) 
+# pra trabalhar de madrugada no prédio e ele está lá na guarita.
+# Você manda mensagem de Whatsapp (Probe) para o Vigia repetidamente: "Tá acordado?"
+# Vigia reponde rápido: "Tô". (Http 200). Ótimo!
+#
+# Mas as 03:00 da manhã... o Você pergunta "Ta Acordado?". Não responde... Você
+# pergunta de novo na regra... não responde. 
+# A Liveness Probe conclui: "O Vigia dormiu no ponto (App travado em Deadlock ou infinito)".
+# O Kubernetes age: Ele DEMITE o Vigia (Mata o Container) e o K8s CONTRATA 
+# OUTRO RÁPIDO para por na guarita (O Pod sofre o Restart automátizado)!
+
+# 2. O QUE É (definição técnica Senior)
+# LivenessProbe indica se o conteiner está executando ou morto clinicamente por Deadlocks.
+# Se a sonda falhar N vezes concecutivas, o kubelet "MATA" forçadamente o contêiner
+# e ele se submeterá a Restarts infinitos na Política default. A probe é ativada em Http, TCP ou ExecBash.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: container-zumbi-vigiado
+  namespace: meu-primeiro-projeto
+spec:
+  containers:
+    - name: servidor-lento
+      # Um app feito pra falhar propositalmente: nginx e depois apago a pasta dele!
+      image: nginx:latest
+      
+      # MÁGICA: A SONDA DE VIVACIDADE ("O ESTOU ACORDADO?")
+      livenessProbe:
+        # A forma mais comum: Faça um HTTP GET numa rota específica 
+        httpGet:
+          path: /index.html # A rota deve ser simples sem carregar banco pesado!
+          port: 80
+          
+        initialDelaySeconds: 5  # "Espera 5 segundos logo que o cara pisar na loja pra perguntar se ele ta bem, senao vai matar ele antes de trabalhar"
+        periodSeconds: 10       # "De 10 em 10 Segundos pergunte para ele se ta acordado"
+        failureThreshold: 3     # QUANTAS VEZES seguidas ele tem que não reponder para VOCÊ O MATAR (Restart)? (Apenas 3).
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Injete a sonda e o seu guardião no cluster:
+#    kubectl apply -f 02-liveness-probe.yaml
+#
+# 2. ASSISTA de Perto agora em um MODO OBSERVAÇÃO.
+#    Abra outro terminal e fique de olho:
+#    kubectl get pods container-zumbi-vigiado -n meu-primeiro-projeto -w
+#    (Ele vai nascer em `Running` certinho. Até a gente envenenar ele).
+#
+# 3. ENVENENE O VIGIA (Hackie seu app excluíndo o arquivo de saude!)
+#    `kubectl exec -it container-zumbi-vigiado -n meu-primeiro-projeto -- rm -f /usr/share/nginx/html/index.html`
+#
+# 4. Magicamente perceba o K8s operando. Fique olhando no monitor de pods que deixamos 
+#    aberto do passo 2 por cerca de 30 segundos! A contagem da coluna de 'RESTARTS' vai aumentar sozinha "1, 2...". 
+
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# Quando a Probe mata e Reinicia a sua API. O K8S GERA UM EVENTO CLARÍSSIMO DISSO.
+# Ao tomar um Restart falso de Bug, rode: `kubectl describe pod <seu-pod>` e desça  
+# até a parte "Events". Lá embaixo haverá um Warning gigante:
+# "Liveness probe failed: HTTP probe failed with statuscode: 404" e em seguida:
+# "Killing container... container will be restarted". É fácil o debug log.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# "Elias, mas eu vi Junior fazer uma /health_check gigante que entra numa procuro e select do Postgres Banco de Dados com Left Join pesado pra retornar Status Ok na sonda Liveness. Certo?"
+# Absolutamente Anti-Pattern Desastroso!!!
+# Sua Health-Check (A Rota /) para um Liveness SERVE APENAS para provar que a thread/web do sistema não morreu 
+# em deadlock infinito (Ex: Tomcat vivo). Se você atrelar o Liveness ao Banco de Dados... no dia que a AWS der 
+# pique de latência no Servidor Físico do Banco remoto.. o Kubernetes receberá o "Timeout" do banco nas liveness da 
+# camada de App... E O K8S MATARÁ TODOS OS 400 DEPLOYMENTS QUE VOCE TINHA SÓ POR CULPA DA INTERNET LENTA DA AWS.
+# Gerando Caos. Liveness Probe DEVE ser cego ao ecosistema externo, focando só se o Host Interno ta vivo.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Sua aplicação Java SpingBoot foi modernizada. Ela demora gigantescos  
+# 2 minutos iniciais pra expandir na memória antes de abrir a porta 8080.
+# O Desenvolvedor subiu a LivelinessProbe padrão checando a 8080 de 10 em 10 segundos. Oque ocorrerá?"
+# Resposta Esperada: "A Aplicação Java JAMAIS subirá e sofrerá Restart em looping infinito. 
+# Como a sonda está pingando e não encontrando a 8080 acordada (pq ta no boot), o `failureThreshold: 3`
+# de 10 seg bate em 30segs... e mata o Java antes que que chegue ao fim do tunel dos 2 Mins. A solução seria 
+# alterar o `initialDelaySeconds: 120`. MAS o jeito moderno Sênior (depois do K8S 1.16) é não sujar o  
+# liveness com prazos elástico.. Devemos usar a terceira probe: 'StartupProbe'."

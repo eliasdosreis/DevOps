@@ -1,0 +1,125 @@
+// ============================================================
+// ARQUIVO: gradle/libs.versions.toml
+// (Colocar em: gradle/libs.versions.toml)
+//
+// O QUE ESTE ARQUIVO FAZ:
+// O Version Catalog centraliza TODAS as versões das dependências
+// em um único arquivo TOML compartilhado por todos os módulos.
+//
+// ANALOGIA:
+// É como um "menu de preços fixos" do shopping.
+// Em vez de cada loja (módulo) escrever o preço de cada produto
+// (versão de cada lib), existe um quadro central com todos
+// os preços. Cada loja aponta para o quadro: "quero o item [gson]".
+//
+// DEFINIÇÃO TÉCNICA:
+// O Version Catalog (libs.versions.toml) é um arquivo TOML
+// introduzido no Gradle 7.0 que centraliza declarações de
+// dependências, plugins e versões. Suporta type-safe accessor
+// no build.gradle.kts (libs.gson, libs.junit, etc.)
+//
+// COMO USAR:
+// 1. Crie este arquivo em gradle/libs.versions.toml
+// 2. No build.gradle: implementation libs.gson
+// 3. No build.gradle.kts: implementation(libs.gson)  ← com autocomplete!
+// ============================================================
+
+# ═══════════════════════════════════════════════════════════
+# SEÇÃO: [versions]
+# Define as versões como variáveis reutilizáveis
+# ═══════════════════════════════════════════════════════════
+[versions]
+# Build tools
+java = "21"
+
+# Frameworks e bibliotecas
+spring-boot = "3.2.0"
+junit = "5.10.1"
+mockito = "5.7.0"
+assertj = "3.24.2"
+
+# Logging
+slf4j = "2.0.9"
+logback = "1.4.14"
+
+# Utilitários
+gson = "2.10.1"
+guava = "32.1.3-jre"
+lombok = "1.18.30"
+
+# Database
+h2 = "2.2.224"
+flyway = "10.4.1"
+
+# Plugins
+shadow = "8.1.1"
+versions-plugin = "0.50.0"
+
+# ═══════════════════════════════════════════════════════════
+# SEÇÃO: [libraries]
+# Declara as dependências com nome legível e versão referenciada
+# Formato: alias = { group = "...", name = "...", version.ref = "..." }
+# ═══════════════════════════════════════════════════════════
+[libraries]
+
+# ─────────────────────────────────────────────────────────
+# Logging
+# ─────────────────────────────────────────────────────────
+slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
+logback-classic = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback" }
+
+# ─────────────────────────────────────────────────────────
+# Utilitários
+# ─────────────────────────────────────────────────────────
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
+lombok = { group = "org.projectlombok", name = "lombok", version.ref = "lombok" }
+
+# ─────────────────────────────────────────────────────────
+# Database
+# ─────────────────────────────────────────────────────────
+h2 = { group = "com.h2database", name = "h2", version.ref = "h2" }
+flyway-core = { group = "org.flywaydb", name = "flyway-core", version.ref = "flyway" }
+
+# ─────────────────────────────────────────────────────────
+# Testes
+# ─────────────────────────────────────────────────────────
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit" }
+junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junit" }
+junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher" }
+mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
+assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
+
+# ─────────────────────────────────────────────────────────
+# Spring Boot (sem BOM — versões individuais)
+# Para usar o BOM do Spring Boot, veja a seção bom abaixo
+# ─────────────────────────────────────────────────────────
+# spring-boot-starter = { group = "org.springframework.boot", name = "spring-boot-starter", version.ref = "spring-boot" }
+
+# ─────────────────────────────────────────────────────────
+# BOMs (Bill of Materials) — para importar conjuntos de versões
+# ─────────────────────────────────────────────────────────
+# spring-boot-bom = { group = "org.springframework.boot", name = "spring-boot-dependencies", version.ref = "spring-boot" }
+# junit-bom = { group = "org.junit", name = "junit-bom", version.ref = "junit" }
+
+# ═══════════════════════════════════════════════════════════
+# SEÇÃO: [bundles]
+# Agrupa dependências relacionadas em "pacotes"
+# No build.gradle: testImplementation libs.bundles.testing
+# ═══════════════════════════════════════════════════════════
+[bundles]
+# Bundle de testes: adiciona junit + mockito + assertj de uma vez
+testing = ["junit-jupiter", "mockito-core", "assertj-core"]
+
+# Bundle de logging: slf4j + logback
+logging = ["slf4j-api", "logback-classic"]
+
+# ═══════════════════════════════════════════════════════════
+# SEÇÃO: [plugins]
+# Declara plugins com versão centralizada
+# No build.gradle.kts: alias(libs.plugins.shadow)
+# ═══════════════════════════════════════════════════════════
+[plugins]
+shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }
+versions = { id = "com.github.ben-manes.versions", version.ref = "versions-plugin" }
+# spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

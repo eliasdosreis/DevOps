@@ -1,0 +1,29 @@
+---
+# ==============================================================
+# ARQUIVO: site.yml
+# MÓDULO 2 - Role Webserver
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Este é o arquivo PRINCIPAL que "chama" a role.
+# É como o controle remoto que liga a TV (a role).
+# Você não precisa saber como a TV funciona por dentro,
+# só precisa apertar o botão certo!
+#
+# ▶️  COMO RODAR:
+# cd modulo2-intermediario/06-role-webserver
+# ansible-playbook -i ../../modulo1-fundamentos/02-inventory-grupos.ini site.yml -b
+# ==============================================================
+
+- name: "Configurar Webservers com Role"
+  hosts: webservers      # Aplica nos servidores do grupo webservers
+  become: true           # Precisa de sudo para instalar pacotes
+  gather_facts: true     # Coletar info (SO, CPUs, etc)
+
+  # "roles" = lista de roles para aplicar neste grupo
+  roles:
+    - role: webserver    # Nome da pasta da role
+      # Posso sobrescrever variáveis aqui!
+      vars:
+        webserver_porta: 80
+        ambiente: producao

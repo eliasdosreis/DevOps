@@ -1,0 +1,92 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um CronJob (Agendador), uma evolução da rotina
+# de "Job" para que seja rodada em horários e dias pré-definidos.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Se o "Job" (que aprendemos acima) foi o Trabalhador que puxou cimento pra sua obra
+# hoje após de você ligar para ele, o "CronJob" seria o contrato mensal via "Despertador".
+# Você agenda no relógio: "Toda Terça Feira às 03:00 da madrugada o despertador toca, 
+# ele chama o mesmo Trabalhador, ele carrega o cimento e vai embora dormir".
+
+# 2. O QUE É (definição técnica Senior)
+# O CronJob cria instâncias de objetos literais "Jobs" em rotinas baseadas 
+# em agendamentos de tempo, escritas estritamente baseadas no formato Cron (* * * * *). 
+# Isso abstrai a dor e manutenção de ter que criar instâncias Linux crontab pesadas.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: batch/v1          
+kind: CronJob
+metadata:
+  name: backup-de-banco-noturno
+  namespace: meu-primeiro-projeto
+spec:
+  # A String Sagrada do Cron - MINUTOS|HORAS|DIA_MES|MES|DIA_DA_SEMANA
+  # No exemplo abaixo: "Todo Minuto Redondo Divisível (Ex: 10:01, 10:02, 10:03...)" 
+  schedule: "* * * * *"       # (Pus 1 minuto de teste apenas para nosso treino real)
+
+  # Boas Práticas Avançadas:
+  # Quantos "lixos" das execuções que já DERAM SUCESSO eu guardo pra ver o log? (Padrão 3)
+  successfulJobsHistoryLimit: 3
+  # Quantos "lixos" de execução se explodiram e falharam devemos deixar la salvos?
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid   # NUNCA deixe jobs de backup subirem por cima corrompendo p DB! "Forbid" cancela o horario caso o de trás da roda não tiver terminado.
+  
+  jobTemplate:                # O miolo do Job que você tem a partir daqui (Repare bem): 
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: sys-backup-bash
+              image: busybox:1.28  # Imagem muito leve, com terminal apenas
+              command:
+                - /bin/sh
+                - -c
+                - "date; echo Backup Diario executado com perfeicao! Baixando 400gb."
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Ligar o Despertador no K8s:
+#    kubectl apply -f 06-cronjob.yaml
+#
+# 2. Ver o "Relógio de ponto" no display geral:
+#    kubectl get cronjobs -n meu-primeiro-projeto
+#    (Repare nas colunas LAST SCHEDULE e ACTIVE).
+#
+# 3. Fique olhando o K8s durante 60 a 120segundos... Você verá:
+#    kubectl get jobs --watch -n meu-primeiro-projeto
+
+# ============================================================
+# 5. VERIFICAÇÃO E TROUBLESHOOTING
+# ============================================================
+# O Cronjob em si NÃO é um container. O Cronjob cria o "Job", o Job cria o "Pod",
+# o Pod contém o Container Log. É uma cadeia!
+# Se você der `kubectl get pods`, verá lá: 
+#   `backup-de-banco-noturno-28312019-v4m2k    0/1     Completed` 
+# Esses números são o timestamp injetado para você nunca perder histórico de quando foi.
+# Pegaremos o log pelo proprio pod de sempre: `kubectl logs backup-de-banco-noturno-<suaref>`
+
+# ============================================================
+# 6. CONCEITO SENIOR (o "porquê" profundo)
+# ============================================================
+# Em Sistemas Legados on-premise, Administradores socavam crontabs direto no S.O 
+# Ubuntu (usando root). E se aquela VM queimasse de madrugada sem backup do CRON? A 
+# empresa inteira parava gerando dano catastrofal sem ngm saber porquê parou.
+# Subindo seu fluxo para Kubernetes os agendamentos tem Alta Disponibilidade. Se um 
+# Worker Node incendiar, a engine do K8s roda os CronJobs nas outras VMs online na exata 
+# sincronia. E todo agendamento está em formato GitOps via YAML, versionado imutável!
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: "Você criou um CronJob para rodar meia-noite limpando Cache `(0 0 * * *)`. 
+# Mas você verifica no dia seguinte e os arquivos bateram log às 21hs (!). Por quê?"
+# Resposta Esperada: "O Kube-controller-manager avalia a tabela do 'schedule' 
+# usando quase sempre UTC estrito (GMT+0)! Se você está no Brasil UTC-3 e não ajustou, 
+# o relógio mestre disparou na perspectiva do fuso mundial. A partir da versão 1.25+, 
+# já é possível passarmos explicitamente o metadado `timeZone: "America/Sao_Paulo"` na spec do CJ!"

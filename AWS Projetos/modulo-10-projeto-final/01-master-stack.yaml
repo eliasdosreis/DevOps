@@ -1,0 +1,631 @@
+# ============================================================
+# ARQUIVO: 01-master-stack.yaml
+# O QUE FAZ: Stack CloudFormation mestre que cria TODA a infraestrutura
+#             do e-commerce serverless em um único comando
+#
+# USO:
+#   aws cloudformation deploy \
+#     --template-file 01-master-stack.yaml \
+#     --stack-name ecommerce-serverless \
+#     --capabilities CAPABILITY_NAMED_IAM \
+#     --parameter-overrides \
+#       Email=seu@email.com \
+#       Ambiente=dev
+#
+# CUSTO: ~$0.04 a $0.50 total para toda a demonstração
+# ============================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  MÓDULO 10 - PROJETO FINAL: E-commerce Serverless Completo
+  Integra: S3 + API Gateway + Lambda + DynamoDB + SQS + SNS + CloudWatch + IAM
+  Custo estimado: ~$0.04-0.50 para demonstração (destrua após usar!)
+
+# ============================================================
+# METADATA — Organiza parâmetros no Console AWS
+# ============================================================
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Identificação"
+        Parameters: [NomeProjeto, Ambiente]
+      - Label:
+          default: "Configurações de Notificação"
+        Parameters: [Email]
+      - Label:
+          default: "Configurações da API"
+        Parameters: [LambdaMemoria, LambdaTimeout]
+
+Parameters:
+
+  NomeProjeto:
+    Type: String
+    Default: ecommerce-aprendizado
+    Description: Nome base do projeto (usado em todos os recursos)
+    AllowedPattern: '^[a-z0-9\-]{3,30}$'
+
+  Ambiente:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Ambiente de deploy
+
+  Email:
+    Type: String
+    Description: Email para receber alertas e notificações de pedidos
+    # Não há validação de email no CloudFormation — o SNS valida na subscrição
+
+  LambdaMemoria:
+    Type: Number
+    Default: 256
+    AllowedValues: [128, 256, 512, 1024]
+    Description: Memória das funções Lambda em MB
+
+  LambdaTimeout:
+    Type: Number
+    Default: 30
+    MinValue: 5
+    MaxValue: 300
+    Description: Timeout das Lambdas em segundos
+
+Conditions:
+  EhProducao: !Equals [!Ref Ambiente, prod]
+
+# ============================================================
+# RESOURCES
+# ============================================================
+Resources:
+
+  # ==========================================================
+  # 1. STORAGE — S3 para front-end e assets
+  # ==========================================================
+  BucketFrontend:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Sub "${NomeProjeto}-frontend-${AWS::AccountId}"
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      VersioningConfiguration:
+        Status: Enabled
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ["*"]
+            AllowedMethods: [GET, HEAD]
+            AllowedOrigins: ["*"]
+            MaxAge: 3600
+      Tags:
+        - Key: Projeto
+          Value: !Ref NomeProjeto
+        - Key: Ambiente
+          Value: !Ref Ambiente
+
+  PoliticaFrontend:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BucketFrontend
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub "${BucketFrontend.Arn}/*"
+
+  # ==========================================================
+  # 2. BANCO DE DADOS — DynamoDB
+  # ==========================================================
+  TabelaProdutos:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      TableName: !Sub "${NomeProjeto}-produtos"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: produtoId
+          AttributeType: S
+        - AttributeName: categoria
+          AttributeType: S
+        - AttributeName: preco
+          AttributeType: "N"
+      KeySchema:
+        - AttributeName: produtoId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: categoria-preco-index
+          KeySchema:
+            - AttributeName: categoria
+              KeyType: HASH
+            - AttributeName: preco
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Projeto
+          Value: !Ref NomeProjeto
+
+  TabelaPedidos:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      TableName: !Sub "${NomeProjeto}-pedidos"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: clienteId
+          AttributeType: S
+        - AttributeName: pedidoId
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+        - AttributeName: criadoEm
+          AttributeType: S
+      KeySchema:
+        - AttributeName: clienteId
+          KeyType: HASH
+        - AttributeName: pedidoId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: status-data-index
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+            - AttributeName: criadoEm
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: expiracaoEm
+        Enabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Projeto
+          Value: !Ref NomeProjeto
+
+  # ==========================================================
+  # 3. MENSAGERIA — SQS + SNS
+  # ==========================================================
+  FilaPedidosDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${NomeProjeto}-pedidos-dlq"
+      MessageRetentionPeriod: 1209600    # 14 dias
+      Tags:
+        - Key: Projeto
+          Value: !Ref NomeProjeto
+
+  FilaPedidos:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${NomeProjeto}-pedidos"
+      VisibilityTimeout: 180             # 6x o timeout da Lambda (30s)
+      MessageRetentionPeriod: 86400      # 1 dia
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt FilaPedidosDLQ.Arn
+        maxReceiveCount: 3               # 3 tentativas antes da DLQ
+      Tags:
+        - Key: Projeto
+          Value: !Ref NomeProjeto
+
+  TopicoNotificacoes:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${NomeProjeto}-notificacoes"
+      DisplayName: "E-commerce Notificações"
+      Tags:
+        - Key: Projeto
+          Value: !Ref NomeProjeto
+
+  SubscricaoEmail:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref TopicoNotificacoes
+      Protocol: email
+      Endpoint: !Ref Email
+
+  # ==========================================================
+  # 4. IAM — Roles das Lambdas (Least Privilege)
+  # ==========================================================
+  RoleLambdaApi:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "role-${NomeProjeto}-api-${Ambiente}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: AcessoRecursos
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt TabelaProdutos.Arn
+                  - !Sub "${TabelaProdutos.Arn}/index/*"
+                  - !GetAtt TabelaPedidos.Arn
+                  - !Sub "${TabelaPedidos.Arn}/index/*"
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: !GetAtt FilaPedidos.Arn
+
+  RoleLambdaWorker:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "role-${NomeProjeto}-worker-${Ambiente}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole
+      Policies:
+        - PolicyName: AcessoRecursosWorker
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                  - dynamodb:GetItem
+                Resource:
+                  - !GetAtt TabelaPedidos.Arn
+                  - !GetAtt TabelaProdutos.Arn
+              - Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref TopicoNotificacoes
+
+  # ==========================================================
+  # 5. LAMBDAS
+  # ==========================================================
+  LogGroupLambdaApi:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${NomeProjeto}-api"
+      RetentionInDays: !If [EhProducao, 90, 7]
+
+  LogGroupLambdaWorker:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${NomeProjeto}-worker"
+      RetentionInDays: !If [EhProducao, 90, 7]
+
+  LambdaApi:
+    Type: AWS::Lambda::Function
+    DependsOn: LogGroupLambdaApi
+    Properties:
+      FunctionName: !Sub "${NomeProjeto}-api"
+      Runtime: python3.12
+      Handler: index.handler
+      Role: !GetAtt RoleLambdaApi.Arn
+      MemorySize: !Ref LambdaMemoria
+      Timeout: !Ref LambdaTimeout
+      Architectures: [arm64]
+      Environment:
+        Variables:
+          TABELA_PRODUTOS: !Ref TabelaProdutos
+          TABELA_PEDIDOS: !Ref TabelaPedidos
+          FILA_PEDIDOS_URL: !Ref FilaPedidos
+          AMBIENTE: !Ref Ambiente
+      Code:
+        ZipFile: |
+          import json, os, boto3, uuid
+          from datetime import datetime, timezone
+          from decimal import Decimal
+          
+          dynamo = boto3.resource('dynamodb')
+          sqs = boto3.client('sqs')
+          
+          TABELA_PRODUTOS = dynamo.Table(os.environ['TABELA_PRODUTOS'])
+          TABELA_PEDIDOS = dynamo.Table(os.environ['TABELA_PEDIDOS'])
+          FILA_PEDIDOS_URL = os.environ['FILA_PEDIDOS_URL']
+          
+          def handler(event, context):
+              metodo = event.get('requestContext',{}).get('http',{}).get('method','GET')
+              path = event.get('rawPath','/')
+              path_params = event.get('pathParameters', {}) or {}
+              body = json.loads(event['body']) if event.get('body') else {}
+              
+              try:
+                  if path.startswith('/produtos'):
+                      return rota_produtos(metodo, path_params.get('id'), body, event)
+                  elif path.startswith('/pedidos'):
+                      return rota_pedidos(metodo, path_params.get('id'), body, event)
+                  elif path == '/health':
+                      return resp(200, {'status': 'ok', 'funcao': context.function_name})
+                  else:
+                      return resp(404, {'erro': 'Rota não encontrada'})
+              except Exception as e:
+                  print(f"ERRO: {e}")
+                  return resp(500, {'erro': str(e)})
+          
+          def rota_produtos(metodo, produto_id, body, event):
+              if metodo == 'GET' and not produto_id:
+                  r = TABELA_PRODUTOS.scan(Limit=20)
+                  return resp(200, {'produtos': r.get('Items',[])})
+              elif metodo == 'GET' and produto_id:
+                  r = TABELA_PRODUTOS.get_item(Key={'produtoId': produto_id})
+                  if 'Item' not in r: return resp(404, {'erro': 'Produto não encontrado'})
+                  return resp(200, r['Item'])
+              elif metodo == 'POST':
+                  item = {**body, 'produtoId': str(uuid.uuid4()), 
+                          'criadoEm': datetime.now(timezone.utc).isoformat(),
+                          'preco': Decimal(str(body.get('preco',0)))}
+                  TABELA_PRODUTOS.put_item(Item=item)
+                  return resp(201, item)
+              elif metodo == 'DELETE' and produto_id:
+                  TABELA_PRODUTOS.delete_item(Key={'produtoId': produto_id})
+                  return resp(200, {'mensagem': 'Deletado'})
+              return resp(405, {'erro': 'Método não suportado'})
+          
+          def rota_pedidos(metodo, pedido_id, body, event):
+              cliente_id = event.get('queryStringParameters',{}).get('clienteId','anonimo') if event.get('queryStringParameters') else 'anonimo'
+              if metodo == 'POST':
+                  pedido = {
+                      'clienteId': body.get('clienteId', cliente_id),
+                      'pedidoId': f"pedido#{datetime.now(timezone.utc).isoformat()}#{uuid.uuid4().hex[:8]}",
+                      'status': 'pendente',
+                      'itens': body.get('itens',[]),
+                      'total': Decimal(str(body.get('total',0))),
+                      'criadoEm': datetime.now(timezone.utc).isoformat()
+                  }
+                  TABELA_PEDIDOS.put_item(Item=pedido)
+                  sqs.send_message(
+                      QueueUrl=FILA_PEDIDOS_URL,
+                      MessageBody=json.dumps({'clienteId': pedido['clienteId'],
+                                              'pedidoId': pedido['pedidoId']})
+                  )
+                  return resp(201, pedido)
+              elif metodo == 'GET':
+                  r = TABELA_PEDIDOS.query(
+                      KeyConditionExpression='clienteId = :c',
+                      ExpressionAttributeValues={':c': cliente_id}
+                  )
+                  return resp(200, {'pedidos': r.get('Items',[])})
+              return resp(405, {'erro': 'Método não suportado'})
+          
+          def resp(status, dados):
+              class DecimalEncoder(json.JSONEncoder):
+                  def default(self, o):
+                      if isinstance(o, Decimal): return float(o)
+                      return super().default(o)
+              return {
+                  'statusCode': status,
+                  'headers': {
+                      'Content-Type': 'application/json',
+                      'Access-Control-Allow-Origin': '*',
+                      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+                      'Access-Control-Allow-Headers': 'Content-Type,Authorization'
+                  },
+                  'body': json.dumps(dados, cls=DecimalEncoder, ensure_ascii=False)
+              }
+      Tags:
+        Projeto: !Ref NomeProjeto
+
+  LambdaWorker:
+    Type: AWS::Lambda::Function
+    DependsOn: LogGroupLambdaWorker
+    Properties:
+      FunctionName: !Sub "${NomeProjeto}-worker"
+      Runtime: python3.12
+      Handler: index.handler
+      Role: !GetAtt RoleLambdaWorker.Arn
+      MemorySize: 128
+      Timeout: 60
+      Architectures: [arm64]
+      Environment:
+        Variables:
+          TABELA_PEDIDOS: !Ref TabelaPedidos
+          SNS_TOPICO_ARN: !Ref TopicoNotificacoes
+          AMBIENTE: !Ref Ambiente
+      Code:
+        ZipFile: |
+          import json, os, boto3
+          from datetime import datetime, timezone
+          
+          dynamo = boto3.resource('dynamodb')
+          sns = boto3.client('sns')
+          TABELA_PEDIDOS = dynamo.Table(os.environ['TABELA_PEDIDOS'])
+          SNS_TOPICO = os.environ['SNS_TOPICO_ARN']
+          
+          def handler(event, context):
+              for record in event.get('Records', []):
+                  body = json.loads(record['body'])
+                  cliente_id = body['clienteId']
+                  pedido_id = body['pedidoId']
+                  print(f"Processando pedido: {pedido_id}")
+                  
+                  # Atualiza status do pedido
+                  TABELA_PEDIDOS.update_item(
+                      Key={'clienteId': cliente_id, 'pedidoId': pedido_id},
+                      UpdateExpression='SET #s = :s, processadoEm = :d',
+                      ExpressionAttributeNames={'#s': 'status'},
+                      ExpressionAttributeValues={
+                          ':s': 'confirmado',
+                          ':d': datetime.now(timezone.utc).isoformat()
+                      }
+                  )
+                  
+                  # Notifica via SNS
+                  sns.publish(
+                      TopicArn=SNS_TOPICO,
+                      Subject=f'Pedido Confirmado! [{pedido_id[:20]}]',
+                      Message=f'Seu pedido {pedido_id} foi confirmado e está em processamento!'
+                  )
+                  print(f"✅ Pedido {pedido_id} confirmado e notificação enviada")
+          
+      Tags:
+        Projeto: !Ref NomeProjeto
+
+  # Trigger: SQS → Lambda Worker
+  EventSourceSQS:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt FilaPedidos.Arn
+      FunctionName: !GetAtt LambdaWorker.Arn
+      BatchSize: 10
+      FunctionResponseTypes:
+        - ReportBatchItemFailures
+
+  # ==========================================================
+  # 6. API GATEWAY
+  # ==========================================================
+  ApiHttp:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub "${NomeProjeto}-api"
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins: ["*"]
+        AllowMethods: [GET, POST, PUT, DELETE, OPTIONS]
+        AllowHeaders: [Content-Type, Authorization]
+        MaxAge: 3600
+      Tags:
+        Projeto: !Ref NomeProjeto
+
+  IntegracaoLambda:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiHttp
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt LambdaApi.Arn
+      PayloadFormatVersion: "2.0"
+
+  Rota:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiHttp
+      RouteKey: '$default'
+      Target: !Sub "integrations/${IntegracaoLambda}"
+
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref ApiHttp
+      StageName: "$default"
+      AutoDeploy: true
+
+  PermissaoApiInvokarLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt LambdaApi.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiHttp}/*"
+
+  # ==========================================================
+  # 7. CLOUDWATCH — Alarmes e Dashboard
+  # ==========================================================
+  AlarmeLambdaErros:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${NomeProjeto}-lambda-erros"
+      AlarmDescription: "Lambda API com muitos erros"
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref LambdaApi
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref TopicoNotificacoes
+
+  AlarmeDLQ:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${NomeProjeto}-dlq-mensagens"
+      AlarmDescription: "Mensagens na Dead Letter Queue (pedidos com falha)"
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt FilaPedidosDLQ.QueueName
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref TopicoNotificacoes
+
+# ============================================================
+# OUTPUTS — Informações úteis após deploy
+# ============================================================
+Outputs:
+
+  UrlAPI:
+    Description: URL da API REST
+    Value: !Sub "https://${ApiHttp}.execute-api.${AWS::Region}.amazonaws.com"
+
+  UrlFrontend:
+    Description: URL do site estático (frontend)
+    Value: !GetAtt BucketFrontend.WebsiteURL
+
+  NomeBucketFrontend:
+    Description: Nome do bucket S3 para upload do frontend
+    Value: !Ref BucketFrontend
+
+  TabelaProdutos:
+    Description: Nome da tabela de produtos
+    Value: !Ref TabelaProdutos
+
+  TabelaPedidos:
+    Description: Nome da tabela de pedidos
+    Value: !Ref TabelaPedidos
+
+  ComandosTestar:
+    Description: Comandos para testar a API
+    Value: !Sub |
+      # URL base da API:
+      API_URL="https://${ApiHttp}.execute-api.${AWS::Region}.amazonaws.com"
+      
+      # Health check:
+      curl $API_URL/health
+      
+      # Criar produto:
+      curl -X POST $API_URL/produtos \
+        -H "Content-Type: application/json" \
+        -d '{"nome":"Notebook","preco":2999.90,"categoria":"eletronicos","estoque":10}'
+      
+      # Listar produtos:
+      curl $API_URL/produtos
+      
+      # Criar pedido:
+      curl -X POST $API_URL/pedidos \
+        -H "Content-Type: application/json" \
+        -d '{"clienteId":"cliente-001","itens":[{"produtoId":"ID_AQUI","qtd":1}],"total":2999.90}'

@@ -1,0 +1,108 @@
+# ============================================================
+# ARQUIVO: 09-hpa.yaml
+# PROJETO FINAL - Auto Scaling da API
+#
+# A loja tem picos de acesso:
+# - Black Friday: 10x mais usuários!
+# - Madrugada: quase ninguém
+#
+# HPA resolve isso automaticamente.
+# Sem HPA: você paga por 10 pods 24h (mesmo sem usar)
+# Com HPA: paga 2 pods normalmente, sobe para 10 no pico
+# Economia real de dinheiro em cloud!
+# ============================================================
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+
+metadata:
+  name: hpa-api               # Nome do HPA
+  namespace: ecommerce        # Mesmo namespace
+
+spec:
+  # O que o HPA vai controlar?
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api                 # O Deployment da API (05-api-deployment.yaml)
+
+  minReplicas: 2              # Mínimo: 2 pods SEMPRE
+                              # Nunca menos (alta disponibilidade!)
+  maxReplicas: 15             # Máximo: 15 pods
+                              # Limite de custo e capacidade do cluster
+
+  # -------------------------------------------------------
+  # MÉTRICAS PARA DECISÃO DE SCALE
+  # -------------------------------------------------------
+  metrics:
+
+    # Métrica 1: CPU média dos pods
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65   # Se CPU média > 65%: sobe pods
+                                   # Se CPU média < 65%: desce pods
+                                   # 65% é um bom balanço (não 80%!)
+
+    # Métrica 2: Memória média dos pods
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: AverageValue
+          averageValue: 200Mi      # Se memória média > 200MB: sobe
+
+  # -------------------------------------------------------
+  # COMPORTAMENTO FINO DO SCALING
+  # -------------------------------------------------------
+  behavior:
+
+    # Como subir (scale out) - pode ser RÁPIDO em picos
+    scaleUp:
+      stabilizationWindowSeconds: 30   # Espera 30s antes de subir
+                                       # Evita scale por pico de 5 segundos
+      policies:
+        - type: Percent               # Escala por porcentagem
+          value: 100                  # Pode DOBRAR os pods de uma vez
+          periodSeconds: 60           # A cada 1 minuto
+        - type: Pods                  # Ou adiciona pods fixos
+          value: 3                    # Máximo 3 pods por período
+          periodSeconds: 60
+      selectPolicy: Max               # Usa a política que escalar MAIS
+
+    # Como descer (scale in) - deve ser CONSERVADOR
+    scaleDown:
+      stabilizationWindowSeconds: 300  # Espera 5 MINUTOS antes de descer
+                                       # Evita flapping (sobe/desce/sobe)
+      policies:
+        - type: Pods
+          value: 1                     # Remove só 1 pod por vez
+          periodSeconds: 120           # A cada 2 minutos
+                                       # Descida lenta = mais segura!
+
+# ============================================================
+# TIMELINE DE UM PICO (BLACK FRIDAY):
+#
+# 23:59 - 2 pods rodando (normal)
+# 00:00 - Black Friday começa! CPU vai a 90%
+# 00:00:30 - HPA detecta (stabilizationWindow=30s)
+# 00:01:00 - Sobe para 4 pods (dobrou: policy Percent 100%)
+# 00:01:30 - Ainda alta, sobe para 8 pods
+# 00:02:00 - CPU se estabiliza em 60% com 8 pods
+# ...
+# 02:00 - Tráfego cai, CPU vai a 20%
+# 02:05 - HPA aguarda 5 min (stabilizationWindow=300s)
+# 02:07 - Remove 1 pod -> 7 pods
+# 02:09 - Remove 1 pod -> 6 pods  (lento e controlado)
+# ...
+# 04:00 - Volta para 2 pods (mínimo)
+#
+# ENTREVISTA SÊNIOR:
+# "Por que scaleDown é mais lento que scaleUp?"
+# RESPOSTA: Segurança! Descer rápido demais pode causar
+# sobrecarga nos pods restantes se o tráfego voltar.
+# Subir rápido é seguro (mais pods = mais capacidade).
+# Descer deve ser conservador para evitar instabilidade.
+# ============================================================

@@ -1,0 +1,92 @@
+# ============================================================
+# MÓDULO 2 — PUBLIC NETWORK (REDE PÚBLICA / BRIDGE)
+# O QUE ESTE ARQUIVO FAZ:
+#   Coloca a VM na mesma rede física do host (bridge mode).
+#   A VM aparece como um computador real na rede local,
+#   com IP atribuído pelo roteador/DHCP da rede física.
+#   ⚠️  USE COM CUIDADO em redes corporativas ou públicas!
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box      = "ubuntu/jammy64"
+  config.vm.hostname = "vm-public-network"
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PUBLIC NETWORK — DHCP (mais comum)
+  # A VM recebe um IP da mesma rede que seu computador
+  # Outros dispositivos na rede podem acessar a VM diretamente
+  # -----------------------------------------------------------
+
+  # Sem especificar bridge: Vagrant pergunta qual adaptador usar
+  config.vm.network "public_network"
+
+  # Com bridge especificada: usa o adaptador automaticamente
+  # Substitua pelo nome EXATO do seu adaptador de rede
+  # config.vm.network "public_network", bridge: "Intel(R) Wi-Fi 6 AX200 160MHz"
+  # config.vm.network "public_network", bridge: "eth0"
+
+  # -----------------------------------------------------------
+  # PUBLIC NETWORK — IP ESTÁTICO
+  # Menos comum (requer IP livre na sua rede física)
+  # -----------------------------------------------------------
+  # config.vm.network "public_network",
+  #   ip: "192.168.1.100",       # IP da sua rede física (requer DHCP reserva)
+  #   bridge: "eth0"
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PROVIDER
+  # -----------------------------------------------------------
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "vagrant-public-network"
+    vb.memory = "1024"
+    vb.cpus   = 1
+
+    # Modo promíscuo: necessário para algumas configs de bridge
+    # "allow-all" = captura todo o tráfego (use apenas para lab/teste)
+    # vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
+  end
+
+  # -----------------------------------------------------------
+  # SEÇÃO: PROVISIONAMENTO
+  # -----------------------------------------------------------
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update -q
+    apt-get install -y -q net-tools
+
+    echo ""
+    echo "=========================================="
+    echo "VM em Public Network (Bridge Mode)"
+    echo "Endereços IP da VM:"
+    ip addr show | grep "inet " | awk '{print "  " $2}'
+    echo "=========================================="
+    echo "Encontre o IP da rede pública (não 10.0.2.15)"
+    echo "e acesse de qualquer dispositivo na sua rede!"
+    echo "=========================================="
+  SHELL
+
+end
+
+# ============================================================
+# COMO DESCOBRIR O NOME DO SEU ADAPTADOR DE REDE:
+#
+#   Windows:
+#     ipconfig (veja "Adaptador de rede sem fio" ou "Ethernet")
+#     Ex: "Wi-Fi" ou "Ethernet" ou "Intel(R) Wi-Fi 6..."
+#
+#   Linux/macOS:
+#     ip link show  ou  ifconfig
+#     Ex: "enp0s3", "eth0", "wlan0", "en0"
+#
+# SE VAGRANT PEDIR PARA ESCOLHER O ADAPTADOR:
+#   É porque não encontrou o bridge automaticamente.
+#   Escolha o número correspondente à sua conexão ativa.
+#
+# ⚠️  AVISO DE SEGURANÇA:
+#   Em redes públicas (cafés, hotéis), a VM ficará exposta
+#   para todos. Use somente em redes confiáveis.
+#
+# CASO DE USO REAL:
+#   Equipes de QA que precisam testar a VM de outro computador
+#   (testador acessa a VM do desenvolvedor via IP de rede local)
+# ============================================================

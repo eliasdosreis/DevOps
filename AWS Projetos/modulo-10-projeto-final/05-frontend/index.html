@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<!--
+  ARQUIVO: 05-frontend/index.html
+  O QUE FAZ: Interface completa do e-commerce serverless
+              Consome a API AWS API Gateway + Lambda + DynamoDB
+  
+  Hospedado em: Amazon S3 (Static Website Hosting)
+  Custo: $0.00 (Free Tier)
+-->
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛒 E-commerce Serverless AWS — Módulo 10</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0f0f1a;
+            --surface: #1a1a2e;
+            --card: #16213e;
+            --accent: #e94560;
+            --accent2: #0f3460;
+            --text: #e0e0e0;
+            --text-muted: #888;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --radius: 12px;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        header {
+            background: linear-gradient(135deg, var(--accent2), #1a1a2e);
+            padding: 20px 40px;
+            border-bottom: 2px solid var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 { font-size: 1.5em; }
+        header span { color: var(--text-muted); font-size: 0.9em; }
+        .badge {
+            background: var(--accent);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 30px; }
+        .config-section {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid #333;
+        }
+        .config-section label { display: block; color: var(--text-muted); margin-bottom: 5px; font-size: 0.9em; }
+        .config-section input {
+            width: 100%;
+            padding: 10px 15px;
+            background: var(--card);
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 25px;
+            border: 1px solid #333;
+        }
+        .card h2 { margin-bottom: 20px; color: var(--accent); font-size: 1.2em; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; color: var(--text-muted); margin-bottom: 5px; font-size: 0.85em; }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            background: var(--surface);
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.95em;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .btn-primary { background: var(--accent); color: white; width: 100%; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-secondary { background: var(--accent2); color: white; margin-right: 8px; }
+        .btn-danger { background: #c0392b; color: white; }
+        .produto-item {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .produto-nome { font-weight: 600; }
+        .produto-preco { color: var(--accent); font-weight: bold; }
+        .produto-categoria { color: var(--text-muted); font-size: 0.85em; }
+        .log-box {
+            background: #0a0a0a;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 0.85em;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            margin-top: 20px;
+        }
+        .log-entry { margin-bottom: 5px; }
+        .log-success { color: var(--success); }
+        .log-error { color: var(--accent); }
+        .log-info { color: #64b5f6; }
+        .status-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .status-item {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 15px 20px;
+            flex: 1;
+            text-align: center;
+            border: 1px solid #333;
+        }
+        .status-item .number { font-size: 2em; font-weight: bold; color: var(--accent); }
+        .status-item .label { color: var(--text-muted); font-size: 0.85em; }
+        .loading { opacity: 0.6; pointer-events: none; }
+        .pedido-item {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-left: 3px solid;
+        }
+        .pedido-pendente { border-color: var(--warning); }
+        .pedido-confirmado { border-color: var(--success); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <h1>🛒 E-commerce Serverless <span class="badge">AWS</span></h1>
+        <span>Módulo 10 — Projeto Final Sênior</span>
+    </div>
+    <div style="text-align:right; color: var(--text-muted); font-size:0.85em;">
+        <div>💰 Custo real: ~$0.04</div>
+        <div>🚀 100% Serverless</div>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- Configuração da API URL -->
+    <div class="config-section">
+        <label>🔗 URL da API (cole a URL do Output do CloudFormation):</label>
+        <input type="text" id="apiUrl" 
+               placeholder="https://xxxxxxxx.execute-api.us-east-1.amazonaws.com"
+               value="">
+        <label>👤 ID do Cliente (para pedidos):</label>
+        <input type="text" id="clienteId" placeholder="cliente-001" value="cliente-001">
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-secondary" onclick="testarConexao()">🧪 Testar Conexão</button>
+            <button class="btn btn-secondary" onclick="carregarProdutos()">🔄 Recarregar Produtos</button>
+        </div>
+    </div>
+
+    <!-- Status geral -->
+    <div class="status-bar" id="statusBar">
+        <div class="status-item">
+            <div class="number" id="totalProdutos">-</div>
+            <div class="label">📦 Produtos</div>
+        </div>
+        <div class="status-item">
+            <div class="number" id="totalPedidos">-</div>
+            <div class="label">🛒 Pedidos</div>
+        </div>
+        <div class="status-item">
+            <div class="number" id="statusApi">⏳</div>
+            <div class="label">🔌 API Status</div>
+        </div>
+    </div>
+
+    <div class="grid">
+
+        <!-- Cadastro de Produtos -->
+        <div class="card">
+            <h2>📦 Cadastrar Produto</h2>
+            <div class="form-group">
+                <label>Nome do produto</label>
+                <input type="text" id="prodNome" placeholder="Ex: Notebook Pro 15">
+            </div>
+            <div class="form-group">
+                <label>Preço (R$)</label>
+                <input type="number" id="prodPreco" placeholder="Ex: 2999.90" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Categoria</label>
+                <input type="text" id="prodCategoria" placeholder="Ex: eletronicos">
+            </div>
+            <div class="form-group">
+                <label>Estoque (unidades)</label>
+                <input type="number" id="prodEstoque" placeholder="Ex: 10">
+            </div>
+            <button class="btn btn-primary" onclick="criarProduto()">
+                ➕ Criar Produto no DynamoDB
+            </button>
+        </div>
+
+        <!-- Lista de Produtos -->
+        <div class="card">
+            <h2>📋 Produtos Cadastrados</h2>
+            <div id="listaProdutos">
+                <div style="color:var(--text-muted); text-align:center; padding:20px;">
+                    Configure a URL da API e clique em "Recarregar Produtos"
+                </div>
+            </div>
+        </div>
+
+        <!-- Criar Pedido -->
+        <div class="card">
+            <h2>🛒 Fazer Pedido</h2>
+            <p style="color:var(--text-muted); font-size:0.85em; margin-bottom:15px;">
+                Selecione um produto da lista e clique em "Pedir" para criar um pedido.
+                O pedido será enviado para o SQS e processado assincronamente pela Lambda Worker.
+            </p>
+            <div id="produtosSelecionados">
+                <div style="color:var(--text-muted); text-align:center; padding:20px;">
+                    Clique em "Pedir" em algum produto da lista →
+                </div>
+            </div>
+            <button class="btn btn-primary" id="btnPedido" onclick="criarPedido()" disabled>
+                🚀 Confirmar Pedido (→ SQS → Lambda Worker → SNS → Email)
+            </button>
+        </div>
+
+        <!-- Meus Pedidos -->
+        <div class="card">
+            <h2>📜 Meus Pedidos</h2>
+            <button class="btn btn-secondary" onclick="carregarPedidos()" style="margin-bottom:15px; width:100%;">
+                🔄 Atualizar Pedidos
+            </button>
+            <div id="listaPedidos">
+                <div style="color:var(--text-muted); text-align:center; padding:20px;">
+                    Clique em "Atualizar Pedidos" para ver seus pedidos
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Log de Operações -->
+    <div class="card" style="margin-top:30px;">
+        <h2>📡 Log de Operações em Tempo Real</h2>
+        <p style="color:var(--text-muted); font-size:0.85em; margin-bottom:10px;">
+            Cada linha representa uma chamada HTTP real à sua API AWS.
+            Estes são os logs que aparecem no CloudWatch!
+        </p>
+        <div class="log-box" id="logBox">
+            <div class="log-entry log-info">→ Configure a URL da API e comece a usar!</div>
+        </div>
+        <button class="btn btn-danger" onclick="limparLog()" style="margin-top:10px;">
+            🗑️ Limpar Log
+        </button>
+    </div>
+
+</div>
+
+<script>
+    // ====================================================
+    // CONFIGURAÇÃO
+    // ====================================================
+    let produtoSelecionado = null;
+
+    function getApiUrl() {
+        return document.getElementById('apiUrl').value.trim().replace(/\/$/, '');
+    }
+
+    function getClienteId() {
+        return document.getElementById('clienteId').value.trim() || 'cliente-001';
+    }
+
+    // ====================================================
+    // LOGGING
+    // ====================================================
+    function log(mensagem, tipo = 'info') {
+        const box = document.getElementById('logBox');
+        const ts = new Date().toLocaleTimeString('pt-BR');
+        const div = document.createElement('div');
+        div.className = `log-entry log-${tipo}`;
+        div.textContent = `[${ts}] ${mensagem}`;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function limparLog() {
+        document.getElementById('logBox').innerHTML = '';
+        log('Log limpo.', 'info');
+    }
+
+    // ====================================================
+    // CHAMADAS À API
+    // ====================================================
+    async function apiCall(method, path, body = null) {
+        const url = `${getApiUrl()}${path}`;
+        log(`→ ${method} ${path}`, 'info');
+
+        const options = {
+            method,
+            headers: { 'Content-Type': 'application/json' }
+        };
+        if (body) options.body = JSON.stringify(body);
+
+        try {
+            const inicio = Date.now();
+            const response = await fetch(url, options);
+            const duracao = Date.now() - inicio;
+            const data = await response.json();
+
+            if (response.ok) {
+                log(`← ${response.status} OK (${duracao}ms)`, 'success');
+            } else {
+                log(`← ${response.status} ERRO: ${JSON.stringify(data)}`, 'error');
+            }
+            return { ok: response.ok, status: response.status, data };
+        } catch (err) {
+            log(`✗ FALHA DE REDE: ${err.message}`, 'error');
+            return { ok: false, error: err.message };
+        }
+    }
+
+    // ====================================================
+    // PRODUTOS
+    // ====================================================
+    async function testarConexao() {
+        if (!getApiUrl()) { alert('Configure a URL da API primeiro!'); return; }
+        log('Testando conexão com a API...', 'info');
+        const r = await apiCall('GET', '/health');
+        if (r.ok) {
+            document.getElementById('statusApi').textContent = '✅';
+            log('API funcionando! ' + JSON.stringify(r.data), 'success');
+            carregarProdutos();
+        } else {
+            document.getElementById('statusApi').textContent = '❌';
+        }
+    }
+
+    async function carregarProdutos() {
+        if (!getApiUrl()) { log('URL da API não configurada!', 'error'); return; }
+        const r = await apiCall('GET', '/produtos');
+        if (!r.ok) return;
+
+        const produtos = r.data.produtos || [];
+        document.getElementById('totalProdutos').textContent = produtos.length;
+
+        const lista = document.getElementById('listaProdutos');
+        if (produtos.length === 0) {
+            lista.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">Nenhum produto cadastrado ainda</div>';
+            return;
+        }
+
+        lista.innerHTML = produtos.map(p => `
+            <div class="produto-item">
+                <div>
+                    <div class="produto-nome">${p.nome || 'Sem nome'}</div>
+                    <div class="produto-categoria">${p.categoria || ''} | Estoque: ${p.estoque || '?'}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="produto-preco">R$ ${parseFloat(p.preco || 0).toFixed(2)}</div>
+                    <button class="btn btn-secondary" onclick='selecionarProduto(${JSON.stringify(p).replace(/'/g, "&#39;")})'>🛒 Pedir</button>
+                    <button class="btn btn-danger" onclick="deletarProduto('${p.produtoId}')">🗑️</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function criarProduto() {
+        const nome = document.getElementById('prodNome').value;
+        const preco = parseFloat(document.getElementById('prodPreco').value);
+        const categoria = document.getElementById('prodCategoria').value;
+        const estoque = parseInt(document.getElementById('prodEstoque').value) || 0;
+
+        if (!nome || !preco) { log('Nome e preço são obrigatórios!', 'error'); return; }
+
+        const r = await apiCall('POST', '/produtos', { nome, preco, categoria, estoque });
+        if (r.ok) {
+            log(`Produto criado! ID: ${r.data.produtoId}`, 'success');
+            carregarProdutos();
+            ['prodNome','prodPreco','prodCategoria','prodEstoque'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+        }
+    }
+
+    async function deletarProduto(id) {
+        if (!confirm('Deletar este produto?')) return;
+        const r = await apiCall('DELETE', `/produtos/${id}`);
+        if (r.ok) { log('Produto deletado!', 'success'); carregarProdutos(); }
+    }
+
+    // ====================================================
+    // PEDIDOS
+    // ====================================================
+    function selecionarProduto(produto) {
+        produtoSelecionado = produto;
+        document.getElementById('produtosSelecionados').innerHTML = `
+            <div class="produto-item">
+                <div>
+                    <div class="produto-nome">✅ ${produto.nome}</div>
+                    <div class="produto-categoria">1 unidade × R$ ${parseFloat(produto.preco).toFixed(2)}</div>
+                </div>
+                <div class="produto-preco">R$ ${parseFloat(produto.preco).toFixed(2)}</div>
+            </div>
+        `;
+        document.getElementById('btnPedido').disabled = false;
+        log(`Produto selecionado: ${produto.nome}`, 'info');
+    }
+
+    async function criarPedido() {
+        if (!produtoSelecionado) { log('Selecione um produto primeiro!', 'error'); return; }
+
+        const pedido = {
+            clienteId: getClienteId(),
+            itens: [{ produtoId: produtoSelecionado.produtoId, nome: produtoSelecionado.nome, qtd: 1, preco: produtoSelecionado.preco }],
+            total: parseFloat(produtoSelecionado.preco)
+        };
+
+        log('Criando pedido... → DynamoDB → SQS → Lambda Worker → SNS → Email', 'info');
+        const r = await apiCall('POST', '/pedidos', pedido);
+
+        if (r.ok) {
+            log(`🎉 Pedido criado! ID: ${r.data.pedidoId}`, 'success');
+            log('⏳ O Worker Lambda está processando na fila SQS...', 'info');
+            log('📧 Em ~30 segundos você receberá um email de confirmação!', 'success');
+            produtoSelecionado = null;
+            document.getElementById('btnPedido').disabled = true;
+            document.getElementById('produtosSelecionados').innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">Próximo produto →</div>';
+            
+            // Atualiza contagem de pedidos após 2 segundos
+            setTimeout(carregarPedidos, 2000);
+        }
+    }
+
+    async function carregarPedidos() {
+        const r = await apiCall('GET', `/pedidos?clienteId=${getClienteId()}`);
+        if (!r.ok) return;
+
+        const pedidos = r.data.pedidos || [];
+        document.getElementById('totalPedidos').textContent = pedidos.length;
+
+        const lista = document.getElementById('listaPedidos');
+        if (pedidos.length === 0) {
+            lista.innerHTML = '<div style="color:var(--text-muted);text-align:center;">Nenhum pedido ainda</div>';
+            return;
+        }
+
+        lista.innerHTML = pedidos.slice().reverse().map(p => `
+            <div class="pedido-item pedido-${p.status}">
+                <div style="font-size:0.85em;color:var(--text-muted);">${p.pedidoId.substring(0,30)}...</div>
+                <div style="display:flex;justify-content:space-between;margin-top:5px;">
+                    <span>Status: <strong style="color:${p.status==='confirmado'?'#4CAF50':'#FF9800'}">${p.status}</strong></span>
+                    <span>R$ ${parseFloat(p.total||0).toFixed(2)}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+# ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Um dos pontos altos da vida de um DevOps. O auto-healing real.
+# O DockerDaemon testando ativamente seu software internamente contra deadlocks HTTP cegas.
+# ============================================================
+
+version: "3.8"
+
+services:
+  app:
+    image: nginx
+    # O Pulo do Gato. A regra Condition baseada em Health ao invez de State Started burro!
+    depends_on:
+      bdpostgres:
+        condition: service_healthy
+
+  bdpostgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: senha
+    # Como o Daemon sabe que um DB ta ok? Você ENSINA ELE com um pequeno shell injetor.
+    # Essa checagem ocorre na camada base, direto do Daemon pra maquina do banco.
+    healthcheck:
+      # O CMD executado DENTRO dele pra dar echo OK de sanidade:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      # Quanto tempo a partir de rodar UP ele demora de Grace Period pra abrir as portas e ligar tudo (nao de falso positivo aqui nas tracoes)
+      start_period: 20s
+      # E depois que acordou e entrou no AR saudavel? Eu testo de novo de qntos em qntos sec no expediente pra ver se o cabo rompeu?
+      interval: 1m
+      # Deu erro! O ping do db retornou Not Ready! Pode ser delay de RAM. Vamos tentar 3 vezes num spaceTimeout de 10s pra NÂO DETONAR ele atoa!
+      timeout: 10s
+      retries: 3
+    # E se tudo falhou em TRESS vezes consecutivas 3 min dps? Ele joga ele na lixeira e roda do zero!
+    restart: unless-stopped

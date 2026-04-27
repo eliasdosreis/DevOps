@@ -1,0 +1,30 @@
+---
+# ==============================================================
+# ARQUIVO: roles/webserver/tasks/servico.yml
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Depois de instalar e configurar, precisamos LIGAR o serviço.
+# É como montar um ventilador e depois apertar o botão!
+# "enabled: true" = ligar automático quando o servidor reiniciar
+# "state: started" = ligar agora mesmo
+# ==============================================================
+
+# Garantir que o Nginx está rodando e inicia com o sistema
+- name: "Habilitar e iniciar {{ webserver_servico }}"
+  ansible.builtin.service:
+    name: "{{ webserver_servico }}"
+    state: started     # Deve estar RODANDO agora
+    enabled: true      # Deve INICIAR automaticamente no boot
+
+# Verificar se está respondendo na porta correta
+- name: "Verificar se nginx está escutando na porta {{ webserver_porta }}"
+  ansible.builtin.wait_for:
+    host: localhost
+    port: "{{ webserver_porta }}"
+    timeout: 15        # Aguardar até 15 segundos
+    state: started
+
+- name: "Confirmação: Nginx está online!"
+  ansible.builtin.debug:
+    msg: "✅ Nginx rodando na porta {{ webserver_porta }}"

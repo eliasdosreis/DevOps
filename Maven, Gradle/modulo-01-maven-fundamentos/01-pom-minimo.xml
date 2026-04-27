@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ============================================================
+  ARQUIVO: 01-pom-minimo.xml
+  RENOMEIE PARA: pom.xml (na raiz do projeto)
+
+  O QUE ESTE ARQUIVO FAZ:
+  Demonstra o pom.xml mais simples possível — apenas as
+  configurações OBRIGATÓRIAS para o Maven funcionar.
+
+  ANALOGIA:
+  O pom.xml é como a "certidão de nascimento" do seu projeto.
+  Assim como uma certidão tem nome, sobrenome e data de nascimento,
+  o pom.xml tem groupId (sobrenome), artifactId (nome) e version.
+
+  DEFINIÇÃO TÉCNICA:
+  POM = Project Object Model. É o arquivo XML central do Maven
+  que descreve o projeto, suas dependências, plugins e como
+  construí-lo. Toda operação do Maven começa lendo este arquivo.
+
+  CONCEITO-CHAVE: Coordenadas GAV
+  G = groupId    → identifica sua organização/grupo
+  A = artifactId → identifica o projeto dentro do grupo
+  V = version    → versão atual do projeto
+
+  Juntas, as coordenadas GAV formam um identificador ÚNICO
+  no universo Maven. Nenhum artefato pode ter o mesmo GAV.
+  ============================================================ -->
+
+<project
+  <!-- Namespace XML do POM — sempre este valor, obrigatório -->
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  <!-- Schema location para validação do XML — sempre este valor -->
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <!-- ─────────────────────────────────────────────────────
+    modelVersion: versão do ESQUEMA do pom.xml
+    SEMPRE use 4.0.0 — é o único valor válido hoje em dia
+    OBRIGATÓRIO
+    ───────────────────────────────────────────────────── -->
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- ─────────────────────────────────────────────────────
+    groupId: identificador da organização ou grupo
+    Convenção: domínio invertido da empresa
+    Exemplos:
+      - org.springframework   (Spring Framework)
+      - com.google.guava      (Google Guava)
+      - br.com.minhaempresa   (sua empresa)
+    OBRIGATÓRIO
+    ───────────────────────────────────────────────────── -->
+  <groupId>com.curso</groupId>
+
+  <!-- ─────────────────────────────────────────────────────
+    artifactId: nome único do projeto dentro do groupId
+    Convenção: letras minúsculas, palavras separadas por hífen
+    Exemplos: meu-app, biblioteca-util, servico-pagamento
+    OBRIGATÓRIO
+    ───────────────────────────────────────────────────── -->
+  <artifactId>hello-maven</artifactId>
+
+  <!-- ─────────────────────────────────────────────────────
+    version: versão atual do projeto
+    Convenções de versionamento:
+      - SNAPSHOT: versão em desenvolvimento (ex: 1.0.0-SNAPSHOT)
+      - Release: versão estável (ex: 1.0.0, 2.1.3)
+    SemVer = Semantic Versioning: MAJOR.MINOR.PATCH
+      - MAJOR: mudança incompatível (quebra de API)
+      - MINOR: nova funcionalidade compatível
+      - PATCH: correção de bug
+    OBRIGATÓRIO
+    ───────────────────────────────────────────────────── -->
+  <version>1.0.0-SNAPSHOT</version>
+
+  <!-- ─────────────────────────────────────────────────────
+    packaging: tipo de artefato gerado pelo build
+    Valores possíveis:
+      - jar  (padrão) → arquivo JAR
+      - war  → arquivo WAR (aplicações web)
+      - pom  → usado em projetos pai (multi-módulo)
+      - ear  → arquivo EAR (aplicações enterprise)
+    OPCIONAL (padrão: jar)
+    ───────────────────────────────────────────────────── -->
+  <packaging>jar</packaging>
+
+  <!-- ─────────────────────────────────────────────────────
+    name: nome legível por humanos do projeto
+    Aparece nos relatórios e na documentação gerada
+    OPCIONAL (mas recomendado)
+    ───────────────────────────────────────────────────── -->
+  <name>Hello Maven</name>
+
+  <!-- ─────────────────────────────────────────────────────
+    description: descrição breve do projeto
+    OPCIONAL (mas recomendado)
+    ───────────────────────────────────────────────────── -->
+  <description>Projeto Maven mínimo para demonstrar as coordenadas GAV</description>
+
+  <!-- ─────────────────────────────────────────────────────
+    properties: variáveis reutilizáveis no pom.xml
+    Convenção: usar para definir versões do Java e encoding
+    OPCIONAL (mas FORTEMENTE recomendado)
+    ───────────────────────────────────────────────────── -->
+  <properties>
+    <!-- Define o encoding do código-fonte — evita problemas com acentos -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- Define o encoding dos relatórios gerados -->
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <!-- Versão do Java para compilar o projeto -->
+    <!-- maven.compiler.source = versão do CÓDIGO FONTE (o que você escreve) -->
+    <maven.compiler.source>21</maven.compiler.source>
+
+    <!-- maven.compiler.target = versão da BYTECODE gerada (para qual JVM) -->
+    <!-- Normalmente source e target têm o mesmo valor -->
+    <maven.compiler.target>21</maven.compiler.target>
+
+    <!--
+      NOTA SENIOR: Em vez de source/target, prefira usar:
+      <maven.compiler.release>21</maven.compiler.release>
+      O flag --release garante que o código não usa APIs de versões
+      mais novas acidentalmente. É mais rigoroso e correto.
+    -->
+  </properties>
+
+</project>

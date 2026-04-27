@@ -1,0 +1,163 @@
+---
+# =============================================================
+# ROLE: nginx-web
+# PROPÓSITO: Configura Nginx como web server com proxy para o app
+# IDEMPOTENTE: Sim
+# =============================================================
+
+- name: Instalar Nginx
+  apt:
+    name:  nginx
+    state: present
+  tags: nginx-web
+
+- name: Configurar Nginx como proxy para o App Server
+  copy:
+    content: |
+      server {
+          listen 80 default_server;
+          server_name _;
+
+          # Headers de identificação do servidor
+          add_header X-Served-By "{{ inventory_hostname }}" always;
+          add_header X-App-Server "{{ machines.app.ip }}:{{ app_port }}" always;
+
+          # Headers de segurança
+          add_header X-Frame-Options        "SAMEORIGIN"   always;
+          add_header X-Content-Type-Options  "nosniff"      always;
+          add_header X-XSS-Protection        "1; mode=block" always;
+
+          access_log /var/log/nginx/web-access.log;
+          error_log  /var/log/nginx/web-error.log;
+
+          # Health check local do nginx
+          location /nginx-health {
+              return 200 "{{ inventory_hostname }} OK\n";
+              add_header Content-Type text/plain;
+          }
+
+          # Proxy para a API Node.js
+          location /api {
+              proxy_pass         http://{{ machines.app.ip }}:{{ app_port }};
+              proxy_http_version 1.1;
+              proxy_set_header   Host              $host;
+              proxy_set_header   X-Real-IP         $remote_addr;
+              proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+              proxy_connect_timeout 5s;
+              proxy_read_timeout    30s;
+          }
+
+          # Health check via API
+          location /health {
+              proxy_pass http://{{ machines.app.ip }}:{{ app_port }}/health;
+              proxy_http_version 1.1;
+          }
+
+          # Conteúdo estático
+          location / {
+              root  /var/www/html;
+              index index.html;
+              try_files $uri $uri/ =404;
+          }
+      }
+    dest:  /etc/nginx/sites-available/default
+    mode:  '0644'
+  notify: Restart Nginx
+  tags: nginx-web
+
+- name: Criar página HTML do web server
+  copy:
+    content: |
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{ app_name }} — {{ inventory_hostname }}</title>
+        <style>
+          :root { --accent: #6366f1; }
+          * { box-sizing: border-box; margin:0; padding:0; }
+          body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0f172a; color: #e2e8f0;
+            min-height: 100vh; display: flex;
+            align-items: center; justify-content: center;
+          }
+          .container { max-width: 700px; width: 100%; padding: 20px; }
+          .card {
+            background: #1e293b; border-radius: 20px;
+            border: 1px solid #334155; padding: 48px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+          }
+          .logo { font-size: 3rem; margin-bottom: 16px; }
+          h1 { font-size: 1.75rem; color: var(--accent); margin-bottom: 8px; }
+          .subtitle { color: #94a3b8; margin-bottom: 32px; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+          .stat {
+            background: #0f172a; border-radius: 12px; padding: 20px;
+            border: 1px solid #1e293b;
+          }
+          .stat-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+          .stat-value { font-size: 1.25rem; font-weight: 700; color: var(--accent); margin-top: 4px; }
+          .actions { margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; }
+          .btn {
+            background: var(--accent); color: white; border: none;
+            padding: 10px 20px; border-radius: 8px; text-decoration: none;
+            font-weight: 600; font-size: 0.9rem; cursor: pointer;
+          }
+          .btn-outline {
+            background: transparent; border: 1px solid var(--accent);
+            color: var(--accent);
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="card">
+            <div class="logo">🚀</div>
+            <h1>{{ app_name }}</h1>
+            <p class="subtitle">Projeto Final Senior — Vagrant + Ansible + Multi-Machine</p>
+            <div class="grid">
+              <div class="stat">
+                <div class="stat-label">Servidor</div>
+                <div class="stat-value">{{ inventory_hostname }}</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">Ambiente</div>
+                <div class="stat-value">{{ app_env }}</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">App Server</div>
+                <div class="stat-value">{{ machines.app.ip }}</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">Database</div>
+                <div class="stat-value">{{ machines.db.ip }}</div>
+              </div>
+            </div>
+            <div class="actions">
+              <a class="btn" href="/api">🔌 API</a>
+              <a class="btn btn-outline" href="/health">❤️ Health</a>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    dest:  /var/www/html/index.html
+    owner: www-data
+    group: www-data
+    mode:  '0644'
+  tags: nginx-web
+
+- name: Garantir Nginx rodando e habilitado
+  service:
+    name:    nginx
+    state:   started
+    enabled: yes
+  tags: nginx-web
+
+handlers:
+  - name: Restart Nginx
+    service:
+      name:  nginx
+      state: restarted

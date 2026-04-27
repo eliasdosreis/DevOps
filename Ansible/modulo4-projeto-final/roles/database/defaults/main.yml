@@ -1,0 +1,14 @@
+---
+# ==============================================================
+# ARQUIVO: roles/database/defaults/main.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+db_versao: "15"
+db_porta: 5432
+db_max_conexoes: 100
+db_shared_buffers: "256MB"
+db_effective_cache_size: "1GB"
+db_backup_dir: "/var/backups/postgresql"
+db_backup_retencao_dias: 7
+db_backup_hora: "2"    # 2h da manhã
+db_backup_minuto: "0"

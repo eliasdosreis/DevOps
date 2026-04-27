@@ -1,0 +1,143 @@
+# ============================================================
+# ARQUIVO: 07-services.yaml
+# PROJETO FINAL - Todos os Services da aplicação
+#
+# Este arquivo define COMO os componentes se comunicam.
+# Pense como o sistema de ramais de um escritório:
+# - "Disca 100" vai para o Frontend
+# - "Disca 200" vai para a API
+# - "Disca 300" vai para o PostgreSQL
+# - "Disca 400" vai para o Redis
+#
+# Nenhum pod se conecta diretamente a outro pelo IP!
+# Sempre via Service (o ramal).
+# ============================================================
+
+# -------------------------------------------------------
+# SERVICE 1: Frontend
+# Tipo: ClusterIP (só tráfego interno vindo do Ingress)
+# -------------------------------------------------------
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: frontend              # Ingress vai apontar para "frontend"
+  namespace: ecommerce        # Mesmo namespace de tudo!
+
+  labels:
+    app: frontend
+    componente: web
+
+spec:
+  type: ClusterIP             # Interno. Ingress faz a exposição externa.
+
+  selector:
+    app: frontend             # Encontra pods com label app=frontend
+
+  ports:
+    - name: http
+      port: 80                # Service ouve na porta 80
+      targetPort: 80          # Manda para porta 80 do container
+
+---
+# -------------------------------------------------------
+# SERVICE 2: API Backend
+# Tipo: ClusterIP (chamada do Frontend via Ingress /api)
+# -------------------------------------------------------
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: api                   # Frontend chama: http://api:3000
+  namespace: ecommerce
+
+  labels:
+    app: api
+    componente: backend
+
+spec:
+  type: ClusterIP
+
+  selector:
+    app: api                  # Pods do deployment "api"
+
+  ports:
+    - name: http
+      port: 3000              # Porta da API Node.js
+      targetPort: 3000
+
+---
+# -------------------------------------------------------
+# SERVICE 3: PostgreSQL
+# Tipo: ClusterIP (apenas a API acessa. Nunca expose DB!)
+# -------------------------------------------------------
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: postgres              # API conecta: postgres:5432
+  namespace: ecommerce
+
+  labels:
+    app: postgres
+    componente: banco
+
+spec:
+  type: ClusterIP             # NUNCA NodePort ou LoadBalancer para DB!
+
+  selector:
+    app: postgres             # Pods do StatefulSet postgres
+
+  ports:
+    - name: postgres
+      port: 5432              # Porta padrão do PostgreSQL
+      targetPort: 5432
+
+---
+# -------------------------------------------------------
+# SERVICE 4: Redis Cache
+# Tipo: ClusterIP (apenas a API acessa)
+# -------------------------------------------------------
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: redis                 # API conecta: redis:6379
+  namespace: ecommerce
+
+  labels:
+    app: redis
+    componente: cache
+
+spec:
+  type: ClusterIP
+
+  selector:
+    app: redis                # Pods do Redis
+
+  ports:
+    - name: redis
+      port: 6379              # Porta padrão do Redis
+      targetPort: 6379
+
+# ============================================================
+# FLUXO DE COMUNICAÇÃO COMPLETO:
+#
+# [Usuário]
+#    │ HTTPS
+#    ▼
+# [Ingress]  --> / ---------> [Service: frontend:80]
+#             --> /api ------> [Service: api:3000]
+#                                      │
+#                          ┌──────────┤
+#                          │          │
+#                          ▼          ▼
+#              [Service: postgres:5432] [Service: redis:6379]
+#
+# ENTREVISTA SÊNIOR:
+# "Por que usar Service em vez de conectar por IP do pod?"
+# RESPOSTA: Pods têm IPs efêmeros (mudam quando reiniciam).
+# Services têm IP estável (ClusterIP) e fazem load balance
+# entre múltiplos pods automaticamente via kube-proxy.
+# O DNS interno do K8s resolve: "api" -> ClusterIP do Service.
+# ============================================================

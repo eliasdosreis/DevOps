@@ -1,0 +1,63 @@
+---
+# ==============================================================
+# ARQUIVO: roles/app/tasks/preparar.yml
+# MÓDULO 4 - Projeto Final
+# ==============================================================
+#
+# 🧒 EXPLICAÇÃO SIMPLES:
+# Antes de instalar a app, preparamos o "terreno".
+# Como preparar a cozinha antes de cozinhar:
+# limpar, organizar, colocar os utensílios no lugar.
+# ==============================================================
+
+# Instalar dependências do sistema operacional
+- name: "App Prepare: Instalar dependências do sistema"
+  ansible.builtin.apt:
+    name:
+      - python3              # Python 3
+      - python3-pip          # Gerenciador de pacotes Python
+      - python3-venv         # Ambientes virtuais Python
+      - git                  # Para clonar o repositório
+      - nginx                # Servidor web (proxy reverso)
+      - supervisor           # Gerenciador de processos (alternativa ao systemd)
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+# Criar grupo do sistema para a aplicação
+# "system: true" = grupo de sistema (UID baixo, sem login)
+- name: "App Prepare: Criar grupo da aplicação"
+  ansible.builtin.group:
+    name: "{{ app_grupo }}"
+    system: true       # Grupo de sistema (não aparece no login)
+    state: present
+
+# Criar usuário dedicado para rodar a aplicação
+# NUNCA rode sua app como root! Princípio do menor privilégio.
+- name: "App Prepare: Criar usuário da aplicação"
+  ansible.builtin.user:
+    name: "{{ app_usuario }}"
+    group: "{{ app_grupo }}"
+    system: true            # Usuário de sistema
+    shell: /bin/false       # Sem acesso ao shell (mais seguro!)
+    home: "{{ app_dir }}"  # Home = pasta da aplicação
+    create_home: false      # Não criar home ainda (faremos manualmente)
+    state: present
+
+# Criar estrutura de diretórios da aplicação
+- name: "App Prepare: Criar estrutura de diretórios"
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "{{ item.mode }}"
+    owner: "{{ app_usuario }}"
+    group: "{{ app_grupo }}"
+  # Loop na lista de diretórios com permissões específicas
+  loop:
+    - { path: "{{ app_dir }}",          mode: "0755" }  # Raiz da app
+    - { path: "{{ app_dir }}/releases", mode: "0755" }  # Versões deployadas
+    - { path: "{{ app_dir }}/shared",   mode: "0755" }  # Arquivos compartilhados
+    - { path: "{{ app_dir }}/logs",     mode: "0755" }  # Logs da aplicação
+    - { path: "{{ app_dir }}/tmp",      mode: "0755" }  # Temporários
+  loop_control:
+    label: "{{ item.path }}"
