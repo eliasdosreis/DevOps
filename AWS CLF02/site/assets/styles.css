@@ -22,11 +22,36 @@ body {
     linear-gradient(135deg, rgba(255, 153, 0, 0.12), transparent 34%),
     linear-gradient(315deg, rgba(0, 161, 201, 0.12), transparent 32%),
     var(--bg);
+  animation: pageFadeIn .55s ease both;
 }
 
 a { color: #0073bb; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
+
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOutDown {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(12px); }
+}
+
+@keyframes softPulse {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-4px) scale(1.02); }
+}
+
+@keyframes lineFlow {
+  to { stroke-dashoffset: -220; }
+}
 
 .app-shell {
   min-height: 100vh;
@@ -135,6 +160,7 @@ button { cursor: pointer; }
     linear-gradient(135deg, rgba(16, 24, 39, .98), rgba(21, 33, 54, .94)),
     url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80") center/cover;
   box-shadow: var(--shadow);
+  animation: fadeInUp .7s ease both;
 }
 
 .hero-copy { align-self: center; max-width: 760px; }
@@ -185,6 +211,8 @@ h1 {
   stroke: rgba(255, 255, 255, .42);
   stroke-width: 3;
   stroke-linecap: round;
+  stroke-dasharray: 12 18;
+  animation: lineFlow 9s linear infinite;
 }
 .cloud-node {
   position: absolute;
@@ -200,6 +228,7 @@ h1 {
   background: rgba(255, 255, 255, .12);
   box-shadow: 0 16px 42px rgba(0,0,0,.22);
   backdrop-filter: blur(8px);
+  animation: softPulse 5s ease-in-out infinite;
 }
 .cloud-node.core { left: calc(50% - 54px); top: calc(50% - 54px); width: 108px; height: 108px; color: #111827; background: linear-gradient(135deg, #ffb000, #ff7a00); }
 .node-a { left: 44px; top: 44px; }
@@ -244,6 +273,7 @@ h1 {
   border-radius: 8px;
   border: 1px solid var(--line);
   background: var(--surface);
+  animation: fadeInUp .45s ease both;
 }
 .stat-card strong { display: block; font-size: 28px; }
 .stat-card span { color: var(--muted); }
@@ -269,6 +299,8 @@ h1 {
   border-left: 5px solid var(--accent, var(--orange));
   border-radius: 8px;
   background: #fff;
+  transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease, border-color .18s ease, opacity .18s ease;
+  animation: fadeInUp .28s ease both;
 }
 .lesson-item:hover, .lesson-item.active { box-shadow: 0 10px 24px rgba(23,32,42,.08); transform: translateY(-1px); }
 .lesson-item strong { display: block; margin-bottom: 6px; line-height: 1.35; }
@@ -282,7 +314,10 @@ h1 {
   border-radius: 8px;
   background: var(--surface);
   box-shadow: var(--shadow);
+  transition: opacity .16s ease, transform .16s ease;
 }
+.lesson-card.fade-in { animation: fadeInUp .34s ease both; }
+.lesson-card.fade-out { animation: fadeOutDown .14s ease both; }
 .lesson-card.full { max-width: 980px; margin: 0 auto; }
 .lesson-toolbar {
   display: flex;
@@ -293,6 +328,47 @@ h1 {
   margin-bottom: 22px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--line);
+}
+
+.lesson-visual {
+  position: relative;
+  margin: 0 0 28px;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #101827;
+  animation: fadeInUp .42s ease both;
+}
+.lesson-visual img {
+  display: block;
+  width: 100%;
+  height: clamp(180px, 28vw, 320px);
+  object-fit: cover;
+  opacity: .9;
+  transform: scale(1.01);
+  transition: transform .7s ease, opacity .35s ease;
+}
+.lesson-visual:hover img {
+  opacity: 1;
+  transform: scale(1.05);
+}
+.lesson-visual::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(16, 24, 39, .9));
+  pointer-events: none;
+}
+.lesson-visual figcaption {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 16px;
+  z-index: 1;
+  color: #fff;
+  font-weight: 750;
+  line-height: 1.45;
+  text-shadow: 0 2px 18px rgba(0,0,0,.45);
 }
 .lesson-kicker {
   color: var(--muted);
@@ -369,6 +445,10 @@ tr:last-child td { border-bottom: 0; }
 }
 .page-nav a { padding: 12px; border-radius: 8px; background: #f2f6fb; text-decoration: none; }
 
+.standalone-page .lesson-card.full {
+  animation: fadeInUp .5s ease both;
+}
+
 .empty-state {
   padding: 30px;
   border: 1px dashed var(--line);
@@ -391,4 +471,14 @@ tr:last-child td { border-bottom: 0; }
   .toolbar, .stats-grid { grid-template-columns: 1fr; }
   .lesson-card { padding: 20px; }
   .architecture-visual { display: none; }
+  .lesson-visual img { height: 190px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .001ms !important;
+  }
 }

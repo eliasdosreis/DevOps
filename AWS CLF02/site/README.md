@@ -20,6 +20,8 @@ O site funciona como pagina estatica: nao precisa servidor.
 - Progresso salvo no navegador.
 - Botao de revisao aleatoria.
 - Uma pagina HTML individual para cada arquivo Markdown em `site/pages/`.
+- Transicoes suaves com fade in/fade out.
+- Imagens de apoio por modulo para ajudar associacao visual e memorizacao.
 
 ## Como regenerar
 
@@ -36,4 +38,3 @@ Isso atualiza:
 - `site/assets/app.js`
 - `site/assets/styles.css`
 - `site/pages/*.html`
-
