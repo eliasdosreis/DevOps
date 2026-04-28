@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Prático — Simulados e Revisão Final: Setup Ambiente de Estudos (Módulo 29) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#162-29-simulados-e-questoes-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 29 - Simulados e Questoes - 7 min - 29-Simulados-e-Questoes/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 29 - Simulados e Questoes" loading="lazy">
+      <figcaption>Simulado e treino de decisao sob tempo: leia, elimine, escolha e revise.</figcaption>
+    </figure>
+    <h1>Lab Prático — Simulados e Revisão Final: Setup Ambiente de Estudos (Módulo 29)</h1>
+<blockquote><p><strong>Região:</strong> us-east-1 | <strong>Custo estimado:</strong> ~$0.01 (DynamoDB on-demand, Lambda minimal)<br><strong>Pré-requisitos:</strong> AWS CLI configurado, Python 3.8+, pip</p></blockquote>
+<hr>
+<h2>Objetivo</h2>
+<p>Construir um ambiente personalizado de revisão: baralho de flashcards no DynamoDB, script de quiz interativo, e CloudWatch dashboard para rastrear progresso nos estudos.</p>
+<hr>
+<h2>Parte 1 — DynamoDB como Banco de Flashcards</h2>
+<pre><code class="language-bash">ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+TABELA_FLASH=&quot;saa-flashcards&quot;
+TABELA_PROGRESSO=&quot;saa-progresso&quot;
+
+# Criar tabela de flashcards
+aws dynamodb create-table \
+  --table-name &quot;$TABELA_FLASH&quot; \
+  --attribute-definitions \
+    &quot;AttributeName=modulo,AttributeType=S&quot; \
+    &quot;AttributeName=card_id,AttributeType=S&quot; \
+  --key-schema \
+    &quot;AttributeName=modulo,KeyType=HASH&quot; \
+    &quot;AttributeName=card_id,KeyType=RANGE&quot; \
+  --billing-mode PAY_PER_REQUEST \
+  --global-secondary-indexes &#39;[{
+    &quot;IndexName&quot;: &quot;dificuldade-index&quot;,
+    &quot;KeySchema&quot;: [
+      {&quot;AttributeName&quot;: &quot;modulo&quot;, &quot;KeyType&quot;: &quot;HASH&quot;},
+      {&quot;AttributeName&quot;: &quot;card_id&quot;, &quot;KeyType&quot;: &quot;RANGE&quot;}
+    ],
+    &quot;Projection&quot;: {&quot;ProjectionType&quot;: &quot;ALL&quot;}
+  }]&#39;
+
+# Criar tabela de progresso
+aws dynamodb create-table \
+  --table-name &quot;$TABELA_PROGRESSO&quot; \
+  --attribute-definitions \
+    &quot;AttributeName=usuario,AttributeType=S&quot; \
+    &quot;AttributeName=data_sessao,AttributeType=S&quot; \
+  --key-schema \
+    &quot;AttributeName=usuario,KeyType=HASH&quot; \
+    &quot;AttributeName=data_sessao,KeyType=RANGE&quot; \
+  --billing-mode PAY_PER_REQUEST
+
+aws dynamodb wait table-exists --table-name &quot;$TABELA_FLASH&quot;
+aws dynamodb wait table-exists --table-name &quot;$TABELA_PROGRESSO&quot;
+echo &quot;Tabelas criadas!&quot;
+
+# Populando flashcards de revisão final
+python3 &lt;&lt; &#39;PYTHON&#39;
+import boto3
+import uuid
+
+dynamodb = boto3.resource(&#39;dynamodb&#39;, region_name=&#39;us-east-1&#39;)
+tabela = dynamodb.Table(&#39;saa-flashcards&#39;)
+
+flashcards = [
+    # Módulo EC2
+    {&quot;modulo&quot;: &quot;ec2&quot;, &quot;card_id&quot;: str(uuid.uuid4()),
+     &quot;pergunta&quot;: &quot;Qual tipo de instância é mais adequado para bancos de dados na memória?&quot;,
+     &quot;resposta&quot;: &quot;R (Memory Optimized) — ex: r6g, r5. Alta proporção RAM/vCPU para Redis, SAP HANA, in-memory databases.&quot;,
+     &quot;dificuldade&quot;: &quot;medio&quot;},
+    {&quot;modulo&quot;: &quot;ec2&quot;, &quot;card_id&quot;: str(uuid.uuid4()),
+     &quot;pergunta&quot;: &quot;O que é Spot Instance Fleet?&quot;,
+     &quot;resposta&quot;: &quot;Conjunto de Spot Instances de múltiplos tipos/AZs configurados para manter capacidade alvo. Usa substituição automática.&quot;,
+     &quot;dificuldade&quot;: &quot;dificil&quot;},
+
+    # Módulo S3
+    {&quot;modulo&quot;: &quot;s3&quot;, &quot;card_id&quot;: str(uuid.uuid4()),
+     &quot;pergunta&quot;: &quot;Qual classe S3 tem taxa de recuperação e custo mínimo de armazenamento de 90 dias?&quot;,
+     &quot;resposta&quot;: &quot;S3 Glacier Flexible Retrieval — mín 90 dias de cobrança, retrieval em minutos a 12h.&quot;,
+     &quot;dificuldade&quot;: &quot;medio&quot;},
+    {&quot;modulo&quot;: &quot;s3&quot;, &quot;card_id&quot;: str(uuid.uuid4()),
+     &quot;pergunta&quot;: &quot;Como funciona o S3 Transfer Acceleration?&quot;,
+     &quot;resposta&quot;: &quot;Usa edge locations CloudFront para otimizar upload via TCP long-haul. Endpoint: bucket.s3-accelerate.amazonaws.com&quot;,
+     &quot;dificuldade&quot;: &quot;facil&quot;},
+
+    # Módulo VPC
+    {&quot;modulo&quot;: &quot;vpc&quot;, &quot;card_id&quot;: str(uuid.uuid4()),
+     &quot;pergunta&quot;: &quot;Diferença entre Security Group e NACL?&quot;,
+     &quot;resposta&quot;: &quot;SG: stateful, nível instância, só ALLOW. NACL: stateless, nível subnet, ALLOW e DENY, regras numeradas.&quot;,
+     &quot;dificuldade&quot;: &quot;facil&quot;},
+    {&quot;modulo&quot;: &quot;vpc&quot;, &quot;card_id&quot;: str(uuid.uuid4()),
+     &quot;pergunta&quot;: &quot;O que é um VPC Peering e qual sua limitação principal?&quot;,
+     &quot;resposta&quot;: &quot;Conexão direta entre VPCs sem transitividade. A→B e B→C NÃO permite A→C. Alternativa: Transit Gateway.&quot;,
+     &quot;dificuldade&quot;: &quot;medio&quot;},
+
+    # Módulo IAM
+    {&quot;modulo&quot;: &quot;iam&quot;, &quot;card_id&quot;: str(uuid.uuid4()),
+     &quot;pergunta&quot;: &quot;O que é IAM Permission Boundary?&quot;,
+     &quot;resposta&quot;: &quot;Política que define o MÁXIMO de permissão que uma entidade pode ter. Não concede — apenas limita o teto.&quot;,
+     &quot;dificuldade&quot;: &quot;dificil&quot;},
+
+    # Módulo RDS
+    {&quot;modulo&quot;: &quot;rds&quot;, &quot;card_id&quot;: str(uuid.uuid4()),
+     &quot;pergunta&quot;: &quot;Multi-AZ RDS vs Read Replica: qual serve para DR e qual para performance?&quot;,
+     &quot;resposta&quot;: &quot;Multi-AZ = DR/HA (failover automático, sincrônico, mesmo região). Read Replica = leitura escalada (assíncrono, pode ser cross-region).&quot;,
+     &quot;dificuldade&quot;: &quot;facil&quot;},
+
+    # Módulo Serverless
+    {&quot;modulo&quot;: &quot;serverless&quot;, &quot;card_id&quot;: str(uuid.uuid4()),
+     &quot;pergunta&quot;: &quot;Lambda tem timeout máximo de quanto?&quot;,
+     &quot;resposta&quot;: &quot;15 minutos (900 segundos). Para processos mais longos: SQS → Lambda, Step Functions, ECS/Fargate.&quot;,
+     &quot;dificuldade&quot;: &quot;facil&quot;},
+
+    # Segurança
+    {&quot;modulo&quot;: &quot;seguranca&quot;, &quot;card_id&quot;: str(uuid.uuid4()),
+     &quot;pergunta&quot;: &quot;Qual serviço protege contra DDoS Layer 3/4 sem custo adicional?&quot;,
+     &quot;resposta&quot;: &quot;AWS Shield Standard — ativado automaticamente para todos os clientes. Shield Advanced: Layer 7 + suporte 24/7.&quot;,
+     &quot;dificuldade&quot;: &quot;facil&quot;},
+    {&quot;modulo&quot;: &quot;seguranca&quot;, &quot;card_id&quot;: str(uuid.uuid4()),
+     &quot;pergunta&quot;: &quot;Difference: GuardDuty vs Macie vs Inspector vs WAF?&quot;,
+     &quot;resposta&quot;: &quot;GuardDuty=ameaças conta/rede/S3. Macie=dados sensíveis S3 (PII). Inspector=vulnerabilidades EC2/Lambda/ECR. WAF=proteção HTTP Layer 7.&quot;,
+     &quot;dificuldade&quot;: &quot;dificil&quot;},
+]
+
+with tabela.batch_writer() as batch:
+    for card in flashcards:
+        batch.put_item(Item=card)
+
+print(f&quot;{len(flashcards)} flashcards inseridos!&quot;)
+PYTHON</code></pre>
+<hr>
+<h2>Parte 2 — Script de Quiz Interativo</h2>
+<pre><code class="language-python"># quiz.py — Salvar e executar com: python3 quiz.py
+import boto3
+import random
+import json
+from datetime import datetime
+
+dynamodb = boto3.resource(&#39;dynamodb&#39;, region_name=&#39;us-east-1&#39;)
+tabela_flash = dynamodb.Table(&#39;saa-flashcards&#39;)
+tabela_prog  = dynamodb.Table(&#39;saa-progresso&#39;)
+
+def buscar_cards(modulo=None, dificuldade=None):
+    if modulo:
+        resp = tabela_flash.query(
+            KeyConditionExpression=boto3.dynamodb.conditions.Key(&#39;modulo&#39;).eq(modulo)
+        )
+    else:
+        resp = tabela_flash.scan()
+
+    cards = resp[&#39;Items&#39;]
+    if dificuldade:
+        cards = [c for c in cards if c.get(&#39;dificuldade&#39;) == dificuldade]
+    return cards
+
+def executar_quiz():
+    print(&quot;\n=== Quiz SAA-C03 ===&quot;)
+    print(&quot;Módulos: ec2, s3, vpc, iam, rds, serverless, seguranca (ou ENTER para todos)&quot;)
+    modulo = input(&quot;Módulo: &quot;).strip() or None
+
+    cards = buscar_cards(modulo=modulo)
+    if not cards:
+        print(&quot;Nenhum card encontrado!&quot;)
+        return
+
+    random.shuffle(cards)
+    cards = cards[:10]  # máximo 10 por sessão
+
+    acertos = 0
+    total = len(cards)
+    erros = []
+
+    for i, card in enumerate(cards, 1):
+        print(f&quot;\n[{i}/{total}] Módulo: {card[&#39;modulo&#39;].upper()}&quot;)
+        print(f&quot;P: {card[&#39;pergunta&#39;]}&quot;)
+        input(&quot;Pressione ENTER para ver a resposta...&quot;)
+        print(f&quot;R: {card[&#39;resposta&#39;]}&quot;)
+        acertou = input(&quot;Você acertou? (s/n): &quot;).strip().lower() == &#39;s&#39;
+
+        if acertou:
+            acertos += 1
+        else:
+            erros.append(card)
+
+    porcentagem = (acertos / total) * 100
+    print(f&quot;\n=== Resultado ===&quot;)
+    print(f&quot;Acertos: {acertos}/{total} ({porcentagem:.0f}%)&quot;)
+
+    if erros:
+        print(f&quot;\nCards para revisar:&quot;)
+        for c in erros:
+            print(f&quot;  [{c[&#39;modulo&#39;]}] {c[&#39;pergunta&#39;][:60]}...&quot;)
+
+    # Salvar progresso
+    tabela_prog.put_item(Item={
+        &#39;usuario&#39;: &#39;estudante&#39;,
+        &#39;data_sessao&#39;: datetime.utcnow().isoformat(),
+        &#39;modulo&#39;: modulo or &#39;todos&#39;,
+        &#39;acertos&#39;: acertos,
+        &#39;total&#39;: total,
+        &#39;porcentagem&#39;: str(round(porcentagem, 1))
+    })
+    print(&quot;\nProgresso salvo no DynamoDB!&quot;)
+
+if __name__ == &#39;__main__&#39;:
+    executar_quiz()</code></pre>
+<pre><code class="language-bash"># Executar o quiz
+python3 quiz.py</code></pre>
+<hr>
+<h2>Parte 3 — CloudWatch Dashboard de Estudos</h2>
+<pre><code class="language-bash">ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+# Publicar métricas customizadas de progresso
+aws cloudwatch put-metric-data \
+  --namespace &quot;SAA/Estudos&quot; \
+  --metric-data &#39;[
+    {&quot;MetricName&quot;: &quot;FlashcardsRevisados&quot;, &quot;Value&quot;: 10, &quot;Unit&quot;: &quot;Count&quot;,
+     &quot;Dimensions&quot;: [{&quot;Name&quot;: &quot;Modulo&quot;, &quot;Value&quot;: &quot;ec2&quot;}]},
+    {&quot;MetricName&quot;: &quot;PorcentagemAcerto&quot;, &quot;Value&quot;: 80, &quot;Unit&quot;: &quot;Percent&quot;,
+     &quot;Dimensions&quot;: [{&quot;Name&quot;: &quot;Modulo&quot;, &quot;Value&quot;: &quot;ec2&quot;}]},
+    {&quot;MetricName&quot;: &quot;DiasEstudados&quot;, &quot;Value&quot;: 1, &quot;Unit&quot;: &quot;Count&quot;,
+     &quot;Dimensions&quot;: [{&quot;Name&quot;: &quot;Semana&quot;, &quot;Value&quot;: &quot;semana-1&quot;}]}
+  ]&#39;
+
+# Criar dashboard visual
+aws cloudwatch put-dashboard \
+  --dashboard-name &quot;SAA-C03-Progresso&quot; \
+  --dashboard-body &#39;{
+    &quot;widgets&quot;: [
+      {
+        &quot;type&quot;: &quot;metric&quot;,
+        &quot;x&quot;: 0, &quot;y&quot;: 0, &quot;width&quot;: 12, &quot;height&quot;: 6,
+        &quot;properties&quot;: {
+          &quot;title&quot;: &quot;Flashcards Revisados por Módulo&quot;,
+          &quot;namespace&quot;: &quot;SAA/Estudos&quot;,
+          &quot;metrics&quot;: [
+            [&quot;SAA/Estudos&quot;, &quot;FlashcardsRevisados&quot;, &quot;Modulo&quot;, &quot;ec2&quot;],
+            [&quot;SAA/Estudos&quot;, &quot;FlashcardsRevisados&quot;, &quot;Modulo&quot;, &quot;s3&quot;],
+            [&quot;SAA/Estudos&quot;, &quot;FlashcardsRevisados&quot;, &quot;Modulo&quot;, &quot;vpc&quot;]
+          ],
+          &quot;period&quot;: 86400,
+          &quot;stat&quot;: &quot;Sum&quot;,
+          &quot;view&quot;: &quot;bar&quot;
+        }
+      },
+      {
+        &quot;type&quot;: &quot;metric&quot;,
+        &quot;x&quot;: 12, &quot;y&quot;: 0, &quot;width&quot;: 12, &quot;height&quot;: 6,
+        &quot;properties&quot;: {
+          &quot;title&quot;: &quot;Taxa de Acerto por Módulo (%)&quot;,
+          &quot;namespace&quot;: &quot;SAA/Estudos&quot;,
+          &quot;metrics&quot;: [
+            [&quot;SAA/Estudos&quot;, &quot;PorcentagemAcerto&quot;, &quot;Modulo&quot;, &quot;ec2&quot;],
+            [&quot;SAA/Estudos&quot;, &quot;PorcentagemAcerto&quot;, &quot;Modulo&quot;, &quot;s3&quot;],
+            [&quot;SAA/Estudos&quot;, &quot;PorcentagemAcerto&quot;, &quot;Modulo&quot;, &quot;vpc&quot;]
+          ],
+          &quot;period&quot;: 86400,
+          &quot;stat&quot;: &quot;Average&quot;,
+          &quot;view&quot;: &quot;bar&quot;,
+          &quot;yAxis&quot;: {&quot;left&quot;: {&quot;min&quot;: 0, &quot;max&quot;: 100}}
+        }
+      },
+      {
+        &quot;type&quot;: &quot;text&quot;,
+        &quot;x&quot;: 0, &quot;y&quot;: 6, &quot;width&quot;: 24, &quot;height&quot;: 3,
+        &quot;properties&quot;: {
+          &quot;markdown&quot;: &quot;## Metas SAA-C03\\n- 80%+ em todos os simulados\\n- Completar 6 semanas de estudo\\n- Revisar todos os flashcards 3x&quot;
+        }
+      }
+    ]
+  }&#39;
+
+echo &quot;Dashboard criado: SAA-C03-Progresso&quot;
+echo &quot;Acesse: https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=SAA-C03-Progresso&quot;</code></pre>
+<hr>
+<h2>Limpeza</h2>
+<pre><code class="language-bash"># Excluir tabelas DynamoDB
+aws dynamodb delete-table --table-name &quot;$TABELA_FLASH&quot;
+aws dynamodb delete-table --table-name &quot;$TABELA_PROGRESSO&quot;
+
+# Excluir dashboard
+aws cloudwatch delete-dashboards --dashboard-names &quot;SAA-C03-Progresso&quot;
+
+# Remover arquivos locais
+rm -f quiz.py</code></pre>
+<hr>
+<h2>O Que Você Aprendeu</h2>
+<ul><li>DynamoDB como backend key-value para apps simples — setup em &lt; 1 min com CLI</li><li>Métricas customizadas CloudWatch (<code>put-metric-data</code>) para rastrear qualquer coisa</li><li>CloudWatch Dashboards via CLI com JSON body — codificável, versionável em Git</li><li>Padrão de estudo active recall: exposição → ocultação → tentativa → feedback</li><li>No exame: <strong>70%+ em simulados Tutorials Dojo = alta probabilidade de aprovação no SAA-C03</strong></li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./161-29-simulados-e-questoes-flashcards.html">Aula anterior</a>
+      <a href="./163-29-simulados-e-questoes-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

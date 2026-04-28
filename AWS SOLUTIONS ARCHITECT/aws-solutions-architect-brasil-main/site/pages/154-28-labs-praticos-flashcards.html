@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flashcards — Módulo 28: Labs Práticos - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#154-28-labs-praticos-flashcards">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 28 - Labs Praticos - 9 min - 28-Labs-Praticos/flashcards.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 28 - Labs Praticos" loading="lazy">
+      <figcaption>Labs end-to-end geram evidencia para portifolio, entrevista e troubleshooting.</figcaption>
+    </figure>
+    <h1>Flashcards — Módulo 28: Labs Práticos</h1>
+<blockquote><p><strong>Formato:</strong> P = Pergunta | R = Resposta<br><strong>Total:</strong> 25 flashcards</p></blockquote>
+<hr>
+<p><strong>P:</strong> Como criar uma Lambda Function com permissão para DynamoDB via CLI?<br><strong>R:</strong></p>
+<pre><code class="language-bash"># 1. Criar IAM Role
+aws iam create-role --role-name LambdaDynamoRole \
+  --assume-role-policy-document file://trust-lambda.json
+
+# 2. Attach policy
+aws iam attach-role-policy --role-name LambdaDynamoRole \
+  --policy-arn arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+
+# 3. Deploy Lambda
+aws lambda create-function --function-name MyFunc \
+  --runtime python3.12 --role arn:aws:iam::ACCOUNT:role/LambdaDynamoRole \
+  --handler lambda_function.lambda_handler --zip-file fileb://function.zip</code></pre>
+<hr>
+<p><strong>P:</strong> Como criar uma VPC com subnet pública e privada via Terraform?<br><strong>R:</strong></p>
+<pre><code class="language-hcl">resource &quot;aws_vpc&quot; &quot;main&quot; { cidr_block = &quot;10.0.0.0/16&quot; }
+resource &quot;aws_subnet&quot; &quot;public&quot; {
+  vpc_id = aws_vpc.main.id; cidr_block = &quot;10.0.1.0/24&quot;
+  map_public_ip_on_launch = true; availability_zone = &quot;us-east-1a&quot;
+}
+resource &quot;aws_subnet&quot; &quot;private&quot; {
+  vpc_id = aws_vpc.main.id; cidr_block = &quot;10.0.2.0/24&quot;
+  availability_zone = &quot;us-east-1b&quot;
+}
+resource &quot;aws_internet_gateway&quot; &quot;igw&quot; { vpc_id = aws_vpc.main.id }</code></pre>
+<hr>
+<p><strong>P:</strong> Como verificar se uma EC2 em subnet privada tem conectividade com a internet?<br><strong>R:</strong> A instância privada precisa de um <strong>NAT Gateway</strong> na subnet pública com rota na subnet privada: <code>0.0.0.0/0 → NAT GW</code>. Para testar: <code>curl -I https://aws.amazon.com</code> (dentro da instância via SSM Session Manager). Sem NAT GW: timeout. Com NAT GW + rota correta: HTTP 200.</p>
+<hr>
+<p><strong>P:</strong> Qual é o comando AWS CLI para fazer upload de arquivo para S3 com criptografia SSE-KMS?<br><strong>R:</strong></p>
+<pre><code class="language-bash">aws s3 cp arquivo.txt s3://meu-bucket/arquivo.txt \
+  --sse aws:kms \
+  --sse-kms-key-id arn:aws:kms:us-east-1:123456:key/key-id</code></pre>
+<p>Verificar:</p>
+<pre><code class="language-bash">aws s3api head-object --bucket meu-bucket --key arquivo.txt \
+  --query &#39;ServerSideEncryption&#39;</code></pre>
+<hr>
+<p><strong>P:</strong> Como testar uma API Gateway + Lambda localmente antes do deploy?<br><strong>R:</strong></p>
+<pre><code class="language-bash"># Instalar SAM CLI
+pip install aws-sam-cli
+
+# Invocar Lambda localmente
+sam local invoke &quot;NomeFuncao&quot; -e events/event.json
+
+# Subir API local (porta 3000)
+sam local start-api
+
+# Testar
+curl -X POST http://localhost:3000/endpoint \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{&quot;key&quot;: &quot;value&quot;}&#39;</code></pre>
+<hr>
+<p><strong>P:</strong> Qual comando Terraform visualiza as mudanças antes de aplicar?<br><strong>R:</strong></p>
+<pre><code class="language-bash">terraform plan -out=tfplan    # mostra mudanças + salva plano
+terraform show tfplan         # visualiza o plano salvo
+terraform apply tfplan        # aplica exatamente o plano salvo</code></pre>
+<p>O <code>-out=tfplan</code> garante que <code>apply</code> aplica exatamente o que foi revisado no <code>plan</code>, sem surpresas de mudanças no estado entre plan e apply.</p>
+<hr>
+<p><strong>P:</strong> Como configurar o Auto Scaling Group para escalar baseado em CPU via CLI?<br><strong>R:</strong></p>
+<pre><code class="language-bash"># Criar scaling policy
+aws autoscaling put-scaling-policy \
+  --auto-scaling-group-name MyASG \
+  --policy-name cpu-scale-out \
+  --scaling-adjustment 1 \
+  --adjustment-type ChangeInCapacity
+
+# Criar CloudWatch Alarm que aciona a policy
+aws cloudwatch put-metric-alarm \
+  --alarm-name High-CPU \
+  --metric-name CPUUtilization --namespace AWS/EC2 \
+  --threshold 70 --comparison-operator GreaterThanThreshold \
+  --statistic Average --period 300 --evaluation-periods 2 \
+  --alarm-actions arn:aws:autoscaling:...policy/cpu-scale-out</code></pre>
+<hr>
+<p><strong>P:</strong> Como habilitar versionamento no S3 e listar versões de um objeto?<br><strong>R:</strong></p>
+<pre><code class="language-bash"># Habilitar versionamento
+aws s3api put-bucket-versioning \
+  --bucket meu-bucket \
+  --versioning-configuration Status=Enabled
+
+# Listar versões de um objeto
+aws s3api list-object-versions \
+  --bucket meu-bucket --prefix arquivo.txt \
+  --query &#39;Versions[*].[VersionId,LastModified,IsLatest]&#39;
+
+# Restaurar versão específica
+aws s3api copy-object --bucket meu-bucket \
+  --copy-source &quot;meu-bucket/arquivo.txt?versionId=abc123&quot; \
+  --key arquivo.txt</code></pre>
+<hr>
+<p><strong>P:</strong> Como criar uma RDS instance Multi-AZ com Terraform?<br><strong>R:</strong></p>
+<pre><code class="language-hcl">resource &quot;aws_db_instance&quot; &quot;main&quot; {
+  identifier        = &quot;prod-db&quot;
+  engine            = &quot;mysql&quot;
+  engine_version    = &quot;8.0&quot;
+  instance_class    = &quot;db.t3.medium&quot;
+  allocated_storage = 20
+  username          = &quot;admin&quot;
+  password          = var.db_password
+  multi_az          = true
+  skip_final_snapshot = false
+  final_snapshot_identifier = &quot;prod-db-final&quot;
+  backup_retention_period = 7
+  vpc_security_group_ids = [aws_security_group.rds.id]
+  db_subnet_group_name   = aws_db_subnet_group.main.name
+}</code></pre>
+<hr>
+<p><strong>P:</strong> Como verificar os logs de uma função Lambda no CloudWatch via CLI?<br><strong>R:</strong></p>
+<pre><code class="language-bash"># Listar log streams (invocações)
+aws logs describe-log-streams \
+  --log-group-name /aws/lambda/MinhaFuncao \
+  --order-by LastEventTime --descending --max-items 5
+
+# Ver logs da última invocação
+aws logs get-log-events \
+  --log-group-name /aws/lambda/MinhaFuncao \
+  --log-stream-name &quot;2024/01/01/[$LATEST]abc123&quot; \
+  --query &#39;events[*].message&#39;</code></pre>
+<hr>
+<p><strong>P:</strong> Como criar um DynamoDB table com GSI via Terraform?<br><strong>R:</strong></p>
+<pre><code class="language-hcl">resource &quot;aws_dynamodb_table&quot; &quot;orders&quot; {
+  name         = &quot;Orders&quot;
+  billing_mode = &quot;PAY_PER_REQUEST&quot;
+  hash_key     = &quot;orderId&quot;
+  range_key    = &quot;createdAt&quot;
+  attribute { name = &quot;orderId&quot;   type = &quot;S&quot; }
+  attribute { name = &quot;createdAt&quot; type = &quot;S&quot; }
+  attribute { name = &quot;userId&quot;    type = &quot;S&quot; }
+
+  global_secondary_index {
+    name            = &quot;UserIdIndex&quot;
+    hash_key        = &quot;userId&quot;
+    range_key       = &quot;createdAt&quot;
+    projection_type = &quot;ALL&quot;
+  }
+}</code></pre>
+<hr>
+<p><strong>P:</strong> Como configurar CORS no API Gateway via Terraform?<br><strong>R:</strong></p>
+<pre><code class="language-hcl">resource &quot;aws_api_gateway_method&quot; &quot;options&quot; {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.resource.id
+  http_method   = &quot;OPTIONS&quot;
+  authorization = &quot;NONE&quot;
+}
+resource &quot;aws_api_gateway_integration&quot; &quot;options&quot; {
+  http_method = aws_api_gateway_method.options.http_method
+  type        = &quot;MOCK&quot;
+  request_templates = { &quot;application/json&quot; = &quot;{\&quot;statusCode\&quot;: 200}&quot; }
+}
+# + method_response e integration_response com headers CORS</code></pre>
+<hr>
+<p><strong>P:</strong> Como criar um CloudWatch Alarm para monitorar erros da Lambda e enviar para SNS?<br><strong>R:</strong></p>
+<pre><code class="language-bash"># Criar tópico SNS
+aws sns create-topic --name lambda-errors-alert
+
+# Criar alarme
+aws cloudwatch put-metric-alarm \
+  --alarm-name &quot;LambdaErrors-MinhaFuncao&quot; \
+  --metric-name Errors --namespace AWS/Lambda \
+  --dimensions Name=FunctionName,Value=MinhaFuncao \
+  --statistic Sum --period 60 \
+  --threshold 5 --comparison-operator GreaterThanOrEqualToThreshold \
+  --evaluation-periods 1 \
+  --alarm-actions arn:aws:sns:us-east-1:ACCOUNT:lambda-errors-alert</code></pre>
+<hr>
+<p><strong>P:</strong> Como fazer limpeza (cleanup) de recursos Terraform para evitar custos?<br><strong>R:</strong></p>
+<pre><code class="language-bash"># Destruir todos os recursos do state
+terraform destroy
+
+# Verificar o que será destruído antes
+terraform plan -destroy
+
+# Forçar destruição de bucket S3 com objetos (force_destroy=true no .tf)
+# ou via CLI:
+aws s3 rm s3://meu-bucket --recursive
+aws s3api delete-bucket --bucket meu-bucket
+
+# Verificar recursos remanescentes na conta
+aws resourcegroupstaggingapi get-resources \
+  --tag-filters Key=Environment,Values=lab</code></pre>
+<hr>
+<p><strong>P:</strong> Como diagnosticar por que uma Lambda não consegue acessar uma instância RDS em VPC?<br><strong>R:</strong> Checklist: (1) Lambda tem VPC config com subnet privada? (2) Security Group do Lambda tem outbound na porta 3306? (3) Security Group RDS tem inbound da porta 3306 <strong>do SG da Lambda</strong> (não do CIDR)? (4) Subnets da Lambda roteiam para NAT GW (para chamar APIs AWS)? (5) RDS está na mesma VPC que a Lambda? (6) RDS endpoint correto (não o IP)?</p>
+<hr>
+<p><strong>P:</strong> Como criar um ECS Fargate Service com Terraform?<br><strong>R:</strong></p>
+<pre><code class="language-hcl">resource &quot;aws_ecs_service&quot; &quot;app&quot; {
+  name            = &quot;my-app&quot;
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.app.arn
+  desired_count   = 2
+  launch_type     = &quot;FARGATE&quot;
+  network_configuration {
+    subnets          = [aws_subnet.private.id]
+    security_groups  = [aws_security_group.app.id]
+    assign_public_ip = false
+  }
+  load_balancer {
+    target_group_arn = aws_lb_target_group.app.arn
+    container_name   = &quot;app&quot;
+    container_port   = 8080
+  }
+}</code></pre>
+<hr>
+<p><strong>P:</strong> Como usar o AWS CLI para testar uma IAM Policy sem aplicar?<br><strong>R:</strong></p>
+<pre><code class="language-bash"># Simula se uma ação é permitida para o principal
+aws iam simulate-principal-policy \
+  --policy-source-arn arn:aws:iam::ACCOUNT:role/MinhaRole \
+  --action-names &quot;s3:GetObject&quot; \
+  --resource-arns &quot;arn:aws:s3:::meu-bucket/*&quot;
+
+# Resultado: allowed/denied + qual policy bloqueou
+# Também útil: iam simulate-custom-policy para testar policy JSON diretamente</code></pre>
+<hr>
+<p><strong>P:</strong> Como fazer o deploy de uma aplicação Lambda com SAM e criar API Gateway automaticamente?<br><strong>R:</strong></p>
+<pre><code class="language-yaml"># template.yaml
+AWSTemplateFormatVersion: &#39;2010-09-09&#39;
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  HelloFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get</code></pre>
+<pre><code class="language-bash">sam build &amp;&amp; sam deploy --guided</code></pre>
+<hr>
+<p><strong>P:</strong> Qual é o comando CLI para listar instâncias EC2 em execução por região?<br><strong>R:</strong></p>
+<pre><code class="language-bash"># Instâncias em running na região default
+aws ec2 describe-instances \
+  --filters &quot;Name=instance-state-name,Values=running&quot; \
+  --query &#39;Reservations[*].Instances[*].[InstanceId,InstanceType,PublicIpAddress,Tags[?Key==`Name`].Value|[0]]&#39; \
+  --output table
+
+# Todas as regiões (script bash)
+for region in $(aws ec2 describe-regions --query &#39;Regions[*].RegionName&#39; --output text); do
+  echo &quot;Region: $region&quot;
+  aws ec2 describe-instances --region $region --filters &quot;Name=instance-state-name,Values=running&quot; --query &#39;Reservations[*].Instances[*].InstanceId&#39; --output text
+done</code></pre>
+<hr>
+<p><strong>P:</strong> Como configurar S3 Lifecycle Policy para transição para Glacier via CLI?<br><strong>R:</strong></p>
+<pre><code class="language-bash">aws s3api put-bucket-lifecycle-configuration \
+  --bucket meu-bucket \
+  --lifecycle-configuration &#39;{
+    &quot;Rules&quot;: [{
+      &quot;ID&quot;: &quot;move-to-glacier&quot;,
+      &quot;Status&quot;: &quot;Enabled&quot;,
+      &quot;Filter&quot;: {&quot;Prefix&quot;: &quot;logs/&quot;},
+      &quot;Transitions&quot;: [
+        {&quot;Days&quot;: 30, &quot;StorageClass&quot;: &quot;STANDARD_IA&quot;},
+        {&quot;Days&quot;: 90, &quot;StorageClass&quot;: &quot;GLACIER&quot;}
+      ],
+      &quot;Expiration&quot;: {&quot;Days&quot;: 365}
+    }]
+  }&#39;</code></pre>
+<hr>
+<p><strong>P:</strong> Como debugar um erro 403 Forbidden no S3?<br><strong>R:</strong> Checklist: (1) Bucket Policy bloqueia? <code>aws s3api get-bucket-policy --bucket bucket</code>. (2) Block Public Access habilitado? <code>aws s3api get-public-access-block --bucket bucket</code>. (3) IAM Policy da role/user tem <code>s3:GetObject</code>? <code>aws iam simulate-principal-policy</code>. (4) ACL do objeto? <code>aws s3api get-object-acl --bucket bucket --key key</code>. (5) KMS key: a role tem <code>kms:Decrypt</code>?</p>
+<hr>
+<p><strong>P:</strong> Qual é o comando para escalar manualmente um ECS Service?<br><strong>R:</strong></p>
+<pre><code class="language-bash"># Aumentar desired count para 5
+aws ecs update-service \
+  --cluster meu-cluster \
+  --service meu-servico \
+  --desired-count 5
+
+# Verificar deploy
+aws ecs describe-services \
+  --cluster meu-cluster \
+  --services meu-servico \
+  --query &#39;services[0].[runningCount,desiredCount,deployments]&#39;</code></pre>
+<hr>
+<p><strong>P:</strong> Como configurar CloudFront com S3 origin usando OAC (Origin Access Control)?<br><strong>R:</strong></p>
+<pre><code class="language-hcl">resource &quot;aws_cloudfront_origin_access_control&quot; &quot;oac&quot; {
+  name = &quot;my-oac&quot;
+  origin_access_control_origin_type = &quot;s3&quot;
+  signing_behavior = &quot;always&quot;
+  signing_protocol = &quot;sigv4&quot;
+}
+# Na distribuição CloudFront: origin com origin_access_control_id = oac.id
+# Bucket Policy: permitir apenas cloudfront.amazonaws.com com condition
+# &quot;aws:SourceArn&quot;: &quot;arn:aws:cloudfront::ACCOUNT:distribution/DISTID&quot;</code></pre>
+<hr>
+<p><strong>P:</strong> Como verificar o custo estimado de recursos provisionados pelo Terraform?<br><strong>R:</strong> Opção 1: <strong>Infracost</strong> (tool open-source): <code>infracost breakdown --path .</code> — mostra custo mensal estimado por recurso Terraform. Opção 2: <strong>AWS Pricing Calculator</strong> (manual). Opção 3: <strong>Terraform Cloud</strong> tem cost estimation integrado. Opção 4: após <code>terraform apply</code>, verificar AWS Cost Explorer com tags do projeto.</p>
+<hr>
+<p><strong>P:</strong> Como criar um Secret no Secrets Manager e recuperar com Lambda?<br><strong>R:</strong></p>
+<pre><code class="language-bash"># Criar secret
+aws secretsmanager create-secret \
+  --name prod/db/credentials \
+  --secret-string &#39;{&quot;username&quot;:&quot;admin&quot;,&quot;password&quot;:&quot;supersecret&quot;}&#39;</code></pre>
+<pre><code class="language-python"># Lambda Python
+import boto3, json
+def lambda_handler(event, context):
+    sm = boto3.client(&#39;secretsmanager&#39;)
+    secret = sm.get_secret_value(SecretId=&#39;prod/db/credentials&#39;)
+    creds = json.loads(secret[&#39;SecretString&#39;])
+    # usar creds[&#39;username&#39;] e creds[&#39;password&#39;]</code></pre>
+<p>Lambda Role precisa de <code>secretsmanager:GetSecretValue</code>.</p>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./153-28-labs-praticos-cheatsheet.html">Aula anterior</a>
+      <a href="./155-28-labs-praticos-lab.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

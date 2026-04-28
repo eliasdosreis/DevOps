@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Prático — VPC: Redes Privadas, NAT Gateway e Security (Módulo 05) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#047-09-vpc-e-redes-labs-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 09 - VPC e Redes Labs - 6 min - 09-VPC-e-Redes-Labs/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1520869562399-e772f042f422?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 09 - VPC e Redes Labs" loading="lazy">
+      <figcaption>Labs de rede deixam claro onde o trafego passa e onde ele deve ser bloqueado.</figcaption>
+    </figure>
+    <h1>Lab Prático — VPC: Redes Privadas, NAT Gateway e Security (Módulo 05)</h1>
+<blockquote><p><strong>Região:</strong> us-east-1 | <strong>Custo estimado:</strong> ~$0.05 (NAT Gateway $0.045/h — destruir em &lt; 1h)<br><strong>Pré-requisitos:</strong> AWS CLI configurado, Terraform &gt;= 1.5</p></blockquote>
+<hr>
+<h2>Objetivo</h2>
+<p>Criar uma VPC completa com subnets públicas e privadas, NAT Gateway, bastion host, Security Groups e NACLs — replicando arquitetura típica de produção.</p>
+<hr>
+<h2>Parte 1 — Terraform: VPC Completa</h2>
+<pre><code class="language-hcl"># main.tf
+terraform {
+  required_version = &quot;&gt;= 1.5&quot;
+  required_providers {
+    aws = {
+      source  = &quot;hashicorp/aws&quot;
+      version = &quot;~&gt; 5.0&quot;
+    }
+  }
+}
+
+provider &quot;aws&quot; { region = &quot;us-east-1&quot; }
+
+locals {
+  prefix = &quot;lab-vpc&quot;
+}
+
+# VPC principal
+resource &quot;aws_vpc&quot; &quot;lab&quot; {
+  cidr_block           = &quot;10.0.0.0/16&quot;
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+  tags = { Name = &quot;${local.prefix}&quot; }
+}
+
+# Subnets públicas (2 AZs para HA)
+resource &quot;aws_subnet&quot; &quot;public_a&quot; {
+  vpc_id                  = aws_vpc.lab.id
+  cidr_block              = &quot;10.0.1.0/24&quot;
+  availability_zone       = &quot;us-east-1a&quot;
+  map_public_ip_on_launch = true
+  tags = { Name = &quot;${local.prefix}-public-a&quot;, Tier = &quot;public&quot; }
+}
+
+resource &quot;aws_subnet&quot; &quot;public_b&quot; {
+  vpc_id                  = aws_vpc.lab.id
+  cidr_block              = &quot;10.0.2.0/24&quot;
+  availability_zone       = &quot;us-east-1b&quot;
+  map_public_ip_on_launch = true
+  tags = { Name = &quot;${local.prefix}-public-b&quot;, Tier = &quot;public&quot; }
+}
+
+# Subnets privadas (2 AZs)
+resource &quot;aws_subnet&quot; &quot;private_a&quot; {
+  vpc_id            = aws_vpc.lab.id
+  cidr_block        = &quot;10.0.10.0/24&quot;
+  availability_zone = &quot;us-east-1a&quot;
+  tags = { Name = &quot;${local.prefix}-private-a&quot;, Tier = &quot;private&quot; }
+}
+
+resource &quot;aws_subnet&quot; &quot;private_b&quot; {
+  vpc_id            = aws_vpc.lab.id
+  cidr_block        = &quot;10.0.11.0/24&quot;
+  availability_zone = &quot;us-east-1b&quot;
+  tags = { Name = &quot;${local.prefix}-private-b&quot;, Tier = &quot;private&quot; }
+}
+
+# Internet Gateway
+resource &quot;aws_internet_gateway&quot; &quot;lab&quot; {
+  vpc_id = aws_vpc.lab.id
+  tags   = { Name = &quot;${local.prefix}-igw&quot; }
+}
+
+# Elastic IP para NAT Gateway
+resource &quot;aws_eip&quot; &quot;nat&quot; {
+  domain = &quot;vpc&quot;
+  tags   = { Name = &quot;${local.prefix}-nat-eip&quot; }
+}
+
+# NAT Gateway na subnet pública a
+resource &quot;aws_nat_gateway&quot; &quot;lab&quot; {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public_a.id
+  tags          = { Name = &quot;${local.prefix}-natgw&quot; }
+  depends_on    = [aws_internet_gateway.lab]
+}
+
+# Route table pública
+resource &quot;aws_route_table&quot; &quot;public&quot; {
+  vpc_id = aws_vpc.lab.id
+  route {
+    cidr_block = &quot;0.0.0.0/0&quot;
+    gateway_id = aws_internet_gateway.lab.id
+  }
+  tags = { Name = &quot;${local.prefix}-rt-public&quot; }
+}
+
+resource &quot;aws_route_table_association&quot; &quot;public_a&quot; {
+  subnet_id      = aws_subnet.public_a.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource &quot;aws_route_table_association&quot; &quot;public_b&quot; {
+  subnet_id      = aws_subnet.public_b.id
+  route_table_id = aws_route_table.public.id
+}
+
+# Route table privada → NAT
+resource &quot;aws_route_table&quot; &quot;private&quot; {
+  vpc_id = aws_vpc.lab.id
+  route {
+    cidr_block     = &quot;0.0.0.0/0&quot;
+    nat_gateway_id = aws_nat_gateway.lab.id
+  }
+  tags = { Name = &quot;${local.prefix}-rt-private&quot; }
+}
+
+resource &quot;aws_route_table_association&quot; &quot;private_a&quot; {
+  subnet_id      = aws_subnet.private_a.id
+  route_table_id = aws_route_table.private.id
+}
+
+resource &quot;aws_route_table_association&quot; &quot;private_b&quot; {
+  subnet_id      = aws_subnet.private_b.id
+  route_table_id = aws_route_table.private.id
+}
+
+# Security Group: Bastion Host
+resource &quot;aws_security_group&quot; &quot;bastion&quot; {
+  name   = &quot;${local.prefix}-bastion-sg&quot;
+  vpc_id = aws_vpc.lab.id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = &quot;tcp&quot;
+    cidr_blocks = [&quot;0.0.0.0/0&quot;]  # Em produção: IP específico
+    description = &quot;SSH acesso&quot;
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = &quot;-1&quot;
+    cidr_blocks = [&quot;0.0.0.0/0&quot;]
+  }
+}
+
+# Security Group: Instâncias privadas — só aceita SSH do Bastion
+resource &quot;aws_security_group&quot; &quot;private_app&quot; {
+  name   = &quot;${local.prefix}-app-sg&quot;
+  vpc_id = aws_vpc.lab.id
+
+  ingress {
+    from_port       = 22
+    to_port         = 22
+    protocol        = &quot;tcp&quot;
+    security_groups = [aws_security_group.bastion.id]
+    description     = &quot;SSH apenas pelo bastion&quot;
+  }
+
+  ingress {
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = &quot;tcp&quot;
+    security_groups = [aws_security_group.bastion.id]
+    description     = &quot;App port&quot;
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = &quot;-1&quot;
+    cidr_blocks = [&quot;0.0.0.0/0&quot;]
+  }
+}
+
+# NACL para subnet privada
+resource &quot;aws_network_acl&quot; &quot;private&quot; {
+  vpc_id     = aws_vpc.lab.id
+  subnet_ids = [aws_subnet.private_a.id, aws_subnet.private_b.id]
+
+  # Permitir SSH vindo da VPC (10.0.0.0/16)
+  ingress {
+    rule_no    = 100
+    action     = &quot;allow&quot;
+    protocol   = &quot;tcp&quot;
+    cidr_block = &quot;10.0.0.0/16&quot;
+    from_port  = 22
+    to_port    = 22
+  }
+
+  # Permitir portas efêmeras (respostas HTTP/HTTPS)
+  ingress {
+    rule_no    = 200
+    action     = &quot;allow&quot;
+    protocol   = &quot;tcp&quot;
+    cidr_block = &quot;0.0.0.0/0&quot;
+    from_port  = 1024
+    to_port    = 65535
+  }
+
+  # Bloquear acesso direto HTTP de fora da VPC
+  ingress {
+    rule_no    = 300
+    action     = &quot;deny&quot;
+    protocol   = &quot;tcp&quot;
+    cidr_block = &quot;0.0.0.0/0&quot;
+    from_port  = 80
+    to_port    = 80
+  }
+
+  egress {
+    rule_no    = 100
+    action     = &quot;allow&quot;
+    protocol   = &quot;-1&quot;
+    cidr_block = &quot;0.0.0.0/0&quot;
+    from_port  = 0
+    to_port    = 0
+  }
+
+  tags = { Name = &quot;${local.prefix}-private-nacl&quot; }
+}
+
+output &quot;vpc_id&quot;         { value = aws_vpc.lab.id }
+output &quot;public_a_id&quot;    { value = aws_subnet.public_a.id }
+output &quot;private_a_id&quot;   { value = aws_subnet.private_a.id }
+output &quot;nat_eip&quot;        { value = aws_eip.nat.public_ip }</code></pre>
+<hr>
+<h2>Parte 2 — Verificar e Testar a Rede</h2>
+<pre><code class="language-bash">terraform init &amp;&amp; terraform apply -auto-approve
+
+VPC_ID=$(terraform output -raw vpc_id)
+PUB_SUBNET=$(terraform output -raw public_a_id)
+PRIV_SUBNET=$(terraform output -raw private_a_id)
+NAT_IP=$(terraform output -raw nat_eip)
+
+echo &quot;VPC: $VPC_ID&quot;
+echo &quot;NAT EIP: $NAT_IP&quot;
+
+# Verificar route tables
+aws ec2 describe-route-tables \
+  --filters &quot;Name=vpc-id,Values=$VPC_ID&quot; \
+  --query &#39;RouteTables[*].[RouteTableId, Routes[*].[DestinationCidrBlock, GatewayId, NatGatewayId]]&#39; \
+  --output json | python3 -m json.tool | head -60
+
+# Verificar NACLs
+aws ec2 describe-network-acls \
+  --filters &quot;Name=vpc-id,Values=$VPC_ID&quot; \
+  --query &#39;NetworkAcls[*].[NetworkAclId, Entries[*].[RuleNumber, RuleAction, CidrBlock]]&#39; \
+  --output table
+
+# Verificar Security Groups
+aws ec2 describe-security-groups \
+  --filters &quot;Name=vpc-id,Values=$VPC_ID&quot; \
+  --query &#39;SecurityGroups[*].[GroupName, IpPermissions[*].[IpProtocol, FromPort, IpRanges[0].CidrIp]]&#39; \
+  --output json | python3 -m json.tool
+
+# VPC Flow Logs (recomendado em prod)
+FLOW_LOG_BUCKET=&quot;lab-vpc-logs-$(aws sts get-caller-identity --query Account --output text)&quot;
+aws s3api create-bucket --bucket &quot;$FLOW_LOG_BUCKET&quot;
+
+aws ec2 create-flow-logs \
+  --resource-type VPC \
+  --resource-ids &quot;$VPC_ID&quot; \
+  --traffic-type ALL \
+  --log-destination-type s3 \
+  --log-destination &quot;arn:aws:s3:::${FLOW_LOG_BUCKET}&quot;
+
+echo &quot;Flow Logs habilitados para VPC $VPC_ID&quot;</code></pre>
+<hr>
+<h2>Limpeza</h2>
+<pre><code class="language-bash"># Desabilitar e deletar Flow Logs
+FLOW_LOG_ID=$(aws ec2 describe-flow-logs \
+  --filter &quot;Name=resource-id,Values=$VPC_ID&quot; \
+  --query &#39;FlowLogs[0].FlowLogId&#39; --output text)
+aws ec2 delete-flow-logs --flow-log-ids &quot;$FLOW_LOG_ID&quot;
+aws s3 rm &quot;s3://${FLOW_LOG_BUCKET}&quot; --recursive
+aws s3api delete-bucket --bucket &quot;$FLOW_LOG_BUCKET&quot;
+
+# Destruir infraestrutura Terraform
+terraform destroy -auto-approve</code></pre>
+<hr>
+<h2>O Que Você Aprendeu</h2>
+<ul><li>VPC padrão: <code>10.0.0.0/16</code> → subnets <code>/24</code> = 251 hosts úteis por subnet</li><li>NAT Gateway: PAGO por hora e por GB. Alternativa barata: NAT Instance (EC2 t3.micro)</li><li>Security Group vs NACL: SG stateful (só ALLOW); NACL stateless (ALLOW e DENY, requer regra de retorno)</li><li>Bastion Host: ponto único de entrada SSH na subnet pública; Session Manager é alternativa sem bastion</li><li>VPC Flow Logs: auditoria de tráfego de rede; essencial para troubleshooting e compliance</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./046-08-vpc-e-redes-readme.html">Aula anterior</a>
+      <a href="./048-09-vpc-e-redes-labs-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

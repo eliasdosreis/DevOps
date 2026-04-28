@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#017-modulo-04-config-01-configmap">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - config - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - config" loading="lazy">
+      <figcaption>ConfigMaps e Secrets separam configuracao e dados sensiveis da imagem.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um ConfigMap. Ele desacopla as configura��es (textos,
+# vari�veis, e at� arquivos inteiros) da imagem Docker da sua aplica��o.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Voc� tem um rob� de limpeza aspirador (O seu Container Docker).
+# Voc� precisa que ele limpe a casa �s &quot;15h&quot; na pot�ncia &quot;M�xima&quot;.
+# Solu��o Jr: Colar um post-it DENTRO do circuito interno do r�bo colado na placa m�e.
+# Se quiser mudar para as 16h, voc� vai ter que jogar fora o rob� e construir outro
+# na f�brica (Re-Buildar a Imagem Docker `1.0` pra `2.0`). Isso demora horas na CI/CD.
+#
+# Solu��o Senior: Voc� cola o Post-it na &quot;Pareda da Cozinha&quot;. O Rob� acorda,
+# l� a parede e faz o que est� l�. Se amanh� precisar mudar a hora, voc� apenas
+# troca o post-it da parede sem mexer no Rob�. O &quot;Post-it da parede&quot; � o ConfigMap.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# ConfigMap � um objeto/dicion�rio Key-Value da API focado em armazenar 
+# dados N�O confidenciais. Podem ser consumidos injetados em Pods como
+# Vari�veis de Ambiente (Env Vars), Argumentos de Linha de Comando, 
+# ou arquivos f�sicos montados no disco (Volumes).
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configuracoes-da-minha-loja
+  namespace: meu-primeiro-projeto
+# `data` cont�m o dicion�rio limpo. Chave: Valor.
+data:
+  # Dados simples, ideais para Envs:
+  idioma_padrao: &quot;pt-BR&quot;
+  tema_do_site: &quot;escuro&quot;
+  limite_de_requisicoes: &quot;5000&quot;
+  
+  # Magia: Podemos injetar ARQUIVOS grandes inteiros no YAML usando &#39; | &#39;
+  # Isso evita voc� precisar &quot;Embutir&quot; arquivos est�ticos em imagens Nginx/Node.
+  nginx-custom.conf: |
+    server {
+        listen 80;
+        server_name _;
+        location / {
+            root /usr/share/nginx/html;
+            index index.html;
+        }
+    }
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Cole o post-it na parede do servidor:
+#    kubectl apply -f 01-configmap.yaml
+#
+# 2. Leia o post-it do jeito bonitinho para humanos:
+#    kubectl describe configmap configuracoes-da-minha-loja -n meu-primeiro-projeto
+#    (Ele vai literalmente printar as keys e o arquivo GIGANTE dentro do log).
+#
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# O erro fatal do Configmap � criar ele num `namespace` diferente do Pod que precisar� 
+# consumir o dado! Configmaps s�o objetos Nativos em nomes isolados. 
+# Se um App do backend pedir os dados no namespace `producao`, o Configmap TEM que 
+# estar criado l� obrigatoriamente. O Kubelet vai travar a subida do pod e cuspir 
+# &quot;ConfigMapNotfound&quot; se ele olhar pra parede errada.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# Configmaps s�o est�ticos se for�ados como Vari�veis de ambiente na &quot;Spec&quot;. 
+# Se a sua aplica��o Java subiu lendo o configmap e voc� editar o ConfigMap agora e 
+# dar `kubectl apply` mudando o limite de 5000 para 6000... o Java N�O ser� atualizado (!).
+# EnvsVars s�o passadas no `boot` do container no kernel Linux (PID 1).
+# Para atualiza��es &quot;HotReload&quot; vivas, o Senior NUNCA usa `EnvVar`. Ele injeta o 
+# ConfigMap na Spec como um *Volume* de arquivo no HD do cont�iner. O Kubelet a cada 
+# 1 minuto atualiza os arquivos na pasta sem restartar o Pod, e o Java (se for feito pra isso)
+# ler� o arquivo novo na branch e aplicar� sozinho.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se eu tiver um password do meu banco de dados Postgres. Eu posso 
+# colocar no seu yaml do Configmap na chave `senha: 12345` tranquilamente j� 
+# que n�s codificamos ele em Base64 para ficar de dificil leitura na tela?&quot;
+# Resposta Esperada: &quot;Nunca! Configmaps s�o por design artefatos livres em plain-text,
+# sem tratamento do Control-Plane de ofusca��o t�cnica no banco etcd. Para senhas
+# sens�veis e certificados chaves SSL (Mesmo que em base64) usa-se obrigatoriamente 
+# o recurso `Secret`, que desliga a exibi��o de dumps, pro�be Logs padr�o do sistema 
+# e ativa encripta��o em repouso real em alto-n�vel (KMS Encryption Provider).&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./016-modulo-03-rede-04-ingress.html">Aula anterior</a>
+      <a href="./018-modulo-04-config-02-secret.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

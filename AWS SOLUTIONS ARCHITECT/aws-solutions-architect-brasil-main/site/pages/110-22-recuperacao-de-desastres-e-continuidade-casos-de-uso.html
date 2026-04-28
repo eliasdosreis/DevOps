@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Casos de Uso - Recuperacao de Desastres e Continuidade - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#110-22-recuperacao-de-desastres-e-continuidade-casos-de-uso">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 22 - Recuperacao de Desastres e Continuidade - 2 min - 22-Recuperacao-de-Desastres-e-Continuidade/casos-de-uso.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 22 - Recuperacao de Desastres e Continuidade" loading="lazy">
+      <figcaption>DR e continuidade comecam por RTO/RPO antes de escolher multi-AZ ou multi-region.</figcaption>
+    </figure>
+    <h1>Casos de Uso - Recuperacao de Desastres e Continuidade</h1>
+<h2>Caso 1: E-commerce com pico sazonal</h2>
+<p>Cenario:</p>
+<ul><li>99.95% de disponibilidade</li><li>RTO menor que 15 minutos</li><li>RPO menor que 5 minutos</li></ul>
+<p>Arquitetura recomendada:</p>
+<ul><li>Warm Standby em segunda regiao</li><li>Aurora Global Database</li><li>S3 com CRR</li><li>Route 53 failover com health checks</li></ul>
+<p>Por que funciona:</p>
+<ul><li>atende RTO/RPO baixos sem custo extremo de active/active</li></ul>
+<h2>Caso 2: ERP interno com baixo orcamento</h2>
+<p>Cenario:</p>
+<ul><li>pode ficar ate 4 horas indisponivel</li><li>aceita perda de ate 1 hora de dados</li></ul>
+<p>Arquitetura recomendada:</p>
+<ul><li>Backup and Restore</li><li>AWS Backup com politicas diarias e retencao</li><li>snapshots EBS e RDS cross-region</li></ul>
+<p>Por que funciona:</p>
+<ul><li>menor custo para requisito de negocio menos restritivo</li></ul>
+<h2>Caso 3: Plataforma de pagamentos</h2>
+<p>Cenario:</p>
+<ul><li>indisponibilidade quase zero</li><li>compliance e trilha de auditoria</li></ul>
+<p>Arquitetura recomendada:</p>
+<ul><li>Active/Active multi-region</li><li>DynamoDB Global Tables</li><li>API Gateway + Lambda em duas regioes</li><li>Route 53 latency/failover</li></ul>
+<p>Por que funciona:</p>
+<ul><li>reduz impacto de falha regional e melhora latencia global</li></ul>
+<h2>Caso 4: Migracao de datacenter para AWS</h2>
+<p>Cenario:</p>
+<ul><li>recuperar rapidamente VMs legadas</li><li>pouca mudanca na aplicacao</li></ul>
+<p>Arquitetura recomendada:</p>
+<ul><li>AWS Elastic Disaster Recovery</li><li>replicacao continua on-premises -&gt; AWS</li><li>runbook de cutover e failback</li></ul>
+<p>Por que funciona:</p>
+<ul><li>acelera estrategia de DR sem refatoracao imediata</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./109-21-migracao-e-transferencia-readme.html">Aula anterior</a>
+      <a href="./111-22-recuperacao-de-desastres-e-continuidade-cheatsheet.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

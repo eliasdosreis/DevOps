@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questões — Introdução SAA-C03 - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#010-01-introducao-saa-c03-questoes">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 01 - Introducao SAA C03 - 11 min - 01-Introducao-SAA-C03/questoes.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 01 - Introducao SAA C03" loading="lazy">
+      <figcaption>Estrategia de prova: leia o cenario, encontre os requisitos e elimine distratores.</figcaption>
+    </figure>
+    <aside class="official-note">
+    <strong>Atualização oficial SAA-C03 conferida em 2026-04-28</strong>
+    <p>Este arquivo fonte menciona pesos antigos em algum trecho. Para estudo de prova, use o guia oficial atual: Secure Architectures 30%, Resilient Architectures 26%, High-Performing Architectures 24% e Cost-Optimized Architectures 20%.</p>
+    <p><a href="https://docs.aws.amazon.com/aws-certification/latest/solutions-architect-associate-03/solutions-architect-associate-03.html">Guia oficial AWS Certified Solutions Architect - Associate (SAA-C03)</a></p>
+  </aside><h1>Questões — Introdução SAA-C03</h1>
+<h2>Questão 1</h2>
+<p><strong>Domínio:</strong> Design Resilient Architectures<br><strong>Dificuldade:</strong> Fácil</p>
+<p>Uma analista está começando a estudar para o SAA-C03 e quer priorizar o domínio com maior peso para montar as primeiras revisões. Qual domínio deve receber a maior atenção inicial?</p>
+<ul><li>A) Design Secure Applications and Architectures</li><li>B) Design Cost-Optimized Architectures</li><li>C) Design Resilient Architectures</li><li>D) Design High-Performing Architectures</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: C</strong></p>
+<p>Design Resilient Architectures representa 30% do exame, o maior peso entre os quatro domínios. Por isso, costuma ser um bom ponto de partida para revisão estratégica. A alternativa D é próxima, mas High-Performing tem 28%. A alternativa A tem 24% e a B 18%.</p>
+<p><strong>Conceito-chave:</strong> pesos oficiais dos domínios do SAA-C03</p></details>
+<h2>Questão 2</h2>
+<p><strong>Domínio:</strong> Design High-Performing Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Uma equipe acostumada com o CLF-C02 está migrando seu plano de estudos para o SAA-C03. O gerente técnico quer entender a principal diferença de profundidade entre os exames. Qual afirmação descreve melhor essa diferença?</p>
+<ul><li>A) O SAA-C03 cobra apenas nomes de serviços, enquanto o CLF-C02 cobra cenários</li><li>B) O SAA-C03 exige decisões arquiteturais com trade-offs, enquanto o CLF-C02 é mais introdutório</li><li>C) O SAA-C03 não cobre segurança, apenas computação e redes</li><li>D) O CLF-C02 e o SAA-C03 têm exatamente o mesmo foco, mudando apenas o idioma</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: B</strong></p>
+<p>O SAA-C03 exige escolha contextual entre serviços e padrões arquiteturais, considerando disponibilidade, segurança, desempenho e custo. O CLF-C02 trabalha mais no reconhecimento conceitual dos serviços. A alternativa A inverte os papéis. A alternativa C é falsa porque segurança tem peso relevante. A alternativa D ignora a diferença real de profundidade.</p>
+<p><strong>Conceito-chave:</strong> diferença entre prova introdutória e prova associate</p></details>
+<h2>Questão 3</h2>
+<p><strong>Domínio:</strong> Design Cost-Optimized Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Uma startup tem equipe enxuta e precisa lançar uma API com o menor esforço operacional possível. Durante uma revisão para o SAA-C03, um arquiteto usa esse cenário para explicar como a prova pensa. Qual abordagem é mais alinhada com a lógica da AWS em questões do exame?</p>
+<ul><li>A) Priorizar sempre EC2 para ter controle total do ambiente</li><li>B) Priorizar serviços gerenciados quando eles atendem ao requisito com menos administração</li><li>C) Evitar qualquer serviço serverless por causa de limites de timeout</li><li>D) Escolher a opção com maior performance teórica, independentemente do custo</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: B</strong></p>
+<p>Em cenários que pedem menor esforço operacional, a AWS normalmente favorece serviços gerenciados como Lambda, API Gateway, RDS, DynamoDB, S3 e ECS Fargate, desde que atendam aos requisitos técnicos. A alternativa A aumenta a carga operacional. A alternativa C generaliza um limite real, mas fora de contexto. A alternativa D ignora o equilíbrio entre custo e necessidade.</p>
+<p><strong>Conceito-chave:</strong> least operational overhead</p></details>
+<h2>Questão 4</h2>
+<p><strong>Domínio:</strong> Design Secure Applications and Architectures<br><strong>Dificuldade:</strong> Fácil</p>
+<p>Qual conjunto representa melhor os serviços com maior recorrência no SAA-C03 e que, por isso, deveriam receber estudo aprofundado nas primeiras semanas?</p>
+<ul><li>A) Snowmobile, Braket, Ground Station e GameLift</li><li>B) EC2, S3, VPC, IAM, RDS, DynamoDB, Lambda e Route 53</li><li>C) Device Farm, CodeArtifact, Honeycode e WorkSpaces</li><li>D) AWS Wickr, IQ, Managed Blockchain e Panorama</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: B</strong></p>
+<p>Esses serviços aparecem com alta frequência porque formam o núcleo das decisões arquiteturais cobradas. As demais alternativas listam serviços que podem aparecer pontualmente, mas não representam o centro do exame.</p>
+<p><strong>Conceito-chave:</strong> priorização de estudo por incidência</p></details>
+<h2>Questão 5</h2>
+<p><strong>Domínio:</strong> Design Resilient Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Durante um grupo de estudos, um aluno afirma que uma arquitetura Multi-AZ já resolve qualquer requisito de continuidade de negócio. Qual resposta corrige melhor essa afirmação?</p>
+<ul><li>A) Multi-AZ cobre falha de zona, mas não necessariamente um desastre regional</li><li>B) Multi-AZ é equivalente a Multi-Region</li><li>C) Multi-AZ só se aplica a aplicações serverless</li><li>D) Multi-AZ elimina a necessidade de backup</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: A</strong></p>
+<p>Multi-AZ eleva disponibilidade dentro de uma região, protegendo contra falhas de zona de disponibilidade. No entanto, um evento regional ainda pode exigir estratégia multi-region. A alternativa B confunde conceitos. A alternativa C é falsa. A alternativa D ignora que backup e DR continuam necessários.</p>
+<p><strong>Conceito-chave:</strong> diferença entre HA regional e DR multi-region</p></details>
+<h2>Questão 6</h2>
+<p><strong>Domínio:</strong> Design High-Performing Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Uma questão do exame descreve uma aplicação global HTTP que precisa reduzir latência para usuários finais e também cachear conteúdo estático em edge locations. Qual serviço tende a ser a melhor resposta?</p>
+<ul><li>A) AWS Global Accelerator</li><li>B) Amazon CloudFront</li><li>C) AWS Direct Connect</li><li>D) Amazon EventBridge</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: B</strong></p>
+<p>CloudFront é a CDN da AWS e oferece cache em edge locations, sendo a escolha mais adequada para conteúdo HTTP com distribuição global. Global Accelerator melhora roteamento global para aplicações TCP/UDP e também HTTP, mas não é um cache edge. Direct Connect é conectividade privada. EventBridge não se aplica.</p>
+<p><strong>Conceito-chave:</strong> CloudFront vs Global Accelerator</p></details>
+<h2>Questão 7</h2>
+<p><strong>Domínio:</strong> Design Secure Applications and Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Um cenário pede rotação automática de credenciais de banco de dados e integração nativa com KMS. Qual serviço costuma ser mais alinhado ao enunciado?</p>
+<ul><li>A) AWS Secrets Manager</li><li>B) AWS Systems Manager Parameter Store Standard</li><li>C) Amazon S3 Versioning</li><li>D) Amazon CloudWatch Logs</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: A</strong></p>
+<p>Secrets Manager é a escolha mais forte quando o requisito inclui segredos sensíveis e rotação automática. Parameter Store pode armazenar segredos, mas a rotação não é o seu diferencial nativo principal. S3 Versioning e CloudWatch Logs não resolvem esse problema.</p>
+<p><strong>Conceito-chave:</strong> Secrets Manager vs Parameter Store</p></details>
+<h2>Questão 8</h2>
+<p><strong>Domínio:</strong> Design Cost-Optimized Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Ao ler uma questão que destaca orçamento apertado e carga imprevisível, qual sinal do enunciado mais sugere avaliar tecnologias serverless ou elásticas por demanda?</p>
+<ul><li>A) Requisito de uso de hardware dedicado</li><li>B) Requisito de baixa mudança organizacional</li><li>C) Requisito de cobrança compatível com consumo e baixa ociosidade</li><li>D) Requisito de licenciamento perpétuo on-premises</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: C</strong></p>
+<p>Quando o problema enfatiza consumo variável e redução de ociosidade, serviços com cobrança sob demanda e elasticidade nativa passam a ser mais aderentes. Hardware dedicado vai na direção oposta. Baixa mudança organizacional pode favorecer lift-and-shift, mas não responde à otimização de consumo. Licenciamento on-premises não se aplica.</p>
+<p><strong>Conceito-chave:</strong> custo orientado a consumo</p></details>
+<h2>Questão 9</h2>
+<p><strong>Domínio:</strong> Design High-Performing Architectures<br><strong>Dificuldade:</strong> Difícil</p>
+<p>Uma empresa precisa armazenar dados altamente relacionais com transações ACID e leitura em escala para usuários distribuídos. Em uma questão introdutória de arquitetura, qual combinação mostra melhor o tipo de raciocínio esperado pelo exame?</p>
+<ul><li>A) Substituir tudo por DynamoDB porque sempre escala melhor</li><li>B) Usar Amazon RDS ou Aurora para consistência transacional e avaliar read replicas para leitura</li><li>C) Usar Amazon S3 como banco transacional principal</li><li>D) Usar Amazon CloudFront para replicação de banco</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: B</strong></p>
+<p>O exame recompensa a escolha de um banco relacional gerenciado quando o workload pede transação e modelo relacional, complementando com estratégias de escala de leitura quando apropriado. A alternativa A simplifica demais e ignora requisitos. A alternativa C não oferece semântica transacional relacional. A alternativa D não é solução de banco de dados.</p>
+<p><strong>Conceito-chave:</strong> alinhar requisito de dados ao serviço correto</p></details>
+<h2>Questão 10</h2>
+<p><strong>Domínio:</strong> Design Resilient Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Em uma questão de arquitetura, a empresa quer reduzir acoplamento entre produtores e consumidores, absorver picos e reprocessar mensagens em caso de falha. Qual serviço costuma aparecer como resposta central?</p>
+<ul><li>A) Amazon SQS</li><li>B) Amazon Route 53</li><li>C) Amazon Inspector</li><li>D) AWS Artifact</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: A</strong></p>
+<p>SQS é um mecanismo clássico de desacoplamento com buffer, absorção de burst e reprocessamento por meio de visibilidade, retenção e DLQ. Route 53 é DNS. Inspector faz análise de vulnerabilidade. Artifact é acesso a relatórios de compliance.</p>
+<p><strong>Conceito-chave:</strong> padrão de desacoplamento com fila</p></details>
+<h2>Questão 11</h2>
+<p><strong>Domínio:</strong> Design Secure Applications and Architectures<br><strong>Dificuldade:</strong> Difícil</p>
+<p>Uma questão afirma que uma empresa quer restringir permissões máximas que equipes de desenvolvimento podem delegar, mesmo quando administradores locais criam políticas adicionais. Qual conceito deve vir à mente?</p>
+<ul><li>A) Amazon CloudFront signed cookies</li><li>B) Permission Boundaries</li><li>C) S3 Multipart Upload</li><li>D) RDS Read Replicas</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: B</strong></p>
+<p>Permission Boundaries definem o teto efetivo de permissões que uma identidade IAM pode receber. Isso é um conceito clássico de governança e costuma surgir em cenários com delegação controlada. As demais opções tratam de problemas totalmente diferentes.</p>
+<p><strong>Conceito-chave:</strong> governança de permissões em IAM</p></details>
+<h2>Questão 12</h2>
+<p><strong>Domínio:</strong> Design Cost-Optimized Architectures<br><strong>Dificuldade:</strong> Fácil</p>
+<p>Uma equipe está entre duas alternativas válidas. Ambas atendem ao requisito técnico, mas uma delas elimina manutenção de sistema operacional, patching e capacidade ociosa. Na lógica do exame, qual tende a ser preferida?</p>
+<ul><li>A) A alternativa com maior esforço operacional</li><li>B) A alternativa com mais componentes manuais</li><li>C) A alternativa gerenciada, se o requisito funcional for atendido</li><li>D) A alternativa com hardware dedicado por padrão</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: C</strong></p>
+<p>Esse é um padrão recorrente no SAA-C03. Se a solução gerenciada atende ao cenário sem comprometer requisitos críticos, ela tende a ser preferida por reduzir operação e risco. As demais aumentam custo ou complexidade sem necessidade clara.</p>
+<p><strong>Conceito-chave:</strong> preferência por managed services no exame</p></details>
+<h2>Questão 13</h2>
+<p><strong>Domínio:</strong> Design High-Performing Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Qual interpretação é mais correta quando uma questão menciona “near real-time analytics” sobre eventos contínuos produzidos por aplicações?</p>
+<ul><li>A) Pode haver necessidade de streaming, como Kinesis, em vez de processamento batch isolado</li><li>B) Sempre deve ser usado um data warehouse tradicional com carga semanal</li><li>C) O enunciado aponta diretamente para S3 Glacier Deep Archive</li><li>D) O requisito exclui qualquer serviço gerenciado</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: A</strong></p>
+<p>“Near real-time” é um indicador de que o dado precisa fluir e ser processado com latência baixa, o que muitas vezes aponta para soluções de streaming ou event-driven. Batch semanal não atende. Glacier é arquivamento. Serviço gerenciado não é excluído.</p>
+<p><strong>Conceito-chave:</strong> palavras-chave do enunciado</p></details>
+<h2>Questão 14</h2>
+<p><strong>Domínio:</strong> Design Secure Applications and Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Uma empresa quer registrar chamadas de API feitas na conta AWS para fins de auditoria e investigação. Qual serviço deve ser lembrado primeiro?</p>
+<ul><li>A) Amazon CloudTrail</li><li>B) Amazon CloudWatch Synthetics</li><li>C) AWS Budgets</li><li>D) Amazon Macie</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: A</strong></p>
+<p>CloudTrail registra eventos de API e é central para auditoria. CloudWatch Synthetics testa endpoints. Budgets monitora custo. Macie analisa dados sensíveis em S3. Todos podem aparecer no exame, mas apenas CloudTrail atende diretamente ao requisito descrito.</p>
+<p><strong>Conceito-chave:</strong> auditoria de ações na conta AWS</p></details>
+<h2>Questão 15</h2>
+<p><strong>Domínio:</strong> Design Resilient Architectures<br><strong>Dificuldade:</strong> Difícil</p>
+<p>Um candidato está revisando uma questão em que todas as opções funcionam, mas apenas uma atende ao requisito com a melhor combinação de resiliência, simplicidade operacional e custo. Qual abordagem mental é a mais adequada para resolver esse tipo de problema?</p>
+<ul><li>A) Escolher sempre a arquitetura mais complexa, pois tende a ser mais robusta</li><li>B) Escolher a opção mais barata isoladamente, sem considerar operação</li><li>C) Avaliar requisito principal, restrições e trade-offs antes de decidir</li><li>D) Ignorar palavras como “securely”, “cost-effective” e “minimal changes” porque confundem</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: C</strong></p>
+<p>Esse é o núcleo do SAA-C03. A prova mede a capacidade de avaliar trade-offs diante de requisitos explícitos e implícitos. Complexidade excessiva não é prêmio automático. Menor custo isolado pode gerar risco ou operação inviável. As palavras do enunciado são decisivas e nunca devem ser ignoradas.</p>
+<p><strong>Conceito-chave:</strong> raciocínio arquitetural orientado a trade-offs</p></details>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./009-01-introducao-saa-c03-links.html">Aula anterior</a>
+      <a href="./011-01-introducao-saa-c03-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#009-modulo-02-workloads-03-daemonset">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 02 - workloads - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 02 - workloads" loading="lazy">
+      <figcaption>Workloads controlam replicas, atualizacoes, jobs e execucao programada.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um DaemonSet, usado exclusivamento para colocar exatamente
+# 1 instancia de um Pod por cada N� f�sico do cluster.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Imagine um hospital imenso (O Cluster). O Deployment � como os M�dicos Ortopedistas:
+# se quebram pernas no 2� andar, o Deployment manda os 3 ortopedistas p/ o 2� andar.
+# O DaemonSet � como o **Vigia da Recep��o** (ou a luz do Corredor): Obrigatoriamente
+# tem que existir exata e unicamente 1 c�pia em CADA andar do hospital de plant�o.
+# Se constru�rem um Anexo Predial Novo, uma c�pia do vigia instantaneamente aparece l�.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# O DaemonSet garante que TODOS (ou alguns) n�s executem uma c�pia de um Pod. 
+# � medida que os n�s s�o adicionados ao cluster, Pods s�o adicionados a eles. 
+# Quando n�s s�o removidos, esses Pods s�o ejetados com garbage collection.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: coletor-de-logs-fluentbit # �timo caso de uso: Logs, Agentes Seguran�a e Rede.
+  namespace: kube-system          # Muito comum daemonsets morarem no namespace de sitema
+  labels:
+    app: fluentbit-agent
+spec:
+  # ATEN��O: Cad� o campo &#39;replicas = 3&#39; aqui??
+  # R: N�o existe em DaemonSet! O n�mero de r�plicas � sempre igual ao n�mero de N�s!
+  selector:
+    matchLabels:
+      name: fluentbit-agent
+  
+  template:
+    metadata:
+      labels:
+        name: fluentbit-agent
+    spec:
+      # Tolerations: Os daemonSets de sistema muitas vezes precisam &quot;Tolerar&quot; rodar
+      # at� no n� &#39;Control Plane&#39; (que normalmente barra pods comuns).
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      containers:
+        - name: fluentbit
+          image: fluent/fluent-bit:2.1
+          resources:
+            limits:
+              memory: 200Mi # Sempre limite memoria de DaemonSets p/ n�o esmagar o n�.
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplicar o arquivo:
+#    kubectl apply -f 03-daemonset.yaml
+#
+# 2. Listar e confirmar que se voc� tem 1 n� (kind Worker, ele criou 1):
+#    kubectl get daemonset -n kube-system
+#
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# Como ver exatamente em quais n�s ele caiu &quot;espalhado&quot;?:
+#    kubectl get pods -n kube-system -o wide | grep fluentbit
+# O &quot;-o wide&quot; � um truque genial de Mestre para mandar o terminal imprimir qual N� f�sico
+# cada Pod est� ancorado.
+#
+# O maior pesadelo no Daemonset � ele N�O criar o pod no seu n� Worker XYZ.
+# Quando isso ocorre, quase sempre n�s dizemos que o N� possui &quot;Taints&quot; 
+# (M�culas/Veneno, como N� Mestre ou N� com GPU cara). O DaemonSet respeita isso e 
+# foge pra n�o subir. Voc� precisar� de &#39;Tolerations&#39; para for�ar a barra.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# Seniors nunca instalam aplica��es do neg�cio (Microservi�os) num DaemonSet!
+# DaemonSet � exclusivo de ferramental infra (Agentes de Log - Fluentd, Splunk; 
+# CNI&#39;s de Rede - Calico/Cilium; Monitores de HW - NodeExporter/Datadog). 
+# Eles t�m &quot;permiss�es excessivas&quot;, pois frequentemente requerem `hostNetwork: true` 
+# ou `hostPID: true` para grampear os logs pesados do Host f�sico / var / log.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Sendo que o Kube-Scheduler decide em qual n� o Pod vai, como o DaemonSet 
+# sabe que precisa ir em todos?&quot;
+# Resposta Esperada: &quot;At� a vers�o ~1.12, o DaemonSet bypassava o Kube-Scheduler! Ele 
+# mesmo injetava uma flag chamada NodeName nos Pods e empurrava goela abaixo do kubelet.
+# Devido a problemas, a arquitetura moderna do Kubernetes parou com esse anti-pattern. 
+# Hoje o DaemonSet obedece o ciclo global, aplicando uma s�rie de &quot;NodeAffinities&quot; aos 
+# seus Pods dizendo: Requesito restrito = V� para o N� A. E o Kube-Scheduler os roteia.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./008-modulo-02-workloads-02-deployment.html">Aula anterior</a>
+      <a href="./010-modulo-02-workloads-04-statefulset.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

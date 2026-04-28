@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Prático — RDS: Multi-AZ, Read Replica e Backup (Módulo 06) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#054-11-rds-e-bancos-relacionais-labs-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 11 - RDS e Bancos Relacionais Labs - 5 min - 11-RDS-e-Bancos-Relacionais-Labs/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 11 - RDS e Bancos Relacionais Labs" loading="lazy">
+      <figcaption>Bancos relacionais na pratica: disponibilidade, backup, leitura e operacao gerenciada.</figcaption>
+    </figure>
+    <h1>Lab Prático — RDS: Multi-AZ, Read Replica e Backup (Módulo 06)</h1>
+<blockquote><p><strong>Região:</strong> us-east-1 | <strong>Custo estimado:</strong> ~$0.30 (RDS db.t3.micro, &lt; 1h de uso)<br><strong>Pré-requisitos:</strong> AWS CLI configurado, Terraform &gt;= 1.5, cliente MySQL</p></blockquote>
+<hr>
+<h2>Objetivo</h2>
+<p>Criar RDS MySQL com Multi-AZ, promover Read Replica, realizar backup manual e monitorar métricas via CloudWatch.</p>
+<hr>
+<h2>Parte 1 — Terraform: RDS Multi-AZ + Read Replica</h2>
+<pre><code class="language-hcl"># main.tf
+terraform {
+  required_version = &quot;&gt;= 1.5&quot;
+  required_providers {
+    aws = {
+      source  = &quot;hashicorp/aws&quot;
+      version = &quot;~&gt; 5.0&quot;
+    }
+  }
+}
+
+provider &quot;aws&quot; { region = &quot;us-east-1&quot; }
+
+data &quot;aws_vpc&quot; &quot;default&quot; {
+  default = true
+}
+
+data &quot;aws_subnets&quot; &quot;default&quot; {
+  filter {
+    name   = &quot;vpc-id&quot;
+    values = [data.aws_vpc.default.id]
+  }
+}
+
+# Subnet Group usando VPC default
+resource &quot;aws_db_subnet_group&quot; &quot;lab&quot; {
+  name       = &quot;lab-rds-subnet-group&quot;
+  subnet_ids = data.aws_subnets.default.ids
+}
+
+# Security Group para RDS
+resource &quot;aws_security_group&quot; &quot;rds&quot; {
+  name   = &quot;lab-rds-sg&quot;
+  vpc_id = data.aws_vpc.default.id
+
+  ingress {
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = &quot;tcp&quot;
+    cidr_blocks = [&quot;0.0.0.0/0&quot;]  # Em prod: IP específico ou SG de app
+    description = &quot;MySQL lab&quot;
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = &quot;-1&quot;
+    cidr_blocks = [&quot;0.0.0.0/0&quot;]
+  }
+}
+
+# Parameter Group customizado
+resource &quot;aws_db_parameter_group&quot; &quot;lab&quot; {
+  name   = &quot;lab-mysql8-pg&quot;
+  family = &quot;mysql8.0&quot;
+
+  parameter {
+    name  = &quot;max_connections&quot;
+    value = &quot;100&quot;
+  }
+
+  parameter {
+    name  = &quot;slow_query_log&quot;
+    value = &quot;1&quot;
+  }
+
+  parameter {
+    name  = &quot;long_query_time&quot;
+    value = &quot;2&quot;
+  }
+}
+
+# RDS MySQL Multi-AZ — instância principal
+resource &quot;aws_db_instance&quot; &quot;primary&quot; {
+  identifier        = &quot;lab-mysql-primary&quot;
+  engine            = &quot;mysql&quot;
+  engine_version    = &quot;8.0&quot;
+  instance_class    = &quot;db.t3.micro&quot;
+  allocated_storage = 20
+  storage_type      = &quot;gp2&quot;
+
+  db_name  = &quot;loja&quot;
+  username = &quot;admin&quot;
+  password = &quot;Lab@12345Secure!&quot;
+
+  db_subnet_group_name   = aws_db_subnet_group.lab.name
+  vpc_security_group_ids = [aws_security_group.rds.id]
+  parameter_group_name   = aws_db_parameter_group.lab.name
+
+  multi_az              = true  # HA: standby em outra AZ
+  publicly_accessible   = true  # para lab; false em produção
+  skip_final_snapshot   = true
+
+  backup_retention_period = 7  # 7 dias de backups automáticos
+  backup_window           = &quot;03:00-04:00&quot;
+  maintenance_window      = &quot;Mon:04:00-Mon:05:00&quot;
+
+  deletion_protection = false  # true em produção
+
+  tags = { Environment = &quot;lab&quot;, Module = &quot;06-rds&quot; }
+}
+
+# Read Replica (mesma região)
+resource &quot;aws_db_instance&quot; &quot;read_replica&quot; {
+  identifier_prefix   = &quot;lab-mysql-replica-&quot;
+  replicate_source_db = aws_db_instance.primary.identifier
+  instance_class      = &quot;db.t3.micro&quot;
+  publicly_accessible = true
+  skip_final_snapshot = true
+  auto_minor_version_upgrade = false
+
+  tags = { Role = &quot;read-replica&quot; }
+}
+
+output &quot;primary_endpoint&quot;  { value = aws_db_instance.primary.endpoint }
+output &quot;replica_endpoint&quot;  { value = aws_db_instance.read_replica.endpoint }
+output &quot;primary_arn&quot;       { value = aws_db_instance.primary.arn }</code></pre>
+<hr>
+<h2>Parte 2 — Popular e Testar</h2>
+<pre><code class="language-bash">terraform init &amp;&amp; terraform apply -auto-approve
+
+PRIMARY=$(terraform output -raw primary_endpoint)
+REPLICA=$(terraform output -raw replica_endpoint)
+RDS_ARN=$(terraform output -raw primary_arn)
+
+echo &quot;Primary: $PRIMARY&quot;
+echo &quot;Replica: $REPLICA&quot;
+
+# Popular banco primário
+mysql -h &quot;${PRIMARY%:*}&quot; -P 3306 -u admin -p&quot;Lab@12345Secure!&quot; loja &lt;&lt; &#39;SQL&#39;
+CREATE TABLE produtos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(200) NOT NULL,
+  preco DECIMAL(10,2),
+  categoria VARCHAR(50),
+  estoque INT DEFAULT 0,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_categoria (categoria)
+);
+
+INSERT INTO produtos (nome, preco, categoria, estoque) VALUES
+  (&#39;Notebook Pro&#39;, 3500.00, &#39;Eletrônicos&#39;, 10),
+  (&#39;Mouse Wireless&#39;, 89.90, &#39;Periféricos&#39;, 50),
+  (&#39;Teclado Mecânico&#39;, 350.00, &#39;Periféricos&#39;, 25),
+  (&#39;Monitor 27 pol.&#39;, 1200.00, &#39;Eletrônicos&#39;, 8),
+  (&#39;Headset USB&#39;, 180.00, &#39;Periféricos&#39;, 30);
+
+SELECT COUNT(*) AS total, categoria FROM produtos GROUP BY categoria;
+SQL
+
+# Aguardar replicação (&lt; 1 min em mesma região)
+sleep 15
+
+# Verificar na Read Replica
+echo &quot;Verificando dados na Read Replica...&quot;
+mysql -h &quot;${REPLICA%:*}&quot; -P 3306 -u admin -p&quot;Lab@12345Secure!&quot; loja \
+  -e &quot;SELECT id, nome, preco FROM produtos ORDER BY id;&quot;
+
+# Tentar ESCREVER na replica (deve falhar)
+echo &quot;Testando write na replica (deve dar erro)...&quot;
+mysql -h &quot;${REPLICA%:*}&quot; -P 3306 -u admin -p&quot;Lab@12345Secure!&quot; loja \
+  -e &quot;INSERT INTO produtos VALUES (NULL, &#39;Teste&#39;, 1, &#39;X&#39;, 1, NOW());&quot; 2&gt;&amp;1 | head -3</code></pre>
+<hr>
+<h2>Parte 3 — Backup Manual e Monitoramento</h2>
+<pre><code class="language-bash">ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+RDS_ARN=$(terraform output -raw primary_arn)
+
+# Criar snapshot manual
+SNAPSHOT_ID=&quot;lab-mysql-snapshot-$(date +%Y%m%d%H%M)&quot;
+aws rds create-db-snapshot \
+  --db-instance-identifier &quot;lab-mysql-primary&quot; \
+  --db-snapshot-identifier &quot;$SNAPSHOT_ID&quot;
+
+# Aguardar snapshot ficar disponível
+aws rds wait db-snapshot-available \
+  --db-snapshot-identifier &quot;$SNAPSHOT_ID&quot;
+
+echo &quot;Snapshot pronto: $SNAPSHOT_ID&quot;
+
+# Listar todos os snapshots (auto + manual)
+aws rds describe-db-snapshots \
+  --db-instance-identifier &quot;lab-mysql-primary&quot; \
+  --query &#39;DBSnapshots[*].[DBSnapshotIdentifier, SnapshotType, Status, AllocatedStorage]&#39; \
+  --output table
+
+# Monitorar métricas CloudWatch
+echo &quot;&quot;
+echo &quot;=== Métricas CloudWatch RDS ===&quot;
+START=$(date -u -d &quot;1 hour ago&quot; +%FT%TZ 2&gt;/dev/null || date -u -v-1H +%FT%TZ)
+END=$(date -u +%FT%TZ)
+
+for METRIC in &quot;CPUUtilization&quot; &quot;FreeStorageSpace&quot; &quot;DatabaseConnections&quot; &quot;ReadLatency&quot; &quot;WriteLatency&quot;; do
+  VALUE=$(aws cloudwatch get-metric-statistics \
+    --namespace AWS/RDS \
+    --metric-name &quot;$METRIC&quot; \
+    --dimensions &quot;Name=DBInstanceIdentifier,Value=lab-mysql-primary&quot; \
+    --start-time &quot;$START&quot; --end-time &quot;$END&quot; \
+    --period 3600 --statistics Average \
+    --query &#39;Datapoints[0].Average&#39; --output text 2&gt;/dev/null)
+  echo &quot;  $METRIC: ${VALUE:-sem dados}&quot;
+done
+
+# Criar alarme para CPU alta
+aws cloudwatch put-metric-alarm \
+  --alarm-name &quot;lab-rds-cpu-alta&quot; \
+  --alarm-description &quot;CPU RDS acima de 80%&quot; \
+  --namespace AWS/RDS \
+  --metric-name CPUUtilization \
+  --dimensions &quot;Name=DBInstanceIdentifier,Value=lab-mysql-primary&quot; \
+  --statistic Average \
+  --period 300 \
+  --threshold 80 \
+  --comparison-operator GreaterThanThreshold \
+  --evaluation-periods 2
+
+echo &quot;Alarme de CPU criado.&quot;</code></pre>
+<hr>
+<h2>Limpeza</h2>
+<pre><code class="language-bash"># Deletar snapshot manual
+aws rds delete-db-snapshot --db-snapshot-identifier &quot;$SNAPSHOT_ID&quot;
+
+# Deletar alarme
+aws cloudwatch delete-alarms --alarm-names &quot;lab-rds-cpu-alta&quot;
+
+# Destruir infraestrutura
+terraform destroy -auto-approve</code></pre>
+<hr>
+<h2>O Que Você Aprendeu</h2>
+<ul><li><strong>Multi-AZ:</strong> standby sincrônico na mesma região; failover automático em ~1-2 min; NÃO serve para leitura</li><li><strong>Read Replica:</strong> assíncrono; pode ser cross-region; promovível a instância independente; serve para leitura</li><li><strong>Snapshot manual vs automático:</strong> snapshots manuais não expiram; automáticos respeitam <code>backup_retention_period</code></li><li><strong>Restaurar snapshot:</strong> cria nova instância (não substitui a atual) — RDS sem <code>UPDATE</code> de instância in-place</li><li><strong>Parameter Group:</strong> configurações do engine (slow query log, max connections) — aplicado com reinicialização (static) ou imediato (dynamic)</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./053-10-banco-de-dados-readme.html">Aula anterior</a>
+      <a href="./055-11-rds-e-bancos-relacionais-labs-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

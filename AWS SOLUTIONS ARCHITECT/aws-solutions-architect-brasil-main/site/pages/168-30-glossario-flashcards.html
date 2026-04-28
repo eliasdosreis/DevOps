@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flashcards — Módulo 20: Glossário - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#168-30-glossario-flashcards">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 30 - Glossario - 11 min - 30-Glossario/flashcards.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1456324504439-367cee3b3c32?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 30 - Glossario" loading="lazy">
+      <figcaption>Glossario e mapa mental reduzem confusoes entre servicos parecidos.</figcaption>
+    </figure>
+    <h1>Flashcards — Módulo 20: Glossário</h1>
+<blockquote><p><strong>Formato:</strong> P = Pergunta | R = Resposta<br><strong>Total:</strong> 30 flashcards — definições de termos e acrônimos AWS</p></blockquote>
+<hr>
+<p><strong>P:</strong> O que significa SLA no contexto AWS?<br><strong>R:</strong> <strong>Service Level Agreement</strong> — acordo de nível de serviço que define o uptime garantido de um serviço AWS. Ex: EC2 SLA = 99.99% por região. Se a AWS não cumprir, clientes recebem créditos de serviço. SLA diferente de SLO (Service Level Objective — meta interna) e SLI (Service Level Indicator — métrica real).</p>
+<hr>
+<p><strong>P:</strong> O que é um CDN e como o CloudFront o implementa?<br><strong>R:</strong> <strong>Content Delivery Network</strong> — rede de servidores distribuídos globalmente que cacheia conteúdo próximo dos usuários. CloudFront: 500+ Points of Presence (PoPs) em 90+ cidades. Reduz latência (usuário acessa PoP local vs servidor distante), reduz carga na origem, cached responses para conteúdo estático.</p>
+<hr>
+<p><strong>P:</strong> O que é Idempotência e por que é importante em APIs e filas?<br><strong>R:</strong> <strong>Idempotência:</strong> executar a mesma operação múltiplas vezes produz o mesmo resultado. Ex: <code>DELETE /order/123</code> executado 3 vezes = resultado idêntico a executar 1 vez. Importante em: sistemas de fila (SQS entrega ao-less-once, pode re-entregar), retries HTTP, pagamentos (evitar cobranças duplicadas). Design: usar IDs únicos de transação, check-before-write.</p>
+<hr>
+<p><strong>P:</strong> O que é throughput vs latência?<br><strong>R:</strong> <strong>Throughput:</strong> quantidade de dados processados por unidade de tempo (GB/s, requests/s). <strong>Latência:</strong> tempo para processar uma única operação (ms, µs). Podem ser inversamente relacionados: processar mais itens em batch aumenta throughput mas pode aumentar latência individual. No exame: &quot;muitos dados&quot; → throughput; &quot;resposta rápida para usuário&quot; → latência.</p>
+<hr>
+<p><strong>P:</strong> O que é um SQS Message Visibility Timeout?<br><strong>R:</strong> Após um consumer pegar uma mensagem do SQS, ela fica <strong>invisível</strong> na fila por <code>VisibilityTimeout</code> (default: 30s, max: 12h). Se o consumer processar com sucesso e deletar a mensagem: removida permanentemente. Se o consumer falhar/timeout: a mensagem se torna visível novamente para outros consumers. Evita duplo processamento.</p>
+<hr>
+<p><strong>P:</strong> O que é NAT Gateway e por que instâncias privadas precisam dele?<br><strong>R:</strong> <strong>Network Address Translation Gateway</strong> — permite instâncias em subnets privadas (sem IP público) acessarem a internet para outbound connections (atualizações, APIs externas), mas a internet não pode iniciar conexões com elas. NAT GW fica na subnet pública com Elastic IP. Route da subnet privada: <code>0.0.0.0/0 → NAT GW</code>. Gerenciado, escalável, altamente disponível por AZ.</p>
+<hr>
+<p><strong>P:</strong> O que é CIDR Notation?<br><strong>R:</strong> <strong>Classless Inter-Domain Routing</strong> — notação para endereçamento IP. Ex: <code>10.0.0.0/16</code> = 65.536 IPs (10.0.0.0 a 10.0.255.255). O <code>/16</code> = 16 bits fixos (prefixo), 16 bits variáveis. <code>/24</code> = 256 IPs. Menor o número após <code>/</code>, maior o bloco. VPC AWS: <code>/16</code> max, <code>/28</code> min (11 IPs usáveis — AWS reserva 5).</p>
+<hr>
+<p><strong>P:</strong> O que é um Bastion Host e qual é a alternativa moderna?<br><strong>R:</strong> <strong>Bastion Host (Jump Box):</strong> EC2 em subnet pública com porta SSH aberta. Acesso: SSH para bastion → SSH para instâncias privadas. Problema: superfície de ataque (SSH exposto). <strong>Alternativa moderna:</strong> AWS Systems Manager Session Manager — sem porta 22 aberta, sem bastion, auditável, funciona em subnets privadas sem internet.</p>
+<hr>
+<p><strong>P:</strong> O que é o modelo de pagamento &quot;pay-as-you-go&quot; na AWS?<br><strong>R:</strong> <strong>Pagar pelo uso real</strong>, sem compromisso mínimo (para serviços On-Demand). Sem taxa de setup. Sem contratos de longo prazo obrigatórios. Oposto do on-premises: não precisa comprar hardware para pico de capacidade. Na AWS: EC2 On-Demand faturado por segundo; Lambda por milissegundo; S3 por GB/mês; RDS por hora.</p>
+<hr>
+<p><strong>P:</strong> O que é um Managed Service na AWS e qual seu benefício?<br><strong>R:</strong> Serviço onde a AWS gerencia a infraestrutura subjacente: patches, hardware, HA, backups. Ex: RDS (AWS gerencia OS, patches do MySQL, backups), Lambda (AWS gerencia run time, escala), DynamoDB (AWS gerencia storage, replicação). Você é responsável por: configuração, dados, IAM. Reduz operational overhead.</p>
+<hr>
+<p><strong>P:</strong> O que é um Elastic IP Address?<br><strong>R:</strong> <strong>IP público estático</strong> persistente na sua conta AWS. Ao contrário do IP público de EC2 que muda a cada reinicialização, o Elastic IP persiste. Associa-se a uma instância EC2 ou NAT Gateway. Gratuito enquanto associado a uma instância running; cobrado ($0.005/hr) quando não associado (para evitar desperdício). Máximo 5 EIPs por conta por padrão.</p>
+<hr>
+<p><strong>P:</strong> O que é DNS (Domain Name System) no contexto AWS?<br><strong>R:</strong> Serviço que traduz nomes de domínio (<code>www.exemplo.com</code>) para endereços IP. AWS: <strong>Route 53</strong> é o serviço DNS gerenciado. Tipos de record: <strong>A</strong> (nome → IPv4), <strong>AAAA</strong> (nome → IPv6), <strong>CNAME</strong> (nome → outro nome), <strong>Alias</strong> (Route 53 específico, aponta para AWS resources — ELB, CloudFront, S3 Website).</p>
+<hr>
+<p><strong>P:</strong> O que é edge computing no contexto AWS?<br><strong>R:</strong> Processamento de dados <strong>próximo da fonte</strong> (dispositivos, usuários) em vez de no data center central. AWS edge: CloudFront PoPs (cache + Lambda@Edge), AWS Outposts (hardware AWS no data center do cliente), Snow Family (Snowball Edge — compute em campo), IoT Greengrass (Lambda em dispositivos IoT), Wavelength (dentro de rede 5G de telecom).</p>
+<hr>
+<p><strong>P:</strong> O que é TLS/SSL e como AWS o implementa?<br><strong>R:</strong> <strong>Transport Layer Security</strong> — protocolo de criptografia para comunicação segura pela internet (HTTPS). AWS: <strong>ACM (AWS Certificate Manager)</strong> provisiona, gerencia e renova automaticamente certificados TLS para: CloudFront, ALB, API Gateway. Terminação TLS: CloudFront ou ALB descriptografa e reencripta (ou passa para backend). Gratuito via ACM.</p>
+<hr>
+<p><strong>P:</strong> O que é eventual consistency vs strong consistency?<br><strong>R:</strong> <strong>Strong Consistency:</strong> leitura sempre retorna o dado mais recente após write. <strong>Eventual Consistency:</strong> leitura pode retornar dado antigo temporariamente, mas eventualmente converge para o estado atual. AWS: S3 default = strong consistency (desde 2020). DynamoDB: <strong>Eventually Consistent Reads</strong> (padrão, 2x capacity units mais eficiente) e <strong>Strongly Consistent Reads</strong> (disponível, usa mais RCUs).</p>
+<hr>
+<p><strong>P:</strong> O que é um Availability Zone (AZ)?<br><strong>R:</strong> Data center(s) fisicamente separado(s) dentro de uma região AWS, com energia, rede e cooling independentes. Conexão entre AZs: rede privada de baixa latência (&lt;1ms). Cada AZ tem ID único real (ex: <code>use1-az1</code>), mas nomes (<code>us-east-1a</code>) variam por conta (mapeamento aleatório). Falha em uma AZ não deve afetar outras. Multi-AZ = HA contra falha de AZ.</p>
+<hr>
+<p><strong>P:</strong> O que é o princípio de Least Privilege?<br><strong>R:</strong> Dar a cada identidade (usuário, role, serviço) <strong>apenas as permissões necessárias</strong> para o trabalho e nada mais. Reduz blast radius: se credencial comprometida, atacante tem acesso mínimo. Na AWS: IAM policies específicas (não <code>*</code>), Resource-based policies, SCPs para limitar contas. Best practice: começar com zero permissões e adicionar conforme necessário.</p>
+<hr>
+<p><strong>P:</strong> O que é Infrastructure as Code (IaC)?<br><strong>R:</strong> Gerenciar e provisionar infraestrutura via código (declarativo ou imperativo) em vez de manualmente no console. Benefícios: reprodutível, versionável (Git), auditável, testável, documentação automática. AWS nativo: <strong>CloudFormation</strong> (declarativo YAML/JSON). Multi-cloud: <strong>Terraform</strong> (HCL). CDK: código em Python/TypeScript que gera CloudFormation. GitOps: IaC + Git como fonte de verdade.</p>
+<hr>
+<p><strong>P:</strong> O que é um Service Mesh e como AWS o implementa?<br><strong>R:</strong> Infraestrutura dedicada para comunicação entre microsserviços (service discovery, load balancing, circuit breaking, observability, mTLS). AWS: <strong>AWS App Mesh</strong> (baseado em Envoy proxy, integrado com ECS/EKS), <strong>Amazon VPC Lattice</strong> (service-to-service networking gerenciado mais simples). Resolve: como serviços se encontram e comunicam de forma segura e observável.</p>
+<hr>
+<p><strong>P:</strong> O que é Object Storage vs Block Storage vs File Storage?<br><strong>R:</strong> <strong>Object Storage (S3):</strong> arquivos com metadata e ID único, acesso via HTTP API, escala praticamente ilimitada, não montável como filesystem. <strong>Block Storage (EBS):</strong> volumes de baixo nível (como HD), montados em EC2, alta performance, IOPS configuráveis, ideal para bancos. <strong>File Storage (EFS, FSx):</strong> filesystem compartilhado NFS/SMB, múltiplas instâncias acessam simultaneamente.</p>
+<hr>
+<p><strong>P:</strong> O que é o modelo de precificação do AWS Savings Plans?<br><strong>R:</strong> Compromisso de gasto mínimo por hora (ex: $10/hr por 1 ou 3 anos), em troca de desconto. <strong>Compute Savings Plans:</strong> mais flexível — aplica para EC2 (qualquer tipo/região/OS), Fargate e Lambda. <strong>EC2 Instance Savings Plans:</strong> menos flexível (família específica + região), maior desconto (até 72%). Diferente de Reserved Instances: não reserva capacidade específica.</p>
+<hr>
+<p><strong>P:</strong> O que é CloudFormation Stack vs StackSet?<br><strong>R:</strong> <strong>Stack:</strong> conjunto de recursos AWS criados/gerenciados como unidade pelo CloudFormation em uma única conta/região. <strong>StackSet:</strong> implanta Stacks em <strong>múltiplas contas e regiões</strong> simultaneamente. Necessário permissões cross-account (IAM Roles). Use StackSets para: baseline de segurança em toda a organização, GuardDuty em todas as contas, regras AWS Config globais.</p>
+<hr>
+<p><strong>P:</strong> O que é o AWS Free Tier e quais são seus 3 tipos?<br><strong>R:</strong> <strong>(1) Always Free:</strong> nunca expira. Ex: Lambda 1M req/mês, DynamoDB 25 GB, CloudFront 1 TB, SNS 1M req. <strong>(2) 12-Month Free:</strong> após criar conta, 12 meses de uso limitado. Ex: EC2 t2.micro/t3.micro 750h/mês, S3 5 GB, RDS db.t2.micro 750h/mês. <strong>(3) Trials:</strong> períodos de teste de serviços específicos. Free Tier não cobre todos os recursos — verificar limites.</p>
+<hr>
+<p><strong>P:</strong> O que é Tag em recursos AWS e como contribui para Cost Allocation?<br><strong>R:</strong> <strong>Tags:</strong> key-value pairs aplicadas a recursos AWS. Exemplos: <code>Environment:prod</code>, <code>Project:phoenix</code>, <code>CostCenter:123</code>. <strong>Cost Allocation Tags:</strong> ativadas no Billing Console, aparecem no Cost Explorer permitindo filtrar e agrupar custos por tag. Melhores práticas: taggar todos os recursos, automação via CloudFormation/Terraform, SCP que exige tags obrigatórias.</p>
+<hr>
+<p><strong>P:</strong> O que é Multi-Factor Authentication (MFA) na AWS?<br><strong>R:</strong> Segundo fator de autenticação além da senha. AWS suporta: <strong>Virtual MFA</strong> (apps como Google Authenticator, Authy — TOTP), <strong>Hardware MFA</strong> (dispositivo físico TOTP ou FIDO2 — YubiKey), <strong>SMS MFA</strong> (descontinuado para IAM). Obrigatório para: root account protection, ações críticas (S3 MFA Delete, IAM delete com MFA condition). IAM best practice: MFA em todos os usuários com console access.</p>
+<hr>
+<p><strong>P:</strong> O que é o conceito de &quot;Shared Responsibility Model&quot; e com exemplo de S3?<br><strong>R:</strong> No S3: <strong>AWS:</strong> infraestrutura física, hardware dos servidores S3, rede, durability (11 noves), replicação interna dos objetos. <strong>Cliente:</strong> configuração de bucket policy, Block Public Access settings, criptografia de objetos (SSE-S3/KMS), controle de acesso (IAM policies), versionamento, replicação cross-region. O que acontece COM os dados é responsabilidade do cliente.</p>
+<hr>
+<p><strong>P:</strong> O que é o Amazon Resource Name (ARN) de uma Lambda Function?<br><strong>R:</strong> Formato completo: <code>arn:aws:lambda:us-east-1:123456789012:function:MinhaFuncao</code>. Componentes: <code>arn</code> (prefixo) : <code>aws</code> (partition) : <code>lambda</code> (serviço) : <code>us-east-1</code> (região) : <code>123456789012</code> (account ID) : <code>function</code> (resource type) : <code>MinhaFuncao</code> (resource name). Para alias: <code>:MinhaFuncao:PROD</code>. Para version: <code>:MinhaFuncao:1</code>.</p>
+<hr>
+<p><strong>P:</strong> O que é um &quot;endpoint&quot; no AWS?<br><strong>R:</strong> Pode significar: <strong>(1) VPC Endpoint:</strong> conexão privada entre VPC e serviço AWS. <strong>(2) SageMaker Endpoint:</strong> instância de inference servindo um modelo ML. <strong>(3) API Endpoint:</strong> URL de uma API (ex: <code>https://abc123.execute-api.us-east-1.amazonaws.com/prod/users</code>). <strong>(4) DynamoDB Endpoint:</strong> endpoint regional para acesso ao DynamoDB sem internet (VPC endpoint). Contexto determina o significado.</p>
+<hr>
+<p><strong>P:</strong> O que é durabilidade vs disponibilidade no S3?<br><strong>R:</strong> <strong>Durabilidade:</strong> probabilidade de não perder os dados. S3 Standard = <strong>11 noves</strong> (99.999999999%) — para 10 milhões de objetos, perder um a cada 10.000 anos. Armazena dados em 3 AZs. <strong>Disponibilidade:</strong> fração do tempo que o serviço está acessível. S3 Standard = 99.99%/ano. S3 One Zone-IA: durávelidade 11 noves (mas em 1 AZ), disponibilidade 99.5%. Durability ≠ availability.</p>
+<hr>
+<p><strong>P:</strong> O que é um security finding e como AWS os consolida?<br><strong>R:</strong> <strong>Finding:</strong> registro de um potencial problema de segurança detectado. Gerado por: GuardDuty (ameaças), Inspector (vulnerabilidades EC2/ECR/Lambda), Macie (dados sensíveis S3), Config (non-compliance), IAM Access Analyzer (permissões excessivas). <strong>AWS Security Hub</strong> consolida todos os findings em um dashboard centralizado, normalizado para AWS Security Finding Format (ASFF).</p>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./167-30-glossario-cheatsheet.html">Aula anterior</a>
+      <a href="./169-30-glossario-lab.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

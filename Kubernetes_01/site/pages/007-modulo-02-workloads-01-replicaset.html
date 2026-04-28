@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#007-modulo-02-workloads-01-replicaset">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 02 - workloads - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 02 - workloads" loading="lazy">
+      <figcaption>Workloads controlam replicas, atualizacoes, jobs e execucao programada.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um ReplicaSet, o componente respons�vel por garantir que
+# um n�mero espec�fico de c�pias de um Pod esteja sempre rodando.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Lembra que o Pod � a nossa &quot;caixa transparente&quot; com o App dentro?
+# Se voc� der um &quot;kubectl apply&quot; em um Pod sozinho, e ele morrer, ele morre
+# pra sempre.
+# O ReplicaSet � o *Feitor de F�brica*. Voc� entrega a ele a planta de um
+# Pod e diz: &quot;Eu quero que existam exatamente 3 r�plicas dessa caixa na mesa.
+# Se uma caixa quebrar, crie outra igual&quot;. 
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# O ReplicaSet (RS) � um objeto controlador que mant�m um conjunto est�vel 
+# de r�plicas de um Pod. Ele usa &quot;Label Selectors&quot; para contar os Pods atuais 
+# (loop de reconcilia��o). Se os Pods correspondentes (vivos e saud�veis)
+# forem menores que o `replicas` desejado, ele instancia mais via `PodTemplate`.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: meu-primeiro-replicaset
+  namespace: meu-primeiro-projeto
+spec:
+  replicas: 3               # Estado Desejado: Quero 3 Pods rodando.
+  selector:                 # Como o RS sabe quais pods ele &quot;Adotou&quot;? (O filtro da prancheta)
+    matchLabels:            # O RS vai buscar no cluster Pods com essas exatas labels
+      app: web-server
+  
+  # COMO ele cria os Pods caso falte algum? (A Planta/Template)
+  template:                 # Perceba que daqui pra baixo � EXATAMENTE um spec de Pod!
+    metadata:
+      labels:               # IMPORTANTE: A label do template tem que &quot;casar&quot; com o selector!
+        app: web-server
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.25 # Vers�o fixa, boa pr�tica.
+          ports:
+            - containerPort: 80
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplicar o arquivo no cluster:
+#    kubectl apply -f 01-replicaset.yaml
+#
+# 2. Veja que ele gerou 3 pods:
+#    kubectl get pods -n meu-primeiro-projeto
+#
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# Tente APAGAR um dos Pods manualmente p/ &quot;simular uma pane&quot;:
+#    kubectl delete pod &lt;nome-do-pod&gt; -n meu-primeiro-projeto
+# Logo em seguida rode &quot;kubectl get pods&quot;. Voc� ver� que um novo foi criado 
+# instantaneamente. O ReplicaSet n�o dorme.
+#
+# Erro fatal de YAML: Se a label do &#39;selector&#39; for diferente da label
+# do &#39;template&#39;, o Kubernetes recusar� a cria��o, pois sen�o o RS criaria Pods 
+# &quot;orf�os&quot; que ele mesmo n�o conseguiria gerenciar.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# O ReplicaSet puro, na pr�tica... N�O � MUITO USADO na vida real!
+# Por qu�? Porque se voc� precisar ATUALIZAR a `image` de nginx:1.25 para nginx:1.26,
+# o ReplicaSet n�o reinicia os pods antigos! Ele s� cria os novos com a nova 
+# vers�o SE os antigos morrerem. Essa limita��o � contornada subindo mais 
+# um n�vel de orquestra��o: O famoso &quot;Deployment&quot;, que falaremos no pr�ximo YAML.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se eu tiver um pod �rf�o rodando no cluster com a label `app=loja` e 
+# ent�o eu aplicar um ReplicaSet pedindo 3 r�plicas com o selector `app=loja`. 
+# Quantos novos pods o ReplicaSet vai criar?&quot;
+# Resposta Esperada: &quot;Apenas 2. O ReplicaSet vai usar seu Labal Selector e 
+# descobrir que j� existe 1 pod vivo e saud�vel satisfazendo o contrato. Ent�o ele 
+# o &#39;adota&#39; automaticamente e cria apenas os 2 faltantes.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./006-modulo-01-fundamentos-04-pod-annotations.html">Aula anterior</a>
+      <a href="./008-modulo-02-workloads-02-deployment.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

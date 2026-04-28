@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Módulo 05: Amazon S3 e Armazenamento - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#036-06-amazon-s3-e-armazenamento-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 06 - Amazon S3 e Armazenamento - 4 min - 06-Amazon-S3-e-Armazenamento/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 06 - Amazon S3 e Armazenamento" loading="lazy">
+      <figcaption>Armazenamento certo para cada dado: frequente, raro, arquivado, replicado ou versionado.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Módulo 05: Amazon S3 e Armazenamento</h1>
+<h2>Classes de Armazenamento S3</h2>
+<div class="table-wrap"><table><thead><tr><th>Classe</th><th>Disponibilidade</th><th>AZs</th><th>Retrieval Fee</th><th>Min. Duração</th><th>Uso Principal</th></tr></thead><tbody><tr><td>S3 Standard</td><td>99,99%</td><td>≥ 3</td><td>Nenhuma</td><td>Nenhuma</td><td>Dados frequentemente acessados</td></tr><tr><td>S3 Intelligent-Tiering</td><td>99,9%</td><td>≥ 3</td><td>Nenhuma</td><td>Nenhuma</td><td>Padrão de acesso imprevisível</td></tr><tr><td>S3 Standard-IA</td><td>99,9%</td><td>≥ 3</td><td>Por GB</td><td>30 dias</td><td>Acesso infrequente, recuperação rápida</td></tr><tr><td>S3 One Zone-IA</td><td>99,5%</td><td>1</td><td>Por GB</td><td>30 dias</td><td>Dados reproduzíveis, baixo custo</td></tr><tr><td>S3 Glacier Instant</td><td>99,9%</td><td>≥ 3</td><td>Por GB</td><td>90 dias</td><td>Arquivos raramente acessados, recuperação ms</td></tr><tr><td>S3 Glacier Flexible</td><td>99,99%</td><td>≥ 3</td><td>Por GB</td><td>90 dias</td><td>Arquivos, recuperação minutos/horas</td></tr><tr><td>S3 Glacier Deep Archive</td><td>99,99%</td><td>≥ 3</td><td>Por GB</td><td>180 dias</td><td>Long-term backup, recuperação horas</td></tr></tbody></table></div>
+<h2>Tipos de Encriptação S3</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Gerencia Chave</th><th>Gerencia Encriptação</th><th>Casos</th></tr></thead><tbody><tr><td>SSE-S3</td><td>AWS</td><td>AWS</td><td>Menor overhead operacional</td></tr><tr><td>SSE-KMS</td><td>AWS KMS (CMK opcional)</td><td>AWS</td><td>Audit trail, controle de acesso à chave</td></tr><tr><td>SSE-C</td><td>Cliente</td><td>AWS</td><td>Cliente quer total controle da chave</td></tr><tr><td>CSE</td><td>Cliente</td><td>Cliente</td><td>Compliance que exige encriptação cliente-side</td></tr></tbody></table></div>
+<h2>Replicação S3</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>CRR</th><th>SRR</th></tr></thead><tbody><tr><td>Regiões</td><td>Regiões diferentes</td><td>Mesma região</td></tr><tr><td>Requisito</td><td>Versionamento em AMBOS</td><td>Versionamento em AMBOS</td></tr><tr><td>Objetos existentes</td><td>Não replicados (usar S3 Batch)</td><td>Não replicados</td></tr><tr><td>Delete replicated</td><td>Opcional com delete marker sync</td><td>Opcional</td></tr></tbody></table></div>
+<h2>Performance por Prefixo</h2>
+<ul><li><strong>3.500 PUT/COPY/POST/DELETE</strong> por segundo por prefixo</li><li><strong>5.500 GET/HEAD</strong> por segundo por prefixo</li><li>Multipart Upload: obrigatório &gt; <strong>5 GB</strong>, recomendado &gt; <strong>100 MB</strong></li><li>S3 Transfer Acceleration: usa edge CloudFront → backbone AWS → S3</li></ul>
+<h2>Object Lock</h2>
+<div class="table-wrap"><table><thead><tr><th>Modo</th><th>Quem pode remover</th><th>Período</th></tr></thead><tbody><tr><td>Governance</td><td>Usuários com <code>s3:BypassGovernanceRetention</code></td><td>Configurável</td></tr><tr><td>Compliance</td><td>NINGUÉM (nem root)</td><td>Configurável, irrevogável</td></tr><tr><td>Legal Hold</td><td>Qualquer um com <code>s3:PutObjectLegalHold</code></td><td>Sem data de expiração</td></tr></tbody></table></div>
+<h2>Outros Serviços de Armazenamento</h2>
+<div class="table-wrap"><table><thead><tr><th>Serviço</th><th>Protocolo</th><th>Multi-AZ</th><th>OS</th><th>Caso de Uso</th></tr></thead><tbody><tr><td>EBS</td><td>Block (iSCSI)</td><td>Não (zonal)</td><td>Win/Linux</td><td>Volume único para EC2</td></tr><tr><td>EFS</td><td>NFS v4</td><td>Sim</td><td>Linux</td><td>Compartilhado entre N EC2</td></tr><tr><td>FSx for Windows</td><td>SMB/NTFS</td><td>Sim</td><td>Windows</td><td>AD, DFS</td></tr><tr><td>FSx for Lustre</td><td>Lustre</td><td>Sim</td><td>Linux</td><td>HPC, ML, big data</td></tr><tr><td>FSx for ONTAP</td><td>NFS/SMB/iSCSI</td><td>Sim</td><td>Win/Linux</td><td>Migração NetApp</td></tr><tr><td>FSx for OpenZFS</td><td>NFS</td><td>Sim</td><td>Linux</td><td>Migração ZFS/POSIX</td></tr></tbody></table></div>
+<h2>Storage Gateway</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Protocolo</th><th>Onde Persiste</th></tr></thead><tbody><tr><td>File Gateway</td><td>NFS/SMB</td><td>S3 (com cache local)</td></tr><tr><td>Volume Cached</td><td>iSCSI</td><td>S3 (com cache local)</td></tr><tr><td>Volume Stored</td><td>iSCSI</td><td>On-premises (backup async para S3)</td></tr><tr><td>Tape Gateway</td><td>iSCSI VTL</td><td>S3 / S3 Glacier</td></tr></tbody></table></div>
+<h2>Dicas Rápidas de Prova</h2>
+<ul><li>Versionamento = <strong>pré-requisito</strong> para CRR, SRR e Object Lock</li><li>Bucket Policy vs ACL: prefira Bucket Policy (ACL é legado)</li><li>Block Public Access: 4 configurações independentes; aplica na conta E no bucket</li><li>CORS: necessário para browser JavaScript fazer requests cross-origin para S3</li><li>Pre-signed URL: gerada com credenciais do criador, expira em tempo configurável</li><li>S3 Inventory: liste objetos do bucket de forma assíncrona (diárias/semanais) — alternativa ao LIST API</li><li>S3 Select: SQL simples sobre objetos S3 (até 50% menos dados transferidos)</li><li>DataSync: migração de dados on-prem → AWS ou entre serviços AWS (suporta NFS, SMB, HDFS, S3, EFS, FSx)</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./035-06-amazon-s3-e-armazenamento-casos-de-uso.html">Aula anterior</a>
+      <a href="./037-06-amazon-s3-e-armazenamento-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

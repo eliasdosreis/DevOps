@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Módulo 12: Dados e Analytics - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#083-18-dados-e-analytics-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 18 - Dados e Analytics - 5 min - 18-Dados-e-Analytics/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 18 - Dados e Analytics" loading="lazy">
+      <figcaption>Analytics e fluxo: coletar, transformar, consultar e entregar insight.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Módulo 12: Dados e Analytics</h1>
+<h2>Comparativo Rápido dos Serviços de Analytics</h2>
+<div class="table-wrap"><table><thead><tr><th>Serviço</th><th>Tipo</th><th>Modelo</th><th>Melhor Para</th></tr></thead><tbody><tr><td><strong>Athena</strong></td><td>Query interativa</td><td>Serverless, pay-per-TB</td><td>SQL ad-hoc em S3</td></tr><tr><td><strong>Glue</strong></td><td>ETL</td><td>Serverless</td><td>Transformações ETL, Catalog</td></tr><tr><td><strong>EMR</strong></td><td>Big Data Cluster</td><td>EC2 gerenciado</td><td>Spark/Hive/Presto customizado</td></tr><tr><td><strong>Redshift</strong></td><td>Data Warehouse</td><td>Cluster ou Serverless</td><td>OLAP, BI, SQL analítico</td></tr><tr><td><strong>OpenSearch</strong></td><td>Search/Analytics</td><td>Cluster</td><td>Full-text search, logs, dashboards</td></tr><tr><td><strong>MSK</strong></td><td>Kafka gerenciado</td><td>Cluster</td><td>Streaming Kafka nativo</td></tr><tr><td><strong>Kinesis Data Streams</strong></td><td>Streaming</td><td>Shards</td><td>Streaming real-time customizável</td></tr><tr><td><strong>Kinesis Firehose</strong></td><td>Delivery streaming</td><td>Serverless</td><td>Entrega automática para S3/Redshift</td></tr><tr><td><strong>QuickSight</strong></td><td>BI/Visualização</td><td>SaaS</td><td>Dashboards, SPICE</td></tr></tbody></table></div>
+<hr>
+<h2>Athena — Otimizações de Custo e Performance</h2>
+<div class="table-wrap"><table><thead><tr><th>Técnica</th><th>Impacto</th><th>Implementação</th></tr></thead><tbody><tr><td><strong>Formato colunar</strong> (Parquet/ORC)</td><td>Reduz até 90% dados escaneados</td><td>Converter CSV → Parquet com Glue</td></tr><tr><td><strong>Compressão</strong> (Snappy, GZIP)</td><td>Reduz tamanho dos arquivos</td><td>Configurar no job ETL</td></tr><tr><td><strong>Particionamento</strong></td><td>Escaneia apenas partições relevantes</td><td><code>year=2024/month=01/day=15/</code></td></tr><tr><td><strong>Bucketing</strong></td><td>Reduz data shuffle no join</td><td><code>CLUSTERED BY (user_id) INTO 64 BUCKETS</code></td></tr><tr><td><strong>CTAS</strong> (Create Table As Select)</td><td>Transforma in-place para Parquet</td><td><code>CREATE TABLE ... WITH (format=&#39;PARQUET&#39;)</code></td></tr></tbody></table></div>
+<p><strong>Preço:</strong> $5.00 por TB escaneado. Free: DDL queries, queries falhas, queries com partições (exceto data escaneada).</p>
+<hr>
+<h2>Kinesis Data Streams vs Kinesis Firehose</h2>
+<div class="table-wrap"><table><thead><tr><th>Característica</th><th>KDS</th><th>KDF</th></tr></thead><tbody><tr><td>Latência</td><td>Milissegundos (real-time)</td><td>Near real-time (60s-900s buffer)</td></tr><tr><td>Consumers</td><td>Customizados (Lambda, App, KDA)</td><td>Automático (S3, Redshift, OpenSearch)</td></tr><tr><td>Retação dos dados</td><td>1-365 dias</td><td>Não há (entrega e descarta)</td></tr><tr><td>Reprocessamento</td><td>Sim (cursor de múltiplos consumers)</td><td>Não</td></tr><tr><td>Throughput</td><td>1 MB/s por shard (write), 2 MB/s (read)</td><td>Automático</td></tr><tr><td>Code necessário</td><td>Sim (consumer code)</td><td>Não (configuração)</td></tr><tr><td>Transformação</td><td>Não nativo</td><td>Lambda opcional</td></tr></tbody></table></div>
+<hr>
+<h2>Glue — Componentes</h2>
+<div class="table-wrap"><table><thead><tr><th>Componente</th><th>Função</th></tr></thead><tbody><tr><td><strong>Data Catalog</strong></td><td>Repositório central de schemas/metadados</td></tr><tr><td><strong>Crawler</strong></td><td>Descobre schemas e popula o Catalog automaticamente</td></tr><tr><td><strong>ETL Job</strong></td><td>Código Spark (Python/Scala) para transformação</td></tr><tr><td><strong>DataBrew</strong></td><td>Interface visual de transformação sem código</td></tr><tr><td><strong>Studio</strong></td><td>IDE visual para jobs Glue</td></tr><tr><td><strong>Workflow</strong></td><td>Orquestração de crawlers + jobs + events</td></tr><tr><td><strong>Streaming ETL</strong></td><td>ETL contínuo de Kinesis/Kafka</td></tr></tbody></table></div>
+<hr>
+<h2>Redshift — Distribuição e Sort Keys</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Quando Usar</th></tr></thead><tbody><tr><td>DISTKEY: campo de join</td><td>Colocaliza linhas relacionadas nos mesmos nós</td></tr><tr><td>DISTKEY: ALL</td><td>Replica toda a tabela em cada nó (tabelas pequenas de dimensão)</td></tr><tr><td>DISTKEY: EVEN</td><td>Distribuição round-robin (sem join frequente)</td></tr><tr><td>SORTKEY: campo de filtro/range</td><td>Organiza fisicamente linhas — range scan mais eficiente</td></tr></tbody></table></div>
+<hr>
+<h2>Redshift Serverless vs Provisionado</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>Serverless</th><th>Provisionado</th></tr></thead><tbody><tr><td><strong>Gerenciamento</strong></td><td>Zero</td><td>Gerenciar cluster, resize</td></tr><tr><td><strong>Escalabilidade</strong></td><td>Automática</td><td>Manual ou Elastic Resize</td></tr><tr><td><strong>Custo</strong></td><td>RPU-hours (pay-per-use)</td><td>Hora do nó (independente de uso)</td></tr><tr><td><strong>Melhor para</strong></td><td>Intermitente, dev/test</td><td>Workloads previsíveis e contínuas</td></tr><tr><td><strong>Concurrency Scaling</strong></td><td>N/A</td><td>Clusters transientes automáticos</td></tr></tbody></table></div>
+<hr>
+<h2>EMR — Tipos de Nó e Instâncias Recomendadas</h2>
+<div class="table-wrap"><table><thead><tr><th>Nó</th><th>Função</th><th>Instância Recomendada</th><th>Spot OK?</th></tr></thead><tbody><tr><td><strong>Master</strong></td><td>Coordena cluster (YARN RM, HDFS NN)</td><td>On-Demand ou Reserved</td><td>Não (SPOF)</td></tr><tr><td><strong>Core</strong></td><td>Processa + armazena HDFS</td><td>On-Demand ou Reserved</td><td>Não (perder dados HDFS)</td></tr><tr><td><strong>Task</strong></td><td>Apenas processa (sem HDFS)</td><td><strong>Spot</strong> (ideal)</td><td><strong>Sim</strong> — pode ser interrompido sem perder dados</td></tr></tbody></table></div>
+<hr>
+<h2>Lake Formation — Controles de Acesso</h2>
+<div class="table-wrap"><table><thead><tr><th>Nível</th><th>Exemplo</th></tr></thead><tbody><tr><td><strong>Database</strong></td><td>Lista/describe tabelas</td></tr><tr><td><strong>Table</strong></td><td>Select de todas colunas</td></tr><tr><td><strong>Column</strong></td><td>Select apenas das colunas autorizadas</td></tr><tr><td><strong>Row</strong></td><td>Filtros de linhas (Row-level filters)</td></tr><tr><td><strong>Cell</strong></td><td>Combinação de coluna + linha</td></tr></tbody></table></div>
+<p>Fine-Grained Access Control (FGAC) substitui gerenciamento de S3 bucket policies para data lakes.</p>
+<hr>
+<h2>Dicas de Prova — Padrões Comuns</h2>
+<div class="table-wrap"><table><thead><tr><th>Pista no Enunciado</th><th>Resposta Provável</th></tr></thead><tbody><tr><td>&quot;SQL ad-hoc em S3&quot;</td><td>Athena</td></tr><tr><td>&quot;Reduzir custo Athena&quot;</td><td>Parquet + Particionamento</td></tr><tr><td>&quot;ETL visual sem código&quot;</td><td>AWS Glue DataBrew</td></tr><tr><td>&quot;Schema discovery automático&quot;</td><td>Glue Crawler → Glue Data Catalog</td></tr><tr><td>&quot;Migrar Kafka para AWS&quot;</td><td>Amazon MSK</td></tr><tr><td>&quot;Entrega automática de stream para S3&quot;</td><td>Kinesis Data Firehose</td></tr><tr><td>&quot;Real-time com consumer customizado&quot;</td><td>Kinesis Data Streams</td></tr><tr><td>&quot;BI self-service para não técnicos&quot;</td><td>QuickSight (SPICE)</td></tr><tr><td>&quot;Full-text search + dashboards Kibana&quot;</td><td>OpenSearch Service</td></tr><tr><td>&quot;Dados históricos no S3 + query SQL&quot;</td><td>Redshift Spectrum ou Athena</td></tr><tr><td>&quot;Segurança granular colunar em data lake&quot;</td><td>Lake Formation FGAC</td></tr><tr><td>&quot;Stream processing com Apache Flink&quot;</td><td>MSF (Managed Apache Flink)</td></tr><tr><td>&quot;Oracle → Aurora de forma heterogênea&quot;</td><td>SCT (schema) + DMS (dados)</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./082-18-dados-e-analytics-casos-de-uso.html">Aula anterior</a>
+      <a href="./084-18-dados-e-analytics-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

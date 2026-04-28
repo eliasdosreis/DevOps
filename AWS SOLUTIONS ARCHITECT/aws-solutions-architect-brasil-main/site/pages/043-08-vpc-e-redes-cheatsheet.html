@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Módulo 07: VPC e Redes - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#043-08-vpc-e-redes-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 08 - VPC e Redes - 5 min - 08-VPC-e-Redes/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1520869562399-e772f042f422?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 08 - VPC e Redes" loading="lazy">
+      <figcaption>VPC e a planta da cidade: subnets, rotas, portas e caminhos privados.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Módulo 07: VPC e Redes</h1>
+<h2>Security Groups vs NACLs</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>Security Group</th><th>NACL</th></tr></thead><tbody><tr><td>Nível</td><td>Instância/ENI</td><td>Subnet</td></tr><tr><td>Estado</td><td><strong>Stateful</strong> (resposta automática)</td><td><strong>Stateless</strong> (regras de entrada E saída separadas)</td></tr><tr><td>Regras</td><td>Apenas Allow</td><td>Allow e <strong>Deny</strong></td></tr><tr><td>Processamento</td><td>Todas as regras avaliadas</td><td>Ordem numérica; para na 1ª que corresponde</td></tr><tr><td>Default</td><td>Bloqueia tudo de entrada; permite tudo de saída</td><td>Allow tudo (entrada e saída)</td></tr><tr><td>Associação</td><td>N SGs por ENI, 1 SG por múltiplas ENIs</td><td>1 NACL por subnet; 1 subnet por NACL</td></tr></tbody></table></div>
+<h2>Componentes de Rede VPC</h2>
+<div class="table-wrap"><table><thead><tr><th>Componente</th><th>Função</th></tr></thead><tbody><tr><td>Internet Gateway (IGW)</td><td>Saída + entrada da internet para subnet pública (IPv4/IPv6)</td></tr><tr><td>NAT Gateway</td><td>Saída de internet para subnet privada (IPv4 apenas); zonal</td></tr><tr><td>Egress-Only IGW</td><td>Saída de internet para subnet privada (IPv6 apenas)</td></tr><tr><td>Virtual Private Gateway (VGW)</td><td>Endpoint AWS para Site-to-Site VPN e DX Private VIF</td></tr><tr><td>Customer Gateway (CGW)</td><td>Representa dispositivo on-prem na VPN configuration</td></tr><tr><td>Transit Gateway (TGW)</td><td>Hub central para múltiplas VPCs e conexões on-prem (transitivo)</td></tr></tbody></table></div>
+<h2>VPC Endpoints</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>Gateway Endpoint</th><th>Interface Endpoint (PrivateLink)</th></tr></thead><tbody><tr><td>Serviços</td><td>S3, DynamoDB (apenas)</td><td>~200+ serviços AWS + custom</td></tr><tr><td>Como funciona</td><td>Entrada na route table</td><td>ENI com IP privado da VPC</td></tr><tr><td>Custo</td><td>Gratuito</td><td>Cobrado ($/hora + $/GB)</td></tr><tr><td>On-premises</td><td>Não acessível</td><td>Acessível via DX/VPN</td></tr><tr><td>DNS</td><td>Não altera DNS</td><td>Private DNS option → resolve para IP ENI</td></tr></tbody></table></div>
+<h2>Direct Connect (DX)</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Capacidade</th><th>Provisioning</th><th>Via</th></tr></thead><tbody><tr><td>Dedicated Connection</td><td>1/10/100 Gbps</td><td>Semanas</td><td>Direto com AWS</td></tr><tr><td>Hosted Connection</td><td>50 Mbps a 10 Gbps</td><td>Mais rápido</td><td>Via parceiro APN</td></tr></tbody></table></div>
+<p><strong>Virtual Interfaces (VIF):</strong></p>
+<ul><li><strong>Private VIF</strong> → VPC via VGW ou DX Gateway</li><li><strong>Public VIF</strong> → Endpoints públicos AWS (S3, EC2 IPs)</li><li><strong>Transit VIF</strong> → Transit Gateway (múltiplas VPCs)</li></ul>
+<p><strong>DX + VPN:</strong> adicione IPSec VPN sobre DX para criptografia de dados em trânsito (DX por si só não criptografa)</p>
+<h2>Site-to-Site VPN</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>Site-to-Site VPN</th><th>Accelerated VPN</th></tr></thead><tbody><tr><td>Caminho</td><td>Internet pública (HTTPS/IPSec)</td><td>Edge AWS → backbone privado</td></tr><tr><td>Latência</td><td>Variável</td><td>Reduzida</td></tr><tr><td>Custo</td><td>Menor</td><td>SGA + por horas ou transferência adicional</td></tr><tr><td>Throughput</td><td>~1,25 Gbps por túnel</td><td>~1,25 Gbps por túnel</td></tr></tbody></table></div>
+<ul><li>Cada conexão VPN Google tem <strong>2 túneis</strong> (redundância; recomenda-se HA via 2 customer gateways)</li><li>VGW = lado AWS; CGW = lado on-premises</li></ul>
+<h2>Roteamento: Peering vs Transit Gateway</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>VPC Peering</th><th>Transit Gateway</th></tr></thead><tbody><tr><td>Trânsito</td><td>Não transitivo</td><td><strong>Transitivo</strong></td></tr><tr><td>Escala</td><td>N*(N-1)/2 conexões para N VPCs</td><td>N attachments por TGW</td></tr><tr><td>Cross-region</td><td>Sim (peering inter-região)</td><td>Sim (TGW Peering)</td></tr><tr><td>Custo</td><td>Sem custo de conexão</td><td>Custo por attachment + por GB</td></tr><tr><td>CIDR overlap</td><td>Impede peering</td><td>Não permite comunicação (mas attachment possível)</td></tr></tbody></table></div>
+<h2>IPs Reservados por Subnet AWS</h2>
+<pre><code class="language-">10.0.0.0/24 (256 IPs) → 251 disponíveis:
+  10.0.0.0  → Network address
+  10.0.0.1  → VPC router (default gateway)
+  10.0.0.2  → DNS (Amazon DNS = VPC_CIDR_base + 2)
+  10.0.0.3  → Reservado pela AWS (futuro)
+  10.0.0.255 → Broadcast</code></pre>
+<h2>VPC Flow Logs — Campos Principais</h2>
+<pre><code class="language-">version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status</code></pre>
+<ul><li>Destinos: CloudWatch Logs ou S3</li><li>NÃO captura: DNS (Route 53), DHCP, IMDS (169.254.x.x), Windows license activation</li></ul>
+<h2>Dicas Rápidas de Prova</h2>
+<ul><li>NAT Gateway: criar <strong>1 por AZ</strong> para HA; subnet privada de cada AZ roteia para o NAT GW da sua AZ</li><li>VPC Peering: CIDRs não podem se sobrepor; não é transitivo; funciona cross-region</li><li>Transit Gateway: substitui malha de peerings para topologias grandes; suporta multicast</li><li>Gateway Endpoint: adiciona rota na route table; não precisa de IP público para acessar S3/DynamoDB</li><li>Interface Endpoint com Private DNS: resolve nome público do serviço para IP privado na VPC</li><li>PrivateLink: ideal para expor serviços SaaS ou internos para outras VPCs sem peering</li><li>Direct Connect: NÃO criptografa por padrão; adicione VPN sobre DX para criptografia</li><li>Egress-Only IGW: para IPv6 saída apenas (NAT não existe para IPv6)</li><li>Route Tables: uma por subnet; subnets sem associação explícita usam a main route table</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./042-08-vpc-e-redes-casos-de-uso.html">Aula anterior</a>
+      <a href="./044-08-vpc-e-redes-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

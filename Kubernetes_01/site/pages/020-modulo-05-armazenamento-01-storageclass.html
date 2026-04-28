@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#020-modulo-05-armazenamento-01-storageclass">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 05 - armazenamento - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 05 - armazenamento" loading="lazy">
+      <figcaption>Storage exige entender classes, volumes, claims e o ciclo de vida do dado.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Apresenta a classe de armazenamento (StorageClass). 
+# Basicamente ensina o Kubernetes quais provedores de disco 
+# existem na Infraestrutura (Ex: &quot;SSD Super R�pido AWS&quot;, &quot;HDD Lento&quot;).
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Voc� vai montar um PC na loja de inform�tica. Voc� diz ao  
+# vendedor: &quot;Quero 1 TB de disco, mas precisa ser NVMe hiper r�pido&quot;.
+# O StorageClass � a &quot;Vitrine&quot; da loja de inform�tica. Ele � o menu que diz 
+# ao K8s quais tipos de Discos R�gidos ele sabe provisionar na vida real.
+# Voc� pode ter um StorageClass chamado &quot;disco-barato&quot; (Lento, usado pra logs) e um
+# outro chamado &quot;ssd-premium&quot; (Caro, usado pra Banco de Dados Postgres).
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# StorageClass (SC) fornece aos administradores do cluster uma forma de descrever  
+# as &quot;classes&quot; (tiers) de armazenamento que oferecem. Os SCs encapsulam os provisioners 
+# din�micos nativos (como `kubernetes.io/aws-ebs` para AWS EBS, ou drivers modernos CSI). 
+# Quando um usu�rio submete um yaml pedindo um disco, ele cita qual StorageClass de I/O
+# ele quer.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  # � esse nome arbitr�rio que os programadores usar�o nos seus arquivos
+  name: disco-veloz-ssd 
+
+# O &quot;provisioner&quot; � o PLUGIN m�gico que de fato sabe mandar ordens el�tricas 
+# para a sua m�quina ou provedor de cloud para &quot;Recortar&quot; e criar a parti�?o.
+# Como usamos Kind/Docker local, usaremos o provisioner oficial de disco host do kind:
+provisioner: rancher.io/local-path 
+
+# RECLAIM POLICY: A linha que separa o Junior do Desemprego!
+# &quot;Delete&quot;: Se o desenvolvedor apagar a requisi��o do disco (O YAML), apaga-se o HD f�sico para sempre!
+# &quot;Retain&quot;: Mesmo se apagarem tudo no soft, o HD continua ocupando espa�o f�sico esperando libera��o humana
+reclaimPolicy: Retain 
+
+# S� crie o disco f�sico na Amazon/VM quando o primeiro Servidor (Pod) fizer boot pedindo ele
+volumeBindingMode: WaitForFirstConsumer
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplicando o card�pio de discos:
+#    kubectl apply -f 01-storageclass.yaml
+#
+# 2. Listando as vitrines de armazenamento dispon�veis:
+#    kubectl get storageclass
+#    (Abrevia��o r�pida: `kubectl get sc`).
+#    O Kind j� traz um SC &quot;standard&quot; de f�brica! Se voc� n�o criar esse acima, 
+#    ele sempre usar� o Standard por padr�o.
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# N�o tem muito &quot;Bug&quot; criando StorageClass pq ele apenas registra metadado. 
+# O problema ocorre na hora de INVOCAR a classe. O maior erro arquitetural:
+# Um dev submete um helm chart do banco &#39;Redis&#39; num yaml e n�o avisa que precisava 
+# dum StorageClass especifico de SSD. O sistema fallback pro SC (default).
+# Voc� pode olhar no `get sc` quem tem a tag `(default)` afixado.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# Historicamente os &quot;Provisioners&quot; moravam intr�nseca e monoliticiamente DENTRO do  
+# c�digo em C/Go do Kube-Apiserver. Isso impedia empresas tipo a &quot;Dell&quot; de criar um driver de K8s 
+# para seus Storage Array gigantes corporativos a n�o ser que o projeto open source Kubernetes aceitasse  
+# o c�digo DELES. O modernismo da v1.13 introduziu a arquitetura &quot;CSI&quot; (Container Storage Interface).
+# Hoje o StorageClass s� cita &quot;driver: csi.dell.com&quot;, e o kube apenas manda 1 RPC pro Plugin solto que interage com os HDs.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Sua arquitetura possui Storage Classes baseadas num array corporativo 
+# de rede (Ex: NFS/EFS na AWS). Porqu� seria prudente usar Storage Classes 
+# com a pol�tica de `ReclaimPolicy: Retain` para bancos de dados do que `Delete`?&quot;
+# Resposta Esperada: &quot;A configura��o `Delete` gera cascata de Exclus�o (Cascading Deletion). 
+# Se algu�m rodar um comando nocivo como `kubectl delete namespace producao`, ele levar� todos os 
+# Deployments e consequentemente os Claims (Requisi��es) do disco. Com o `Delete`, o K8s far�
+# a chamada ass�ncrona p/ a Provedor e o disco/volume inteiro f�sico ser� destru�do, sem chance de dump.
+# Retain garante o &quot;Tombstone&quot; e exige limpeza humana intencional.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./019-modulo-04-config-03-pod-com-config.html">Aula anterior</a>
+      <a href="./021-modulo-05-armazenamento-02-persistentvolume.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

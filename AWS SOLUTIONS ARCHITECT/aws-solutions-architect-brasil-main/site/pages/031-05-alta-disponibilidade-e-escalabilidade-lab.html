@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab — Alta Disponibilidade e Escalabilidade - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#031-05-alta-disponibilidade-e-escalabilidade-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 05 - Alta Disponibilidade e Escalabilidade - 8 min - 05-Alta-Disponibilidade-e-Escalabilidade/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 05 - Alta Disponibilidade e Escalabilidade" loading="lazy">
+      <figcaption>Alta disponibilidade nasce de redundancia, health checks e escala automatica.</figcaption>
+    </figure>
+    <h1>Lab — Alta Disponibilidade e Escalabilidade</h1>
+<blockquote><p><strong>Região:</strong> us-east-1<br><strong>Custo estimado:</strong> ~$0,02/hora ALB + EC2 t3.micro durante o lab<br><strong>Pré-requisito:</strong> AWS CLI configurado, Terraform &gt;= 1.5</p></blockquote>
+<h2>Objetivos do Lab</h2>
+<ol><li>Criar um ALB com path-based routing para dois target groups</li><li>Configurar ASG com Target Tracking vinculado ao ALB</li><li>Adicionar Lifecycle Hook com notificação via EventBridge</li><li>Testar scale-out e scale-in com stress test</li></ol>
+<hr>
+<h2>Parte 1: ALB com Path-Based Routing via AWS CLI</h2>
+<pre><code class="language-bash">REGION=&quot;us-east-1&quot;
+VPC_ID=$(aws ec2 describe-vpcs --filters &quot;Name=isDefault,Values=true&quot; \
+  --query &quot;Vpcs[0].VpcId&quot; --output text --region $REGION)
+SUBNETS=$(aws ec2 describe-subnets \
+  --filters &quot;Name=vpc-id,Values=$VPC_ID&quot; \
+  --query &quot;Subnets[*].SubnetId&quot; --output text --region $REGION)
+SUBNET_1=$(echo $SUBNETS | cut -d&#39; &#39; -f1)
+SUBNET_2=$(echo $SUBNETS | cut -d&#39; &#39; -f2)
+
+echo &quot;VPC: $VPC_ID | Subnets: $SUBNET_1 $SUBNET_2&quot;
+
+# Security Group para ALB
+ALB_SG=$(aws ec2 create-security-group \
+  --group-name lab-alb-sg --description &quot;ALB Lab&quot; \
+  --vpc-id $VPC_ID --region $REGION \
+  --query GroupId --output text)
+
+aws ec2 authorize-security-group-ingress \
+  --group-id $ALB_SG --protocol tcp --port 80 \
+  --cidr 0.0.0.0/0 --region $REGION
+
+# Security Group para instâncias (aceita do ALB apenas)
+EC2_SG=$(aws ec2 create-security-group \
+  --group-name lab-ec2-sg --description &quot;EC2 Lab&quot; \
+  --vpc-id $VPC_ID --region $REGION \
+  --query GroupId --output text)
+
+aws ec2 authorize-security-group-ingress \
+  --group-id $EC2_SG --protocol tcp --port 80 \
+  --source-group $ALB_SG --region $REGION
+
+# Criar ALB
+ALB_ARN=$(aws elbv2 create-load-balancer \
+  --name lab-alb \
+  --subnets $SUBNET_1 $SUBNET_2 \
+  --security-groups $ALB_SG \
+  --region $REGION \
+  --query &quot;LoadBalancers[0].LoadBalancerArn&quot; --output text)
+
+echo &quot;ALB criado: $ALB_ARN&quot;
+
+# Criar dois Target Groups
+TG_API=$(aws elbv2 create-target-group \
+  --name lab-tg-api \
+  --protocol HTTP --port 80 \
+  --vpc-id $VPC_ID \
+  --health-check-path /api/health \
+  --health-check-interval-seconds 15 \
+  --healthy-threshold-count 2 \
+  --unhealthy-threshold-count 3 \
+  --region $REGION \
+  --query &quot;TargetGroups[0].TargetGroupArn&quot; --output text)
+
+TG_WEB=$(aws elbv2 create-target-group \
+  --name lab-tg-web \
+  --protocol HTTP --port 80 \
+  --vpc-id $VPC_ID \
+  --health-check-path /health \
+  --health-check-interval-seconds 15 \
+  --region $REGION \
+  --query &quot;TargetGroups[0].TargetGroupArn&quot; --output text)
+
+echo &quot;TG API: $TG_API | TG WEB: $TG_WEB&quot;
+
+# Criar Listener HTTP:80 com regras de roteamento
+LISTENER_ARN=$(aws elbv2 create-listener \
+  --load-balancer-arn $ALB_ARN \
+  --protocol HTTP --port 80 \
+  --default-actions Type=forward,TargetGroupArn=$TG_WEB \
+  --region $REGION \
+  --query &quot;Listeners[0].ListenerArn&quot; --output text)
+
+# Adicionar regra de path-based para /api/*
+aws elbv2 create-rule \
+  --listener-arn $LISTENER_ARN \
+  --priority 10 \
+  --conditions &#39;[{&quot;Field&quot;:&quot;path-pattern&quot;,&quot;Values&quot;:[&quot;/api/*&quot;]}]&#39; \
+  --actions &quot;[{\&quot;Type\&quot;:\&quot;forward\&quot;,\&quot;TargetGroupArn\&quot;:\&quot;$TG_API\&quot;}]&quot; \
+  --region $REGION</code></pre>
+<hr>
+<h2>Parte 2: Terraform — ASG completo com Target Tracking e Lifecycle Hook</h2>
+<pre><code class="language-hcl"># main.tf
+
+terraform {
+  required_version = &quot;&gt;= 1.5&quot;
+  required_providers {
+    aws = {
+      source  = &quot;hashicorp/aws&quot;
+      version = &quot;~&gt; 5.0&quot;
+    }
+  }
+}
+
+provider &quot;aws&quot; {
+  region = &quot;us-east-1&quot;
+}
+
+data &quot;aws_vpc&quot; &quot;default&quot; {
+  default = true
+}
+
+data &quot;aws_subnets&quot; &quot;available&quot; {
+  filter {
+    name   = &quot;vpc-id&quot;
+    values = [data.aws_vpc.default.id]
+  }
+}
+
+data &quot;aws_ssm_parameter&quot; &quot;al2023&quot; {
+  name = &quot;/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64&quot;
+}
+
+# ──────────────────────────────────────────────────────
+# 1. Security Groups
+# ──────────────────────────────────────────────────────
+
+resource &quot;aws_security_group&quot; &quot;alb_sg&quot; {
+  name        = &quot;lab-ha-alb-sg&quot;
+  description = &quot;ALB Lab HA&quot;
+  vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = &quot;tcp&quot;
+    cidr_blocks = [&quot;0.0.0.0/0&quot;]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = &quot;-1&quot;
+    cidr_blocks = [&quot;0.0.0.0/0&quot;]
+  }
+}
+
+resource &quot;aws_security_group&quot; &quot;ec2_sg&quot; {
+  name        = &quot;lab-ha-ec2-sg&quot;
+  description = &quot;EC2 Lab HA&quot;
+  vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    from_port       = 80
+    to_port         = 80
+    protocol        = &quot;tcp&quot;
+    security_groups = [aws_security_group.alb_sg.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = &quot;-1&quot;
+    cidr_blocks = [&quot;0.0.0.0/0&quot;]
+  }
+}
+
+# ──────────────────────────────────────────────────────
+# 2. Application Load Balancer
+# ──────────────────────────────────────────────────────
+
+resource &quot;aws_lb&quot; &quot;main&quot; {
+  name               = &quot;lab-ha-alb&quot;
+  internal           = false
+  load_balancer_type = &quot;application&quot;
+  security_groups    = [aws_security_group.alb_sg.id]
+  subnets            = data.aws_subnets.available.ids
+
+  enable_deletion_protection = false # lab: permite destroy fácil
+
+  tags = {
+    Name   = &quot;lab-ha-alb&quot;
+    Module = &quot;04-Alta-Disponibilidade&quot;
+  }
+}
+
+resource &quot;aws_lb_target_group&quot; &quot;web&quot; {
+  name        = &quot;lab-ha-tg-web&quot;
+  port        = 80
+  protocol    = &quot;HTTP&quot;
+  vpc_id      = data.aws_vpc.default.id
+  target_type = &quot;instance&quot;
+
+  health_check {
+    path                = &quot;/health&quot;
+    interval            = 15
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    matcher             = &quot;200&quot;
+  }
+
+  deregistration_delay = 30 # lab: reduzido para 30s (padrão 300s)
+}
+
+resource &quot;aws_lb_listener&quot; &quot;http&quot; {
+  load_balancer_arn = aws_lb.main.arn
+  port              = 80
+  protocol          = &quot;HTTP&quot;
+
+  default_action {
+    type             = &quot;forward&quot;
+    target_group_arn = aws_lb_target_group.web.arn
+  }
+}
+
+# ──────────────────────────────────────────────────────
+# 3. Launch Template
+# ──────────────────────────────────────────────────────
+
+resource &quot;aws_launch_template&quot; &quot;web&quot; {
+  name_prefix            = &quot;lab-ha-web-&quot;
+  image_id               = data.aws_ssm_parameter.al2023.value
+  instance_type          = &quot;t3.micro&quot;
+  vpc_security_group_ids = [aws_security_group.ec2_sg.id]
+
+  metadata_options {
+    http_tokens                 = &quot;required&quot;
+    http_endpoint               = &quot;enabled&quot;
+    http_put_response_hop_limit = 1
+  }
+
+  user_data = base64encode(&lt;&lt;-EOF
+    #!/bin/bash
+    yum install -y httpd stress
+    systemctl enable --now httpd
+
+    # Endpoint de health check
+    cat &gt; /var/www/html/health &lt;&lt;&#39;HEALTH&#39;
+    OK
+    HEALTH
+
+    # Endpoint principal
+    INSTANCE_ID=$(curl -s -X PUT http://169.254.169.254/latest/api/token \
+      -H &quot;X-aws-ec2-metadata-token-ttl-seconds: 60&quot; | \
+      xargs -I {} curl -s http://169.254.169.254/latest/meta-data/instance-id \
+      -H &quot;X-aws-ec2-metadata-token: {}&quot;)
+    echo &quot;&lt;h1&gt;Hello from $INSTANCE_ID&lt;/h1&gt;&quot; &gt; /var/www/html/index.html
+  EOF
+  )
+
+  tag_specifications {
+    resource_type = &quot;instance&quot;
+    tags = {
+      Name   = &quot;lab-ha-web-instance&quot;
+      Module = &quot;04-Alta-Disponibilidade&quot;
+    }
+  }
+}
+
+# ──────────────────────────────────────────────────────
+# 4. Auto Scaling Group
+# ──────────────────────────────────────────────────────
+
+resource &quot;aws_autoscaling_group&quot; &quot;web&quot; {
+  name                = &quot;lab-ha-asg&quot;
+  vpc_zone_identifier = data.aws_subnets.available.ids
+  min_size            = 1
+  max_size            = 4
+  desired_capacity    = 2
+
+  launch_template {
+    id      = aws_launch_template.web.id
+    version = &quot;$Latest&quot;
+  }
+
+  target_group_arns = [aws_lb_target_group.web.arn]
+
+  # Importante: usar ELB health check em produção
+  health_check_type         = &quot;ELB&quot;
+  health_check_grace_period = 60
+
+  # Termination policy
+  termination_policies = [&quot;OldestLaunchTemplate&quot;, &quot;Default&quot;]
+
+  tag {
+    key                 = &quot;Name&quot;
+    value               = &quot;lab-ha-web&quot;
+    propagate_at_launch = true
+  }
+}
+
+# ──────────────────────────────────────────────────────
+# 5. Target Tracking Policy (baseada em ALB requests)
+# ──────────────────────────────────────────────────────
+
+resource &quot;aws_autoscaling_policy&quot; &quot;target_tracking&quot; {
+  name                   = &quot;lab-ha-target-tracking&quot;
+  autoscaling_group_name = aws_autoscaling_group.web.name
+  policy_type            = &quot;TargetTrackingScaling&quot;
+
+  target_tracking_configuration {
+    # Escalar para manter 100 requests/target por minuto
+    predefined_metric_specification {
+      predefined_metric_type = &quot;ALBRequestCountPerTarget&quot;
+      resource_label = &quot;${aws_lb.main.arn_suffix}/${aws_lb_target_group.web.arn_suffix}&quot;
+    }
+    target_value       = 100.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
+  }
+}
+
+# ──────────────────────────────────────────────────────
+# 6. Lifecycle Hook via EventBridge
+# ──────────────────────────────────────────────────────
+
+resource &quot;aws_sns_topic&quot; &quot;lifecycle&quot; {
+  name = &quot;lab-ha-lifecycle-notifications&quot;
+}
+
+resource &quot;aws_autoscaling_lifecycle_hook&quot; &quot;launch_hook&quot; {
+  name                   = &quot;lab-launch-hook&quot;
+  autoscaling_group_name = aws_autoscaling_group.web.name
+  lifecycle_transition   = &quot;autoscaling:EC2_INSTANCE_LAUNCHING&quot;
+  default_result         = &quot;CONTINUE&quot;
+  heartbeat_timeout      = 120 # lab: 2 minutos
+
+  notification_target_arn = aws_sns_topic.lifecycle.arn
+  role_arn                = aws_iam_role.asg_lifecycle_role.arn
+}
+
+resource &quot;aws_iam_role&quot; &quot;asg_lifecycle_role&quot; {
+  name = &quot;lab-asg-lifecycle-role&quot;
+
+  assume_role_policy = jsonencode({
+    Version = &quot;2012-10-17&quot;
+    Statement = [{
+      Effect    = &quot;Allow&quot;
+      Principal = { Service = &quot;autoscaling.amazonaws.com&quot; }
+      Action    = &quot;sts:AssumeRole&quot;
+    }]
+  })
+}
+
+resource &quot;aws_iam_role_policy&quot; &quot;asg_lifecycle_policy&quot; {
+  role = aws_iam_role.asg_lifecycle_role.id
+  policy = jsonencode({
+    Version = &quot;2012-10-17&quot;
+    Statement = [{
+      Effect   = &quot;Allow&quot;
+      Action   = [&quot;sns:Publish&quot;]
+      Resource = aws_sns_topic.lifecycle.arn
+    }]
+  })
+}
+
+# ──────────────────────────────────────────────────────
+# 7. CloudWatch Alarm para Step Scaling adicional
+# ──────────────────────────────────────────────────────
+
+resource &quot;aws_cloudwatch_metric_alarm&quot; &quot;high_cpu&quot; {
+  alarm_name          = &quot;lab-ha-high-cpu&quot;
+  comparison_operator = &quot;GreaterThanThreshold&quot;
+  evaluation_periods  = 2
+  metric_name         = &quot;CPUUtilization&quot;
+  namespace           = &quot;AWS/EC2&quot;
+  period              = 60
+  statistic           = &quot;Average&quot;
+  threshold           = 80
+  alarm_description   = &quot;Trigger scale-out quando CPU &gt; 80% por 2 minutos&quot;
+
+  dimensions = {
+    AutoScalingGroupName = aws_autoscaling_group.web.name
+  }
+
+  alarm_actions = [aws_autoscaling_policy.step_scale_out.arn]
+}
+
+resource &quot;aws_autoscaling_policy&quot; &quot;step_scale_out&quot; {
+  name                   = &quot;lab-ha-step-scale-out&quot;
+  autoscaling_group_name = aws_autoscaling_group.web.name
+  policy_type            = &quot;StepScaling&quot;
+  adjustment_type        = &quot;ChangeInCapacity&quot;
+
+  step_adjustment {
+    scaling_adjustment          = 1
+    metric_interval_lower_bound = 0
+    metric_interval_upper_bound = 20
+  }
+
+  step_adjustment {
+    scaling_adjustment          = 2
+    metric_interval_lower_bound = 20
+  }
+}
+
+# ──────────────────────────────────────────────────────
+# Outputs
+# ──────────────────────────────────────────────────────
+
+output &quot;alb_dns&quot; {
+  value       = aws_lb.main.dns_name
+  description = &quot;DNS do ALB para teste&quot;
+}
+
+output &quot;asg_name&quot; {
+  value = aws_autoscaling_group.web.name
+}</code></pre>
+<hr>
+<h2>Parte 3: Stress Test e Monitoramento</h2>
+<pre><code class="language-bash"># Obter DNS do ALB
+ALB_DNS=$(terraform output -raw alb_dns)
+
+# Testar routing
+curl http://$ALB_DNS/         # → TG-web
+curl http://$ALB_DNS/health   # → health check resposta
+
+# Gerar carga para disparar scale-out (emula via ab - Apache Benchmark)
+# (instalar: yum install -y httpd-tools)
+ab -n 10000 -c 50 http://$ALB_DNS/ &amp;
+
+# Monitorar ASG em tempo real
+watch -n5 &quot;aws autoscaling describe-auto-scaling-groups \
+  --auto-scaling-group-names lab-ha-asg \
+  --query &#39;AutoScalingGroups[0].{Min:MinSize,Max:MaxSize,Desired:DesiredCapacity,Instances:Instances[*].LifecycleState}&#39; \
+  --output json --region us-east-1&quot;
+
+# Ver atividades de scaling
+aws autoscaling describe-scaling-activities \
+  --auto-scaling-group-name lab-ha-asg \
+  --region us-east-1 \
+  --query &quot;Activities[0:5].{Cause:Cause,Status:StatusCode,Time:StartTime}&quot; \
+  --output table</code></pre>
+<hr>
+<h2>Cleanup</h2>
+<pre><code class="language-bash"># Terraform destroy (remove tudo)
+terraform destroy -auto-approve
+
+# Ou CLI para recursos criados manualmente:
+# Deletar Listener e ALB
+aws elbv2 delete-listener --listener-arn $LISTENER_ARN --region us-east-1
+aws elbv2 delete-load-balancer --load-balancer-arn $ALB_ARN --region us-east-1
+
+# Deletar Target Groups
+aws elbv2 delete-target-group --target-group-arn $TG_API --region us-east-1
+aws elbv2 delete-target-group --target-group-arn $TG_WEB --region us-east-1
+
+# Deletar Security Groups
+aws ec2 delete-security-group --group-id $EC2_SG --region us-east-1
+aws ec2 delete-security-group --group-id $ALB_SG --region us-east-1
+
+echo &quot;Cleanup concluído.&quot;</code></pre>
+<hr>
+<h2>Pontos de Revisão</h2>
+<ul><li>[ ] Por que o <code>deregistration_delay</code> foi reduzido para 30s no lab?</li><li>[ ] O que acontece se o health check na <code>/health</code> retornar 404?</li><li>[ ] Com Target Tracking configurado para ALBRequestCountPerTarget=100, quantas instâncias são necessárias para 500 req/min?</li><li>[ ] O Lifecycle Hook em <code>EC2_INSTANCE_LAUNCHING</code> afeta o scale-in?</li><li>[ ] Por que o Step Scaling adiciona 1 instância para CPU 80-100% mas 2 para &gt;100%?</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./030-05-alta-disponibilidade-e-escalabilidade-flashcards.html">Aula anterior</a>
+      <a href="./032-05-alta-disponibilidade-e-escalabilidade-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

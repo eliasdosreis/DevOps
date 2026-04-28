@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet - Recuperacao de Desastres e Continuidade - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#111-22-recuperacao-de-desastres-e-continuidade-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 22 - Recuperacao de Desastres e Continuidade - 2 min - 22-Recuperacao-de-Desastres-e-Continuidade/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 22 - Recuperacao de Desastres e Continuidade" loading="lazy">
+      <figcaption>DR e continuidade comecam por RTO/RPO antes de escolher multi-AZ ou multi-region.</figcaption>
+    </figure>
+    <h1>Cheatsheet - Recuperacao de Desastres e Continuidade</h1>
+<h2>Mapa rapido de decisao</h2>
+<div class="table-wrap"><table><thead><tr><th>Requisito</th><th>Melhor padrao</th><th>Observacao de prova</th></tr></thead><tbody><tr><td>Menor custo, aceita horas de indisponibilidade</td><td>Backup and Restore</td><td>Foco em snapshots, backups e restore automatizado</td></tr><tr><td>RTO de minutos com custo controlado</td><td>Pilot Light</td><td>Banco e dados replicados, compute sobe no desastre</td></tr><tr><td>Baixo downtime com operacao simples</td><td>Warm Standby</td><td>Ambiente reduzido sempre ativo em segunda regiao</td></tr><tr><td>Quase zero downtime e perda de dados</td><td>Active/Active</td><td>Usa roteamento global e dados replicados em tempo quase real</td></tr></tbody></table></div>
+<h2>Servicos chave</h2>
+<ul><li>Route 53: failover, health checks, latency routing</li><li>AWS Backup: backup centralizado, vault lock, cross-account</li><li>Elastic Disaster Recovery: replicacao continua de servidores</li><li>S3: versioning, CRR, lifecycle, object lock</li><li>RDS/Aurora: backups automaticos, snapshots, global database</li><li>DynamoDB: PITR, global tables</li></ul>
+<h2>Armadilhas comuns</h2>
+<ul><li>confundir alta disponibilidade (multi-AZ) com DR regional</li><li>ignorar custo de replicacao cross-region</li><li>escolher arquitetura complexa sem necessidade de negocio</li><li>esquecer de testar runbooks de failover/failback</li></ul>
+<h2>Frases gatilho do exame</h2>
+<ul><li>&quot;regional disaster&quot; =&gt; multi-region</li><li>&quot;least operational overhead&quot; =&gt; servico gerenciado</li><li>&quot;recover quickly&quot; =&gt; warm standby ou active/active</li><li>&quot;cost-effective&quot; =&gt; backup and restore ou pilot light</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./110-22-recuperacao-de-desastres-e-continuidade-casos-de-uso.html">Aula anterior</a>
+      <a href="./112-22-recuperacao-de-desastres-e-continuidade-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

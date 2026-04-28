@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Módulo 08 — DNS, Route 53 e CloudFront - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#062-13-dns-route53-e-cloudfront-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 13 - DNS Route53 e CloudFront - 7 min - 13-DNS-Route53-e-CloudFront/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 13 - DNS Route53 e CloudFront" loading="lazy">
+      <figcaption>DNS e CDN aproximam usuarios, reduzem latencia e protegem origens.</figcaption>
+    </figure>
+    <h1>Módulo 08 — DNS, Route 53 e CloudFront</h1>
+<h2>Amazon Route 53</h2>
+<p>Serviço DNS gerenciado e registrador de domínios da AWS. Nome vem da porta DNS (53) e da Rota 66 americana.</p>
+<h3>Tipos de Hosted Zones</h3>
+<ul><li><strong>Public Hosted Zone</strong>: resolve nomes na internet pública</li><li><strong>Private Hosted Zone</strong>: resolve nomes dentro de uma ou mais VPCs (não acessível publicamente)</li></ul>
+<h3>Record Types</h3>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Descrição</th><th>AWS-specific</th></tr></thead><tbody><tr><td>A</td><td>IPv4 address</td><td>—</td></tr><tr><td>AAAA</td><td>IPv6 address</td><td>—</td></tr><tr><td>CNAME</td><td>Aponta para outro hostname</td><td>Não pode ser criado no apex (root domain)</td></tr><tr><td><strong>Alias</strong></td><td>Aponta para recurso AWS (ELB, CloudFront, S3, etc.)</td><td>✅ Sim — responde como A/AAAA, gratuito para recursos AWS</td></tr><tr><td>NS</td><td>Name Servers da hosted zone</td><td>—</td></tr><tr><td>SOA</td><td>Start of Authority</td><td>—</td></tr><tr><td>MX</td><td>Mail servers</td><td>—</td></tr><tr><td>TXT</td><td>Texto (SPF, DKIM, validação ACM)</td><td>—</td></tr><tr><td>PTR</td><td>Reverse DNS</td><td>—</td></tr><tr><td>SRV, CAA</td><td>Serviços, autoridade de certificados</td><td>—</td></tr></tbody></table></div>
+<blockquote><p><strong>Alias vs CNAME</strong>: Alias pode ser criado no apex (exemplo.com), CNAME não pode. Alias não cobra por query. Alias resolve para o IP real (sem CNAME chain). <strong>Não pode criar Alias para EC2 DNS name.</strong></p></blockquote>
+<h3>Routing Policies</h3>
+<div class="table-wrap"><table><thead><tr><th>Política</th><th>Comportamento</th><th>Quando usar</th></tr></thead><tbody><tr><td><strong>Simple</strong></td><td>Retorna 1 ou múltiplos valores aleatórios</td><td>Single resource, sem health check obrigatório</td></tr><tr><td><strong>Weighted</strong></td><td>Distribui por peso (0–255)</td><td>A/B testing, migração gradual</td></tr><tr><td><strong>Latency</strong></td><td>Roteia para região de menor latência ao usuário</td><td>Multi-region, baixa latência</td></tr><tr><td><strong>Failover</strong></td><td>Primary → Secondary se primary falhar</td><td>Active-passive DR</td></tr><tr><td><strong>Geolocation</strong></td><td>Por país/continente/estado (US)</td><td>Conteúdo localizado, compliance</td></tr><tr><td><strong>Geoproximity</strong></td><td>Por localização + bias (ampliar/reduzir região)</td><td>Redistribuição de tráfego por coordenadas</td></tr><tr><td><strong>Multivalue Answer</strong></td><td>Retorna até 8 valores, com health check</td><td>Distribuição de carga sem ELB (client-side)</td></tr><tr><td><strong>IP-based</strong></td><td>Por CIDR do cliente</td><td>ISP-specific routing, otimização de rede</td></tr></tbody></table></div>
+<blockquote><p>Geoproximity requer <strong>Traffic Flow</strong> e <strong>Traffic Policy</strong> — não é configurável via console simples.</p></blockquote>
+<h3>Health Checks</h3>
+<ul><li>Verificam endpoint HTTP/HTTPS/TCP a cada 10s (Fast HCs) ou 30s</li><li>Calculados por pelo menos 18 verificadores globais (threshold configurável de 1–10)</li><li><strong>Calculated Health Checks</strong>: combina múltiplos health checks (AND/OR)</li><li><strong>CloudWatch Alarm Health Check</strong>: para recursos privados (sem IP público) — HC verifica o alarm, não o recurso direto</li><li>Podem ser associados a records de Weighted, Failover, Latency, Geolocation</li></ul>
+<hr>
+<h2>Amazon CloudFront</h2>
+<p>CDN (Content Delivery Network) global com 450+ PoPs (Edge Locations) e 13 Regional Edge Caches.</p>
+<h3>Componentes</h3>
+<ul><li><strong>Distribution</strong>: unidade de configuração do CloudFront (domain: <code>xxxx.cloudfront.net</code>)</li><li><strong>Origin</strong>: backend (S3, ALB, EC2, API Gateway, qualquer endereço HTTP)</li><li><strong>Behavior (Cache Behavior)</strong>: regra por path pattern (ex: <code>/api/<em></code> → sem cache; <code>/</em>.jpg</code> → cache 1 dia)</li><li><strong>Cache Policy</strong>: TTL (min/max/default), headers/cookies/query strings para incluir na cache key</li><li><strong>Origin Request Policy</strong>: o que enviar ao origin além do que está na cache key</li><li><strong>Edge Location</strong>: onde os arquivos são cacheados</li></ul>
+<h3>CloudFront + S3</h3>
+<div class="table-wrap"><table><thead><tr><th>Método</th><th>Descrição</th><th>Para novo conteúdo?</th></tr></thead><tbody><tr><td><strong>OAC (Origin Access Control)</strong></td><td>Política no S3 bucket que só aceita requisições assinadas pelo CloudFront</td><td>✅ Recomendado</td></tr><tr><td><strong>OAI (Origin Access Identity)</strong></td><td>Identidade virtual IAM para o CF acessar S3 privado</td><td>⚠️ Legado (ainda funciona)</td></tr></tbody></table></div>
+<p>Com OAC, o bucket S3 deve ter:</p>
+<pre><code class="language-json">{
+  &quot;Principal&quot;: {&quot;Service&quot;: &quot;cloudfront.amazonaws.com&quot;},
+  &quot;Condition&quot;: {&quot;StringEquals&quot;: {&quot;AWS:SourceArn&quot;: &quot;arn:aws:cloudfront::ACCOUNT:distribution/DIST_ID&quot;}}
+}</code></pre>
+<h3>CloudFront Cache Invalidation</h3>
+<ul><li>Remove objetos do cache antes do TTL expirar: <code>/*</code> (tudo) ou path específico</li><li>Cobrado por invalidation path após as primeiras 1.000/mês</li><li>Alternativa: usar versionamento de arquivos (ex: <code>app.v2.js</code>) — sem custo de invalidação</li></ul>
+<h3>Geo Restriction</h3>
+<ul><li><strong>Allowlist</strong>: apenas países listados podem acessar</li><li><strong>Blocklist</strong>: países listados são bloqueados</li><li>Baseado em banco de dados GeoIP (não infalível — VPNs podem contornar)</li></ul>
+<h3>Lambda@Edge vs CloudFront Functions</h3>
+<div class="table-wrap"><table><thead><tr><th>Característica</th><th>Lambda@Edge</th><th>CloudFront Functions</th></tr></thead><tbody><tr><td>Runtime</td><td>Node.js, Python</td><td>JavaScript (ECMAScript 5.1)</td></tr><tr><td>Latência</td><td>Moderada (~1–10ms)</td><td>Muito baixa (&lt;1ms)</td></tr><tr><td>Memória</td><td>Até 10 GB (L@E viewer), 128MB request</td><td>Máx 2 MB de memória</td></tr><tr><td>Requests/s</td><td>Sem limite de taxa</td><td>10 milhões+ req/s</td></tr><tr><td>Duração</td><td>Até 30s (origin), 5s (viewer)</td><td>Máximo 1ms</td></tr><tr><td>Acesso à rede</td><td>Sim (pode chamar APIs externas)</td><td>Não</td></tr><tr><td>Eventos</td><td>Viewer Request/Response, Origin Request/Response</td><td>Viewer Request/Response apenas</td></tr><tr><td>Uso típico</td><td>Reescrita de URL complexa, A/B com cookies, autenticação</td><td>Manipulação de headers, URL rewrite simples, redirect</td></tr></tbody></table></div>
+<hr>
+<h2>AWS Global Accelerator</h2>
+<p>Usa a rede global da AWS para rotear tráfego de usuários ao endpoint mais próximo com menor latência:</p>
+<ul><li>Fornece <strong>2 Anycast IPs estáticos</strong> globais (não mudam — excelente para whitelisting)</li><li>Roteia para o endpoint saudável mais próximo via rede backbone AWS</li><li>Suporta endpoints: ALB, NLB, EC2, Endereços IP elásticos</li><li><strong>Health checks</strong> detectam failover e reroteiam automaticamente</li><li><strong>Diferença do CloudFront</strong>: CloudFront entrega conteúdo cacheado (CDN); Global Accelerator é proxy TCP/UDP, melhor para aplicações não-HTTP (jogos, IoT, VoIP)</li></ul>
+<h3>Route 53 vs Global Accelerator</h3>
+<div class="table-wrap"><table><thead><tr><th>Aspecto</th><th>Route 53</th><th>Global Accelerator</th></tr></thead><tbody><tr><td>IP estático</td><td>Não (DNS)</td><td>Sim (2 Anycast IPs)</td></tr><tr><td>Failover</td><td>DNS propagation (~60s)</td><td>Quase instantâneo</td></tr><tr><td>TCP/UDP genérico</td><td>Não (apenas DNS)</td><td>Sim</td></tr><tr><td>Conteúdo cacheado</td><td>Não</td><td>Não</td></tr><tr><td>Custo</td><td>Por query</td><td>Taxa horária + por GB</td></tr></tbody></table></div>
+<hr>
+<h2>AWS WAF (Web Application Firewall)</h2>
+<p>Protege aplicações web contra exploits OWASP:</p>
+<ul><li>Deploy: <strong>CloudFront, ALB, API Gateway, AppSync, Cognito User Pool</strong></li><li><strong>Web ACL</strong>: contém rules e rule groups</li><li>Rules inspecionam: IP, headers, body (até 8 KB), URI string, query string, método HTTP</li><li><strong>Managed Rule Groups</strong>: conjuntos pré-configurados (OWASP Top 10, bots, AWS Managed Intelligence)</li><li><strong>Rate-based Rules</strong>: limita por IP (ex: máx 100 req/5min)</li><li>Ação: Allow, Block, Count (monitoring sem bloquear), CAPTCHA, Challenge</li></ul>
+<hr>
+<h2>Dicas de Prova</h2>
+<ul><li><strong>Alias record</strong> = gratuito + pode ser apex; CNAME = cobra por query + não pode ser apex</li><li><strong>Geoproximity</strong> precisa de Traffic Policy (Traffic Flow); Geolocation não precisa</li><li><strong>Failover</strong>: primary health check falha → roteia para secondary (passive DR)</li><li>CloudFront + S3: OAC é o novo padrão (substituiu OAI)</li><li><strong>Lambda@Edge</strong> = processamento complexo com chamadas externas; <strong>CF Functions</strong> = transformações em &lt; 1ms</li><li><strong>Global Accelerator</strong> = IPs estáticos + rede backbone AWS; bom para jogos, IoT, VoIP e apps TCP/UDP</li><li><strong>Route 53 Multivalue</strong> ≠ ELB: apenas distribui, não balanceia carga real; cliente escolhe arbitrariamente</li><li>Resolver DNS de Private Hosted Zone de outra VPC: habilitar <strong>VPC Association</strong> ou usar <strong>Route 53 Resolver</strong> (Inbound/Outbound Endpoints) para on-prem</li><li>CloudFront pode ter múltiplos origins em um mesmo distribution (path-based routing entre origins)</li><li>WAF pode ir no ALB <strong>ou</strong> no CloudFront — para proteção closer to edge, use CloudFront + WAF</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./061-13-dns-route53-e-cloudfront-questoes.html">Aula anterior</a>
+      <a href="./063-14-desacoplamento-sqs-sns-eventbridge-casos-de-uso.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

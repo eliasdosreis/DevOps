@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Módulo 09 — Desacoplamento: SQS, SNS, EventBridge - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#067-14-desacoplamento-sqs-sns-eventbridge-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 14 - Desacoplamento SQS SNS EventBridge - 7 min - 14-Desacoplamento-SQS-SNS-EventBridge/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 14 - Desacoplamento SQS SNS EventBridge" loading="lazy">
+      <figcaption>Desacoplamento deixa produtores e consumidores respirarem em ritmos diferentes.</figcaption>
+    </figure>
+    <h1>Módulo 09 — Desacoplamento: SQS, SNS, EventBridge</h1>
+<h2>Por Que Desacoplar?</h2>
+<p>Arquiteturas tightly-coupled criam cascatas de falhas: se o consumidor está lento ou falho, o produtor para. Serviços de mensageria e eventos introduzem um buffer ou roteador entre produtor e consumidor, aumentando resiliência, escalabilidade independente e tolerância a falhas.</p>
+<hr>
+<h2>Amazon SQS (Simple Queue Service)</h2>
+<p>Serviço de fila de mensagens totalmente gerenciado.</p>
+<h3>Standard vs FIFO</h3>
+<div class="table-wrap"><table><thead><tr><th>Característica</th><th>Standard</th><th>FIFO</th></tr></thead><tbody><tr><td>Throughput</td><td><strong>Ilimitado</strong></td><td>300 TPS (sem batching), 3.000 TPS (com batching de 10)</td></tr><tr><td>Ordem</td><td>Best-effort (pode sair fora de ordem)</td><td><strong>Strict FIFO</strong> (First In, First Out)</td></tr><tr><td>Deduplicação</td><td>Possível entregar duplicatas</td><td><strong>Exatamente uma vez</strong> (deduplication window 5 min)</td></tr><tr><td>Naming</td><td>Qualquer nome</td><td>Deve terminar em <code>.fifo</code></td></tr><tr><td>Uso típico</td><td>Alto throughput, tolerante a duplicatas</td><td>Pedidos financeiros, comandos em sequência</td></tr></tbody></table></div>
+<h3>Visibility Timeout</h3>
+<ul><li>Quando uma mensagem é recebida, ela fica <strong>invisível</strong> por um período (padrão: 30s, máx: 12h)</li><li>Durante esse tempo, o processamento deve concluir e deletar a mensagem</li><li>Se o processamento falhar e o timeout expirar, a mensagem reaparece para outro consumidor</li><li><strong>ChangeMessageVisibility</strong>: estende o timeout se o processamento demorar mais</li></ul>
+<h3>DLQ (Dead-Letter Queue)</h3>
+<ul><li>Mensagens que falharam <code>maxReceiveCount</code> vezes são movidas para a DLQ</li><li>Permite inspecionar e reprocessar mensagens problemáticas</li><li>DLQ precisa ser do mesmo tipo da fila origem (FIFO → FIFO DLQ, Standard → Standard DLQ)</li><li><strong>DLQ Redrive</strong>: reprocessar mensagens da DLQ de volta à fila origem</li></ul>
+<h3>Long Polling</h3>
+<ul><li><code>waitTimeSeconds</code> &gt; 0 (máx 20s): a requisição de recebimento espera até ter mensagem ou timeout</li><li>Reduz chamadas de API vazias (e custo) vs. Short Polling (retorna imediatamente, mesmo sem mensagem)</li><li><strong>Habilitar Long Polling</strong>: configurar na fila ou na chamada <code>ReceiveMessage</code></li></ul>
+<h3>Outras Configurações Chave</h3>
+<div class="table-wrap"><table><thead><tr><th>Parâmetro</th><th>Default</th><th>Máximo</th><th>Descrição</th></tr></thead><tbody><tr><td>Message Retention</td><td>4 dias</td><td>14 dias</td><td>Tempo que mensagem fica na fila</td></tr><tr><td>Message Size</td><td>—</td><td>256 KB</td><td>Por mensagem (use S3 + SQS Extended Client para maior)</td></tr><tr><td>Delay Queue</td><td>0</td><td>15 min</td><td>Atraso antes de a mensagem ser visível</td></tr><tr><td>Receive Request Wait Time</td><td>0</td><td>20s</td><td>Long polling window</td></tr></tbody></table></div>
+<h3>SQS + Auto Scaling</h3>
+<ul><li>ASG escala baseado em <code>ApproximateNumberOfMessagesVisible</code> (via CloudWatch Custom Metric)</li><li>Padrão: instâncias &quot;worker&quot; consomem da fila, ASG escala com o backlog</li></ul>
+<hr>
+<h2>Amazon SNS (Simple Notification Service)</h2>
+<p>Serviço de pub/sub totalmente gerenciado. Producers publicam em <strong>Topics</strong>, Subscribers recebem.</p>
+<h3>Modelos de Distribuição</h3>
+<ul><li><strong>Fan-out</strong>: 1 publicação → múltiplos subscribers (SQS, Lambda, HTTP, Email, SMS, Mobile Push)</li><li>Tipicamente: aplicação publica no SNS → SNS distribui para múltiplas SQS filas (fan-out sem acoplamento)</li></ul>
+<pre><code class="language-">Evento de Compra
+    │
+    ▼
+SNS Topic: order-created
+    ├── SQS: process-payment
+    ├── SQS: update-inventory
+    ├── SQS: send-email
+    └── Lambda: update-analytics</code></pre>
+<h3>FIFO Topics</h3>
+<ul><li>Like FIFO SQS mas para pub/sub</li><li>Subscribers devem ser SQS FIFO Queues</li><li>300 publishes/s, ordenado, sem duplicatas</li></ul>
+<h3>Message Filtering</h3>
+<ul><li>Cada subscriber pode ter uma <strong>filter policy</strong> (JSON) que define quais atributos de mensagem receber</li><li>Reduz processamento desnecessário no subscriber</li></ul>
+<pre><code class="language-json">{&quot;event_type&quot;: [&quot;ORDER_PLACED&quot;, &quot;ORDER_FAILED&quot;]}</code></pre>
+<h3>SNS vs SQS</h3>
+<div class="table-wrap"><table><thead><tr><th>SNS</th><th>SQS</th></tr></thead><tbody><tr><td>Pub/Sub (1 → N)</td><td>Fila (1:1 pull)</td></tr><tr><td>Push para subscribers</td><td>Consumers fazem poll/pull</td></tr><tr><td>Sem retenção de mensagem</td><td>Retenção até 14 dias</td></tr><tr><td>Fan-out</td><td>Ponto a ponto</td></tr></tbody></table></div>
+<hr>
+<h2>Amazon EventBridge</h2>
+<p>Barramento de eventos serverless. Evolução do CloudWatch Events.</p>
+<h3>Event Buses</h3>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Descrição</th></tr></thead><tbody><tr><td><strong>Default</strong></td><td>Eventos de serviços AWS (EC2 state-change, S3 object created, etc.)</td></tr><tr><td><strong>Custom</strong></td><td>Você cria, para seus próprios eventos de aplicação</td></tr><tr><td><strong>Partner</strong></td><td>Eventos de SaaS parceiros (Zendesk, Datadog, PagerDuty, Auth0)</td></tr></tbody></table></div>
+<h3>Rules</h3>
+<ul><li>Definem <strong>event pattern</strong> (what triggers) + <strong>target</strong> (what executes)</li><li>Targets: Lambda, SQS, SNS, Step Functions, Kinesis, CodePipeline, EventBridge de outra conta, e 20+ outros</li><li><strong>Schedule</strong>: regras baseadas em cron ou rate (não precisa de evento)</li><li><strong>Event Archive</strong>: arquiva todos os eventos (ou filtrados) para replay</li><li><strong>Event Replay</strong>: reprocessa eventos arquivados (útil para debugging e novos consumers retroativos)</li></ul>
+<h3>Schema Registry</h3>
+<ul><li>Descobre e registra esquemas de eventos automaticamente</li><li>Gera código bindings (Java, Python, TypeScript) para trabalhar com eventos tipados</li><li>Valida eventos contra schemas</li></ul>
+<h3>EventBridge vs SNS vs SQS</h3>
+<div class="table-wrap"><table><thead><tr><th>Aspecto</th><th>EventBridge</th><th>SNS</th><th>SQS</th></tr></thead><tbody><tr><td>Modelo</td><td>Event bus (rules + targets)</td><td>Pub/Sub (topics)</td><td>Fila</td></tr><tr><td>Roteamento</td><td>Filtragem por conteúdo (JSON path)</td><td>Filter policies básicas</td><td>N/A</td></tr><tr><td>Fontes</td><td>AWS services, custom, SaaS partners</td><td>Suas aplicações</td><td>—</td></tr><tr><td>Replay</td><td>Sim (archive + replay)</td><td>Não</td><td>Não</td></tr><tr><td>Targets</td><td>20+ tipos</td><td>SQS, Lambda, HTTP, etc.</td><td>Pull por consumers</td></tr><tr><td>Uso</td><td>Orquestração de eventos complexos</td><td>Fan-out simples</td><td>Buffer/decoupling</td></tr></tbody></table></div>
+<hr>
+<h2>Amazon Kinesis</h2>
+<p>Plataforma para processamento de dados de streaming em tempo real.</p>
+<h3>Kinesis Data Streams</h3>
+<ul><li><strong>Shards</strong>: unidade de capacidade (1 MB/s entrada, 2 MB/s saída por shard)</li><li>Retenção: 24h padrão, até 365 dias</li><li><strong>Producers</strong>: SDK, Kinesis Agent, Kinesis Producer Library (KPL — batching + compression)</li><li><strong>Consumers</strong>: Lambda, Kinesis Data Analytics, KCL (Kinesis Client Library), Firehose</li><li><strong>Enhanced Fan-Out</strong>: 2 MB/s por consumer por shard (push via HTTP/2, vs poll padrão)</li><li><strong>Partition Key</strong>: determina qual shard recebe o record (igual ao DynamoDB partition key — alta cardinalidade evita hot shards)</li></ul>
+<h3>Kinesis Data Firehose</h3>
+<ul><li><strong>Fully managed</strong>, sem administração de shards (serverless)</li><li><strong>Destinos</strong>: S3, Redshift (via S3), OpenSearch, Splunk, DataDog, HTTP custom</li><li>Não é armazenado (streaming, sem replay)</li><li><strong>Buffer</strong>: agrupa registros antes de entregar (buffer size ou buffer interval)</li><li>Pode aplicar transformações com Lambda antes de entregar</li><li><strong>Firehose ≠ Streams</strong>: Firehose é near-real-time (latência de segundos/minutos); Streams é real-time</li></ul>
+<h3>Kinesis Data Streams vs Firehose</h3>
+<div class="table-wrap"><table><thead><tr><th>Característica</th><th>Data Streams</th><th>Data Firehose</th></tr></thead><tbody><tr><td>Latência</td><td>Real-time (&lt;200ms)</td><td>Near-real-time (60s–900s buffer)</td></tr><tr><td>Gerenciamento</td><td>Manual (shards)</td><td>Serverless (automático)</td></tr><tr><td>Replay</td><td>Sim (até 365 dias)</td><td>Não</td></tr><tr><td>Destinos</td><td>Consumers customizados</td><td>S3, Redshift, OpenSearch, etc.</td></tr><tr><td>Custo</td><td>Por shard-hora</td><td>Por GB ingerido</td></tr></tbody></table></div>
+<hr>
+<h2>Amazon MQ</h2>
+<p>Broker de mensagens gerenciado compatível com protocolos de mensageria abertos: <strong>AMQP, MQTT, OpenWire, STOMP</strong>.</p>
+<ul><li>Suporta <strong>Apache ActiveMQ</strong> e <strong>RabbitMQ</strong></li><li>Diferente de SQS/SNS (protocolos proprietários da AWS)</li><li>Usado para <strong>lift-and-shift de aplicações existentes</strong> que já usam ActiveMQ/RabbitMQ</li><li>Deploy em 1 ou 2 AZs (Active/Standby para HA)</li><li>Para novos projetos: prefira SQS/SNS (serverless, mais escalável)</li></ul>
+<hr>
+<h2>Dicas de Prova</h2>
+<ul><li><strong>SQS + SNS fan-out</strong> = padrão clássico de desacoplamento — SNS distribui para múltiplas SQS</li><li><strong>SQS FIFO</strong>: exatamente-uma-vez + ordenado, mas limitado a 300/3.000 TPS</li><li><strong>Visibility Timeout</strong> menor que o tempo de processamento = duplicatas; maior = delay na reentrega</li><li><strong>DLQ</strong> é para mensagens que falharam <code>maxReceiveCount</code> vezes — não para mensagens lentas</li><li><strong>Long Polling</strong> (waitTimeSeconds=20) reduz custo e número de chamadas vazias</li><li><strong>EventBridge</strong> é preferível ao CloudWatch Events (EventBridge é a mesma coisa, mas com mais features)</li><li>EventBridge <strong>archive + replay</strong> = debug retroativo e onboarding de novos consumers</li><li><strong>Kinesis Data Streams</strong> para real-time analytics + replay; <strong>Firehose</strong> para near-real-time → S3/Redshift</li><li><strong>Hot shard no Kinesis</strong> = partition key com baixa cardinalidade (ex: apenas &quot;user&quot;/&quot;event&quot;) — distribuir melhor as chaves</li><li><strong>Amazon MQ</strong> = migração lift-and-shift de ActiveMQ/RabbitMQ; para novos projetos, use SQS/SNS</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./066-14-desacoplamento-sqs-sns-eventbridge-questoes.html">Aula anterior</a>
+      <a href="./068-15-sqs-sns-mensageria-labs-lab.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

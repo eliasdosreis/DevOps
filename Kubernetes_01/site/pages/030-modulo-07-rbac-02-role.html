@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#030-modulo-07-rbac-02-role">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #b45309">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 07 - rbac - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 07 - rbac" loading="lazy">
+      <figcaption>RBAC define identidade, permissao e escopo para operar com seguranca.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Define a &quot;Role&quot; (O Papel / O Livro de Regras). Esse artefato
+# estritamente cataloga QUAIS a��es de leitura ou escrita podem
+# ou n�o serem executadas estritas � UM �NICO Nnamespace Isolado.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# A Aula 1 (ServiceAccount) imprimiu o nosso  Crach� F�sico do robo sem permissao nenhuma.
+# Esta **Role** � a folha de Manual de Regras grudada na porta da Ger�ncia RH. 
+# Nessa folha (A Role) diz: &quot;Quem assumir este PAPEL aqui, pode VER a folha salarial 
+# e COPIAR o excel, mas  N�O PODE DELETAR CADEIRA DA SALA&quot;.
+# E detalhe: Essa Role &quot;RH&quot; foi desenhada e vale APENAS pro 5� Andar (Seu Namespace local).
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# Uma Role constitui os fundamentos do Role-Based Access Control (RBAC). 
+# Ela � apenas uma Cole��o de &quot;Permiss�es aditivas&quot; em JSON/YAML. 
+# N�o existem &quot;Rules&quot; de NEGAR (&quot;Ex: PRO�BO deletar p/ todo mundo&quot;). No k8s TUDO J� � 
+# PROIBIDO como premissa zero. Toda &quot;Rule&quot; � um &quot;Permit&quot; expl�cito e afirmativo. 
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: rbac.authorization.k8s.io/v1  # Note o grupo pesado da API (RBAC)
+kind: Role
+metadata:
+  name: regra-de-poder-ler-pods           # O T�tulo da pagina de Regras
+  namespace: meu-primeiro-projeto         # Restrito A ESTA SALA!!! 
+rules:
+  # O Bloco core! O que este papel habilita voc� a fazer se voc� vier a vesti-lo:
+  - apiGroups: [&quot;&quot;]                       # &quot;&quot; Significa o grupo core base do K8s (Pods, Services...)
+    resources: [&quot;pods&quot;, &quot;pods/log&quot;]       # EM QUAL tipo de coisas voc� pode por a m�o? (S� PODS)
+    verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]       # O QUE voc� pode fazer em pods? (S� VER, n�o pode Deletar!)
+    
+  # Outra regra na mesma lista para outros objetos:
+  - apiGroups: [&quot;apps&quot;]                   # Deployments moram no grupo &quot;apps&quot; se lembra do come�o do arquivo l�? `apiVersion: apps/1` 
+    resources: [&quot;deployments&quot;]
+    verbs: [&quot;get&quot;]                        # S� ver o status de Deployment de curioso.
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Adicione o manual de regras no mural do andar / namespace:
+#    kubectl apply -f 02-role.yaml
+#
+# 2. Liste as Roles locais do seu namespaces:
+#    kubectl get roles -n meu-primeiro-projeto
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# Voc� n�o toma Erro de crash ao CRIAR Role. Mas o App amarrado nele 
+# chora lagrimas de &quot;HTTP 403 Forbidden&quot; ou &quot;Unauthorized&quot; no Kernel. 
+# Uma dica MESTRE: Para debugar um objeto se voc� realmente ta com 
+# o poder vestido na vida real local pra rodar o terminal: 
+# `kubectl auth can-i delete pods -n meu-primeiro-projeto`.
+# Ele vai te cuspir um orgulhoso &quot;yes&quot; ou decepcionante &quot;no&quot;. Perfeito pra testar!
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# &quot;Elias, se eu quiser criar uma Role Global do K8S do mundo interio pra  
+# um Admin L2 n�o precisar replicar a Role em todos os namespaces 1 por 1?&quot;.
+# Ent�o voc� N�O cria um arquivo `kind: Role`. O &#39;Role&#39; � burro pra cacete. Ele
+# serve apenas e unicamente pro Namespace dele da Metadata, cravado! 
+# Para poderes GERAIS de n�vel MUNDIAL e Global do Kube inteiro, existe o irm�o
+# C.E.O dele: o `kind: ClusterRole`, que veremos em breve.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se n�s criarmos uma &#39;Role&#39; local e escrevermos a Rule do recurso  
+# `resources: [&quot;nodes&quot;]` e der aplicar... um ServiceAccount nesse Namespace com 
+# com ela vestida vai conseguir Listar os N�s fisicos do Cluster inteiro de leitura?&quot;
+# Resposta Esperada: &quot;Absolutamente. N�o! O Kube-Apiserver rejeitar� a validade do ato.
+# Componentes topologicos da categoria &#39;Nodes&#39;, &#39;PersistentVolumes Globais&#39; ou &#39;Namespaces&#39;
+# S�O EXCLUSIVOS DE CLUSTER SCOPE. Uma Role.yaml de Namespace � deficiente pra autorizar
+# vis�o de N�veis Superiores ao teto isolado local dela. Somente um `ClusterRole` consegue.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./029-modulo-07-rbac-01-serviceaccount.html">Aula anterior</a>
+      <a href="./031-modulo-07-rbac-03-rolebinding.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

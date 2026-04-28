@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#019-modulo-04-config-03-pod-com-config">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - config - 5 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - config" loading="lazy">
+      <figcaption>ConfigMaps e Secrets separam configuracao e dados sensiveis da imagem.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Junta tudo demonstrando a t�cnica de como um Aplica��o (Pod) 
+# &quot;l�&quot; ou o Secret (A Senha do Banco) ou o ConfigMap na parede. 
+# Mostra tanto EnvVar Cl�ssica quanto Mapeamento F�sico de Arquivo (Volumes).
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# O ConfigMap e o Secret soltos num cluster n�o fazem nada, s�o peda�os de papel ao vento.
+# Aqui n�s ensinamos o &quot;Funcion�rio&quot; (O Container) a duas coisas:
+# 1� Forma -&gt; Ao nascer (Ligar/Bootar) ele &quot;mem�riza&quot; numa pancada s� as 10 informa��es 
+# da empresa na Cuca (Ele injeta como Environment Variables do Linux/NodeJS).
+#
+# 2� Forma -&gt; N�s criamos uma &quot;Pasta F�sica do Windows&quot; chamada M:/cofre/, e a folha do
+# K8s magicamente se materializa l� dentro pra ele ler no disco igual um C:// txt file.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# Para acoplar CMs e Secrets, usamos duas features da block `spec.containers`:
+# 1. `env` ou `envFrom`: Para expor os metadados diretamente no process-space.
+# 2. `volumes` -&gt; `volumeMounts`: Onde o engine nativo do kubernetes gera uma 
+# bind-mount est�tica (como tmpfs/ramdisk) conectada no root-tree do Linux rodando na VM.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-loja-com-banco
+  namespace: meu-primeiro-projeto
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-loja
+  template:
+    metadata:
+      labels:
+        app: backend-loja
+    spec:
+      containers:
+        - name: applicacao-api
+          image: busybox:latest         
+          # Criei um script de loop falso que apenas printa a variavel pra testarmos online!
+          command: [&quot;/bin/sh&quot;, &quot;-c&quot;, &quot;while true; do echo Lendo banco no idioma [$IDIOMA_DO_SISTEMA] com usuario [$USER_SECRETO]; sleep 5; done&quot;]
+          
+          # =========================================================
+          # OP��O 01: Injetando como VARI�VEL DE AMBIENTE (EnvVar) no Linux
+          # =========================================================
+          env:
+            # 1. Vari�vel vinda do arquivo de ConfigMap Livre
+            - name: IDIOMA_DO_SISTEMA           # T�tulo da variavel de Ambiente ex: printf $IDIOMA_DO_SISTEMA
+              valueFrom:
+                configMapKeyRef:
+                  name: configuracoes-da-minha-loja  # Puxa o objeto que criamos na aula `01`
+                  key: idioma_padrao                 # A chave exata dentro do YAML
+            
+            # 2. Vari�vel Secreta vinda do Cofre de Secret
+            - name: USER_SECRETO                # (Mesma logica, com secretKey)
+              valueFrom:
+                secretKeyRef:
+                  name: credenciais-do-banco         # Objeto Opaque da aula `02`
+                  key: usuario_db
+          
+          # =========================================================
+          # OP��O 02: Injetando como PASTA F�SICA NO HD DO APP (VolumeMount)
+          # =========================================================
+          volumeMounts:
+            - name: disco-falso-para-colocar-senhas    # Nome do HD Fantasma atrelado abaixo.
+              mountPath: &quot;/usr/src/app/segredos&quot;       # Todo o Secret ficar� despejado nessa rota f�sica
+              readOnly: true
+              
+      # Os Discos Fantasmas s�o configurados FORA do &lt;containers&gt;, na aba de Pods inteiros:
+      volumes:
+        - name: disco-falso-para-colocar-senhas
+          secret:                             # Criando um volume do tipo File-From-Secret!
+            secretName: credenciais-do-banco
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Confirme que voc� aplicou na �ltima aula os arquivos `01-configmap.yaml` e 
+#    `02-secret.yaml`. Depois lance o deploy:
+#    kubectl apply -f 03-pod-com-config.yaml
+#
+# 2. Pra ver a OPCAO 01 funcionando ao vivo no Container lendo a var:
+#    (Pegue o nome do pod vivo via get pods primeiro) e rode o tail do log
+#    kubectl logs &lt;nome-gerado-do-pod&gt; -n meu-primeiro-projeto
+#    (Vai aparecer: &quot;Lendo banco no idioma [pt-BR] com usuario [admin-x-db]&quot;)
+#
+# 3. Pra ver a OPCAO 02 (Entrar na maquina em SSH Hack mode):
+#    kubectl exec -it &lt;nome-gerado-do-pod&gt; -n meu-primeiro-projeto -- sh
+#    -&gt; cd /usr/src/app/segredos
+#    -&gt; ls (Veja magicamente os arquivos com titulo &quot;senha_db&quot; existindo fisicamente!) 
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# O erro cl�ssico do Mount Volumes � errar o `mountPath` e sobescrever caminhos base
+# do Sistema Linux Container root da sua aplica��o. Se sua API estava no `/app` e o seu 
+# `mountPath` se chamar `/app` sem cuidado cego de formata��o, voc� MATA o disco e o 
+# linux subordina o mount nativo inteiro ao Secret. Use &quot;subPath&quot; ou evite rotas cores.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# Seniors evitam Option 01 (EnvVars) por dois motivos cruciais. 
+# Motivo A: Quando sua aplica��o trava e o Linux ou K8s emitem um Crash-Dump de Kernel, 
+# todas as vari�veis de ambiente ativas (Environment Heap) s�o jogadas no arquivo crash.log 
+# cru, vazando toda e qualquer Hash/Password de AWS gravado nelas na cara dura das 
+# ferramentas de log (Data Dog, Kibana, etc).
+# Motivo B: Volumes Secret s�o Hot-Reloaded (J� explicado na aula 01-Configmap). As variables 
+# nunca trocam de vers�o se voce as alterar sem matar os Pods de vez, perdendo reatividade da esteira CI.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se n�s temos exatas 50 vari�veis em um API NodeJs antiga baseadas em .env file.
+# Precisamos que escreva 50 chaves repetidas `valueFrom.. configMapKeyRef` no Spec.env do k8s YAML?&quot;
+# Resposta Esperada: &quot;Definitvamente N�o. Al�m de deixar o Deployment GIGANTESCO com 1.000 linhas, 
+# n�s usamos a diretiva genial do Kubernetes chamada `envFrom: [configMapRef: name: my-config]`. 
+# Essa unica linha far� o engine &quot;desenrolar&quot; dinamicamente toda as chaves de dentro daquele configmap 
+# ou secret e convert�-las auto magicamente 1 pra 1 em vari�veis completas no sistema bash!&quot;.</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./018-modulo-04-config-02-secret.html">Aula anterior</a>
+      <a href="./020-modulo-05-armazenamento-01-storageclass.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

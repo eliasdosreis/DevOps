@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Prático — Introdução SAA-C03 - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#008-01-introducao-saa-c03-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 01 - Introducao SAA C03 - 3 min - 01-Introducao-SAA-C03/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 01 - Introducao SAA C03" loading="lazy">
+      <figcaption>Estrategia de prova: leia o cenario, encontre os requisitos e elimine distratores.</figcaption>
+    </figure>
+    <h1>Lab Prático — Introdução SAA-C03</h1>
+<h2>🎯 Objetivo</h2>
+<p>Preparar um ambiente de estudos seguro e econômico para os próximos módulos, validando acesso à conta, região padrão, identificação da conta AWS e criação de uma trilha mínima de governança com orçamento e bucket de apoio. O lab ajuda o aluno a começar os estudos com disciplina de custo e visibilidade operacional.</p>
+<h2>📋 Pré-requisitos</h2>
+<ul><li>AWS CLI configurado com um perfil válido</li><li>Terraform &gt;= 1.5</li><li>Permissões IAM necessárias: sts:GetCallerIdentity, s3:CreateBucket, s3:PutBucketTagging, budgets:CreateBudget, sns:CreateTopic, sns:Subscribe, iam:PassRole quando aplicável</li><li>Região padrão: us-east-1</li></ul>
+<h2>🏗️ Arquitetura do Lab</h2>
+<pre><code class="language-text">Usuário
+  |
+  +-&gt; AWS CLI profile
+          |
+          +-&gt; STS GetCallerIdentity
+          +-&gt; S3 Bucket de estudos
+          +-&gt; AWS Budget mensal -&gt; SNS Email</code></pre>
+<h2>🔧 Passo a Passo</h2>
+<h3>Parte 1 — Via AWS CLI</h3>
+<pre><code class="language-bash"># Confirmar a identidade ativa e evitar executar labs na conta errada
+aws sts get-caller-identity --profile default --region us-east-1
+
+# Confirmar a região efetiva usada pelo perfil
+aws configure get region --profile default
+
+# Criar bucket único para artefatos de estudo
+aws s3api create-bucket \
+  --bucket saa-c03-study-artifacts-123456789012 \
+  --region us-east-1
+
+# Marcar o bucket para facilitar limpeza e análise de custo
+aws s3api put-bucket-tagging \
+  --bucket saa-c03-study-artifacts-123456789012 \
+  --tagging &#39;TagSet=[{Key=Project,Value=SAA-C03},{Key=Owner,Value=Study},{Key=Environment,Value=Lab}]&#39;
+
+# Criar um tópico SNS para receber alerta de orçamento
+aws sns create-topic \
+  --name saa-c03-budget-alerts \
+  --region us-east-1
+
+# Substitua pelo ARN retornado no comando anterior
+aws sns subscribe \
+  --topic-arn arn:aws:sns:us-east-1:123456789012:saa-c03-budget-alerts \
+  --protocol email \
+  --notification-endpoint seu-email@exemplo.com \
+  --region us-east-1</code></pre>
+<h3>Parte 2 — Via Terraform</h3>
+<pre><code class="language-hcl"># main.tf
+terraform {
+  required_version = &quot;&gt;= 1.5.0&quot;
+
+  required_providers {
+    aws = {
+      source  = &quot;hashicorp/aws&quot;
+      version = &quot;~&gt; 5.0&quot;
+    }
+  }
+}
+
+provider &quot;aws&quot; {
+  region = &quot;us-east-1&quot;
+}
+
+variable &quot;alert_email&quot; {
+  type        = string
+  description = &quot;Email que receberá alertas de budget&quot;
+}
+
+data &quot;aws_caller_identity&quot; &quot;current&quot; {}
+
+resource &quot;aws_s3_bucket&quot; &quot;study_artifacts&quot; {
+  bucket = &quot;saa-c03-study-artifacts-${data.aws_caller_identity.current.account_id}&quot;
+
+  tags = {
+    Project     = &quot;SAA-C03&quot;
+    Environment = &quot;Lab&quot;
+    Owner       = &quot;Study&quot;
+  }
+}
+
+resource &quot;aws_s3_bucket_versioning&quot; &quot;study_artifacts&quot; {
+  bucket = aws_s3_bucket.study_artifacts.id
+
+  versioning_configuration {
+    status = &quot;Enabled&quot;
+  }
+}
+
+resource &quot;aws_sns_topic&quot; &quot;budget_alerts&quot; {
+  name = &quot;saa-c03-budget-alerts&quot;
+}
+
+resource &quot;aws_sns_topic_subscription&quot; &quot;email&quot; {
+  topic_arn = aws_sns_topic.budget_alerts.arn
+  protocol  = &quot;email&quot;
+  endpoint  = var.alert_email
+}
+
+resource &quot;aws_budgets_budget&quot; &quot;monthly&quot; {
+  name         = &quot;saa-c03-monthly-budget&quot;
+  budget_type  = &quot;COST&quot;
+  limit_amount = &quot;10&quot;
+  limit_unit   = &quot;USD&quot;
+  time_unit    = &quot;MONTHLY&quot;
+
+  cost_filter {
+    name   = &quot;TagKeyValue&quot;
+    values = [&quot;Project$SAA-C03&quot;]
+  }
+
+  notification {
+    comparison_operator        = &quot;GREATER_THAN&quot;
+    threshold                  = 80
+    threshold_type             = &quot;PERCENTAGE&quot;
+    notification_type          = &quot;ACTUAL&quot;
+    subscriber_sns_topic_arns  = [aws_sns_topic.budget_alerts.arn]
+  }
+}</code></pre>
+<h2>✅ Validação</h2>
+<pre><code class="language-bash"># Validar bucket
+aws s3api get-bucket-tagging --bucket saa-c03-study-artifacts-123456789012 --region us-east-1
+
+# Validar assinatura SNS
+aws sns list-subscriptions-by-topic \
+  --topic-arn arn:aws:sns:us-east-1:123456789012:saa-c03-budget-alerts \
+  --region us-east-1
+
+# Validar identidade da conta
+aws sts get-caller-identity --region us-east-1</code></pre>
+<h2>🧹 Limpeza de Recursos</h2>
+<pre><code class="language-bash"># Remover conteúdo e bucket
+aws s3 rm s3://saa-c03-study-artifacts-123456789012 --recursive --region us-east-1
+aws s3api delete-bucket --bucket saa-c03-study-artifacts-123456789012 --region us-east-1
+
+# Remover tópico SNS
+aws sns delete-topic \
+  --topic-arn arn:aws:sns:us-east-1:123456789012:saa-c03-budget-alerts \
+  --region us-east-1
+
+# Se usou Terraform
+terraform destroy -var=&quot;alert_email=seu-email@exemplo.com&quot;</code></pre>
+<h2>💰 Custo Estimado</h2>
+<p>Se o bucket estiver praticamente vazio e o tópico SNS tiver baixo volume, o custo por 1 hora tende a ser muito próximo de zero. O componente mais sensível costuma ser o AWS Budgets, dependendo da conta e do tipo de uso. Em termos práticos, é um lab de custo muito baixo, mas ainda assim deve ser limpo ao final.</p>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./007-01-introducao-saa-c03-flashcards.html">Aula anterior</a>
+      <a href="./009-01-introducao-saa-c03-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

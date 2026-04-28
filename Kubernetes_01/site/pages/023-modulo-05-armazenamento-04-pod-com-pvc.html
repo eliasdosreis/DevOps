@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#023-modulo-05-armazenamento-04-pod-com-pvc">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 05 - armazenamento - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 05 - armazenamento" loading="lazy">
+      <figcaption>Storage exige entender classes, volumes, claims e o ciclo de vida do dado.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Junta a teoria com a pr�tica: Constr�i um Deploy completo (MySQL) 
+# amarrado no PVC criado anteriormente, garantindo de uma vez por todas
+# que nem o k8s matando o pod n�s perderemos o database.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# N�s fomos ao Vendedor &quot;AWS&quot;, pedimos um Contrato de lote (PVC) com tamanho de 5G...
+# Isso gerou um bloco f�sico cortado com muro do lado de fora longe da VM.
+# AGORA O �LTIMO PASSO � amarrar isso no App.
+# � semelhante a pegarmos aquele gigantesco Pen-Drive m�gico que compramos,
+# e plugar no chassi/bunda do Container/Pod na hora em que ele subir, 
+# e criar uma linha de link (Mount) que diz: 
+# &quot;Tudo que voc� Container do DB for salvar na pasta interna nativa C:/mysql/dados..  
+# na verdade, voc� n�o salvar� dentro do Docker. Esse cano joga fisicamente os dados DENTRO daquele pendrive!&quot;.
+# Fechando o Lifecycle.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# Voc� anexa PVCs ao Pod referenciando o claim exato dentro da declara��o base  
+# &#39;volumes: &#39; . Isto por sua vez mapeia no &#39;volumeMounts&#39; das defs do bloco containers.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bd-loja-resistente
+  namespace: meu-primeiro-projeto
+spec:
+  replicas: 1                             # Bancos em Deployments via de regra usam 1 replica limpa
+  selector:
+    matchLabels:
+      app: mysql-persistent
+  template:
+    metadata:
+      labels:
+        app: mysql-persistent
+    spec:
+      containers:
+        - name: meu-mysql-container
+          image: mysql:8.0                # MySQL Oficial
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: root_master_123      # Em prods reais injete Secrets (Aula 04) aqui!
+              
+          ports:
+            - containerPort: 3306
+            
+          # O Fio Condutor: Plugando a pasta do Cont�iner -&gt; ao HD Falso listado no chassi inferior
+          volumeMounts:
+            - name: disco-falso-do-pvc     # O nome da abstra��o inventada abaixo  !
+              mountPath: /var/lib/mysql    # � AQUI QUE O ARQUIVO SALVA. Se mudar essa VAR, o mount isola do db e vaza os dados ao reboot!
+              
+      # No Chassi do Pod isolado as Configura��es GERAIS do HD que ser�o mapeadas acima:
+      volumes:
+        - name: disco-falso-do-pvc         # O nome da abstra��o inventada pra ligar na linha 44
+          persistentVolumeClaim:           # Tipo de disco: &quot;Busca um Contrato de PVC Registrado na rua&quot;
+            claimName: meu-contrato-de-disco-5gb # O RG/Nome Exato do PVC criado na Aula 03.
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Antes, verifique que `03-persistentvolumeclaim.yaml` rodou antes perfeitamente sem erros.
+#    E aplique nosso YAML do BD imortal:
+#    kubectl apply -f 04-pod-com-pvc.yaml
+#
+# 2. ASSISTA O HORROR DO JUNIOR ACONTECENDO! (Aperte Ctrl+C ap�s confirmar a Running)
+#    kubectl get pods -n meu-primeiro-projeto -w
+#
+# 3. Copie o nome exato daquele pod &#39;bd-loja-resistente-xxxxxx&#39; da sua tela do passo dois E:
+#    MATE ESSE POD DIRETO NA ART�RIA DELE (Simulando um BUG/Panic OOM Linux da maquina f�sica):
+#    kubectl delete pod db-loja-resistente-xxxxxx -n meu-primeiro-projeto
+#
+# 4. Como � um Deployment, o k8s instant�neament evocou um novo POD recriado de nome difrente &quot;xxxx2&quot;. 
+#    A m�gica inteira ocorreu oculta! Fique calmo. O novo POD conjourou, buscou o pendrive PVC intacto da cloud  e injetou nele 
+#    de novo com os Gigas contidos do banco no momento da morte sem derrubar o Estado de tabela! 
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# Muitos PV/PVC travam em &quot;Pending&quot; ou o pod falha com &quot;AttachVolume.Attach failed / timeout&quot;.
+# Principal causa: Voc� colocou PVC ReadWriteONCE na Cloud. Mas os n�s das maquinas t�o cheios. 
+# O N� (A) crashou. Mas o PV por problemas de lat�ncia EC2 ainda constava no Driver CSI amazon
+# como &#39;Apertado/Attached&#39; ao hardware estragado A.
+# O Scheduler manda O POD pro n� sadio (B). O N� B tenta enfiar o cabo no pendrive por software EC2, e diz
+# &quot;Oxe, t� em uso&quot;. E fica em Deadlock infinitamente quebrando seu dia de trabalho. Fique atento.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# Ao montar o `mountPath: /var/lib/mysql` de um pvc na cloud (Como EBS/AWS ou Disk/Google) voc� deve notar 
+# que o disco por nativo da cloud subir� FORMATADO num EXT4 LVM normal, possuindo como Default
+# o grupo file-permission de chown: `root:root`. 
+# Se sua empresa for S�nior de Seguran�a usando `securityContext: runAsUser: 999 (NonRoot)` no spec container.
+# Voc� fatalmente ganhar� crashs Permission Denied. Seniors criam Hooks iniciais de InitContainers chown-ando a 
+# rota var/lib/mysql antes do pod subir principal p/ que o mysql tenha perm de escrita na montagem remota!</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./022-modulo-05-armazenamento-03-persistentvolumeclaim.html">Aula anterior</a>
+      <a href="./024-modulo-06-escalabilidade-01-resource-limits.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

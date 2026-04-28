@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flashcards — Módulo 09: Desacoplamento (SQS, SNS, EventBridge) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#065-14-desacoplamento-sqs-sns-eventbridge-flashcards">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 14 - Desacoplamento SQS SNS EventBridge - 6 min - 14-Desacoplamento-SQS-SNS-EventBridge/flashcards.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 14 - Desacoplamento SQS SNS EventBridge" loading="lazy">
+      <figcaption>Desacoplamento deixa produtores e consumidores respirarem em ritmos diferentes.</figcaption>
+    </figure>
+    <h1>Flashcards — Módulo 09: Desacoplamento (SQS, SNS, EventBridge)</h1>
+<hr>
+<p><strong>P:</strong> Qual é o VisibilityTimeout padrão do SQS e por que é importante? <strong>R:</strong> Padrão: <strong>30 segundos</strong> (range: 0s a 12h). Após uma mensagem ser lida, fica &quot;invisível&quot; por esse tempo. Se não for deletada dentro do timeout, reaparece na fila. Deve ser ≥ tempo máximo de processamento para evitar reprocessamento duplicado</p>
+<hr>
+<p><strong>P:</strong> Qual é o throughput máximo de uma fila SQS FIFO? <strong>R:</strong> 300 TPS (transactions per second) sem batching. Com batching de até 10 mensagens: <strong>3.000 TPS</strong>. Sem batching de alta escala, se necessitar mais → use SQS Standard (quase ilimitado) mas perde garantias de ordem</p>
+<hr>
+<p><strong>P:</strong> Qual é o período máximo de retenção de mensagens no SQS? <strong>R:</strong> <strong>14 dias</strong> (padrão: 4 dias). Mínimo: 1 minuto. Após o período, mensagens são automaticamente apagadas mesmo sem serem consumidas</p>
+<hr>
+<p><strong>P:</strong> O que é SQS Long Polling e por que usar? <strong>R:</strong> Consumer aguarda até <code>waitTimeSeconds</code> (máximo <strong>20 segundos</strong>) por mensagens disponíveis antes de retornar. Reduz requests vazios (custo), reduz latência. Short Polling retorna imediatamente (mesmo sem mensagens) — mais caro e ineficiente</p>
+<hr>
+<p><strong>P:</strong> O que é uma Dead Letter Queue (DLQ) e quando uma mensagem vai para ela? <strong>R:</strong> Fila separada para mensagens que falharam no processamento. Uma mensagem vai para a DLQ quando o <code>ReceiveCount</code> excede o <code>maxReceiveCount</code> configurado na redrive policy. Serve para isolar &quot;poison pills&quot; (mensagens irreprocessáveis) para análise</p>
+<hr>
+<p><strong>P:</strong> Qual é o tamanho máximo de mensagem no SQS? <strong>R:</strong> <strong>256 KB</strong> por mensagem. Para mensagens maiores, use o padrão &quot;S3 + SQS&quot;: armazene o payload no S3 e coloque apenas o S3 object reference na mensagem SQS (via SQS Extended Client Library)</p>
+<hr>
+<p><strong>P:</strong> O que é Delay Queue no SQS? <strong>R:</strong> Fila com delivery delay configurado (0 a <strong>15 minutos</strong>). Mensagens publicadas ficam invisíveis por esse período antes de aparecerem para consumers. Message Timer permite delay por mensagem individual (sobrescreve o delay da fila)</p>
+<hr>
+<p><strong>P:</strong> O que é SNS Message Filtering e como funciona? <strong>R:</strong> Cada subscription SNS pode ter uma FilterPolicy (JSON com condições sobre message attributes). Only mensagens que correspondem ao filtro são entregues àquela subscription. Exemplo: <code>{&quot;eventType&quot;: [&quot;order.completed&quot;, &quot;order.refunded&quot;]}</code> — subscription só recebe esses tipos</p>
+<hr>
+<p><strong>P:</strong> O que é SNS FIFO Topic? Quais são as limitações? <strong>R:</strong> SNS FIFO garante ordem e deduplicação. Apenas SQS FIFO Queues podem assinar SNS FIFO Topics. Throughput limitado a 300 TPS (3.000 com batching) — mesmo limite do SQS FIFO. Não integra com Lambda, email, HTTP diretamente (apenas SQS FIFO)</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre EventBridge Default Bus, Custom Bus e Partner Bus? <strong>R:</strong> Default Bus: eventos de serviços AWS (CloudTrail, EC2, RDS, etc.). Custom Bus: eventos da sua própria aplicação (PutEvents API). Partner Bus: eventos de parceiros SaaS (Datadog, Salesforce, Zendesk, etc.) diretamente no EventBridge sem necessidade de API polling</p>
+<hr>
+<p><strong>P:</strong> O que é EventBridge Schema Registry? <strong>R:</strong> Descobre e armazena schemas de eventos automaticamente. Permite gerar código de binding (Java, Python, TypeScript) para serializar/deserializar eventos type-safely. Facilita desenvolvimento orientado a eventos com type safety</p>
+<hr>
+<p><strong>P:</strong> Qual é a capacidade por shard no Kinesis Data Streams? <strong>R:</strong> Entrada: <strong>1 MB/s</strong> ou 1.000 records/s por shard. Saída: <strong>2 MB/s</strong> por shard (shared entre consumers) ou 2 MB/s por consumer com Enhanced Fan-Out (HTTP/2 push dedicado)</p>
+<hr>
+<p><strong>P:</strong> Por quanto tempo Kinesis Data Streams retém dados? <strong>R:</strong> Padrão: <strong>24 horas</strong>. Pode ser estendido para até <strong>365 dias</strong> (com custo adicional). Permite que múltiplos consumers leiam o mesmo stream em momentos diferentes (replay)</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença de latência entre Kinesis Data Streams e Kinesis Firehose? <strong>R:</strong> Kinesis Data Streams: latência de ~200ms (real-time). Kinesis Firehose: <strong>near real-time</strong> — buffer de 60 segundos (mínimo) ou 1 MB antes de entregar ao destino (S3, Redshift, OpenSearch, Splunk). Firehose não permite acesso direto ao stream nem replay</p>
+<hr>
+<p><strong>P:</strong> O que é Kinesis Producer Library (KPL) e qual o benefício? <strong>R:</strong> Biblioteca de alto nível para produtores Kinesis. Implementa batching (PutRecords), retry com backoff, compression e monitoramento integrado. Aumenta throughput e eficiência comparado ao SDK direto. Requer descompressão no consumer via KCL</p>
+<hr>
+<p><strong>P:</strong> Para qual caso de uso Amazon MQ é o serviço correto? <strong>R:</strong> Migração lift-and-shift de aplicações existentes que usam brokers de mensagens com protocolos padrão: <strong>AMQP, MQTT, STOMP, OpenWire</strong>. Suporta ActiveMQ e RabbitMQ gerenciados. Se está criando uma nova aplicação, prefira SQS/SNS (mais escaláveis e gerenciados)</p>
+<hr>
+<p><strong>P:</strong> Qual o padrão de arquitetura &quot;fan-out&quot; com SNS e SQS? <strong>R:</strong> Publicar 1 mensagem em um SNS Topic → múltiplas filas SQS (ou Lambda, HTTP) assinam. Cada subscriber processa independentemente, pode ter DLQ própria, retry próprio. Desacopla o publisher de múltiplos consumers</p>
+<hr>
+<p><strong>P:</strong> O que é &quot;at-least-once delivery&quot; no SQS Standard? <strong>R:</strong> SQS Standard garante que a mensagem seja entregue <strong>pelo menos uma vez</strong> — pode ser entregue mais de uma vez (duplicação rara). Aplicações devem ser <strong>idempotentes</strong> (processar a mesma mensagem múltiplas vezes sem efeito colateral). Para &quot;exatamente uma vez&quot;: use SQS FIFO com deduplication ID</p>
+<hr>
+<p><strong>P:</strong> Como integrar SQS com Auto Scaling para escalar consumers baseado na fila? <strong>R:</strong> CloudWatch Alarm baseado em <code>ApproximateNumberOfMessagesVisible</code> (ou <code>NumberOfMessagesSent</code> / instâncias) → Step Scaling ou Target Tracking no Auto Scaling Group. Target: ex: manter ≤ 100 mensagens por instância. ECS também pode escalar tasks com essa métrica customizada</p>
+<hr>
+<p><strong>P:</strong> O que é EventBridge Pipe? <strong>R:</strong> Conexão point-to-point entre uma source (SQS, Kinesis, DynamoDB Streams, Kafka) e um target (Lambda, Step Functions, EventBridge Bus), com filtering e enrichment opcionais no meio. Simplifica pipelines de eventos sem Lambda intermediário apenas para roteamento</p>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./064-14-desacoplamento-sqs-sns-eventbridge-cheatsheet.html">Aula anterior</a>
+      <a href="./066-14-desacoplamento-sqs-sns-eventbridge-questoes.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

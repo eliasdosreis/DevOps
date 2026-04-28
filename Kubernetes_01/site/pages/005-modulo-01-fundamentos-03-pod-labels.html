@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#005-modulo-01-fundamentos-03-pod-labels">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 01 - fundamentos - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 01 - fundamentos" loading="lazy">
+      <figcaption>Fundamentos: namespaces, pods, labels e annotations para organizar o cluster.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Demonstra como funcionam as Labels e Filtros (Selectors) 
+# O Conceito que d� vida ao Kubernetes moderno.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Imagine estar numa sala com 1.000 alunos e voc� precisa achar todo mundo 
+# que vista camiseta &quot;vermelha&quot;, cursa o &quot;1� ano&quot; e tem &quot;cabelo loiro&quot;.
+# Se cada aluno tiver essas coisas escritas em um &quot;adesivo&quot; na testa, 
+# voc� grita &quot;Quem tem o adesivo cor:vermelho pode ir pro intervalo&quot;
+# Labels s�o esses adesivos! Voc� cola eles no Pod.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# Labels (Etiquetas) s�o pares chave/valor associados a objetos, 
+# como os Pods. Elas n�o possuem sem�ntica pr�pria no core system do K8s
+# (n�o alteram desempenho nem limite de disco), s�o puramente p/ organizar
+# e selecionar subconjuntos de objetos em formato de query para uso p/ 
+# Services, Deployments, ou operadores humanos em bulk operations.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: meu-pod-pagamento    # Um pod de servi�os financeiros por ex.
+  namespace: meu-primeiro-projeto
+  # AQU� EST� O CONCEITO DO ARQUIVO:
+  labels:                    # Declara��o literal da listagem de adesivos
+    aplicacao: financeiro    # Adesivo de filtro por aplica��o
+    ambiente: producao       # Adesivo de filtro por maturidade do artefato
+    squad: time-faturamento  # Adesivo de filtro de equipe propriet�ria responsavel
+    tier: backend            # Adesivo da topologia para regras de rede (Ex: isolar do front)
+spec:
+  containers:
+    - name: api-pagamento
+      image: nginx:alpine    # Alpine: Imagem min�scula de SO para rodar o app r�pido 
+      ports:
+        - containerPort: 8080
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Criar o pod:
+#    kubectl apply -f 03-pod-labels.yaml
+#
+# 2. Listar pods mostrando *todos* os adesivos grudados:
+#    kubectl get pods --show-labels -n meu-primeiro-projeto
+#
+# 3. A M�GICA: Buscar APENAS pods que sejam do time de faturamento:
+#    kubectl get pods -l squad=time-faturamento -n meu-primeiro-projeto
+#
+# 4. Busca com Multiplos Filtros (&quot;E&quot; L�gico):
+#    kubectl get pods -l ambiente=producao,tier=backend -n meu-primeiro-projeto
+#
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# Tente alterar um LABEL &quot;on-the-fly&quot; direto pelo terminal sem ir pro yaml!
+#    kubectl label pod meu-pod-pagamento squad=time-risco --overwrite -n meu-primeiro-projeto
+# Verifique em seguida se a query do passo 3 acima retornar� vazia, confirmando.
+#
+# Se for debugar no futuro um &quot;Porqu� meu pod de FrontEnd n�o acha o pod do BD?&quot;,
+# muito frequentemente um Label tem typo, como &quot;appl: banco&quot; em vez de &quot;app&quot;. 
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# &quot;Label Selector&quot; � possivelmente a engrenagem mais importante da Arquitetura do 
+# Kubernetes. No futuro veremos o LoadBalancer (Service), ele n�o amarra na rede
+# por nome de IP e muito menos por Nome do Pod (que muda a toda hora). O Servi�o 
+# simplesmente olha para o cluster a 1000 por hora e diz: &quot;Qualquer novo Pod vivo que 
+# subiu ou ressuscitou e que magicamente tenha a Label &#39;app: minhaloja&#39; ser� adicionado 
+# por mim na teia da rede. Isso desacopla estritamente os recursos de Infraestrutura.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se n�s temos Labels t�o vitais, como empresas enormes garantem que 
+# nenhum desenvolvedor Junior subir� um Pod sem as Labels obrigat�rias como 
+# &#39;owner&#39; ou &#39;cost-center&#39;?&quot;
+# Resposta Esperada: &quot;Normalmente n�s usamos um &#39;Admission Controller&#39; customizado,
+# como o OPA/Gatekeeper (Kyverno/Open Policy Agent). Quando o Junior der o deploy,
+# antes de deitar os dados no banco Etcd, a API joga para o Gatekeeper e ele diz: 
+# &#39;Error: Faltam labels de finan�as&#39; e deruba a pipe, educando o dev sem causar dano 
+# ao monitoramento da nuvem do FinOps.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./004-modulo-01-fundamentos-02-pod.html">Aula anterior</a>
+      <a href="./006-modulo-01-fundamentos-04-pod-annotations.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flashcards — Computação EC2 - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#023-04-computacao-ec2-flashcards">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - Computacao EC2 - 7 min - 04-Computacao-EC2/flashcards.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - Computacao EC2" loading="lazy">
+      <figcaption>Compute e escolha de motor: instancia, container, funcao ou servico gerenciado.</figcaption>
+    </figure>
+    <h1>Flashcards — Computação EC2</h1>
+<blockquote><p>Revise um cartão de cada vez. Tente responder antes de revelar a resposta.</p></blockquote>
+<hr>
+<p><strong>P:</strong> Quais são as principais famílias de instâncias EC2 e seus casos de uso?<br><strong>R:</strong> M (general purpose, balanced CPU/RAM), C (compute-optimized: HPC, batch, ML inference), R (memory-optimized: in-memory DB, cache), I (storage-optimized: NVMe local, high IOPS DB), P/G (GPU: ML training, rendering), T (burstable: apps que raramente precisam de pico, mas têm baseline baixo).</p>
+<hr>
+<p><strong>P:</strong> O que é o mecanismo de CPU credits nas instâncias T?<br><strong>R:</strong> Instâncias T acumulam créditos quando CPU está abaixo do baseline e os gastam quando acima. T3/T3a com Unlimited mode podem usar CPU além dos créditos acumulados pagando por crédito extra. Se Standard mode e créditos zerados, CPU é limitada ao baseline.</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre On-Demand e Reserved Instance?<br><strong>R:</strong> On-Demand: paga por hora/segundo, sem compromisso, mais caro. Reserved Instance: compromisso de 1 ou 3 anos, desconto de até 72%. Standard RI não pode mudar tipo, região ou OS. Convertible RI pode trocar atributos, menor desconto (~54%). Ambos podem ser pagos up-front, parcial ou monthly.</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre Compute Savings Plans e EC2 Instance Savings Plans?<br><strong>R:</strong> Compute Savings Plans: até 66% desconto, aplica a qualquer família, região, OS e tamanho, também cobre Lambda e Fargate. EC2 Instance Savings Plans: até 72%, locked à família + região específica (ex: m5 em us-east-1), mais desconto, menos flexibilidade.</p>
+<hr>
+<p><strong>P:</strong> O que é Spot Instance e quando usá-la?<br><strong>R:</strong> Instâncias Spot usam capacidade ociosa da AWS a até 90% de desconto. Podem ser interrompidas com 2 minutos de aviso. Ideais para: batch jobs tolerantes a falha, ML training distribuído, renderização, testes. NÃO usar para: banco de dados primário, sessões web com estado.</p>
+<hr>
+<p><strong>P:</strong> O que é Spot Fleet e como funciona?<br><strong>R:</strong> Spot Fleet gerencia um conjunto de instâncias Spot (e opcionalmente On-Demand). Você define um pool de tipos/regiões e a estratégia: <code>lowestPrice</code> (escolhe o mais barato), <code>capacityOptimized</code> (escolhe o pool com mais capacidade disponível — recomendado para reduzir interrupções), <code>diversified</code> (distribui por todos os pools).</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre Dedicated Host e Dedicated Instance?<br><strong>R:</strong> Dedicated Host: você aluga um servidor físico específico, tem visibilidade do socket/núcleo, pode usar licenças BYO-L (por socket/core como SQL Server, Windows Server). Dedicated Instance: instância no HW dedicado à sua conta mas sem controle do host físico. Host é mais caro mas necessário para compliance de licenciamento.</p>
+<hr>
+<p><strong>P:</strong> O que é IMDSv2 e por que é preferível ao IMDSv1?<br><strong>R:</strong> IMDSv2 (Instance Metadata Service v2) usa um modelo baseado em token: primeiro você faz PUT para obter token com TTL, depois usa o token no header <code>X-aws-ec2-metadata-token</code>. Protege contra ataques SSRF onde um processo na instância poderia capturar metadata sem o token. Para desabilitar IMDSv1, configure <code>HttpTokens: required</code>.</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre gp2 e gp3 no EBS?<br><strong>R:</strong> gp2: IOPS vinculados ao tamanho (3 IOPS/GB, máx 16.000), burst. gp3: baseline de 3.000 IOPS e 125 MB/s independente do tamanho, pode provisionar até 16.000 IOPS e 1.000 MB/s separadamente. gp3 é mais barato (~20%) e flexível — use por padrão.</p>
+<hr>
+<p><strong>P:</strong> Quando usar io1/io2 vs gp3?<br><strong>R:</strong> io2: até 64.000 IOPS por volume, io2 Block Express até 256.000 IOPS, 99,999% durabilidade (vs 99,8-99,9% do gp). Use para bancos de dados de alto desempenho (Oracle, SQL Server, workloads que precisam &gt;16.000 IOPS garantidos). io1: versão anterior, durabilidade 99,8%.</p>
+<hr>
+<p><strong>P:</strong> O que é Instance Store e quais são suas características?<br><strong>R:</strong> Armazenamento NVMe efêmero diretamente no host físico da instância. IOPS muito altos (ex: i3.large tem ~100K IOPS). Dados PERDIDOS em: stop, terminate ou falha de hardware. Persistem em: restart. Ideal para cache de alto desempenho, buffer temporário, scratch disk.</p>
+<hr>
+<p><strong>P:</strong> Quais são os três tipos de Placement Group?<br><strong>R:</strong> Cluster: todas as instâncias num mesmo rack e AZ, latência &lt;1ms entre instâncias, ideal para HPC e MPI. Spread: cada instância num rack separado, máximo 7 por AZ, para alta disponibilidade crítica. Partition: grupos de instâncias por partição (cada partição = rack separado), até 7 partições por AZ, para HDFS/Cassandra/Kafka.</p>
+<hr>
+<p><strong>P:</strong> O que acontece a uma instância EC2 quando fazemos Stop (vs Hibernate)?<br><strong>R:</strong> Stop: instância para, RAM é perdida, EBS root preservado, cobrado pelo EBS não pela instância. Hibernate: RAM é gravada no EBS root volume (precisa ter espaço e estar encriptado), ao iniciar o SO retoma do ponto onde parou. Limite de hibernate: 60 dias.</p>
+<hr>
+<p><strong>P:</strong> O que são AMIs e quais são as categorias de virtualização?<br><strong>R:</strong> Amazon Machine Image é um template de instância (OS, dados, configurações). HVM (Hardware Virtual Machine): emulação completa de hardware — única suportada por tipos modernos. PV (Paravirtual): legado. AMIs podem ser compartilhadas entre contas, copiadas entre regiões. Para copiar uma AMI não encriptada para encriptada, especifique uma CMK na cópia.</p>
+<hr>
+<p><strong>P:</strong> O que é EC2 User Data?<br><strong>R:</strong> Script (shell ou cloud-init) executado uma única vez no primeiro boot da instância com privilégios de root. Acessível em <code>http://169.254.169.254/latest/user-data</code>. Útil para instalar software, configurar aplicação. Não é re-executado em reinicializações (a menos que configurado explicitamente).</p>
+<hr>
+<p><strong>P:</strong> Como consultar os metadados de uma instância EC2 de dentro dela com IMDSv2?<br><strong>R:</strong> </p>
+<pre><code class="language-bash">TOKEN=$(curl -X PUT &quot;http://169.254.169.254/latest/api/token&quot; \
+  -H &quot;X-aws-ec2-metadata-token-ttl-seconds: 21600&quot;)
+curl -H &quot;X-aws-ec2-metadata-token: $TOKEN&quot; \
+  http://169.254.169.254/latest/meta-data/instance-id</code></pre>
+<p>Sem o token (IMDSv1), apenas: <code>curl http://169.254.169.254/latest/meta-data/instance-id</code></p>
+<hr>
+<p><strong>P:</strong> O que é Capacity Reservation e quando usar?<br><strong>R:</strong> Reserva capacidade em uma AZ específica sem desconto de preço (paga On-Demand). Garante que a capacidade estará disponível quando precisar. Pode combinar com Savings Plans ou Regional RI para obter desconto. Útil para DR, compliance ou workloads críticos que não podem ficar sem capacidade.</p>
+<hr>
+<p><strong>P:</strong> Qual é o máximo de IOPS do io2 Block Express e st1 vs sc1?<br><strong>R:</strong> io2 Block Express: até 256.000 IOPS, 4.000 MB/s. st1 (throughput): 40 MB/s por TB baseline, 250 MB/s por TB burst, máx 500 MB/s — acesso sequencial (logs, Kafka, data warehouse). sc1 (cold HDD): 12 MB/s por TB baseline, mais barato — dados raramente acessados.</p>
+<hr>
+<p><strong>P:</strong> O que é Elastic IP e quando deve ser evitado?<br><strong>R:</strong> Elastic IP é um IPv4 estático que pode ser associado/reassociado a instâncias ou ENIs. Cobrado quando NÃO está em uso (0,005 USD/hora). Evitar em arquiteturas escaláveis — use DNS (Route 53) em vez de depender de IP fixo. Use apenas quando cliente precisa de IP na allowlist.</p>
+<hr>
+<p><strong>P:</strong> O que é AWS Systems Manager Session Manager?<br><strong>R:</strong> Permite acesso interativo a instâncias EC2 sem abrir porta 22 (SSH) ou 3389 (RDP). A instância precisa ter o SSM Agent instalado e role IAM com <code>AmazonSSMManagedInstanceCore</code>. Acesso via Console ou CLI. Auditado pelo CloudTrail e sessões podem ser logadas no S3/CloudWatch Logs.</p>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./022-04-computacao-ec2-cheatsheet.html">Aula anterior</a>
+      <a href="./024-04-computacao-ec2-lab.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

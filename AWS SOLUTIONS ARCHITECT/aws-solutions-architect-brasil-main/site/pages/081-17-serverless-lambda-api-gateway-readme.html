@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Módulo 11 — Serverless: Lambda e API Gateway - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#081-17-serverless-lambda-api-gateway-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 17 - Serverless Lambda API Gateway - 7 min - 17-Serverless-Lambda-API-Gateway/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 17 - Serverless Lambda API Gateway" loading="lazy">
+      <figcaption>Serverless troca servidor por eventos, integracao gerenciada e pagamento por uso.</figcaption>
+    </figure>
+    <h1>Módulo 11 — Serverless: Lambda e API Gateway</h1>
+<h2>Computação Serverless na AWS</h2>
+<p>No modelo serverless, você não provisiona nem gerencia servidores — define apenas o código e a AWS cuida do resto (provisionamento, escalabilidade, patches, HA). Você paga apenas pelo que executar.</p>
+<hr>
+<h2>AWS Lambda</h2>
+<h3>Modelo de Execução</h3>
+<pre><code class="language-">Event Source → Lambda Service → Execution Environment
+                                  └── Runtime (Python/Node/Java/Go/Ruby/.NET)
+                                        └── seu-handler(event, context)</code></pre>
+<ul><li><strong>Handler</strong>: ponto de entrada (<code>modulo.funcao</code>, ex: <code>app.lambda_handler</code>)</li><li><strong>Event</strong>: payload JSON com dados do trigger (varia por event source)</li><li><strong>Context</strong>: objeto com metadata (request_id, remaining_time, function_name, memory_limit)</li></ul>
+<h3>Limites Importantes</h3>
+<div class="table-wrap"><table><thead><tr><th>Parâmetro</th><th>Limite</th><th>Notas</th></tr></thead><tbody><tr><td>Timeout</td><td>3s padrão, <strong>15 minutos</strong> máximo</td><td>Configure conforme necessidade</td></tr><tr><td>Memória</td><td>128 MB a <strong>10.240 MB</strong> (10 GB)</td><td>CPU escala proporcionalmente</td></tr><tr><td>Armazenamento /tmp</td><td>512 MB padrão, até <strong>10.240 MB</strong></td><td>Efêmero por execution environment</td></tr><tr><td>Payload de entrada (sync)</td><td>6 MB</td><td>-</td></tr><tr><td>Payload de entrada (async)</td><td>256 KB</td><td>-</td></tr><tr><td>Package size (zip)</td><td>50 MB (direto), 250 MB (S3)</td><td>250 MB descomprimido</td></tr><tr><td>Layers</td><td>Até 5 por função</td><td>Total 250 MB descomprimido</td></tr><tr><td>Concorrência padrão</td><td>1.000 por região</td><td>Aumentar via support ticket</td></tr></tbody></table></div>
+<h3>Modelos de Invocação</h3>
+<div class="table-wrap"><table><thead><tr><th>Modelo</th><th>Quem invoca</th><th>Comportamento em Erro</th><th>Exemplos</th></tr></thead><tbody><tr><td><strong>Síncrono</strong></td><td>Caller aguarda resposta</td><td>Caller lida com o erro</td><td>API GW, ALB, Lambda invoke direto</td></tr><tr><td><strong>Assíncrono</strong></td><td>Lambda retorna 202 e processa depois</td><td>Retry automático 2x + DLQ</td><td>S3, SNS, EventBridge, CloudWatch</td></tr><tr><td><strong>Event Source Mapping</strong></td><td>Lambda policia a fonte</td><td>Retry até expirar + DLQ/bisect</td><td>SQS, Kinesis, DynamoDB Streams, Kafka</td></tr></tbody></table></div>
+<h3>Lambda Concurrency (Concorrência)</h3>
+<pre><code class="language-">Account Concurrency = 1.000 (default, aumentável)
+
+                ┌─ Reserved Concurrency (garantida para função X)
+                │   [bloqueia concorrência de outros]
+Function Pool  ─┤
+                └─ Unreserved Concurrency (compartilhado entre demais)
+
+Provisioned Concurrency:
+  Pré-aquece N execução environments → elimina cold start
+  Cobrado por hora (mesmo sem invocações)
+  Requerido para: aplicações sensíveis à latência (APIs interativas)</code></pre>
+<p><strong>Burst Limit (por região):</strong></p>
+<ul><li>Escalonamento inicial: 3.000 concurrent executions (us-east-1, us-west-2, eu-west-1)</li><li>Regiões menores: 500-1.000 inicial</li><li>Expansão: +500/minuto após o burst</li></ul>
+<h3>Cold Start</h3>
+<p>Ocorre quando Lambda precisa criar um novo execution environment:</p>
+<ol><li>Download do pacote (código + layers)</li><li>Inicializar o runtime</li><li>Executar código de inicialização (fora do handler)</li></ol>
+<p><strong>Mitigações:</strong></p>
+<ul><li><strong>Provisioned Concurrency</strong>: ambientes pré-aquecidos (custo adicional)</li><li><strong>Lambda SnapStart</strong> (Java): snapshot do ambiente após inicialização; restaura em lugar de reinicializar (<strong>Java 11+ apenas</strong>)</li><li>Manter pacote pequeno; evitar imports pesados no handler</li></ul>
+<h3>Lambda Layers</h3>
+<ul><li>Pacotes compartilhados entre múltiplas funções (bibliotecas, dependências, ferramentas)</li><li>Separação entre código de aplicação e dependências</li><li>Versioned; pode ser compartilhado entre contas AWS</li><li>Limite: 5 layers por função, 250 MB total (descomprimido)</li></ul>
+<h3>Lambda em VPC</h3>
+<pre><code class="language-">Lambda (dentro VPC):
+  ├── Acessa recursos privados (RDS, ElastiCache, EC2)
+  ├── Usa sua própria ENI (Hyperplane ENI — compartilhada entre funções na mesma VPC/subnet/SG)
+  └── Para acessar internet: precisa de NAT Gateway (subnet pública + IGW)
+      [Lambda em VPC NÃO tem acesso à internet por padrão]</code></pre>
+<p><strong>Impacto no cold start:</strong> Lambda em VPC usa Hyperplane ENI (não ENI dedicada desde 2019) — impacto mínimo.</p>
+<h3>Lambda Event Source Mapping (ESM)</h3>
+<p>Para SQS, Kinesis, DynamoDB Streams, MSK:</p>
+<ul><li>Lambda <strong>policia</strong> a fonte (não a fonte empurra)</li><li>Processa em <strong>batches</strong> (batch size configurável)</li><li><strong>Filtering</strong>: processa apenas eventos com certos atributos (ex: apenas <code>eventType = ORDER</code>)</li><li><strong>Bisect on Error</strong>: divide o batch em 2 ao falhar para isolar a mensagem problemática</li><li><strong>DLQ ou Destination</strong>: mensagens que falham todas as tentativas vão para SQS/SNS/S3</li></ul>
+<hr>
+<h2>Amazon API Gateway</h2>
+<h3>Tipos de API</h3>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Uso</th><th>Custo</th><th>Features</th></tr></thead><tbody><tr><td><strong>REST API</strong></td><td>APIs REST completas</td><td>Maior</td><td>Cache, usage plans, request validation, X-Ray, WAF</td></tr><tr><td><strong>HTTP API</strong></td><td>APIs simples + alto throughput</td><td>~71% menor</td><td>Lambda proxy, JWT, OIDC/OAuth2, menos features</td></tr><tr><td><strong>WebSocket API</strong></td><td>Conexões bidirecionais persistentes</td><td>Por conexão + mensagem</td><td>Chat, alertas real-time, $connect/$disconnect/$default</td></tr></tbody></table></div>
+<h3>API Gateway REST — Componentes</h3>
+<pre><code class="language-">API → Resource (/users) → Method (GET, POST, PUT, DELETE)
+                              ├── Method Request (validação de entrada, autorização)
+                              ├── Integration Request (mapeamento → backend)
+                              ├── Backend (Lambda, HTTP, AWS Service, Mock)
+                              ├── Integration Response (mapeamento de volta)
+                              └── Method Response (status codes, headers)</code></pre>
+<h3>Tipos de Integração</h3>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Como funciona</th></tr></thead><tbody><tr><td><strong>Lambda Proxy</strong></td><td>API GW passa o evento completo para Lambda; Lambda retorna response no formato esperado</td></tr><tr><td><strong>Lambda Custom</strong></td><td>Você define mapping templates (Velocity) para transformar request/response</td></tr><tr><td><strong>HTTP Proxy</strong></td><td>Proxia para endpoint HTTP externo</td></tr><tr><td><strong>HTTP Custom</strong></td><td>Proxia para HTTP com transformação</td></tr><tr><td><strong>AWS Service</strong></td><td>Integra diretamente com serviço AWS (ex: SQS SendMessage, DynamoDB PutItem)</td></tr><tr><td><strong>Mock</strong></td><td>Retorna resposta sem backend real (para testes)</td></tr></tbody></table></div>
+<h3>Authorizers</h3>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Como funciona</th><th>Cache</th></tr></thead><tbody><tr><td><strong>Lambda Authorizer</strong></td><td>Lambda recebe token/header, retorna IAM policy (Allow/Deny)</td><td>TTL configurável (0-3600s)</td></tr><tr><td><strong>Cognito User Pool</strong></td><td>Valida JWT token do Cognito User Pool</td><td>Automático via token</td></tr><tr><td><strong>IAM Authorization</strong></td><td>Assina requests com AWS SigV4 (para clientes AWS internos)</td><td>N/A</td></tr></tbody></table></div>
+<h3>Throttling</h3>
+<ul><li><strong>Account limit</strong>: 10.000 RPS + 5.000 burst (REST API)</li><li><strong>Usage Plans</strong>: rate (RPS) e quota (requests/dia ou semana) por cliente via API Key</li><li>HTTP 429 quando throttled</li><li>Throttling pode ser configurado por stage e por método</li></ul>
+<h3>API Gateway Cache</h3>
+<ul><li>Por stage; TTL padrão 300s (5 min), até 3.600s</li><li>Cache key: query strings e headers configurados</li><li>Invalidar por request: <code>Cache-Control: max-age=0</code> + permissão necessária</li><li>Tamanhos: 0,5 GB a 237 GB</li></ul>
+<h3>Stages e Deploy</h3>
+<ul><li>API não fica disponível até fazer um <strong>deployment para um stage</strong></li><li>Stage variables: como variáveis de ambiente para stages (ex: endpoint do backend muda por stage)</li><li><strong>Canary Deployments</strong>: enviar % do tráfego do stage para nova versão</li></ul>
+<hr>
+<h2>AWS SAM (Serverless Application Model)</h2>
+<p>Framework para IaC de aplicações serverless:</p>
+<pre><code class="language-yaml">Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  MyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.handler
+      Runtime: python3.12
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: GET</code></pre>
+<p><code>sam build &amp;&amp; sam deploy --guided</code> → cria/atualiza CloudFormation stack</p>
+<hr>
+<h2>Arquitetura Serverless Típica</h2>
+<pre><code class="language-">Client
+  └── API Gateway (REST/HTTP API)
+        ├── Authorizer: Lambda / Cognito
+        └── Integration: Lambda Proxy
+              ├── Lambda A (GET /users)    → DynamoDB
+              ├── Lambda B (POST /orders)  → DynamoDB + SNS (async)
+              └── Lambda C (GET /reports)  → S3 Select / Athena
+
+Async:
+  SNS → SQS → Lambda (processador) → SES (email)
+  EventBridge → Lambda (scheduler) → Relatórios em S3
+
+Monitoramento:
+  CloudWatch Logs (automático)
+  X-Ray (tracing distribuído)</code></pre>
+<hr>
+<h2>Dicas de Prova</h2>
+<ul><li>Lambda <strong>não</strong> tem estado entre invocações — use DynamoDB/ElastiCache para estado</li><li><code>/tmp</code> persiste apenas na vida do execution environment (não entre invocações diferentes)</li><li>Lambda <strong>grátis</strong> até 1 milhão de invocações e 400.000 GB-segundos/mês</li><li><strong>Reserved Concurrency = 0</strong> → função efetivamente desabilitada</li><li>API Gateway HTTP API NÃO suporta: response caching, request validation, WAF nativo, UsagePlan/ApiKey</li><li>Lambda SnapStart: Java apenas; snapshot após init phase; restaurado com <code>CRaC</code> (Coordinated Restore at Checkpoint)</li><li>SQS com Lambda: VisibilityTimeout da fila deve ser ≥ 6× timeout da função Lambda</li><li>Lambda layers vs container image: container image (até 10 GB) permite empacotar tudo; não usa layers</li><li>Event Source Mapping com Kinesis/DynamoDB Streams: Lambda processa em shards paralelamente (1 concurrent invoc per shard por default)</li><li>API Gateway não pode ser acessado diretamente de dentro de VPC sem VPC Link ou Resource Policy</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./080-17-serverless-lambda-api-gateway-questoes.html">Aula anterior</a>
+      <a href="./082-18-dados-e-analytics-casos-de-uso.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

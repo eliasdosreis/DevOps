@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kubernetes 01</title>
+  <link rel="stylesheet" href="./assets/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navegacao dos modulos">
+      <a class="brand" href="#inicio">
+        <span class="brand-mark">K8S</span>
+        <span>
+          <strong>K8S-01 Lab</strong>
+          <small>Kubernetes, YAML e labs</small>
+        </span>
+      </a>
+      <div class="progress-panel">
+        <div>
+          <span id="doneCount">0</span>/<span id="totalCount">0</span>
+          <small>aulas concluidas</small>
+        </div>
+        <div class="progress-track"><span id="progressBar"></span></div>
+      </div>
+      <nav id="moduleNav" class="module-nav"></nav>
+    </aside>
+
+    <main class="main-area">
+      <section class="hero-section" id="inicio">
+        <div class="hero-copy">
+          <span class="eyebrow">Fundamentos, Kind e manifestos essenciais</span>
+          <h1>Estude Kubernetes com pratica, manifestos e revisao visual.</h1>
+          <p>Curso convertido para um site estatico com trilha por modulos, busca, progresso local, paginas HTML individuais e revisao guiada por labs Kubernetes.</p>
+          <div class="hero-actions">
+            <button id="startButton" class="primary-btn">Comecar estudo</button>
+            <button id="randomButton" class="secondary-btn">Revisao aleatoria</button>
+          </div>
+        </div>
+        <div class="architecture-visual" aria-label="Diagrama visual de componentes Kubernetes">
+          <div class="cloud-node core">K8S</div>
+          <div class="cloud-node node-a">POD</div>
+          <div class="cloud-node node-b">SVC</div>
+          <div class="cloud-node node-c">DEP</div>
+          <div class="cloud-node node-d">PVC</div>
+          <div class="cloud-node node-e">RBAC</div>
+          <svg viewBox="0 0 520 320" role="img" aria-label="Linhas conectando componentes Kubernetes">
+            <path d="M260 160 C160 80 130 90 95 90" />
+            <path d="M260 160 C170 210 135 230 90 245" />
+            <path d="M260 160 C260 65 260 60 260 45" />
+            <path d="M260 160 C360 80 390 90 425 90" />
+            <path d="M260 160 C360 225 395 235 430 245" />
+          </svg>
+        </div>
+      </section>
+
+      <section class="toolbar" aria-label="Ferramentas de estudo">
+        <label class="search-box">
+          <span>Buscar</span>
+          <input id="searchInput" type="search" placeholder="Ex: pod, service, ingress, hpa, rbac">
+        </label>
+        <select id="moduleFilter" aria-label="Filtrar modulo"></select>
+        <button id="toggleCompleted" class="ghost-btn" aria-pressed="false">Ocultar concluidas</button>
+      </section>
+
+      <section class="stats-grid" id="statsGrid"></section>
+      <section class="content-layout">
+        <div class="lesson-list" id="lessonList"></div>
+        <article class="lesson-card" id="lessonView"></article>
+      </section>
+    </main>
+  </div>
+  <script src="./assets/data.js"></script>
+  <script src="./assets/quiz.js"></script>
+  <script src="./assets/app.js"></script>
+</body>
+</html>

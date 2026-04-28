@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Prático — Well-Architected Framework: WAT + Trusted Advisor + Cost Explorer (Módulo 26) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#141-26-well-architected-framework-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 26 - Well Architected Framework - 7 min - 26-Well-Architected-Framework/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 26 - Well Architected Framework" loading="lazy">
+      <figcaption>Well-Architected organiza decisoes por pilares para melhorar sistemas reais.</figcaption>
+    </figure>
+    <h1>Lab Prático — Well-Architected Framework: WAT + Trusted Advisor + Cost Explorer (Módulo 26)</h1>
+<blockquote><p><strong>Região:</strong> us-east-1 | <strong>Custo estimado:</strong> ~$0 (Well-Architected Tool, Trusted Advisor e Cost Explorer são gratuitos)<br><strong>Pré-requisitos:</strong> AWS CLI configurado, conta com acesso à console</p></blockquote>
+<hr>
+<h2>Objetivo</h2>
+<p>Usar as ferramentas nativas AWS para avaliar a arquitetura segundo o Well-Architected Framework, checar recomendações do Trusted Advisor e analisar custos com Cost Explorer.</p>
+<hr>
+<h2>Parte 1 — AWS Well-Architected Tool</h2>
+<pre><code class="language-bash"># Listar lenses disponíveis
+aws wellarchitected list-lenses \
+  --query &#39;LenseSummaries[*].[LensAlias, LensName]&#39; \
+  --output table
+
+# Criar um workload para avaliação
+WORKLOAD_ID=$(aws wellarchitected create-workload \
+  --workload-name &quot;Lab-Plataforma-Ecommerce&quot; \
+  --description &quot;Avaliação da plataforma de e-commerce para fim de lab&quot; \
+  --environment PRODUCTION \
+  --aws-regions &quot;us-east-1&quot; \
+  --lenses &quot;wellarchitected&quot; \
+  --review-owner &quot;time-devops@empresa.com&quot; \
+  --query &#39;WorkloadId&#39; --output text)
+
+echo &quot;Workload criado: $WORKLOAD_ID&quot;
+
+# Ver detalhes do workload
+aws wellarchitected get-workload \
+  --workload-id &quot;$WORKLOAD_ID&quot; \
+  --query &#39;Workload.[WorkloadName, Environment, RiskCounts]&#39; \
+  --output table
+
+# Listar milestone (estado inicial)
+aws wellarchitected list-milestones \
+  --workload-id &quot;$WORKLOAD_ID&quot;
+
+# Explorar perguntas por pilar
+PILLARS=(&quot;operationalExcellence&quot; &quot;security&quot; &quot;reliability&quot; &quot;performance&quot; &quot;costOptimization&quot; &quot;sustainability&quot;)
+
+for PILLAR in &quot;${PILLARS[@]}&quot;; do
+  echo &quot;&quot;
+  echo &quot;=== Pilar: $PILLAR ===&quot;
+  aws wellarchitected list-answers \
+    --workload-id &quot;$WORKLOAD_ID&quot; \
+    --lens-alias &quot;wellarchitected&quot; \
+    --pillar-id &quot;$PILLAR&quot; \
+    --query &#39;AnswerSummaries[*].[QuestionId, QuestionTitle, Risk]&#39; \
+    --output table 2&gt;/dev/null | head -30
+done
+
+# Responder uma pergunta (pilar de segurança — SEC 1)
+aws wellarchitected update-answer \
+  --workload-id &quot;$WORKLOAD_ID&quot; \
+  --lens-alias &quot;wellarchitected&quot; \
+  --question-id &quot;sec_securely_operate&quot; \
+  --selected-choices &quot;sec_securely_operate_aws_account&quot; &quot;sec_securely_operate_multi_accounts&quot; \
+  --notes &quot;Usamos AWS Organizations com SCPs para governança centralizada&quot;
+
+# Gerar milestone após responder perguntas
+MILESTONE_NUMBER=$(aws wellarchitected create-milestone \
+  --workload-id &quot;$WORKLOAD_ID&quot; \
+  --milestone-name &quot;Sprint-Review-2025-Q1&quot; \
+  --query &#39;MilestoneNumber&#39; --output text)
+
+echo &quot;Milestone criado: Sprint-Review-2025-Q1 (Número: $MILESTONE_NUMBER)&quot;
+
+# Ver review do lens com riscos
+aws wellarchitected get-lens-review \
+  --workload-id &quot;$WORKLOAD_ID&quot; \
+  --lens-alias &quot;wellarchitected&quot; \
+  --query &#39;LensReview.[LensName, RiskCounts]&#39; \
+  --output json</code></pre>
+<hr>
+<h2>Parte 2 — Trusted Advisor</h2>
+<pre><code class="language-bash"># Listar todas as verificações disponíveis
+aws trustedadvisor list-checks \
+  --query &#39;checks[*].[id, name, category, status]&#39; \
+  --output table 2&gt;/dev/null | head -50
+
+# Verificações por categoria
+CATEGORIES=(&quot;cost_optimizing&quot; &quot;security&quot; &quot;fault_tolerance&quot; &quot;performance&quot; &quot;service_limits&quot;)
+
+for CAT in &quot;${CATEGORIES[@]}&quot;; do
+  echo &quot;&quot;
+  echo &quot;=== Categoria: $CAT ===&quot;
+  aws trustedadvisor list-checks \
+    --query &quot;checks[?category==&#39;${CAT}&#39;].[id, name]&quot; \
+    --output table 2&gt;/dev/null | head -20
+done
+
+# Verificação de segurança — Security Groups portas abertas
+OPEN_PORTS_CHECK=&quot;HCP4007jHTy&quot;  # ID do check de SGs com portas abertas
+
+aws trustedadvisor get-check-result \
+  --check-id &quot;$OPEN_PORTS_CHECK&quot; \
+  --query &#39;result.[status, timestamp, flaggedResources[*].[region, status]]&#39; \
+  --output json 2&gt;/dev/null
+
+# Verificação de MFA na conta root
+MFA_CHECK=&quot;7DAFEmoDos&quot;
+
+aws trustedadvisor get-check-result \
+  --check-id &quot;$MFA_CHECK&quot; \
+  --query &#39;result.[status, checkId]&#39; \
+  --output json 2&gt;/dev/null
+
+# Verificação de instâncias subutilizadas (Cost)
+UNDERUTIL_CHECK=&quot;Qch7DwouX1&quot;
+
+aws trustedadvisor get-check-result \
+  --check-id &quot;$UNDERUTIL_CHECK&quot; \
+  --query &#39;result.[status, flaggedResources]&#39; \
+  --output json 2&gt;/dev/null
+
+# Refresh de verificações (forçar atualização)
+aws trustedadvisor refresh-check --check-id &quot;$OPEN_PORTS_CHECK&quot;
+echo &quot;Check atualizado. Aguardar ~2-3 min para resultado.&quot;
+
+# Resumo de todos os resultados
+aws trustedadvisor describe-checks-result-summary \
+  --query &#39;result.[status, categorySpecificSummary]&#39; \
+  --output json 2&gt;/dev/null</code></pre>
+<hr>
+<h2>Parte 3 — AWS Compute Optimizer</h2>
+<pre><code class="language-bash"># Verificar se o Compute Optimizer está habilitado
+aws compute-optimizer get-enrollment-status \
+  --query &#39;status&#39; --output text
+
+# Habilitar se necessário
+aws compute-optimizer update-enrollment-status --status Active
+
+# Aguardar 24h para gerar recomendações — listar o que está disponível
+aws compute-optimizer get-ec2-instance-recommendations \
+  --query &#39;instanceRecommendations[*].[instanceArn, finding, findingReasonCodes]&#39; \
+  --output table 2&gt;/dev/null
+
+# Recomendações para Auto Scaling Groups
+aws compute-optimizer get-auto-scaling-group-recommendations \
+  --query &#39;autoScalingGroupRecommendations[*].[autoScalingGroupArn, finding]&#39; \
+  --output table 2&gt;/dev/null
+
+# Recomendações para volumes EBS
+aws compute-optimizer get-ebs-volume-recommendations \
+  --query &#39;volumeRecommendations[*].[volumeArn, finding]&#39; \
+  --output table 2&gt;/dev/null
+
+# Exportar recomendações para S3 (para análise massiva)
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+REPORT_BUCKET=&quot;lab-compute-optimizer-${ACCOUNT_ID}&quot;
+
+aws s3api create-bucket --bucket &quot;$REPORT_BUCKET&quot;
+
+aws compute-optimizer export-ec2-instance-recommendations \
+  --s3-destination-config bucket=&quot;$REPORT_BUCKET&quot;,keyPrefix=&quot;recommendations/&quot; \
+  --query &#39;jobId&#39; --output text</code></pre>
+<hr>
+<h2>Parte 4 — Cost Explorer</h2>
+<pre><code class="language-bash"># Custo total últimos 30 dias por serviço
+START=$(date -d &quot;-30 days&quot; +%Y-%m-%d 2&gt;/dev/null || date -v-30d +%Y-%m-%d)
+END=$(date +%Y-%m-%d)
+
+aws ce get-cost-and-usage \
+  --time-period &quot;Start=${START},End=${END}&quot; \
+  --granularity MONTHLY \
+  --metrics BlendedCost UnblendedCost UsageQuantity \
+  --group-by &quot;Type=DIMENSION,Key=SERVICE&quot; \
+  --query &#39;ResultsByTime[0].Groups[*].[Keys[0], Metrics.BlendedCost.Amount]&#39; \
+  --output table
+
+# Top 5 serviços mais caros
+aws ce get-cost-and-usage \
+  --time-period &quot;Start=${START},End=${END}&quot; \
+  --granularity MONTHLY \
+  --metrics BlendedCost \
+  --group-by &quot;Type=DIMENSION,Key=SERVICE&quot; \
+  --query &#39;sort_by(ResultsByTime[0].Groups, &amp;Metrics.BlendedCost.Amount)[-5:][*].[Keys[0], Metrics.BlendedCost.Amount]&#39; \
+  --output table
+
+# Custo por tag (exemplo: Environment)
+aws ce get-cost-and-usage \
+  --time-period &quot;Start=${START},End=${END}&quot; \
+  --granularity MONTHLY \
+  --metrics BlendedCost \
+  --group-by &quot;Type=TAG,Key=Environment&quot; \
+  --query &#39;ResultsByTime[0].Groups[*].[Keys[0], Metrics.BlendedCost.Amount]&#39; \
+  --output table
+
+# Forecast para os próximos 30 dias
+FORECAST_START=$(date +%Y-%m-%d)
+FORECAST_END=$(date -d &quot;+30 days&quot; +%Y-%m-%d 2&gt;/dev/null || date -v+30d +%Y-%m-%d)
+
+aws ce get-cost-forecast \
+  --time-period &quot;Start=${FORECAST_START},End=${FORECAST_END}&quot; \
+  --granularity MONTHLY \
+  --metric BLENDED_COST \
+  --query &#39;[Total.Amount, Total.Unit]&#39; \
+  --output text
+
+# Custo diário (útil para detectar anomalias)
+aws ce get-cost-and-usage \
+  --time-period &quot;Start=${START},End=${END}&quot; \
+  --granularity DAILY \
+  --metrics BlendedCost \
+  --query &#39;ResultsByTime[*].[TimePeriod.Start, Total.BlendedCost.Amount]&#39; \
+  --output table | tail -10</code></pre>
+<hr>
+<h2>Parte 5 — Savings Plans Analysis</h2>
+<pre><code class="language-bash"># Ver Savings Plans já adquiridos
+aws savingsplans describe-savings-plans \
+  --query &#39;savingsPlans[*].[savingsPlanId, offeringId, state, commitment, end]&#39; \
+  --output table
+
+# Recomendações de Savings Plans
+aws ce get-savings-plans-purchase-recommendation \
+  --savings-plans-type COMPUTE_SP \
+  --term-in-years ONE_YEAR \
+  --payment-option NO_UPFRONT \
+  --lookback-period-in-days SIXTY_DAYS \
+  --query &#39;SavingsPlansPurchaseRecommendation.[SavingsPlansType, LookbackPeriodInDays, SavingsPlansPurchaseRecommendationDetails[0].EstimatedSavingsSavingsPlansEligibleCosts]&#39; \
+  --output json
+
+# Comparar On-Demand vs Savings Plans vs Reserved Instances
+echo &quot;&quot;
+echo &quot;=== Comparativo de Modelos de Preço ===&quot;
+echo &quot;On-Demand: sem compromisso, preço cheio&quot;
+echo &quot;Compute Savings Plan 1yr No Upfront: ~17% desconto&quot;
+echo &quot;EC2 Savings Plan 1yr No Upfront: ~up to 40% desconto&quot;
+echo &quot;RI 1yr No Upfront: até 40% para tipo específico&quot;
+echo &quot;RI 1yr All Upfront: até 56% para tipo específico&quot;
+echo &quot;RI 3yr All Upfront: até 72% para tipo específico&quot;
+echo &quot;Spot Instances: até 90% desconto (interruptíveis)&quot;
+
+# Cost Anomaly Detection — criar monitor
+aws ce create-anomaly-monitor \
+  --anomaly-monitor &#39;{
+    &quot;MonitorName&quot;: &quot;lab-monitor-servico&quot;,
+    &quot;MonitorType&quot;: &quot;DIMENSIONAL&quot;,
+    &quot;MonitorDimension&quot;: &quot;SERVICE&quot;
+  }&#39; \
+  --query &#39;MonitorArn&#39; --output text</code></pre>
+<hr>
+<h2>Parte 6 — IAM Access Analyzer (Pilar Segurança)</h2>
+<pre><code class="language-bash"># Criar analisador no nível da conta
+ANALYZER_ARN=$(aws accessanalyzer create-analyzer \
+  --analyzer-name &quot;lab-account-analyzer&quot; \
+  --type ACCOUNT \
+  --query &#39;arn&#39; --output text)
+
+echo &quot;Analisador criado: $ANALYZER_ARN&quot;
+
+# Aguardar análise (~1-2 min) e listar findings
+sleep 60
+
+aws accessanalyzer list-findings \
+  --analyzer-arn &quot;$ANALYZER_ARN&quot; \
+  --query &#39;findings[*].[id, resourceType, resource, status]&#39; \
+  --output table
+
+# Ver detalhes de um finding (se existir)
+FIRST_FINDING=$(aws accessanalyzer list-findings \
+  --analyzer-arn &quot;$ANALYZER_ARN&quot; \
+  --query &#39;findings[0].id&#39; --output text 2&gt;/dev/null)
+
+if [ &quot;$FIRST_FINDING&quot; != &quot;None&quot; ] &amp;&amp; [ -n &quot;$FIRST_FINDING&quot; ]; then
+  aws accessanalyzer get-finding \
+    --analyzer-arn &quot;$ANALYZER_ARN&quot; \
+    --id &quot;$FIRST_FINDING&quot; \
+    --output json
+fi</code></pre>
+<hr>
+<h2>Limpeza</h2>
+<pre><code class="language-bash"># Deletar workload do Well-Architected Tool
+aws wellarchitected delete-workload --workload-id &quot;$WORKLOAD_ID&quot;
+
+# Deletar analisador IAM Access Analyzer
+aws accessanalyzer delete-analyzer --analyzer-name &quot;lab-account-analyzer&quot;
+
+# Deletar anomaly monitor
+MONITOR_ARN=$(aws ce list-cost-category-definitions --query &#39;CostCategoryReferences[0]&#39; 2&gt;/dev/null)
+# Listagem manual dos monitors:
+aws ce get-anomaly-monitors --query &#39;AnomalyMonitors[*].[MonitorArn, MonitorName]&#39; --output table
+
+# Limpar bucket Compute Optimizer
+aws s3 rm &quot;s3://${REPORT_BUCKET}&quot; --recursive
+aws s3api delete-bucket --bucket &quot;$REPORT_BUCKET&quot; 2&gt;/dev/null
+
+echo &quot;Limpeza concluída. Well-Architected Tool, Access Analyzer deletados.&quot;</code></pre>
+<hr>
+<h2>O Que Você Aprendeu</h2>
+<ul><li><strong>WAT (Well-Architected Tool):</strong> criar workloads, responder perguntas por pilar, gerar milestones, rastrear riscos HIGH/MEDIUM/NONE</li><li><strong>Trusted Advisor:</strong> cheques automáticos em 5 categorias; refresh manual disponível via CLI</li><li><strong>Compute Optimizer:</strong> recomendações de right-sizing baseadas em CloudWatch metrics (requer 14+ dias de dados)</li><li><strong>Cost Explorer:</strong> análise por serviço, tag, granularidade diária/mensal, forecasting</li><li><strong>Savings Plans:</strong> escolha entre COMPUTE_SP (mais flexível) e EC2_SP (mais barato para tipo fixo)</li><li><strong>IAM Access Analyzer:</strong> detecta recursos com acesso externo não intencional (S3, SQS, Lambda, etc.)</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./140-26-well-architected-framework-flashcards.html">Aula anterior</a>
+      <a href="./142-26-well-architected-framework-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

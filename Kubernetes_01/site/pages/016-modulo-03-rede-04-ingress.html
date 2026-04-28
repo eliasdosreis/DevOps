@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#016-modulo-03-rede-04-ingress">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 03 - rede - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1520869562399-e772f042f422?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 03 - rede" loading="lazy">
+      <figcaption>Rede no Kubernetes conecta pods, services, NodePort e Ingress.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um Ingress. A forma mais &quot;bonita e elegante&quot; L7 de expor 
+# URLs completas via HTTP/HTTPS no ambiente para a internet.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Imagine um mega pr�dio Comercial com dezenas de ramais PABX (Nossas APIs).
+# Voc� n�o ensina a cidade a ligar para as portas esquizofr�nicas de NodePort (32560).
+# O Ingress � como o **Recepcinista Engravatar** focado lendo curr�culos e nomes.
+# Quando a requisi��o externa bate nele na PORTA FINA 80 e a pessoa da rua fala &quot;Eu vim 
+# procurar pela empresa Loja.com.br no caminho /login&quot;, a catraca l� o bloco de papel (Host Header),
+# e abre a porta que conecta magicamente e unicamente ao Service l� de dentro correspondente do Login.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# O Ingress � um objeto da API que gerencia o acesso externo (Traffic Routing L7) para 
+# os Services em um cluster. Ingress prove host-based/path-based roteamento inteligente. 
+# Para o Ingress funcionar atrelado ao `yaml` abaixo, voc� obrigatoriamente 
+# precisa instalar 1 software paralelo chamado &quot;Ingress Controller&quot; (O mais famoso � o &#39;ingress-nginx&#39;).
+# O Objeto vazio no banco Etcd n�o faz nada sem um Controller monitorando-o para escrever seu conf.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: meu-trafego-web-recepcao
+  namespace: meu-primeiro-projeto
+  # Como amarramos annotations no Ingress como o Senior faz para a Recepcionista:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /  # &quot;Se digitar /app remova o app pro nodejs n�o se assustar&quot;
+    
+spec:
+  ingressClassName: nginx     # Especifica QUAL software lida (Nginx Controller, Traefik, HAProxy, AWS ALB)
+  rules:                      # Regras de URL / Navegador
+    - host: www.meu-curso-k8s.com.br # M�GICA: S� aceita pessoas que de fato digitarem essa URL perfeita no navegador
+      http:
+        paths:
+          - path: /           # (O Caminho a URL da tela Inicial &quot;/&quot;)
+            pathType: Prefix
+            backend:          # ONDE DESTE DESPACHO do Recepcionista vai Bater?
+              service:
+                name: api-frontend # O exato ramal eterno criado em ClusterIP
+                port:
+                  number: 80
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. No Kind, INGRESS requer um Controller a ser instado (rode antes esse manifesto oficial longo deles):
+#    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+#
+# 2. Aplique nossa regra elegante (E repare que agora � de URL baseada):
+#    kubectl apply -f 04-ingress.yaml
+#
+# 3. Listar o IP externo dele atrelado a maquina:
+#    kubectl get ingress -n meu-primeiro-projeto
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# &quot;Elias, mas meu windows n�o sabe quem � meu-curso-k8s.com.br!&quot;
+# O maior &quot;pega&quot; do Ingress quando treinamos local � no O/S Windows. Para que esse URL 
+# funcione no Chrome pra testar seu yaml, voc� precisa abrir como Administrador o 
+# C:\Windows\System32\drivers\etc\hosts e incluir `127.0.0.1 www.meu-curso-k8s.com.br` no TXT
+# sen�o dar� &quot;Servidor N�o Encontrado DNS Error&quot;. E pra macos `/etc/hosts`
+#
+# J� os bugs cl�ssicos de log &quot;502 Bad Gateway&quot; significam que a recepcionista leu seu NOME, 
+# mas o port�o para o Service &quot;api-frontend&quot; falhou. O Service est� morto ou n�o encontrou Pods vivos.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# &quot;LoadBalancer Cloud x Ingress&quot;:  Quando estamos na AWS/Azure/GCP, uma empresa gigantesca
+# pode ter 300 APIs (Catalogo, Faturamento, RH...). Se for criar 300 Services do tipo &#39;LoadBalancer&#39;, a AWS cobrar� 
+# car�ssimo $20 dol�res por m�s VEZES 300, e voc� ficar� com 300 IPs p�blicos flutuantes insanos.
+# Ao inv�s disso, o Senior paga **apenas 1** Network Load Balancer pra bater no IngressController.
+# E ali dentro a engine do NGINX abre um t�nel subdividindo todo mundo via Ingress de &quot;hosts&quot;, 
+# roteados elegantemente por software interno sem nenhum custo financeiro extra ao dev-team. 
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se n�s quisermos colocar um Certificado TLS (Cadeado HTTPS Seguro), n�s criamos 
+# esse arquivo .PEM ou .CRT dentro da imagem Docker do seu WebServer em NodeJS para o k8s hoste�-lo?&quot;
+# Resposta Esperada: &quot;Geralmente � desencorajado como anti-pattern atarefando os Pods de neg�cio. 
+# Quem decriptografa e insere a Termina��o TCP/TLS segura na linha de frente e gerencia o SSL Handshake � estritamente
+# o IngressController no port�o. Na spec n�s injetamos o campo vazio `tls:` chamando Secrets montados contendo  
+# a CA (Let&#39;s encrypt p.e). O Ingress joga pro pod atr�s do muro de forma decodificada e r�pida (http tcp limpo).&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./015-modulo-03-rede-03-service-nodeport.html">Aula anterior</a>
+      <a href="./017-modulo-04-config-01-configmap.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

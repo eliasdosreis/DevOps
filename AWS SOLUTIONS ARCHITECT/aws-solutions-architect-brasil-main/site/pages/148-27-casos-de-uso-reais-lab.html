@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Prático — Casos de Uso Reais: SNS Fan-out + Step Functions + EventBridge (Módulo 27) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#148-27-casos-de-uso-reais-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 27 - Casos de Uso Reais - 7 min - 27-Casos-de-Uso-Reais/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 27 - Casos de Uso Reais" loading="lazy">
+      <figcaption>Casos reais treinam trade-offs: seguro, resiliente, rapido, barato e operavel.</figcaption>
+    </figure>
+    <h1>Lab Prático — Casos de Uso Reais: SNS Fan-out + Step Functions + EventBridge (Módulo 27)</h1>
+<blockquote><p><strong>Região:</strong> us-east-1 | <strong>Custo estimado:</strong> ~$0.01 (Step Functions Express, SNS, SQS — volumes de lab)<br><strong>Pré-requisitos:</strong> AWS CLI configurado, Terraform &gt;= 1.5</p></blockquote>
+<hr>
+<h2>Objetivo</h2>
+<p>Implementar padrões arquiteturais comuns no mercado: fan-out assíncrono com SNS+SQS, orquestração de processos com Step Functions Express Workflows, e event-driven com EventBridge.</p>
+<hr>
+<h2>Parte 1 — Terraform: Fan-out SNS + SQS + Lambda</h2>
+<pre><code class="language-hcl"># main.tf
+terraform {
+  required_version = &quot;&gt;= 1.5&quot;
+  required_providers {
+    aws = {
+      source  = &quot;hashicorp/aws&quot;
+      version = &quot;~&gt; 5.0&quot;
+    }
+  }
+}
+
+provider &quot;aws&quot; { region = &quot;us-east-1&quot; }
+
+data &quot;aws_caller_identity&quot; &quot;current&quot; {}
+
+locals {
+  prefix = &quot;lab-fanout&quot;
+  region = &quot;us-east-1&quot;
+  account_id = data.aws_caller_identity.current.account_id
+}
+
+# IAM Role para Lambdas
+resource &quot;aws_iam_role&quot; &quot;lambda_exec&quot; {
+  name = &quot;${local.prefix}-lambda-role&quot;
+
+  assume_role_policy = jsonencode({
+    Version = &quot;2012-10-17&quot;
+    Statement = [{
+      Action    = &quot;sts:AssumeRole&quot;
+      Effect    = &quot;Allow&quot;
+      Principal = { Service = &quot;lambda.amazonaws.com&quot; }
+    }]
+  })
+}
+
+resource &quot;aws_iam_role_policy_attachment&quot; &quot;lambda_basic&quot; {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = &quot;arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole&quot;
+}
+
+resource &quot;aws_iam_role_policy&quot; &quot;lambda_sqs&quot; {
+  name = &quot;${local.prefix}-sqs-policy&quot;
+  role = aws_iam_role.lambda_exec.id
+  policy = jsonencode({
+    Version = &quot;2012-10-17&quot;
+    Statement = [{
+      Effect   = &quot;Allow&quot;
+      Action   = [&quot;sqs:ReceiveMessage&quot;, &quot;sqs:DeleteMessage&quot;, &quot;sqs:GetQueueAttributes&quot;]
+      Resource = &quot;*&quot;
+    }]
+  })
+}
+
+# SNS Topic principal
+resource &quot;aws_sns_topic&quot; &quot;pedidos&quot; {
+  name = &quot;${local.prefix}-pedidos&quot;
+}
+
+# SQS fila para processamento de estoque
+resource &quot;aws_sqs_queue&quot; &quot;estoque_dlq&quot; {
+  name                       = &quot;${local.prefix}-estoque-dlq&quot;
+  message_retention_seconds  = 1209600
+}
+
+resource &quot;aws_sqs_queue&quot; &quot;estoque&quot; {
+  name                       = &quot;${local.prefix}-estoque&quot;
+  visibility_timeout_seconds = 60
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.estoque_dlq.arn
+    maxReceiveCount     = 3
+  })
+}
+
+# SQS fila para envio de e-mail
+resource &quot;aws_sqs_queue&quot; &quot;email_dlq&quot; {
+  name = &quot;${local.prefix}-email-dlq&quot;
+}
+
+resource &quot;aws_sqs_queue&quot; &quot;email&quot; {
+  name                       = &quot;${local.prefix}-email&quot;
+  visibility_timeout_seconds = 60
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.email_dlq.arn
+    maxReceiveCount     = 3
+  })
+}
+
+# Políticas de SQS para receber do SNS
+data &quot;aws_iam_policy_document&quot; &quot;sqs_estoque&quot; {
+  statement {
+    principals {
+      type        = &quot;Service&quot;
+      identifiers = [&quot;sns.amazonaws.com&quot;]
+    }
+    actions   = [&quot;sqs:SendMessage&quot;]
+    resources = [aws_sqs_queue.estoque.arn]
+    condition {
+      test     = &quot;ArnEquals&quot;
+      variable = &quot;aws:SourceArn&quot;
+      values   = [aws_sns_topic.pedidos.arn]
+    }
+  }
+}
+
+resource &quot;aws_sqs_queue_policy&quot; &quot;estoque&quot; {
+  queue_url = aws_sqs_queue.estoque.id
+  policy    = data.aws_iam_policy_document.sqs_estoque.json
+}
+
+data &quot;aws_iam_policy_document&quot; &quot;sqs_email&quot; {
+  statement {
+    principals {
+      type        = &quot;Service&quot;
+      identifiers = [&quot;sns.amazonaws.com&quot;]
+    }
+    actions   = [&quot;sqs:SendMessage&quot;]
+    resources = [aws_sqs_queue.email.arn]
+    condition {
+      test     = &quot;ArnEquals&quot;
+      variable = &quot;aws:SourceArn&quot;
+      values   = [aws_sns_topic.pedidos.arn]
+    }
+  }
+}
+
+resource &quot;aws_sqs_queue_policy&quot; &quot;email&quot; {
+  queue_url = aws_sqs_queue.email.id
+  policy    = data.aws_iam_policy_document.sqs_email.json
+}
+
+# Subscrições SNS → SQS
+resource &quot;aws_sns_topic_subscription&quot; &quot;para_estoque&quot; {
+  topic_arn = aws_sns_topic.pedidos.arn
+  protocol  = &quot;sqs&quot;
+  endpoint  = aws_sqs_queue.estoque.arn
+  filter_policy = jsonencode({
+    tipo = [&quot;pedido_criado&quot;]
+  })
+}
+
+resource &quot;aws_sns_topic_subscription&quot; &quot;para_email&quot; {
+  topic_arn = aws_sns_topic.pedidos.arn
+  protocol  = &quot;sqs&quot;
+  endpoint  = aws_sqs_queue.email.arn
+}
+
+# Lambda processadora de estoque
+data &quot;archive_file&quot; &quot;lambda_estoque&quot; {
+  type        = &quot;zip&quot;
+  output_path = &quot;/tmp/lambda_estoque.zip&quot;
+  source {
+    content  = &lt;&lt;PYTHON
+import json
+
+def handler(event, context):
+    for record in event[&#39;Records&#39;]:
+        body = json.loads(record[&#39;body&#39;])
+        msg = json.loads(body.get(&#39;Message&#39;, &#39;{}&#39;))
+        print(f&quot;[ESTOQUE] Baixando estoque para produto: {msg.get(&#39;produto_id&#39;, &#39;DESCONHECIDO&#39;)}&quot;)
+        print(f&quot;[ESTOQUE] Quantidade: {msg.get(&#39;quantidade&#39;, 0)}&quot;)
+    return {&#39;statusCode&#39;: 200}
+PYTHON
+    filename = &quot;handler.py&quot;
+  }
+}
+
+resource &quot;aws_lambda_function&quot; &quot;estoque&quot; {
+  filename         = data.archive_file.lambda_estoque.output_path
+  source_code_hash = data.archive_file.lambda_estoque.output_base64sha256
+  function_name    = &quot;${local.prefix}-estoque&quot;
+  role             = aws_iam_role.lambda_exec.arn
+  handler          = &quot;handler.handler&quot;
+  runtime          = &quot;python3.12&quot;
+  timeout          = 30
+}
+
+resource &quot;aws_lambda_event_source_mapping&quot; &quot;estoque&quot; {
+  event_source_arn = aws_sqs_queue.estoque.arn
+  function_name    = aws_lambda_function.estoque.arn
+  batch_size       = 5
+}
+
+# Lambda processadora de email
+data &quot;archive_file&quot; &quot;lambda_email&quot; {
+  type        = &quot;zip&quot;
+  output_path = &quot;/tmp/lambda_email.zip&quot;
+  source {
+    content  = &lt;&lt;PYTHON
+import json
+
+def handler(event, context):
+    for record in event[&#39;Records&#39;]:
+        body = json.loads(record[&#39;body&#39;])
+        msg = json.loads(body.get(&#39;Message&#39;, &#39;{}&#39;))
+        print(f&quot;[EMAIL] Enviando confirmação para: {msg.get(&#39;email_cliente&#39;, &#39;sem-email&#39;)}&quot;)
+        print(f&quot;[EMAIL] Pedido ID: {msg.get(&#39;pedido_id&#39;, &#39;SEM-ID&#39;)}&quot;)
+    return {&#39;statusCode&#39;: 200}
+PYTHON
+    filename = &quot;handler.py&quot;
+  }
+}
+
+resource &quot;aws_lambda_function&quot; &quot;email&quot; {
+  filename         = data.archive_file.lambda_email.output_path
+  source_code_hash = data.archive_file.lambda_email.output_base64sha256
+  function_name    = &quot;${local.prefix}-email&quot;
+  role             = aws_iam_role.lambda_exec.arn
+  handler          = &quot;handler.handler&quot;
+  runtime          = &quot;python3.12&quot;
+  timeout          = 30
+}
+
+resource &quot;aws_lambda_event_source_mapping&quot; &quot;email&quot; {
+  event_source_arn = aws_sqs_queue.email.arn
+  function_name    = aws_lambda_function.email.arn
+  batch_size       = 5
+}
+
+output &quot;sns_topic_arn&quot; { value = aws_sns_topic.pedidos.arn }
+output &quot;fila_estoque_url&quot; { value = aws_sqs_queue.estoque.id }
+output &quot;fila_email_url&quot; { value = aws_sqs_queue.email.id }</code></pre>
+<hr>
+<h2>Parte 2 — Publicar Mensagens e Observar Fan-out</h2>
+<pre><code class="language-bash">terraform init &amp;&amp; terraform apply -auto-approve
+
+SNS_ARN=$(terraform output -raw sns_topic_arn)
+
+# Publicar mensagem — vai para AMBAS as filas
+aws sns publish \
+  --topic-arn &quot;$SNS_ARN&quot; \
+  --subject &quot;Novo Pedido&quot; \
+  --message &#39;{
+    &quot;pedido_id&quot;: &quot;PED-001&quot;,
+    &quot;produto_id&quot;: &quot;PROD-42&quot;,
+    &quot;quantidade&quot;: 2,
+    &quot;email_cliente&quot;: &quot;joao@exemplo.com&quot;,
+    &quot;tipo&quot;: &quot;pedido_criado&quot;
+  }&#39; \
+  --message-attributes &#39;{
+    &quot;tipo&quot;: {
+      &quot;DataType&quot;: &quot;String&quot;,
+      &quot;StringValue&quot;: &quot;pedido_criado&quot;
+    }
+  }&#39;
+
+# Publicar sem atributo — vai apenas para fila email (sem filter)
+aws sns publish \
+  --topic-arn &quot;$SNS_ARN&quot; \
+  --message &#39;{
+    &quot;pedido_id&quot;: &quot;PED-002&quot;,
+    &quot;produto_id&quot;: &quot;PROD-10&quot;,
+    &quot;quantidade&quot;: 1,
+    &quot;email_cliente&quot;: &quot;maria@exemplo.com&quot;
+  }&#39;
+
+# Verificar logs das Lambdas
+sleep 15  # aguardar processamento
+
+LOG_GROUP_ESTOQUE=&quot;/aws/lambda/lab-fanout-estoque&quot;
+LOG_GROUP_EMAIL=&quot;/aws/lambda/lab-fanout-email&quot;
+
+aws logs filter-log-events \
+  --log-group-name &quot;$LOG_GROUP_ESTOQUE&quot; \
+  --filter-pattern &quot;[ESTOQUE]&quot; \
+  --query &#39;events[*].message&#39; \
+  --output text
+
+aws logs filter-log-events \
+  --log-group-name &quot;$LOG_GROUP_EMAIL&quot; \
+  --filter-pattern &quot;[EMAIL]&quot; \
+  --query &#39;events[*].message&#39; \
+  --output text</code></pre>
+<hr>
+<h2>Parte 3 — Step Functions Express Workflow</h2>
+<pre><code class="language-bash"># IAM Role para Step Functions
+SF_ROLE_ARN=$(aws iam create-role \
+  --role-name &quot;lab-sf-express-role&quot; \
+  --assume-role-policy-document &#39;{
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Statement&quot;: [{
+      &quot;Action&quot;: &quot;sts:AssumeRole&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Principal&quot;: {&quot;Service&quot;: &quot;states.amazonaws.com&quot;}
+    }]
+  }&#39; \
+  --query &#39;Role.Arn&#39; --output text)
+
+aws iam attach-role-policy \
+  --role-name &quot;lab-sf-express-role&quot; \
+  --policy-arn &quot;arn:aws:iam::aws:policy/CloudWatchLogsFullAccess&quot;
+
+# Criar State Machine (Express — baixa latência, mais barato)
+SF_ARN=$(aws stepfunctions create-state-machine \
+  --name &quot;lab-workflow-pedido&quot; \
+  --type EXPRESS \
+  --role-arn &quot;$SF_ROLE_ARN&quot; \
+  --definition &#39;{
+    &quot;Comment&quot;: &quot;Workflow de processamento de pedido&quot;,
+    &quot;StartAt&quot;: &quot;ValidarPedido&quot;,
+    &quot;States&quot;: {
+      &quot;ValidarPedido&quot;: {
+        &quot;Type&quot;: &quot;Task&quot;,
+        &quot;Resource&quot;: &quot;arn:aws:states:::lambda:invoke&quot;,
+        &quot;Parameters&quot;: {
+          &quot;FunctionName&quot;: &quot;lab-fanout-estoque&quot;,
+          &quot;Payload.$&quot;: &quot;$&quot;
+        },
+        &quot;Retry&quot;: [{
+          &quot;ErrorEquals&quot;: [&quot;Lambda.ServiceException&quot;, &quot;Lambda.AWSLambdaException&quot;],
+          &quot;IntervalSeconds&quot;: 2,
+          &quot;MaxAttempts&quot;: 3,
+          &quot;BackoffRate&quot;: 2
+        }],
+        &quot;Catch&quot;: [{
+          &quot;ErrorEquals&quot;: [&quot;States.ALL&quot;],
+          &quot;Next&quot;: &quot;PedidoRejeitado&quot;,
+          &quot;ResultPath&quot;: &quot;$.erro&quot;
+        }],
+        &quot;Next&quot;: &quot;VerificarEstoque&quot;
+      },
+      &quot;VerificarEstoque&quot;: {
+        &quot;Type&quot;: &quot;Choice&quot;,
+        &quot;Choices&quot;: [{
+          &quot;Variable&quot;: &quot;$.quantidade&quot;,
+          &quot;NumericLessThanEquals&quot;: 0,
+          &quot;Next&quot;: &quot;EstoqueInsuficiente&quot;
+        }],
+        &quot;Default&quot;: &quot;ProcessarPagamento&quot;
+      },
+      &quot;ProcessarPagamento&quot;: {
+        &quot;Type&quot;: &quot;Pass&quot;,
+        &quot;Parameters&quot;: {
+          &quot;pedido_id.$&quot;: &quot;$.pedido_id&quot;,
+          &quot;status&quot;: &quot;PAGAMENTO_APROVADO&quot;,
+          &quot;timestamp.$&quot;: &quot;$$.Execution.StartTime&quot;
+        },
+        &quot;Next&quot;: &quot;NotificarCliente&quot;
+      },
+      &quot;NotificarCliente&quot;: {
+        &quot;Type&quot;: &quot;Task&quot;,
+        &quot;Resource&quot;: &quot;arn:aws:states:::lambda:invoke&quot;,
+        &quot;Parameters&quot;: {
+          &quot;FunctionName&quot;: &quot;lab-fanout-email&quot;,
+          &quot;Payload.$&quot;: &quot;$&quot;
+        },
+        &quot;End&quot;: true
+      },
+      &quot;EstoqueInsuficiente&quot;: {
+        &quot;Type&quot;: &quot;Fail&quot;,
+        &quot;Error&quot;: &quot;EstoqueInsuficiente&quot;,
+        &quot;Cause&quot;: &quot;Produto sem estoque disponível&quot;
+      },
+      &quot;PedidoRejeitado&quot;: {
+        &quot;Type&quot;: &quot;Fail&quot;,
+        &quot;Error&quot;: &quot;ValidacaoFalhou&quot;,
+        &quot;Cause&quot;: &quot;Pedido não passou na validação&quot;
+      }
+    }
+  }&#39; \
+  --query &#39;stateMachineArn&#39; --output text)
+
+echo &quot;State Machine: $SF_ARN&quot;
+
+# Executar workflow
+EXEC_ARN=$(aws stepfunctions start-execution \
+  --state-machine-arn &quot;$SF_ARN&quot; \
+  --input &#39;{
+    &quot;pedido_id&quot;: &quot;PED-100&quot;,
+    &quot;produto_id&quot;: &quot;PROD-42&quot;,
+    &quot;quantidade&quot;: 2,
+    &quot;email_cliente&quot;: &quot;joao@exemplo.com&quot;
+  }&#39; \
+  --query &#39;executionArn&#39; --output text)
+
+# Aguardar e checar resultado
+sleep 10
+aws stepfunctions describe-execution \
+  --execution-arn &quot;$EXEC_ARN&quot; \
+  --query &#39;[status, stopDate, output]&#39; \
+  --output text</code></pre>
+<hr>
+<h2>Limpeza</h2>
+<pre><code class="language-bash"># Deletar Step Functions
+aws stepfunctions delete-state-machine --state-machine-arn &quot;$SF_ARN&quot;
+aws iam detach-role-policy \
+  --role-name &quot;lab-sf-express-role&quot; \
+  --policy-arn &quot;arn:aws:iam::aws:policy/CloudWatchLogsFullAccess&quot;
+aws iam delete-role --role-name &quot;lab-sf-express-role&quot;
+
+# Destruir Terraform (SNS, SQS, Lambdas)
+terraform destroy -auto-approve
+
+rm -f /tmp/lambda_estoque.zip /tmp/lambda_email.zip</code></pre>
+<hr>
+<h2>O Que Você Aprendeu</h2>
+<ul><li><strong>SNS Fan-out:</strong> uma mensagem → múltiplos consumidores; filter policies filtram por atributo</li><li><strong>SQS como buffer:</strong> desacopla SNS da Lambda, garante entrega mesmo se Lambda falhar</li><li><strong>DLQ:</strong> após <code>maxReceiveCount</code> tentativas, mensagem vai para a DLQ — alertar via CloudWatch</li><li><strong>Step Functions Express:</strong> ideal para alta frequência, &lt; 5min; Standard: long-running, exatamente uma vez</li><li><strong>Retry + Catch:</strong> Step Functions gerencia resiliência sem código de retry na Lambda</li><li><strong>Choice State:</strong> equivalente a <code>if/else</code> no workflow — ramifica baseado em dados da execução</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./147-27-casos-de-uso-reais-flashcards.html">Aula anterior</a>
+      <a href="./149-27-casos-de-uso-reais-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

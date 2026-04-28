@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Computação EC2 - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#022-04-computacao-ec2-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - Computacao EC2 - 5 min - 04-Computacao-EC2/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - Computacao EC2" loading="lazy">
+      <figcaption>Compute e escolha de motor: instancia, container, funcao ou servico gerenciado.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Computação EC2</h1>
+<h2>Famílias de Instâncias EC2</h2>
+<div class="table-wrap"><table><thead><tr><th>Família</th><th>Otimização</th><th>Exemplos</th><th>Casos de uso</th></tr></thead><tbody><tr><td>M</td><td>Geral (balanced)</td><td>m5, m6i, m6a, m7g</td><td>Web servers, apps, dev environments</td></tr><tr><td>C</td><td>CPU (compute)</td><td>c5, c6i, c6g, c7g</td><td>HPC, batch, ML inference, encoding</td></tr><tr><td>R</td><td>Memória</td><td>r5, r6i, r6g, x1e</td><td>Redis, Elasticsearch, SAP HANA, in-memory DB</td></tr><tr><td>I</td><td>I/O local (NVMe)</td><td>i3, i4i</td><td>NoSQL DB (Cassandra, MongoDB), OLTP alto IOPS</td></tr><tr><td>D</td><td>Dense storage</td><td>d3</td><td>Data warehousing, HDFS</td></tr><tr><td>P</td><td>GPU (NVIDIA)</td><td>p3, p4</td><td>ML training, HPC com CUDA</td></tr><tr><td>G</td><td>GPU geral</td><td>g4dn, g5</td><td>ML inference, gaming, renderização</td></tr><tr><td>T</td><td>Burstable</td><td>t3, t3a, t4g</td><td>Ambientes dev, sites baixo tráfego, microserviços</td></tr><tr><td>Inf</td><td>AWS Inferentia</td><td>inf1, inf2</td><td>ML inference custom chip</td></tr><tr><td>Hpc</td><td>HPC</td><td>hpc6a</td><td>HPC de alta performance com EFA</td></tr></tbody></table></div>
+<hr>
+<h2>Opções de Compra EC2</h2>
+<div class="table-wrap"><table><thead><tr><th>Opção</th><th>Desconto</th><th>Flexibilidade</th><th>Melhor para</th></tr></thead><tbody><tr><td>On-Demand</td><td>Nenhum</td><td>Total</td><td>Workloads irregulares, teste</td></tr><tr><td>Standard RI (1/3 anos)</td><td>Até 72%</td><td>Baixa (família/região/OS fixos)</td><td>DB PostgreSQL production estável</td></tr><tr><td>Convertible RI (1/3 anos)</td><td>Até 54%</td><td>Média (pode trocar atributos)</td><td>Workloads que podem mudar tipo</td></tr><tr><td>Compute Savings Plans</td><td>Até 66%</td><td>Alta (qualquer família/região)</td><td>Workloads que movem entre tipos</td></tr><tr><td>EC2 Instance Savings Plans</td><td>Até 72%</td><td>Baixa (família+região fixos)</td><td>Similar à Standard RI</td></tr><tr><td>Spot</td><td>Até 90%</td><td>Alta (mas interrompível)</td><td>Batch, ML, render, jobs tolerantes</td></tr><tr><td>Dedicated Host</td><td>—</td><td>Baixa</td><td>Licença por socket/core (BYO-L)</td></tr><tr><td>Dedicated Instance</td><td>10% sobre</td><td>Baixa</td><td>Compliance (hardware exclusivo)</td></tr><tr><td>Capacity Reservation</td><td>Nada</td><td>Total</td><td>Garantir capacidade sem contr.</td></tr></tbody></table></div>
+<hr>
+<h2>EBS — Tipos de Volume</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Categoria</th><th>IOPS</th><th>Throughput</th><th>Boot</th><th>Uso típico</th></tr></thead><tbody><tr><td>gp3</td><td>SSD geral</td><td>3.000–16.000</td><td>125–1.000 MB/s</td><td>✅</td><td>Boot, apps gerais, padrão</td></tr><tr><td>gp2</td><td>SSD geral</td><td>100–16.000 (3/GB)</td><td>128–250 MB/s</td><td>✅</td><td>Legado (prefira gp3)</td></tr><tr><td>io2</td><td>SSD IOPS</td><td>Até 64.000 (io2 BE: 256K)</td><td>4.000 MB/s</td><td>✅</td><td>OLTP crítico, Oracle, SQL</td></tr><tr><td>io1</td><td>SSD IOPS</td><td>Até 64.000</td><td>1.000 MB/s</td><td>✅</td><td>Legado do io2</td></tr><tr><td>st1</td><td>HDD throughput</td><td>N/A</td><td>40–250 MB/s por TB (máx 500)</td><td>❌</td><td>Logs, Kafka, data warehouse sequencial</td></tr><tr><td>sc1</td><td>HDD cold</td><td>N/A</td><td>12–80 MB/s por TB</td><td>❌</td><td>Dados raramente acessados, backup</td></tr></tbody></table></div>
+<blockquote><p><strong>Nota:</strong> io2 Block Express requer instâncias do tipo <code>io2 BE</code>. Multi-attach disponível apenas em io1/io2 em instâncias Nitro.</p></blockquote>
+<hr>
+<h2>Placement Groups — Comparativo</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Topologia</th><th>Limite</th><th>Latência</th><th>Uso</th></tr></thead><tbody><tr><td>Cluster</td><td>Mesmo rack, mesma AZ</td><td>Sem limite prático</td><td>Mais baixa (&lt;1ms, 10Gbps+)</td><td>HPC, MPI, analytics de alta velocidade</td></tr><tr><td>Spread</td><td>Rack diferente por instância</td><td>7 instâncias por AZ</td><td>Alta (racks distintos)</td><td>Alta disponibilidade, falha isolada</td></tr><tr><td>Partition</td><td>Grupo de instâncias por rack</td><td>7 partições por AZ</td><td>Moderada</td><td>HDFS, Cassandra, Kafka (ciente de partição)</td></tr></tbody></table></div>
+<hr>
+<h2>Ciclo de Vida EC2</h2>
+<pre><code class="language-">Pending → Running ──┬─→ Stopping → Stopped → Terminated
+                    │         (EBS preservado)
+                    ├─→ [Hibernate] → Hibernating → Stopped (RAM salva no EBS)
+                    │
+                    └─→ Shutting-down → Terminated
+                                        (EBS root deletado se deleteOnTermination=true)</code></pre>
+<div class="table-wrap"><table><thead><tr><th>Estado</th><th>Cobra instância</th><th>Cobra EBS</th><th>RAM preservada</th></tr></thead><tbody><tr><td>Running</td><td>Sim</td><td>Sim</td><td>Sim</td></tr><tr><td>Stopped</td><td>Não</td><td>Sim</td><td>Não</td></tr><tr><td>Hibernated</td><td>Não</td><td>Sim (RAM no root)</td><td>Sim</td></tr><tr><td>Terminated</td><td>Não</td><td>Não (geralmente)</td><td>Não</td></tr></tbody></table></div>
+<hr>
+<h2>IMDSv1 vs IMDSv2</h2>
+<div class="table-wrap"><table><thead><tr><th>Característica</th><th>IMDSv1</th><th>IMDSv2</th></tr></thead><tbody><tr><td>Autenticação</td><td>Nenhuma (GET direto)</td><td>Token (PUT → GET com header)</td></tr><tr><td>Proteção SSRF</td><td>❌ Vulnerável</td><td>✅ Protegido</td></tr><tr><td>Configuração</td><td><code>HttpTokens: optional</code></td><td><code>HttpTokens: required</code></td></tr><tr><td>Token TTL</td><td>N/A</td><td>1s a 21600s (6h)</td></tr><tr><td>Recomendação AWS</td><td>Deprecado</td><td>✅ Use sempre</td></tr></tbody></table></div>
+<p>Endpoints importantes:</p>
+<pre><code class="language-">http://169.254.169.254/latest/meta-data/instance-id
+http://169.254.169.254/latest/meta-data/iam/security-credentials/&lt;role-name&gt;
+http://169.254.169.254/latest/meta-data/placement/availability-zone
+http://169.254.169.254/latest/user-data</code></pre>
+<hr>
+<h2>AMIs — Dicas de Prova</h2>
+<ul><li>Copiar AMI para outra região → especifique CMK de destino para encriptar</li><li>Compartilhar AMI encriptada → deve compartilhar a CMK também<br></li><li>AMI baseada em snapshot → o snapshot fica na sua conta se você criou a AMI</li><li>AMI pública da AWS Marketplace → pode usar mas não compartilhar o snapshot base</li><li>HVM é o único tipo de virtualização em instâncias modernas (PV é legado)</li></ul>
+<hr>
+<h2>Spot — Estratégias do Spot Fleet</h2>
+<div class="table-wrap"><table><thead><tr><th>Estratégia</th><th>Comportamento</th><th>Quando usar</th></tr></thead><tbody><tr><td><code>lowestPrice</code></td><td>Escolhe pool de menor preço</td><td>Batch de custo crítico</td></tr><tr><td><code>capacityOptimized</code></td><td>Escolhe pool com maior capacidade disponível</td><td>Reduzir interrupções</td></tr><tr><td><code>diversified</code></td><td>Distribui por todos os pools definidos</td><td>Resiliência máxima</td></tr><tr><td><code>priceCapacityOptimized</code></td><td>Combina preço e capacidade</td><td>Recomendado padrão</td></tr></tbody></table></div>
+<hr>
+<h2>Dicas de Prova (EC2)</h2>
+<ul><li><strong>gp3</strong> é o padrão atual — mais barato e mais flexível que gp2</li><li><strong>io2 Block Express</strong> para requisitos &gt; 64.000 IOPS</li><li><strong>st1</strong> para throughput sequencial (logs) — NÃO é opção de boot</li><li><strong>Instance Store</strong> perdido em stop/terminate, mas persistido em restart</li><li><strong>Cluster PG</strong> → mesma AZ, baixa latência. Se uma instância falha, todas ficam expostas</li><li><strong>Spread PG</strong> → máximo 7 por AZ — escolher para instâncias críticas isoladas</li><li>IMDSv2 com <code>HttpTokens: required</code> bloqueia IMDSv1 — hardened security</li><li>Spot Fleet <code>capacityOptimized</code> é preferível para reduzir interrupções vs <code>lowestPrice</code></li><li><strong>Dedicated Host</strong> é necessário para BYO-L (license mobility) — não Dedicated Instance</li><li>Hibernate: RAM salva no EBS → precisa de EBS encriptado + espaço ≥ RAM</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./021-04-computacao-ec2-casos-de-uso.html">Aula anterior</a>
+      <a href="./023-04-computacao-ec2-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#033-modulo-4-projeto-final-11-networkpolicy">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - projeto final - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - projeto final" loading="lazy">
+      <figcaption>Projeto final consolida manifestos de producao em uma arquitetura completa.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 11-networkpolicy.yaml
+# PROJETO FINAL - Firewall entre Pods (NetworkPolicy)
+#
+# Por padr�o, TODOS os pods podem falar com TODOS.
+# Isso � um risco de seguran�a enorme!
+#
+# Analogia: Uma empresa onde qualquer funcion�rio pode
+# entrar em qualquer sala, incluindo o cofre do banco.
+#
+# NetworkPolicy = Crach� de acesso por sala:
+# - Frontend s� entra na &quot;sala&quot; da API
+# - API entra na &quot;sala&quot; do Postgres e Redis
+# - Postgres n�o entra em nenhuma sala (s� recebe visitas)
+#
+# PR�-REQUISITO: CNI com suporte a NetworkPolicy
+# (Calico, Cilium, WeaveNet - n�o funciona com Flannel puro)
+# ============================================================
+
+# -------------------------------------------------------
+# POL�TICA 1: Bloquear TUDO por padr�o (deny-all)
+# Esta � a primeira regra: NINGU�M fala com ningu�m!
+# Depois abrimos APENAS o necess�rio.
+# -------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: deny-all-default      # Bloquear tudo por padr�o
+  namespace: ecommerce
+
+spec:
+  podSelector: {}             # {} = seleciona TODOS os pods
+  policyTypes:
+    - Ingress                 # Bloqueia tr�fego ENTRANTE
+    - Egress                  # Bloqueia tr�fego SAINTE
+
+---
+# -------------------------------------------------------
+# POL�TICA 2: Frontend s� pode chamar a API
+# -------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: policy-frontend
+  namespace: ecommerce
+
+spec:
+  podSelector:                # Esta policy se aplica a:
+    matchLabels:
+      app: frontend           # Pods com label app=frontend
+
+  policyTypes:
+    - Ingress                 # Regras de ENTRADA no frontend
+    - Egress                  # Regras de SA�DA do frontend
+
+  ingress:
+    # Frontend recebe tr�fego do Ingress Controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+          # S� aceita de pods no namespace do ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 80
+
+  egress:
+    # Frontend s� pode SAIR para a API
+    - to:
+        - podSelector:
+            matchLabels:
+              app: api        # S� para pods da API
+      ports:
+        - protocol: TCP
+          port: 3000          # Porta da API
+
+    # Frontend pode usar DNS (necess�rio para resolu��o de nomes!)
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53            # DNS usa porta 53 UDP
+        - protocol: TCP
+          port: 53
+
+---
+# -------------------------------------------------------
+# POL�TICA 3: API pode chamar Postgres e Redis
+# -------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: policy-api
+  namespace: ecommerce
+
+spec:
+  podSelector:
+    matchLabels:
+      app: api                # Aplica a pods da API
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # API s� recebe do Frontend
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 3000
+
+  egress:
+    # API pode chamar o Postgres
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    # API pode chamar o Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+
+    # DNS necess�rio
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+
+---
+# -------------------------------------------------------
+# POL�TICA 4: Postgres s� aceita da API
+# -------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: policy-postgres
+  namespace: ecommerce
+
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+
+  policyTypes:
+    - Ingress               # S� configura Ingress (n�o sai de lugar)
+
+  ingress:
+    # Postgres SOMENTE aceita conex�es da API
+    - from:
+        - podSelector:
+            matchLabels:
+              app: api
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    # N�O tem regra de Egress = Postgres n�o inicia conex�es
+
+# ============================================================
+# MAPA DE COMUNICA��O PERMITIDA:
+#
+# [Internet] --&gt; [Ingress] --&gt; [Frontend:80]
+#                                   ?
+#                                   ? (porta 3000)
+#                              [API:3000]
+#                                 ?   ?
+#                    (porta 5432) ?   ? (porta 6379)
+#                                 ?   ?
+#                           [Postgres] [Redis]
+#
+# TUDO MAIS � BLOQUEADO!
+# Frontend n�o pode acessar Postgres diretamente.
+# Redis n�o pode acessar nada.
+# Postgres n�o pode acessar nada.
+#
+# ENTREVISTA S�NIOR:
+# &quot;Como testar se NetworkPolicy est� funcionando?&quot;
+# RESPOSTA: 
+# kubectl run teste --image=busybox --rm -it -- sh
+# wget -O- http://postgres:5432  # Deve FALHAR se n�o for API
+# wget -O- http://api:3000       # Deve FUNCIONAR se for Frontend
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./032-modulo-4-projeto-final-10-rbac.html">Aula anterior</a>
+      <a href="./034-modulo-4-projeto-final-12-politicas-producao.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

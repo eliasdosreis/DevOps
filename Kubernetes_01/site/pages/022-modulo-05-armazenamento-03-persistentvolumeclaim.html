@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#022-modulo-05-armazenamento-03-persistentvolumeclaim">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 05 - armazenamento - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 05 - armazenamento" loading="lazy">
+      <figcaption>Storage exige entender classes, volumes, claims e o ciclo de vida do dado.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um PersistentVolumeClaim (PVC). 
+# Este � o Recurso de ouro OBRIGAT�RIO (O Contrato) que um Programador 
+# usa para de fato REIVINDICAR e alugar espa�o de armazenamento no K8s. 
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# A Aula 1 (StorageClass) foi a Vitrine Categoria de im�veis (&quot;Lotamento em AlphaVille R�pido&quot;).
+# A Aula 2 (PersistentVolume - PV) mostramos como o Prefeito murou 10 Lotes 
+# e deixou vazios esperando (`Available`).
+#
+# AGORA O PVC (ESTE ARQUIVO) � o &quot;COMPRADOR&quot; assinando o Contrato na M�o.
+# O Programador e seu YAML criam esse PVC dizendo: &quot;Amig�o Kubernetes, 
+# quero agora 5Gb no contrato, que seja da Vitrine AlphaVille, e que tenha esgoto&quot;.
+# O Kubernetes age como o cart�rio: Ele anda pela cidade. Ele ACHOU um terreno pr�-existente
+# igualzinho do prefeito da aula #2? Ele liga os dois (Faz BOUND em fra��o de seg).
+# Se ele N�O acha lote livre pronto... mas tiver o Plugin Cloud CSI acoplado ao StorageClass.. ele MANDA O VENDEDOR 
+# GERAR TERRA DO CH�O DO NADA (Dynamic Provisioning) e traz o disco cortadinho pra voc�.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# O `PersistentVolumeClaim` (PVC) � a solicita��o imperativa/declarativa de armazenamento 
+# formulada por um usu�rio (Pod&#39;s Owner). 
+# Os pods consomem recursos de HD no Kubernetes �NICA e EXCLUSIVAMENTE passando atrav�s de PVCs 
+# referenciados nos seus templates, limitando e mascarando que as aplica��es leiam  
+# drives diretos do hospedeiro evitando o anti-pattern.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: PersistentVolumeClaim              # CLAIM: Significa &quot;Reivindica��o&quot;
+metadata:
+  # ATEN��O DE NOVO NO ISOLAMENTO: Reparou que AQUI tem namespace?!  
+  # PVCs S�O objetos presos ao namespace do seu DEV que os requisitou. Diferentes do PV&#39;s global.
+  name: meu-contrato-de-disco-5gb
+  namespace: meu-primeiro-projeto
+spec:
+  # Filtro 1: A qualidade do Im�vel 
+  accessModes:
+    - ReadWriteOnce                      # Solicitei modo Exclusivista RWO (Conforme estudado Aula 02)
+    
+  # Filtro 2: A Categoria do Imovel (Ex: disco-lento-default era o exato titulo da Aula.02 onde o Prefeito murou o lote).
+  storageClassName: disco-lento-default  
+  
+  # Filtro 3: O Tamanho Exato
+  resources:
+    requests:
+      storage: 5Gi                       # O limite exato que o Pedreiro Dev exige. O Prefeito fez de 10Gi, ent�o ele vai usar aquele e jogar fora 5.
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Gere o CONTRATO na mesa do administrador e obrigue o binding!
+#    kubectl apply -f 03-persistentvolumeclaim.yaml
+#
+# 2. VEJA A MAGIA EXATA DO STATUS E CASAMENTO OCORRENDO AO VIVO!
+#    kubectl get pvc,pv -n meu-primeiro-projeto
+#
+# EXPLICACAO DA TELA DE &#39;GET PVC,PV&#39;:
+# - O seu PVC (&quot;meu-contrato&quot;) ficar� com &quot;STATUS: Bound&quot; (Acoplado/Ligado).
+# - O PV Global (&quot;grande-hd-estendido&quot;) da aula passada deixar� de dizer `Available` livre..
+#   MUDANDO o status instant�neamente para &quot;STATUS: Bound&quot;, marcando na coluna CLAIM para quem
+#   � o novo dono amarrado (&quot;meu-primeiro-projeto/meu-contrato-de-disco-5gb&quot;).
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# Se o seu &quot;kubectl get pvc&quot; retornar STATUS &quot;Pending&quot; eternamente:
+# O seu K8s n�o tem provimento din�mico de cloud, nem achou lotes que cumprissem a promessa (N�o exitiu PV live RWO est�tico que coubesse no nome da StorageClass). O Pod ligado a ele n�o vai subir JAMAIS, travando todo o sistema de API.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# De novo: N�s raramente criamos aquele PV est�tico da aula #2. 
+# O mercado S�nior moderno hoje usa apenas StorageClass (Classe AWS/Azure) e PVC (Claim do Dev).
+# Voc� ignora a parte humana do meio. Voc� da apply nesse claim de 5Gb acima.  
+# Como o Kubernetes detecta o `nome` do plugin StorageClassAWS, ele na mesma 
+# hora chama o Control-Plane (Via IAM/Roles m�gicas), pede a cria��o do Volume no datatacenter 
+# na porta USB do servidor da VM. E ele INJETA O OBJETO `PersistentVolume` sozinho dentro 
+# do Kubernetes escondido! Voc� s� pediu e tudo se conjura e acopla automagicanente (Dynamic Provisioning).
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se n�s temos um Banco de Dados Postgres (PVC/Bound) rodando no N� &#39;Worker-B&#39;. 
+# Se rodarmos um Drop agressivo do n� no terminal expulsando o Pod, o Pod do Postgres e o Disco PVC ser�o destruidos juntos? &quot;
+# Resposta Esperada: &quot;O ciclo de vida de Pods e do StorageClaim de disco s�o 
+# propositalmente dissociados na premissa cloud-native. O fato do Pod morrer ou  
+# deslogar dum servidor em pane f�sica N�O DESTR�I o PVC e seus preciosos dados contidos neles!  
+# Ao nascer num &quot;Worker-Z&quot; ele chamar� livremente o Contrato Antigo com todo o HD integro de novo.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./021-modulo-05-armazenamento-02-persistentvolume.html">Aula anterior</a>
+      <a href="./023-modulo-05-armazenamento-04-pod-com-pvc.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

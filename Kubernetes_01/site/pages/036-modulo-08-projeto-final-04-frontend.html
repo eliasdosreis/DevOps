@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#036-modulo-08-projeto-final-04-frontend">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 08 - projeto final - 2 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 08 - projeto final" loading="lazy">
+      <figcaption>Projeto final junta banco, backend, frontend e rede em uma entrega completa.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# BLOCO DE EXIBI��O &amp; MUNDO (FRONTEND TIER &amp; RECP��O)
+# Engloba: Service + Deployment + INGRESS ROUTING (L7)
+# ============================================================
+
+# 1. O PABX Local que Segura o Site
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-vuejs-frontend                # PABX do Front
+  namespace: meu-primeiro-projeto
+spec:
+  type: ClusterIP                         # O Ingress exigem os n�s serem do tipo Default interno
+  selector:
+    camada: frontend                      # Im� acha a aplicacao web JS
+  ports:
+    - port: 80
+
+---
+# 2. O Site VUE.JS ou REACT rodando pelo NGINX WebServer
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: site-livraria-ui
+  namespace: meu-primeiro-projeto
+spec:
+  replicas: 2                             # Alta disponibilidade L7
+  selector:
+    matchLabels:
+      camada: frontend
+  template:
+    metadata:
+      labels:
+        camada: frontend
+    spec:
+      containers:
+        - name: nginx-server
+          image: nginx:alpine             # Nginx lev�ssimo servindo front-end estatico 
+          ports:
+            - containerPort: 80
+
+---
+# 3. O GRAN-FINALE! A RECEP��O ELEGANTE COM URL P�BLICA (M�dulo 03)
+# O Ingress unindo o Mundo Exterior -&gt; PABX Interno.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gateway-recepcao-livraria
+  namespace: meu-primeiro-projeto
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  # Se voce tiver usando Ingress do Kind ou minikube default:
+  ingressClassName: nginx 
+  
+  rules:
+    # URL 1: O Usuario que digitar o site limpo &quot;.com.br&quot; bate no frontend Nginx (Tela e UI)
+    - host: livraria-sincera.com.br
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: svc-vuejs-frontend  # CAI NO PABX 01 DESTA PAGINA!
+                port:
+                  number: 80
+                  
+    # URL 2: O proprio site vue via AXIOS Javascript, chama a URL `api.livraria...` !
+    # O Ingress intercepta, le o HostHead. &quot;Ele quer o host da API? Entao... Corta pro APP JAVA&quot;
+    - host: api.livraria-sincera.com.br
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: svc-api-rest       # MAGIA: CAI NO PABX SEGREDO CRIADO LA NA AULA 03!!
+                port:
+                  number: 8080
+
+# ============================================================
+# DEPOIS DE CRIAR TUDO DA AULA 1, 2, 3 e 4. VOC� VER� ISSO QUANDO DER:
+# `kubectl get all -n meu-primeiro-projeto` 
+#
+# pod/db-mysql-livraria-7f5b...         1/1     Running   (Blindado, Sem ngm saber onde ta)
+# pod/api-livraria-rest-5bf5...         1/1     Running   (Com Limit Ram e C�o de Guarda vivo)
+# pod/api-livraria-rest-5bf5...         1/1     Running   
+# pod/site-livraria-ui-954f...          1/1     Running   
+# pod/site-livraria-ui-954f...          1/1     Running   
+# ... (Lista todos replicasets de update logico em ZERO-DOWNTIME etc)
+#
+# Este � o Absoluto Pico do Mercado Senior!
+# Uma Arquitetura de Microsservi�os 100% Desacoplada, Resiliente com HD 
+# Fisico Salvo, DNS Magico Interno e Exposi��o com VirtualHosts Seguras 
+# sem portas abertas esquisitas do NodePort!
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./035-modulo-08-projeto-final-03-backend.html">Aula anterior</a>
+      <span></span>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

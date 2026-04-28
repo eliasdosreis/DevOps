@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Prático — Recursos e Links: Setup Completo do Ambiente AWS (Módulo 21) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#176-31-recursos-e-links-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #b45309">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 31 - Recursos e Links - 5 min - 31-Recursos-e-Links/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1488998427799-e3362cec87c3?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 31 - Recursos e Links" loading="lazy">
+      <figcaption>Links oficiais mantem o estudo conectado ao comportamento atual dos servicos AWS.</figcaption>
+    </figure>
+    <h1>Lab Prático — Recursos e Links: Setup Completo do Ambiente AWS (Módulo 21)</h1>
+<blockquote><p><strong>Custo estimado:</strong> ~$0 (configurações locais e verificações de conta)<br><strong>Pré-requisitos:</strong> AWS CLI já instalado; Python 3.8+</p></blockquote>
+<hr>
+<h2>Objetivo</h2>
+<p>Configurar um ambiente de trabalho profissional para AWS: múltiplos profiles CLI, aliases produtivos, ferramenta de gerenciamento de versões do Terraform, e boas práticas de segurança de credenciais.</p>
+<hr>
+<h2>Parte 1 — AWS CLI: Múltiplos Perfis</h2>
+<pre><code class="language-bash"># Verificar versão e configuração atual
+aws --version
+aws configure list-profiles
+
+# Configurar perfil dev (menor privilégio para desenvolvimento)
+aws configure --profile dev
+# Preencher: Access Key ID, Secret, região us-east-1, output json
+
+# Configurar perfil prod (acesso mais restrito, MFA obrigatório)
+aws configure --profile prod
+
+# Configurar profile que usa SSO (recomendado para organizações)
+aws configure sso --profile sso-dev
+# Preencher: SSO start URL, SSO region, account ID, role name
+
+# Usar perfil específico
+export AWS_PROFILE=dev
+aws sts get-caller-identity
+
+# Aliases úteis no ~/.bashrc ou ~/.zshrc
+cat &gt;&gt; ~/.bashrc &lt;&lt; &#39;ALIASES&#39;
+# AWS Profile shortcuts
+alias aws-dev=&#39;export AWS_PROFILE=dev &amp;&amp; echo &quot;Usando perfil: dev&quot;&#39;
+alias aws-prod=&#39;export AWS_PROFILE=prod &amp;&amp; echo &quot;Usando perfil: prod&quot;&#39;
+alias aws-who=&#39;aws sts get-caller-identity&#39;
+alias aws-region=&#39;aws ec2 describe-availability-zones --query &quot;AvailabilityZones[0].RegionName&quot; --output text&#39;
+
+# Aliases de investigação rápida
+alias s3ls=&#39;aws s3 ls&#39;
+alias ec2ls=&#39;aws ec2 describe-instances --query &quot;Reservations[*].Instances[*].[InstanceId,State.Name,InstanceType,PublicIpAddress,Tags[?Key==&#39;\&#39;&#39;Name&#39;\&#39;&#39;].Value|[0]]&quot; --output table&#39;
+alias lambdals=&#39;aws lambda list-functions --query &quot;Functions[*].[FunctionName, Runtime, LastModified]&quot; --output table&#39;
+ALIASES
+
+source ~/.bashrc</code></pre>
+<hr>
+<h2>Parte 2 — Gerenciamento Seguro de Credenciais</h2>
+<pre><code class="language-bash"># NUNCA armazenar chaves em código. Verificar se há keys no repositório:
+# (Instalar git-secrets para prevenir commits acidentais)
+# https://github.com/awslabs/git-secrets
+
+# Rotação de Access Keys — boas práticas
+echo &quot;=== Verificar se há keys antigas (&gt;90 dias) ===&quot;
+aws iam list-access-keys \
+  --query &#39;AccessKeyMetadata[*].[AccessKeyId, Status, CreateDate]&#39; \
+  --output table
+
+# Criar nova key e deletar a antiga
+NEW_KEY=$(aws iam create-access-key \
+  --query &#39;AccessKey.[AccessKeyId, SecretAccessKey]&#39; \
+  --output text)
+echo &quot;Nova key criada (configure no ~/.aws/credentials antes de deletar a antiga)&quot;
+
+# Verificar políticas de senha da conta
+aws iam get-account-password-policy 2&gt;/dev/null || echo &quot;Sem password policy configurada&quot;
+
+# Configurar política de senha segura
+aws iam update-account-password-policy \
+  --minimum-password-length 14 \
+  --require-symbols \
+  --require-numbers \
+  --require-uppercase-characters \
+  --require-lowercase-characters \
+  --allow-users-to-change-password \
+  --max-password-age 90 \
+  --password-reuse-prevention 5
+
+echo &quot;Password policy configurada!&quot;
+
+# Verificar usuários sem MFA
+aws iam list-users --query &#39;Users[*].UserName&#39; --output text | \
+  tr &#39;\t&#39; &#39;\n&#39; | \
+  while read USER; do
+    MFA=$(aws iam list-mfa-devices --user-name &quot;$USER&quot; --query &#39;MFADevices&#39; --output text)
+    if [ -z &quot;$MFA&quot; ]; then
+      echo &quot;ALERTA: Usuário sem MFA: $USER&quot;
+    fi
+  done</code></pre>
+<hr>
+<h2>Parte 3 — tfenv: Gerenciar Versões do Terraform</h2>
+<pre><code class="language-bash"># Instalar tfenv (Linux/macOS)
+git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
+export PATH=&quot;$HOME/.tfenv/bin:$PATH&quot;
+echo &#39;export PATH=&quot;$HOME/.tfenv/bin:$PATH&quot;&#39; &gt;&gt; ~/.bashrc
+
+# Listar versões disponíveis
+tfenv list-remote | head -10
+
+# Instalar versão específica (usada no curso)
+tfenv install 1.7.5
+tfenv use 1.7.5
+terraform --version
+
+# Fixar versão por projeto (arquivo .terraform-version)
+echo &quot;1.7.5&quot; &gt; .terraform-version
+echo &quot;Terraform fixado na versão 1.7.5 para este diretório&quot;
+
+# Para Windows: usar winget ou chocolatey
+# winget install Hashicorp.Terraform
+# choco install terraform --version=1.7.5</code></pre>
+<hr>
+<h2>Parte 4 — AWS CLI Output Formats e Queries JMESPath</h2>
+<pre><code class="language-bash"># Dominar JMESPath é essencial para o exame (e para trabalhar com AWS CLI)
+
+# Filtrar instâncias rodando
+aws ec2 describe-instances \
+  --filters &quot;Name=instance-state-name,Values=running&quot; \
+  --query &#39;Reservations[*].Instances[*].[InstanceId, InstanceType, PrivateIpAddress]&#39; \
+  --output table
+
+# Funções JMESPath úteis
+# sort_by — ordenar por campo
+aws s3api list-buckets \
+  --query &#39;sort_by(Buckets, &amp;CreationDate)[*].[Name, CreationDate]&#39; \
+  --output table
+
+# contains — filtrar texto
+aws ec2 describe-security-groups \
+  --query &#39;SecurityGroups[?contains(GroupName, `lab`)].[ GroupId, GroupName]&#39; \
+  --output table
+
+# length — contar resultados
+aws s3api list-buckets --query &#39;length(Buckets)&#39; --output text
+
+# max_by/min_by — extremos
+aws ec2 describe-instances \
+  --query &#39;max_by(Reservations[*].Instances[], &amp;LaunchTime).[InstanceId, LaunchTime]&#39; \
+  --output table
+
+# Saída em diferentes formatos
+aws iam list-users --output json   # JSON completo
+aws iam list-users --output table  # tabela ASCII (fácil de ler)
+aws iam list-users --output text   # texto plano (bom para scripts)
+aws iam list-users --output yaml   # YAML (human-friendly)</code></pre>
+<hr>
+<h2>Parte 5 — Script de Auditoria de Conta</h2>
+<pre><code class="language-python"># auditoria_conta.py — Verificações rápidas de segurança e custos
+import boto3
+import json
+from datetime import datetime, timedelta, timezone
+
+def verificar_conta():
+    iam = boto3.client(&#39;iam&#39;)
+    sts = boto3.client(&#39;sts&#39;)
+    s3  = boto3.client(&#39;s3&#39;)
+    ce  = boto3.client(&#39;ce&#39;, region_name=&#39;us-east-1&#39;)
+
+    identity = sts.get_caller_identity()
+    print(f&quot;\n=== Auditoria da Conta: {identity[&#39;Account&#39;]} ===&quot;)
+    print(f&quot;Data: {datetime.now().strftime(&#39;%Y-%m-%d %H:%M&#39;)}&quot;)
+
+    # 1. Verificar root sem MFA
+    acct_summary = iam.get_account_summary()[&#39;SummaryMap&#39;]
+    root_mfa = acct_summary.get(&#39;AccountMFAEnabled&#39;, 0)
+    status_mfa = &quot;OK&quot; if root_mfa else &quot;ALERTA: MFA não habilitado na conta root!&quot;
+    print(f&quot;\n1. MFA conta root: {status_mfa}&quot;)
+
+    # 2. Access Keys antigas
+    print(&quot;\n2. Access Keys (usuários IAM):&quot;)
+    users = iam.list_users()[&#39;Users&#39;]
+    for user in users:
+        keys = iam.list_access_keys(UserName=user[&#39;UserName&#39;])[&#39;AccessKeyMetadata&#39;]
+        for key in keys:
+            created = key[&#39;CreateDate&#39;]
+            age = (datetime.now(timezone.utc) - created).days
+            flag = &quot;ALERTA: &gt;90 dias&quot; if age &gt; 90 else &quot;ok&quot;
+            print(f&quot;   {user[&#39;UserName&#39;]}: key {key[&#39;AccessKeyId&#39;][:8]}... ({age} dias) [{flag}]&quot;)
+
+    # 3. Buckets S3 públicos
+    print(&quot;\n3. Buckets S3 com acesso público potencial:&quot;)
+    buckets = s3.list_buckets()[&#39;Buckets&#39;]
+    for bucket in buckets:
+        try:
+            pab = s3.get_public_access_block(Bucket=bucket[&#39;Name&#39;])[&#39;PublicAccessBlockConfiguration&#39;]
+            if not all(pab.values()):
+                print(f&quot;   VERIFICAR: {bucket[&#39;Name&#39;]} — algum Block Public Access desabilitado&quot;)
+        except Exception:
+            print(f&quot;   VERIFICAR: {bucket[&#39;Name&#39;]} — sem configuração Block Public Access&quot;)
+
+    # 4. Custo últimos 30 dias
+    print(&quot;\n4. Custo últimos 30 dias (top 3 serviços):&quot;)
+    start = (datetime.now() - timedelta(days=30)).strftime(&#39;%Y-%m-%d&#39;)
+    end = datetime.now().strftime(&#39;%Y-%m-%d&#39;)
+    try:
+        cost = ce.get_cost_and_usage(
+            TimePeriod={&#39;Start&#39;: start, &#39;End&#39;: end},
+            Granularity=&#39;MONTHLY&#39;,
+            Metrics=[&#39;BlendedCost&#39;],
+            GroupBy=[{&#39;Type&#39;: &#39;DIMENSION&#39;, &#39;Key&#39;: &#39;SERVICE&#39;}]
+        )
+        servicos = cost[&#39;ResultsByTime&#39;][0][&#39;Groups&#39;]
+        top3 = sorted(servicos, key=lambda x: float(x[&#39;Metrics&#39;][&#39;BlendedCost&#39;][&#39;Amount&#39;]), reverse=True)[:3]
+        for s in top3:
+            print(f&quot;   {s[&#39;Keys&#39;][0]}: ${float(s[&#39;Metrics&#39;][&#39;BlendedCost&#39;][&#39;Amount&#39;]):.2f}&quot;)
+    except Exception as e:
+        print(f&quot;   Sem acesso ao Cost Explorer: {e}&quot;)
+
+    print(&quot;\n=== Auditoria concluída ===&quot;)
+
+if __name__ == &#39;__main__&#39;:
+    verificar_conta()</code></pre>
+<pre><code class="language-bash">pip3 install boto3
+python3 auditoria_conta.py</code></pre>
+<hr>
+<h2>Parte 6 — Preparação Final para o Exame</h2>
+<pre><code class="language-bash"># Verificar se todos os serviços-chave estão configurados na sua conta
+echo &quot;=== Checklist pré-exame ===&quot;
+
+check() {
+  echo -n &quot;Verificando $1... &quot;
+  if eval &quot;$2&quot; &gt; /dev/null 2&gt;&amp;1; then
+    echo &quot;OK&quot;
+  else
+    echo &quot;não disponível (não crítico para lab)&quot;
+  fi
+}
+
+check &quot;EC2&quot; &quot;aws ec2 describe-availability-zones&quot;
+check &quot;S3&quot; &quot;aws s3 ls&quot;
+check &quot;IAM&quot; &quot;aws iam list-users&quot;
+check &quot;Lambda&quot; &quot;aws lambda list-functions&quot;
+check &quot;DynamoDB&quot; &quot;aws dynamodb list-tables&quot;
+check &quot;RDS&quot; &quot;aws rds describe-db-instances&quot;
+check &quot;VPC&quot; &quot;aws ec2 describe-vpcs&quot;
+check &quot;CloudWatch&quot; &quot;aws cloudwatch list-metrics --namespace AWS/EC2&quot;
+check &quot;Cost Explorer&quot; &quot;aws ce list-cost-category-definitions&quot;
+
+echo &quot;&quot;
+echo &quot;=== Recursos de Estudo (últimas 48h antes do exame) ===&quot;
+echo &quot;1. Revisar cheatsheet.md de cada módulo&quot;
+echo &quot;2. Focar em módulos com &lt;70% no simulado Tutorials Dojo&quot;
+echo &quot;3. Não estudar conteúdo novo — consolidar o que já sabe&quot;
+echo &quot;4. Dormir bem, alimentar-se, chegar 30min antes&quot;
+echo &quot;5. Leia TODAS as opções antes de marcar — elimine por absurdo&quot;</code></pre>
+<hr>
+<h2>Limpeza</h2>
+<pre><code class="language-bash">rm -f auditoria_conta.py
+echo &quot;Nada a destruir — sem recursos cloud criados neste lab.&quot;</code></pre>
+<hr>
+<h2>O Que Você Aprendeu</h2>
+<ul><li>AWS CLI <code>--profile</code> + <code>AWS_PROFILE</code>: trabalhar com múltiplas contas de forma segura</li><li>JMESPath queries: <code>sort_by</code>, <code>contains</code>, <code>length</code>, <code>max_by</code> — essenciais para automação</li><li><strong>Nunca</strong> hardcodar credenciais: usar roles, profiles, SSO ou AWS Vault</li><li>Password policy + MFA + key rotation = conta mais segura</li><li><code>simulate-principal-policy</code> + <code>auditoria_conta.py</code> = debugging e governança proativa</li><li>Antes do exame: consolidar &gt; estudar novo; sono e alimentação impactam desempenho cognitivo</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./175-31-recursos-e-links-flashcards.html">Aula anterior</a>
+      <a href="./177-31-recursos-e-links-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

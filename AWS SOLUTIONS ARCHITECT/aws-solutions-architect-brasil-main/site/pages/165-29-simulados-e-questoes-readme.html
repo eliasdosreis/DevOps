@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Módulo 29 — Simulados e Questões - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#165-29-simulados-e-questoes-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 29 - Simulados e Questoes - 17 min - 29-Simulados-e-Questoes/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 29 - Simulados e Questoes" loading="lazy">
+      <figcaption>Simulado e treino de decisao sob tempo: leia, elimine, escolha e revise.</figcaption>
+    </figure>
+    <h1>Módulo 29 — Simulados e Questões</h1>
+<h2>Onde está cada conteúdo</h2>
+<ul><li>Este arquivo (<code>README.md</code>) contém o <strong>Simulado Completo 1</strong> com 65 questões no estilo SAA-C03.</li><li>O arquivo <code>questoes.md</code> contém <strong>questões complementares de estratégia de prova</strong> (meta-perguntas sobre abordagem e formato do exame).</li></ul>
+<h2>Estratégia para o Exame SAA-C03</h2>
+<h3>Formato do Exame</h3>
+<ul><li><strong>65 questões</strong> (múltipla escolha/múltipla seleção)</li><li><strong>130 minutos</strong> (2h10min)</li><li><strong>Score mínimo</strong>: 720/1000 (escala de pontuação de 100-1000)</li><li><strong>Domínios cobertos:</strong></li><li>Design de Arquiteturas Resilientes: 26%</li><li>Design de Arquiteturas de Alta Performance: 24%</li><li>Design de Aplicações Seguras: 30%</li><li>Design de Arquiteturas Otimizadas em Custo: 20%</li></ul>
+<h3>Estratégia de Resposta</h3>
+<ol><li>Leia o <strong>requisito principal</strong> destacado na questão (geralmente em negrito ou citado explicitamente)</li><li>Elimine <strong>distractors</strong> óbvios (serviços errados para o contexto)</li><li>Escolha a resposta <strong>mais gerenciada</strong> que satisfaz <strong>todos</strong> os requisitos</li><li>Para questões de múltipla seleção: identifique quantas respostas são pedidas (2 ou 3)</li><li>Tempo por questão: <strong>~2 minutos</strong>; marque questões difíceis para revisão</li></ol>
+<hr>
+<h2>Simulado Completo 1 — 65 Questões</h2>
+<h3>Seção A — Arquiteturas Resilientes (Questões 1-17)</h3>
+<p><strong>1.</strong> Uma empresa precisa executar um banco de dados MySQL com failover automático entre Zonas de Disponibilidade e que suporte leituras de alta carga. Qual combinação de serviços resolve isso?</p>
+<ul><li>A) RDS MySQL Single-AZ com Read Replicas</li><li>B) Amazon Aurora MySQL Multi-AZ com Aurora Read Replicas</li><li>C) Amazon RDS MySQL Multi-AZ com Read Replicas</li><li>D) Amazon DynamoDB com DAX</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Aurora MySQL Multi-AZ tem failover automático em ~30s (muito mais rápido que RDS Multi-AZ) E suporta até 15 Read Replicas de baixa latência. Aurora Read Replicas fazem parte do cluster e promovem automaticamente em caso de failover.</p></details>
+<hr>
+<p><strong>2.</strong> Uma aplicação crítica em EC2 precisa de RTO &lt; 15 minutos e RPO &lt; 1 hora. Qual estratégia de DR na AWS é mais econômica para esses requisitos?</p>
+<ul><li>A) Multi-Site Active-Active em duas regiões</li><li>B) Backup &amp; Restore com snapshots automáticos no S3</li><li>C) Warm Standby com capacidade reduzida em uma segunda região</li><li>D) Pilot Light com componentes mínimos em segunda região</li></ul>
+<details><summary>Resposta</summary><p><strong>D</strong> — Pilot Light: mantém apenas os componentes essenciais (BD replicado, AMIs prontas) rodando na segunda região em estado mínimo. RTO de 10-15 min (provisionar o restante) com custo bem menor que Warm Standby. RPO depende da frequência de replicação; com Aurora Global DB ou DMS CDC, RPO &lt; 1h é factível.</p></details>
+<hr>
+<p><strong>3.</strong> Uma empresa tem um endpoint crítico. Quando a região primária fica indisponível, o tráfego deve ser roteado automaticamente para uma segunda região. Qual serviço implementa isso?</p>
+<ul><li>A) AWS Global Accelerator com endpoint groups</li><li>B) Amazon Route 53 com Failover routing</li><li>C) Amazon CloudFront com origin failover</li><li>D) A e B são ambas válidas</li></ul>
+<details><summary>Resposta</summary><p><strong>D</strong> — Route 53 Failover routing monitora health checks e muda automaticamente o DNS para o endpoint secundário. Global Accelerator também faz failover automático entre regiões via anycast. Ambos são válidos; Route 53 atua no nível DNS, Global Accelerator atua no nível de rede (menor latência de failover).</p></details>
+<hr>
+<p><strong>4.</strong> Uma fila SQS está recebendo mensagens de alta prioridade misturadas com mensagens de baixa prioridade. As mensagens de alta prioridade precisam ser processadas imediatamente. O que fazer?</p>
+<ul><li>A) Configurar message attributes e filtrar no consumer</li><li>B) Criar duas filas SQS separadas e direcionar mensagens por prioridade</li><li>C) Usar SQS FIFO para garantir ordem de processamento</li><li>D) Usar SNS Message Filtering para separar as mensagens</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — SQS não tem suporte nativo a prioridade de mensagens. A solução é criar filas separadas (alta e baixa prioridade) e ter workers que verificam primeiro a fila de alta prioridade. SQS FIFO garante ordem mas não prioridade entre mensagens.</p></details>
+<hr>
+<p><strong>5.</strong> Uma empresa precisa de um sistema que garanta que cada mensagem seja processada exatamente uma vez, mesmo com reativações de consumers. Qual fila AWS usar?</p>
+<ul><li>A) Amazon SQS Standard</li><li>B) Amazon SQS FIFO com deduplication ID</li><li>C) Amazon SNS FIFO</li><li>D) Amazon Kinesis Data Streams</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — SQS FIFO com Message Deduplication ID garante exatamente uma entrega (exactly-once processing). SQS Standard garante ao menos uma entrega (duplicatas possíveis). Kinesis pode ter ao menos uma entrega dependendo da configuração do consumer.</p></details>
+<hr>
+<p><strong>6.</strong> Uma aplicação web usa ALB + Auto Scaling Group + RDS Aurora. Durante picos, o banco de dados fica sobrecarregado com leituras. A solução mais custo-efetiva para escalar leituras é:</p>
+<ul><li>A) Aumentar a classe da instância RDS principal</li><li>B) Adicionar Aurora Read Replicas e configurar a string de conexão da aplicação para o endpoint Reader</li><li>C) Implementar ElastiCache Redis como cache de sessão</li><li>D) Migrar para DynamoDB com DAX</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Aurora Read Replicas escalam leituras horizontalmente com latência mínima; o Reader Endpoint distribui automaticamente entre réplicas. É mais econômico e direto que as outras opções para cargas de leitura SQL existentes.</p></details>
+<hr>
+<p><strong>7.</strong> Uma empresa quer garantir que suas funções Lambda críticas sempre tenham capacidade disponível sem cold start. Qual configuração implementa isso?</p>
+<ul><li>A) Reserved Concurrency com valor alto</li><li>B) Provisioned Concurrency em uma version ou alias da Lambda</li><li>C) Aumentar a memória alocada da Lambda para 10 GB</li><li>D) Configurar Lambda em VPC para reduzir cold starts</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Provisioned Concurrency pré-aquece N execution environments, eliminando cold start completamente para esses N concurrents. Reserved Concurrency garante capacidade mas não elimina cold start. VPC não ajuda com cold start (Hyperplane ENI desde 2019 minimizou esse efeito).</p></details>
+<hr>
+<p><strong>8.</strong> Uma instância EC2 falha e precisa ser substituída automaticamente pelo mesmo endereço IP privado e armazenamento dos dados. Qual solução implementa isso?</p>
+<ul><li>A) Auto Scaling Group com min/max/desired = 1</li><li>B) EC2 Instance Recovery via CloudWatch Alarm</li><li>C) AMI automática + CloudFormation</li><li>D) Instância EC2 com Placement Group</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — EC2 Instance Recovery (alarm action &quot;Recover Instance&quot;) move a instância para novo hardware mantendo o mesmo IP privado, Elastic IP, instance ID e dados EP (EBS). ASG cria nova instância com IPs novos.</p></details>
+<hr>
+<p><strong>9.</strong> Uma empresa deve garantir que objetos S3 críticos sejam replicados automaticamente para outra região, e que os metadados e versões também sejam replicados. O que configurar?</p>
+<ul><li>A) S3 Transfer Acceleration</li><li>B) S3 Cross-Region Replication (CRR) com versioning habilitado nos dois buckets</li><li>C) S3 Same-Region Replication (SRR) com Lambda</li><li>D) Evento S3 → Lambda → CopyObject para outro bucket</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — CRR requer versioning habilitado em ambos os buckets (source e destination). Replica automaticamente novos objetos e versões para a região de destino. SRR é dentro da mesma região.</p></details>
+<hr>
+<p><strong>10.</strong> Uma aplicação usa DynamoDB e começa a receber erros <code>ProvisionedThroughputExceededException</code>. A empresa quer escalar automaticamente sem gerenciar manualmente RCU/WCU. O que implementar?</p>
+<ul><li>A) Aumentar manualmente as RCU/WCU provisionadas</li><li>B) Migrar para DynamoDB On-Demand mode</li><li>C) Adicionar DAX na frente do DynamoDB</li><li>D) Migrar para RDS para suporte a mais capacidade</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — On-Demand mode escala automaticamente com base no tráfego; não há throttling por capacidade provisionada. DynamoDB Auto Scaling (com provisioned mode) também funciona mas tem delay de resposta. On-Demand tem custo por request (mais caro para carga previsível alta, ideal para carga variável/imprevista).</p></details>
+<hr>
+<p><strong>11.</strong> Uma empresa tem um S3 bucket com dados sensíveis e precisa garantir que nenhum objeto seja excluído acidentalmente por 7 anos. Qual configuração implementa isso?</p>
+<ul><li>A) S3 Versioning + MFA Delete</li><li>B) S3 Object Lock em modo Compliance com retention period de 7 anos</li><li>C) S3 Glacier Vault Lock com policy de retenção</li><li>D) S3 Bucket Policy negando DeleteObject</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — S3 Object Lock em modo Compliance: <strong>nem o root account</strong> pode excluir ou modificar objetos durante o retention period. Perfeito para WORM compliance. Modo Governance permite que admins com permissão especial sobrescrevam. Bucket Policy pode ser alterada por admin; MFA Delete não impede todos os tipos de exclusão.</p></details>
+<hr>
+<p><strong>12.</strong> Uma aplicação de microserviços em ECS precisa que cada container acesse um secret de banco de dados armazenado no AWS Secrets Manager. Qual é a forma mais segura de fornecer o segredo ao container?</p>
+<ul><li>A) Passar o segredo como variável de ambiente no task definition</li><li>B) Usar a integração nativa ECS + Secrets Manager no task definition com <code>secrets</code> field</li><li>C) Armazenar o segredo no S3 criptografado e a Lambda busca antes do container iniciar</li><li>D) Embutir o segredo no container image</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — ECS suporta injeção de secrets do Secrets Manager e Parameter Store diretamente em variáveis de ambiente ou como volumes — o ECS agent busca o valor na execução. O secret nunca fica exposto na imagem ou task definition em texto claro. A task execution role precisa de permissão para <code>secretsmanager:GetSecretValue</code>.</p></details>
+<hr>
+<p><strong>13.</strong> Uma solução de analytics processa grandes arquivos CSV de 10 GB no S3. As queries via Athena são lentas e caras. Qual melhoria de uma única ação teria mais impacto?</p>
+<ul><li>A) Converter arquivos para Parquet e particionar por data</li><li>B) Mover para Redshift para queries mais rápidas</li><li>C) Aumentar o tamanho do bloco no S3</li><li>D) Usar S3 Select para filtrar antes de enviar ao Athena</li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — Parquet é formato colunar comprimido: Athena lê apenas as colunas necessárias e escaneia muito menos dados. Particionamento por data evita full table scans. Combinados, podem reduzir o custo e tempo de query em 90%+. Esta é a otimização mais impactante para Athena.</p></details>
+<hr>
+<p><strong>14.</strong> Uma empresa precisa que os logs dos Lambda e ECS containers sejam centralizados, com retenção de 90 dias e possibilidade de queries analíticas. Qual solução implementar?</p>
+<ul><li>A) Kinesis Firehose → S3 → Athena</li><li>B) CloudWatch Logs com grupo de logs, retenção de 90 dias e CloudWatch Logs Insights</li><li>C) Elasticsearch (OpenSearch) com agente de log</li><li>D) CloudWatch Logs Subscription → Kinesis Firehose → S3 + Athena</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Lambda e ECS enviam logs automaticamente para CloudWatch Logs. Configurar retenção de 90 dias por grupo. CloudWatch Logs Insights permite queries analíticas nos logs diretamente. Solução mais simples e custo-efetiva para o caso descrito.</p></details>
+<hr>
+<p><strong>15.</strong> Uma instância EC2 em subnet privada precisa fazer chamadas a uma API externa pela internet sem expor IP privado. O que configurar?</p>
+<ul><li>A) Adicionar um Elastic IP à instância</li><li>B) Criar um NAT Gateway em subnet pública e adicionar rota 0.0.0.0/0 à route table da subnet privada</li><li>C) Configurar VPC Peering com uma VPC pública</li><li>D) Habilitar DNS resolution na VPC</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — NAT Gateway em subnet pública (com IGW) permite que instâncias em subnets privadas iniciem conexões para a internet. O NAT traduz o IP privado para o IP do NAT Gateway. Elastic IP na instância privada não funciona sem IGW na route table.</p></details>
+<hr>
+<p><strong>16.</strong> Uma empresa quer garantir que apenas requests assinadas com SigV4 possam acessar seu S3 bucket. Qual policy aplicar no bucket?</p>
+<ul><li>A) Bucket Policy com <code>&quot;Effect&quot;: &quot;Deny&quot;</code> para <code>&quot;Principal&quot;: &quot;*&quot;</code> sem condição <code>aws:SecureTransport</code></li><li>B) Bucket Policy com Condition <code>&quot;StringEquals&quot;: {&quot;s3:authType&quot;: &quot;REST-QUERY-STRING&quot;}</code></li><li>C) Bucket ACL configurando acesso privado</li><li>D) Amazon Macie para monitorar acessos não autorizados</li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — A condição correta é <code>&quot;Condition&quot;: {&quot;Bool&quot;: {&quot;aws:SecureTransport&quot;: &quot;false&quot;}}</code> com Deny para forçar HTTPS. Para forçar SigV4 (autenticação AWS), remover acesso público + ter IAM policies apenas para identidades AWS. Amazon Macie é detecção, não controle de acesso.</p></details>
+<hr>
+<p><strong>17.</strong> Uma empresa usa AWS Organizations com múltiplas contas. Precisa impedir que desenvolvedores em contas-membro criem recursos em regiões não aprovadas. Qual serviço implementar?</p>
+<ul><li>A) IAM Permission Boundaries em cada conta membro</li><li>B) Service Control Policy (SCP) no Organizations OU aplicando Deny para regiões não aprovadas</li><li>C) AWS Config Rules em cada conta membro</li><li>D) IAM Role com condição de região em cada conta membro</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — SCPs são aplicadas no nível de OU ou conta no Organizations e limitam o que qualquer identity (mesmo root) pode fazer nas contas membros. Uma SCP <code>Deny + Condition: aws:RequestedRegion NotEquals [us-east-1, us-west-2]</code> bloqueia todas as ações em regiões não listadas.</p></details>
+<hr>
+<h3>Seção B — Performance (Questões 18-33) — Referência Rápida</h3>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>Área</th><th>Resposta Esperada</th></tr></thead><tbody><tr><td>18</td><td>EC2 high compute workload</td><td>C5/C6i, placement group cluster</td></tr><tr><td>19</td><td>Baixa latência inter-serviços mesma AZ</td><td>Placement Group Cluster</td></tr><tr><td>20</td><td>Alta IOPS para banco de dados</td><td>EBS io2 Block Express</td></tr><tr><td>21</td><td>Conteúdo estático global baixa latência</td><td>CloudFront</td></tr><tr><td>22</td><td>TCP/UDP aceleração global</td><td>Global Accelerator</td></tr><tr><td>23</td><td>Cache em memória para leituras repetidas</td><td>ElastiCache Redis</td></tr><tr><td>24</td><td>DynamoDB leitura µs</td><td>DAX (DynamoDB Accelerator)</td></tr><tr><td>25</td><td>ECS tasks comunicação interna</td><td>Service Connect ou Service Discovery (Cloud Map)</td></tr><tr><td>26</td><td>Lambda com grande dependência Python</td><td>Lambda Container Image (até 10 GB)</td></tr><tr><td>27</td><td>Queries S3 sem mover dados</td><td>Amazon Athena</td></tr><tr><td>28</td><td>Upload S3 arquivos grandes otimizado</td><td>Multipart Upload + Transfer Acceleration</td></tr><tr><td>29</td><td>EFS alta performance (HPC)</td><td>EFS Max I/O ou FSx for Lustre</td></tr><tr><td>30</td><td>Redshift queries lentas em concurrent users</td><td>Concurrency Scaling</td></tr><tr><td>31</td><td>API GW throttling para proteger backend</td><td>Usage Plans + Rate Limits</td></tr><tr><td>32</td><td>Graviton instances</td><td>Melhor preço/performance para cargas Cloud-native</td></tr><tr><td>33</td><td>Lambda cold start Java critico</td><td>SnapStart (Java 11+) ou Provisioned Concurrency</td></tr></tbody></table></div>
+<hr>
+<h3>Seção C — Segurança (Questões 34-54) — Referência Rápida</h3>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>Área</th><th>Resposta Esperada</th></tr></thead><tbody><tr><td>34</td><td>Detectar instâncias comprometidas</td><td>GuardDuty</td></tr><tr><td>35</td><td>Detectar dados sensíveis no S3</td><td>Macie</td></tr><tr><td>36</td><td>Scan de vulnerabilidades EC2/Lambda</td><td>Inspector</td></tr><tr><td>37</td><td>Cross-account role</td><td>sts:AssumeRole com trust policy</td></tr><tr><td>38</td><td>Rotação automática de secrets RDS</td><td>Secrets Manager com rotation Lambda</td></tr><tr><td>39</td><td>Criptografia dados DynamoDB em repouso</td><td>AWS KMS CMK (Customer Managed Key)</td></tr><tr><td>40</td><td>Bloquear SQL injection na API</td><td>WAF com AWS Managed Rules</td></tr><tr><td>41</td><td>Acesso EC2 sem key pair</td><td>SSM Session Manager</td></tr><tr><td>42</td><td>S3 bucket policy vs IAM policy</td><td>S3 Bucket Policy para cross-account; IAM para same-account</td></tr><tr><td>43</td><td>CloudFront + S3 — prevent direct S3 access</td><td>Origin Access Control (OAC)</td></tr><tr><td>44</td><td>Compliance PCI DSS na AWS</td><td>Shared Responsibility + AWS Artifact (reports)</td></tr><tr><td>45</td><td>Encrypt EBS volume existente</td><td>Snapshot → Encrypted Copy → Restore</td></tr><tr><td>46</td><td>Auditar quais APIs foram chamadas</td><td>CloudTrail (Management Events)</td></tr><tr><td>47</td><td>Multitenancy — isolar dados por tenant</td><td>DynamoDB com partition key por tenant + Resource Policy</td></tr><tr><td>48</td><td>EKS pod permissions</td><td>IRSA (IAM Roles for Service Accounts)</td></tr><tr><td>49</td><td>Key rotation automática</td><td>KMS Key Rotation anual (AWS Managed Keys auto; CMK configurável)</td></tr><tr><td>50</td><td>VPC endpoint S3 sem internet</td><td>Gateway VPC Endpoint para S3 (gratuito)</td></tr><tr><td>51</td><td>Logs de acesso ao S3</td><td>S3 Server Access Logging ou CloudTrail Data Events</td></tr><tr><td>52</td><td>Prevent accidental deletion CloudFormation</td><td>Termination Protection + DeletionPolicy: Retain</td></tr><tr><td>53</td><td>ACM certificado renovação</td><td>Automático para ACM-provisioned certificates</td></tr><tr><td>54</td><td>Network Firewall vs WAF</td><td>Network Firewall = Layer 4 (VPC nível); WAF = Layer 7 (HTTP)</td></tr></tbody></table></div>
+<hr>
+<h3>Seção D — Custo (Questões 55-65) — Referência Rápida</h3>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>Área</th><th>Resposta Esperada</th></tr></thead><tbody><tr><td>55</td><td>Instâncias não prod fora do horário comercial</td><td>Evento EventBridge → Lambda → Stop/Start EC2</td></tr><tr><td>56</td><td>Carga de trabalho batch tolerante a interrupção</td><td>Spot Instances</td></tr><tr><td>57</td><td>Comprometimento de longo prazo conhecido</td><td>Reserved Instances ou Savings Plans</td></tr><tr><td>58</td><td>Rightsizing EC2</td><td>Compute Optimizer</td></tr><tr><td>59</td><td>S3 acesso imprevisível</td><td>S3 Intelligent-Tiering</td></tr><tr><td>60</td><td>Transferência de dados — custo zero</td><td>Dados para EC2 na mesma região são gratuitos; saída tem custo</td></tr><tr><td>61</td><td>Redshift vs Athena — quando usar</td><td>Athena para ad-hoc; Redshift para DW analítico recorrente</td></tr><tr><td>62</td><td>EFS vs EBS custo</td><td>EBS mais barato mas single-instance; EFS multi-instance mas mais caro/GB</td></tr><tr><td>63</td><td>Lambda vs EC2 para workload esporádico</td><td>Lambda mais econômico (paga por invocação, sem custo idle)</td></tr><tr><td>64</td><td>NAT GW custo</td><td>~$0.045/hora + $0.045/GB processado; use VPC Endpoint para S3/DynamoDB (gratuito)</td></tr><tr><td>65</td><td>Multi-AZ RDS custo</td><td>~2x custo de Single-AZ; necessário para HA; não economize nisso em produção</td></tr></tbody></table></div>
+<hr>
+<h2>Gabarito Resumido — Simulado 1</h2>
+<div class="table-wrap"><table><thead><tr><th>Q</th><th>A</th><th>Q</th><th>A</th><th>Q</th><th>A</th><th>Q</th><th>A</th><th>Q</th><th>A</th></tr></thead><tbody><tr><td>1</td><td>B</td><td>14</td><td>B</td><td>27</td><td>Athena</td><td>40</td><td>WAF</td><td>53</td><td>Automático</td></tr><tr><td>2</td><td>D</td><td>15</td><td>B</td><td>28</td><td>Multipart</td><td>41</td><td>SSM</td><td>54</td><td>Network FW</td></tr><tr><td>3</td><td>D</td><td>16</td><td>A</td><td>29</td><td>FSx Lustre</td><td>42</td><td>Bucket Policy</td><td>55</td><td>EventBridge</td></tr><tr><td>4</td><td>B</td><td>17</td><td>B</td><td>30</td><td>Concurrency</td><td>43</td><td>OAC</td><td>56</td><td>Spot</td></tr><tr><td>5</td><td>B</td><td>18</td><td>C5/C6i</td><td>31</td><td>Usage Plans</td><td>44</td><td>Artifact</td><td>57</td><td>RI/SP</td></tr><tr><td>6</td><td>B</td><td>19</td><td>Cluster PG</td><td>32</td><td>Graviton</td><td>45</td><td>Snapshot</td><td>58</td><td>Optimizer</td></tr><tr><td>7</td><td>B</td><td>20</td><td>io2</td><td>33</td><td>SnapStart</td><td>46</td><td>CloudTrail</td><td>59</td><td>Int-Tiering</td></tr><tr><td>8</td><td>B</td><td>21</td><td>CloudFront</td><td>34</td><td>GuardDuty</td><td>47</td><td>Partition key</td><td>60</td><td>Gratuito</td></tr><tr><td>9</td><td>B</td><td>22</td><td>Global Acc</td><td>35</td><td>Macie</td><td>48</td><td>IRSA</td><td>61</td><td>Redshift DW</td></tr><tr><td>10</td><td>B</td><td>23</td><td>ElastiCache</td><td>36</td><td>Inspector</td><td>49</td><td>KMS Rotation</td><td>62</td><td>EBS mais barato</td></tr><tr><td>11</td><td>B</td><td>24</td><td>DAX</td><td>37</td><td>AssumeRole</td><td>50</td><td>GW Endpoint</td><td>63</td><td>Lambda</td></tr><tr><td>12</td><td>B</td><td>25</td><td>Service Conn</td><td>38</td><td>Secrets Mgr</td><td>51</td><td>S3 Logging</td><td>64</td><td>VPC Endpoint</td></tr><tr><td>13</td><td>A</td><td>26</td><td>Container</td><td>39</td><td>CMK</td><td>52</td><td>Termination P</td><td>65</td><td>Multi-AZ prod</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./164-29-simulados-e-questoes-questoes.html">Aula anterior</a>
+      <a href="./166-30-glossario-casos-de-uso.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

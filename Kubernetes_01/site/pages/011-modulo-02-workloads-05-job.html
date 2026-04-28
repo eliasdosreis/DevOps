@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#011-modulo-02-workloads-05-job">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 02 - workloads - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 02 - workloads" loading="lazy">
+      <figcaption>Workloads controlam replicas, atualizacoes, jobs e execucao programada.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um Job, usado para rodar um container que far� um trabalho
+# processual com come�o, meio e fim (Uma migra��o de banco por ex).
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# O Deployment � um &quot;Gar�om&quot; do restaurante, voc� contrata e ele serve mesas 
+# PARA SEMPRE (rodando infinitamente). Se voc� mandar ele parar de servir e sentar,
+# o restaurante (Kubernetes) fala &quot;Ei, ele morreu, contrata ele de novo&quot; (Restart infinito).
+#
+# O &quot;Job&quot; � o &quot;Entregador de Cimento&quot;. Voc� contrata ele, ele descarrega 100 
+# pacotes na obra e vai embora para casa. � uma tarefa finita. Se ele terminou = Sucesso.
+# O Kubernetes n�o sobe ele se recriando infinitamente (Ele altera a regra de reboot padr�o).
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# Um Job cria um ou mais Pods e garantir� de forma controlada que um 
+# n�mero especificado deles termine de forma exata (Success Output e Exit 0). 
+# Pods de jobs n�o ficam aguardando novas requisi��es. Suas pol�ticas de restart s�o 
+# normalmente mapeadas para &quot;Never&quot; (Nunca) ou &quot;OnFailure&quot; (S� religue se p�nico ocorrer).
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: batch/v1          # Mudamos de apps para o subsistema Batch
+kind: Job
+metadata:
+  name: job-calculo-ir-fim-de-ano
+  namespace: meu-primeiro-projeto
+spec:
+  backoffLimit: 4             # O Job pode tentar 4x antes de declarar Status=Failed.
+  activeDeadlineSeconds: 100  # Tempo maximo vivo: Se bater 100 segs, mate-o (Timeout/Stuck).
+  completions: 1              # O Job precisa ser perfeitamente conclu�do quantas vezes? (10x?, 1x?)
+  
+  template:
+    spec:
+      # ESSENCIAL PARA JOBS: Desligue o restart loop infinito (padr�o Always)! 
+      restartPolicy: Never    
+      
+      containers:
+        - name: math-engine
+          image: perl:5.34    # Uma imagem rodando Perl apenas 
+          # Comando falso e rapido: Conta Pi ate a casa 2000
+          command: [&quot;perl&quot;,  &quot;-Mbignum=bpi&quot;, &quot;-wle&quot;, &quot;print bpi(2000)&quot;]
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. &quot;Contratar o Trabalhador&quot;:
+#    kubectl apply -f 05-job.yaml
+#
+# 2. Veja o trabalhador (Container) come�ar seu estado, e de repente mudar de 
+# Running para &#39;Completed&#39;:
+#    kubectl get pods -n meu-primeiro-projeto  
+#
+# 3. Liste a categoria de jobs:
+#    kubectl get jobs -n meu-primeiro-projeto
+#    (Ele mostrar� &quot;Completions 1/1&quot; se obteve sucesso ou &quot;0/1&quot; em progresso/falha)
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# O pulo do gato? Jobs mant�m os logs MESMO depois de mortos para as suas auditorias.
+# Ache o Pod marcado como &quot;(Completed)&quot; via `kubectl get pods`, e pegue o Log l� dele:
+#    kubectl logs pod-calculo-xxx -n meu-primeiro-projeto
+# Ele renderizar� o Pi lindo na tela. Para deletar de vez o lixo finalizado no PC: 
+#    kubectl delete job job-calculo-ir-fim-de-ano -n meu-primeiro-projeto
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# &quot;Elias, se eu precisar escalar o poder de processamento pra ser r�pido?&quot;
+# A Magia da fila em batch no K8s usa Jobs M�ltiplos! 
+# Se colocarmos `completions: 10` (A conta necessitaria ocorrer 10 vezes completas para a vitoria) 
+# E botarmos a m�gica: `parallelism: 5`.
+# O K8s ir� explodir instantaneamente 5 &quot;Trabalhadores de cimento&quot; paralelos (Pods rodando juntos)
+# usando todos os Cores do sistema inteiro, e assim que 1 acabar, o proximo entra na esteira at� 
+# bater os exatos totais 10 conclu�dos. Imbat�vel para Machine Learning!
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Em um Deploy de Produ��o CI/CD na esteira Jenkins, precisamos rodar 
+# os Scripts SQL de &#39;DB-Migration/Flyway&#39;. Devemos por como container extra ou no Job?&quot;
+# Resposta Esperada: &quot;No Job � mandat�rio! Al�m de separarmos a sem�ntica 
+# (Deploy WebServer x Tool Finita), podemos amarrar em um hook via Helm onde 
+# o Deployment do APP NOVO em si S� SUBIR� do C.I. se o Helm checar &quot;Status==Completed&quot; no Job 
+# de Migra��o do Banco. Previne o app novo e cru acessando o DB com a tabela n�o migrada.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./010-modulo-02-workloads-04-statefulset.html">Aula anterior</a>
+      <a href="./012-modulo-02-workloads-06-cronjob.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

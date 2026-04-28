@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Casos de Uso — IAM e Segurança - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#012-02-iam-e-seguranca-casos-de-uso">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 02 - IAM e Seguranca - 5 min - 02-IAM-e-Seguranca/casos-de-uso.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 02 - IAM e Seguranca" loading="lazy">
+      <figcaption>Seguranca com identidade forte: quem pode fazer o que, em qual recurso e sob qual condicao.</figcaption>
+    </figure>
+    <h1>Casos de Uso — IAM e Segurança</h1>
+<h2>Caso 1: Acesso Cross-Account Seguro com MFA para Operações Críticas</h2>
+<p><strong>Contexto:</strong><br>Uma empresa possui uma conta de produção AWS (<code>conta-prod</code>) e uma conta de ferramentas de DevOps (<code>conta-devops</code>). Engenheiros trabalham na <code>conta-devops</code> e precisam realizar deploys na <code>conta-prod</code>. Operações de deletar recursos (ECR images, snapshots) devem exigir MFA.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Engenheiros na conta-devops assumem uma role na conta-prod</li><li>Operações destrutivas exigem MFA</li><li>Apenas a OU &quot;Engineering&quot; da organização pode assumir a role</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">conta-devops (Engenheiros)              conta-prod
+┌─────────────────────┐                ┌──────────────────────────────┐
+│ IAM User: eng-user  │                │ IAM Role: DevOpsDeployRole    │
+│  └── Policy:        │  AssumeRole    │  ├── Trust Policy:            │
+│       sts:AssumeRole│───────────────▶│  │  Allow: conta-devops       │
+│       (com MFA)     │                │  │  Condition: MFA + OrgID    │
+└─────────────────────┘                │  └── Permission Policy:       │
+                                       │       - ecs:*                 │
+                                       │       - ecr:*                 │
+                                       │       - ec2:DescribeInstances │
+                                       │       - Deny: DeleteX sem MFA │
+                                       └──────────────────────────────┘</code></pre>
+<p><strong>Trust Policy da Role (conta-prod):</strong></p>
+<pre><code class="language-json">{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [{
+    &quot;Effect&quot;: &quot;Allow&quot;,
+    &quot;Principal&quot;: {&quot;AWS&quot;: &quot;arn:aws:iam::111122223333:root&quot;},
+    &quot;Action&quot;: &quot;sts:AssumeRole&quot;,
+    &quot;Condition&quot;: {
+      &quot;Bool&quot;: {&quot;aws:MultiFactorAuthPresent&quot;: &quot;true&quot;},
+      &quot;StringEquals&quot;: {&quot;aws:PrincipalOrgID&quot;: &quot;o-xxxxxxxxxx&quot;}
+    }
+  }]
+}</code></pre>
+<p><strong>Permission Policy com Deny destrutivo sem MFA:</strong></p>
+<pre><code class="language-json">{
+  &quot;Statement&quot;: [{
+    &quot;Effect&quot;: &quot;Deny&quot;,
+    &quot;Action&quot;: [&quot;ecr:DeleteRepository&quot;, &quot;ec2:DeleteSnapshot&quot;, &quot;rds:DeleteDBInstance&quot;],
+    &quot;Resource&quot;: &quot;*&quot;,
+    &quot;Condition&quot;: {
+      &quot;BoolIfExists&quot;: {&quot;aws:MultiFactorAuthPresent&quot;: &quot;false&quot;}
+    }
+  }]
+}</code></pre>
+<p><strong>Conceitos cobrados:</strong> cross-account role assumption, Trust Policy, MFA condition, PrincipalOrgID, explicit deny</p>
+<hr>
+<h2>Caso 2: KMS com Envelope Encryption para Dados Sensíveis no S3</h2>
+<p><strong>Contexto:</strong><br>Uma fintech precisa encriptar arquivos de clientes no S3 com uma CMK gerenciada pelo cliente, garantir que apenas a aplicação específica possa decriptar (não todos os devs), e ter logs de auditoria de quem acessou a chave.</p>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">                    ┌──────────────────────────────────┐
+EC2 (app-role)      │  KMS Customer-Managed CMK         │
+  │                 │  ╔══════════════════════════════╗ │
+  ├─GenerateDataKey▶│  ║ Key Policy:                  ║ │
+  │◀── data key ────│  ║ - Root account: admin        ║ │
+  │                 │  ║ - key-admin-role: manage      ║ │
+  │  Encrypt data   │  ║ - app-role: kms:GenerateKey  ║ │
+  │  with plaintext │  ║              kms:Decrypt      ║ │
+  │  data key       │  ║ - DENY: kms:Decrypt           ║ │
+  │                 │  ║   if NOT app-role             ║ │
+  ├─Store to S3────▶│  ╚══════════════════════════════╝ │
+  │  {              └──────────────────────────────────┘
+  │   encrypted_data,                 │
+  │   encrypted_data_key              │ CloudTrail
+  │  }                                ▼
+  └─────────────────────────  Logs de auditoria:
+                              - Who called kms:Decrypt
+                              - From which EC2 (via ARN)
+                              - IP de origem</code></pre>
+<p><strong>Decisão de design:</strong> Por que CMK e não SSE-S3?</p>
+<ul><li>SSE-S3: AWS gerencia a chave → sem controle de quem decripta</li><li>CMK: key policy define exatamente quais roles podem usar → princípio do menor privilégio</li><li>Rotação anual automática pode ser habilitada</li><li>CloudTrail registra cada uso da CMK (GenerateDataKey, Decrypt)</li></ul>
+<p><strong>Conceitos cobrados:</strong> Customer-managed CMK, key policy, envelope encryption, auditoria via CloudTrail</p>
+<hr>
+<h2>Caso 3: Secrets Manager para Rotação Automática de Credenciais do RDS</h2>
+<p><strong>Contexto:</strong><br>Uma aplicação Node.js na EC2 acessa um banco RDS PostgreSQL. A política de segurança exige rotação de senhas a cada 30 dias sem downtime da aplicação.</p>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">EC2 (app-role)                                  Secrets Manager
+   │                                           ┌──────────────────────┐
+   │ GetSecretValue(SecretId)                  │  /app/prod/rds-master │
+   ├─────────────────────────────────────────▶ │  {                   │
+   │◀── {username, password, host, port}────── │   &quot;username&quot;: &quot;app&quot;, │
+   │                                           │   &quot;password&quot;: &quot;xxxx&quot; │
+   │                                           │   &quot;host&quot;: &quot;db.xxx&quot;,  │
+   │                                           │   &quot;port&quot;: 5432       │
+   │                                           │  }                   │
+    (Aplicação NUNCA armazena senha localmente) └────────┬─────────────┘
+                                                         │ Rotation (30d)
+                                               ┌─────────▼─────────────┐
+                                               │ Lambda (rotation fn)  │
+                                               │  1. createSecret       │
+                                               │  2. setSecret (new pw) │
+                                               │  3. testSecret (verify)│
+                                               │  4. finishSecret       │
+                                               └───────────────────────┘
+                                                         │
+                                               ┌─────────▼─────────────┐
+                                               │  RDS PostgreSQL        │
+                                               │  ALTER USER app        │
+                                               │  PASSWORD &#39;novo_pw&#39;    │
+                                               └───────────────────────┘</code></pre>
+<p><strong>IAM para a instância EC2:</strong></p>
+<pre><code class="language-json">{
+  &quot;Effect&quot;: &quot;Allow&quot;,
+  &quot;Action&quot;: &quot;secretsmanager:GetSecretValue&quot;,
+  &quot;Resource&quot;: &quot;arn:aws:secretsmanager:us-east-1:123456789:secret:/app/prod/rds-master*&quot;,
+  &quot;Condition&quot;: {
+    &quot;StringEquals&quot;: {&quot;aws:RequestedRegion&quot;: &quot;us-east-1&quot;}
+  }
+}</code></pre>
+<p><strong>Conceitos cobrados:</strong> Secrets Manager, rotação automática, instância profile, GetSecretValue, ResourceARN com wildcard</p>
+<hr>
+<h2>Caso 4: Permission Boundary para Delegar Criação de Roles</h2>
+<p><strong>Contexto:</strong><br>Uma empresa quer permitir que o time de DevOps crie roles IAM para aplicações, mas sem que eles possam criar uma role com mais permissões do que eles mesmos têm (privilege escalation).</p>
+<p><strong>Solução:</strong></p>
+<pre><code class="language-">Admin (SysOps)
+  └── Cria Permission Boundary Policy (max-app-boundary)
+        Permite apenas: ec2:Describe*, s3:Get*, s3:Put*, sqs:*, cloudwatch:*
+        Proíbe: iam:*, kms:*, ec2:RunInstances
+
+  └── Cria Policy para DevOps com condição:
+        Allow: iam:CreateRole, iam:AttachRolePolicy
+        Condition: iam:PermissionsBoundary = arn:...max-app-boundary
+
+DevOps Team
+  └── Pode criar roles APENAS SE:
+        - Attach ao boundary max-app-boundary
+        - A role final fica limitada ao boundary
+        - Mesmo que o DevOps tente dar AdministratorAccess,
+          o boundary limita o resultado efetivo</code></pre>
+<p><strong>Policy do time DevOps:</strong></p>
+<pre><code class="language-json">{
+  &quot;Effect&quot;: &quot;Allow&quot;,
+  &quot;Action&quot;: [&quot;iam:CreateRole&quot;, &quot;iam:AttachRolePolicy&quot;, &quot;iam:PutRolePolicy&quot;],
+  &quot;Resource&quot;: &quot;arn:aws:iam::*:role/app-*&quot;,
+  &quot;Condition&quot;: {
+    &quot;StringEquals&quot;: {
+      &quot;iam:PermissionsBoundary&quot;: &quot;arn:aws:iam::123456789:policy/max-app-boundary&quot;
+    }
+  }
+}</code></pre>
+<p><strong>Conceitos cobrados:</strong> Permission Boundary, privilege escalation prevention, delegated administration</p>
+<hr>
+<h2>Caso 5: Acesso Restrito ao S3 Apenas via VPC Endpoint</h2>
+<p><strong>Contexto:</strong><br>Uma empresa quer garantir que dados confidenciais no S3 só sejam acessados de dentro da VPC corporativa, bloqueando qualquer acesso externo (incluindo acesso direto com credenciais válidas pela internet).</p>
+<p><strong>Bucket Policy:</strong></p>
+<pre><code class="language-json">{
+  &quot;Effect&quot;: &quot;Deny&quot;,
+  &quot;Principal&quot;: &quot;*&quot;,
+  &quot;Action&quot;: &quot;s3:*&quot;,
+  &quot;Resource&quot;: [
+    &quot;arn:aws:s3:::empresa-confidencial&quot;,
+    &quot;arn:aws:s3:::empresa-confidencial/*&quot;
+  ],
+  &quot;Condition&quot;: {
+    &quot;StringNotEquals&quot;: {
+      &quot;aws:SourceVpce&quot;: &quot;vpce-0123456789abcdef&quot;
+    }
+  }
+}</code></pre>
+<pre><code class="language-">Internet                   VPC Privada
+   │                          │
+   │ ❌ DENY (no SourceVpce)  │ ✅ ALLOW (SourceVpce match)
+   │                          │
+   ×                         EC2       S3 Gateway Endpoint
+            (Acesso bloqueado)│         │
+                              │◀────────┘
+                         VPC Routing → S3 sem internet gateway</code></pre>
+<p><strong>Conceitos cobrados:</strong> resource-based policy, aws:SourceVpce, VPC Gateway Endpoint para S3, zero-trust</p>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./011-01-introducao-saa-c03-readme.html">Aula anterior</a>
+      <a href="./013-02-iam-e-seguranca-cheatsheet.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

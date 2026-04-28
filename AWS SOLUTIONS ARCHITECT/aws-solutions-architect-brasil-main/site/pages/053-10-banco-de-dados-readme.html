@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Módulo 06 — Banco de Dados - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#053-10-banco-de-dados-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 10 - Banco de Dados - 9 min - 10-Banco-de-Dados/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 10 - Banco de Dados" loading="lazy">
+      <figcaption>Dados pedem arquitetura: relacional, chave-valor, cache, analytics ou busca.</figcaption>
+    </figure>
+    <h1>Módulo 06 — Banco de Dados</h1>
+<h2>Objetivo</h2>
+<p>Neste módulo, você vai escolher o serviço de banco de dados correto para cada cenário, equilibrando consistência, escala, latência, disponibilidade e custo em decisões típicas do SAA-C03.</p>
+<h2>Serviços AWS principais</h2>
+<ul><li>Amazon RDS</li><li>Amazon Aurora</li><li>Amazon DynamoDB</li><li>Amazon ElastiCache</li><li>Amazon Redshift</li></ul>
+<h2>Arquitetura e trade-offs</h2>
+<h2>Amazon RDS</h2>
+<p>Serviço gerenciado para bancos de dados relacionais. Suporta MySQL, PostgreSQL, MariaDB, Oracle, SQL Server e Amazon Aurora.</p>
+<h3>Multi-AZ</h3>
+<ul><li><strong>Standby</strong> passivo em outra AZ — recebe replicação síncrona via storage-level replication</li><li>Failover automático em 1–2 minutos (DNS atualiza para o standby)</li><li>O standby <strong>não pode ser lido</strong> — não é um read replica</li><li>Backups são feitos no standby (sem impacto na primária)</li><li>Multi-AZ é para <strong>disponibilidade</strong> (HA), não para escalabilidade de leitura</li></ul>
+<h3>Read Replicas</h3>
+<ul><li>Replicação <strong>assíncrona</strong> da primária — pode haver lag</li><li>Até 15 read replicas (Aurora), 5 (RDS padrão)</li><li>Podem estar em outra região (<strong>Cross-Region Read Replica</strong>)</li><li>Podem ser promovidas a banco independente (quebra replicação)</li><li><strong>Usadas para:</strong> escalar leitura, analytics sem impacto na primária, migração</li></ul>
+<h3>Backups e Snapshots</h3>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Retenção</th><th>Quando ocorre</th><th>Restauração</th></tr></thead><tbody><tr><td>Automated Backup</td><td>1–35 dias</td><td>Janela de manutenção</td><td>Ponto no tempo (PITR)</td></tr><tr><td>Manual Snapshot</td><td>Indefinido</td><td>Você dispara</td><td>Para snapshot específico</td></tr></tbody></table></div>
+<ul><li>PITR (Point-in-Time Recovery): restaura para qualquer segundo dentro do período de retenção</li><li>Automated Backup habilitado por padrão; retenção padrão = 7 dias</li><li>Snapshots copiáveis entre regiões para DR</li></ul>
+<h3>RDS Proxy</h3>
+<ul><li>Pool de conexões entre aplicação e banco — reduz overhead de abertura/fechamento</li><li>Ideal para Lambda (funções criam/destroem conexões rapidamente)</li><li>Suporta failover Multi-AZ mais rápido (menos conexões para renegociar)</li><li>Requer estar na mesma VPC</li></ul>
+<hr>
+<h2>Amazon Aurora</h2>
+<p>Banco de dados relacional compatível com MySQL/PostgreSQL, desempenho até <strong>5x MySQL e 3x PostgreSQL</strong> do RDS equivalente.</p>
+<h3>Arquitetura de Cluster</h3>
+<pre><code class="language-">Writer Endpoint        Reader Endpoint
+      │                      │
+      ▼                      ▼
+  Primary Instance    ← Replica 1
+                      ← Replica 2 (todas as réplicas compartilham o mesmo storage)
+                      ← Replica N (até 15)
+
+Storage Layer (Shared):
+  6 cópias dos dados → 3 AZs (2 cópias por AZ)
+  Quorum: 4/6 para escrita, 3/6 para leitura
+  Auto-healing: detecta e repara bits corrompidos automaticamente
+  Auto-scaling de storage: incrementos de 10 GB, até 128 TB</code></pre>
+<h3>Aurora vs RDS Multi-AZ</h3>
+<div class="table-wrap"><table><thead><tr><th>Aurora</th><th>RDS Multi-AZ</th></tr></thead><tbody><tr><td>Réplicas de leitura (até 15) no mesmo cluster</td><td>Standby passivo (não legível)</td></tr><tr><td>Failover em &lt;30 segundos</td><td>Failover em 1–2 minutos</td></tr><tr><td>Storage compartilhado entre instâncias</td><td>Replicação de storage separada</td></tr><tr><td>Aurora Serverless v2 disponível</td><td>Não há serverless</td></tr></tbody></table></div>
+<h3>Aurora Global Database</h3>
+<ul><li><strong>Replicação cross-region</strong> em &lt; 1 segundo (mediana)</li><li>Até 5 regiões secundárias, cada uma com até 16 read replicas</li><li>Promoção de região secundária a primária em &lt; 1 minuto (DR)</li><li>Útil para latência de leitura global e recuperação cross-region</li></ul>
+<h3>Aurora Serverless v2</h3>
+<ul><li>Escala de 0,5 a 128 ACUs (Aurora Capacity Units) em incrementos finos de 0,5 ACU</li><li>Ideal para workloads variáveis, intermitentes, test/dev</li><li>Cobra por ACU-hora a cada segundo</li></ul>
+<hr>
+<h2>Amazon DynamoDB</h2>
+<p>NoSQL key-value e document store totalmente gerenciado. Escala horizontalmente para qualquer throughput.</p>
+<h3>Modelo de Dados</h3>
+<ul><li><strong>Partition Key</strong> (obrigatório): determina a partição física — deve ter alta cardinalidade</li><li><strong>Sort Key</strong> (opcional): permite múltiplos itens por partition key, habilita queries de range</li><li><strong>Items</strong>: até 400 KB cada</li><li><strong>Atributos</strong>: tipados (String, Number, Binary, Boolean, Null, List, Map, Set)</li></ul>
+<h3>Índices Secundários</h3>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Partition Key</th><th>Sort Key</th><th>Tamanho</th><th>Consistência</th></tr></thead><tbody><tr><td><strong>LSI (Local Secondary Index)</strong></td><td>Mesma da tabela</td><td>Diferente</td><td>Até 10 GB por partition key</td><td>Eventual ou Strong</td></tr><tr><td><strong>GSI (Global Secondary Index)</strong></td><td>Diferente</td><td>Qualquer</td><td>Ilimitado</td><td>Eventual apenas</td></tr></tbody></table></div>
+<ul><li>LSI: criado apenas durante a criação da tabela, não pode ser adicionado depois</li><li>GSI: pode ser adicionado a qualquer momento, tem RCU/WCU próprias</li></ul>
+<h3>Capacity Modes</h3>
+<div class="table-wrap"><table><thead><tr><th>Modo</th><th>Como paga</th><th>Quando usar</th></tr></thead><tbody><tr><td><strong>Provisioned</strong></td><td>RCU + WCU pré-definidos</td><td>Tráfego previsível, custo menor</td></tr><tr><td><strong>On-Demand</strong></td><td>Por operação lida/escrita</td><td>Tráfego imprevisível, paga pelo uso</td></tr></tbody></table></div>
+<ul><li>1 RCU = 1 strongly consistent read de 4 KB / 2 eventually consistent reads de 4 KB</li><li>1 WCU = 1 write de até 1 KB</li></ul>
+<h3>DAX (DynamoDB Accelerator)</h3>
+<ul><li>Cache in-memory totalmente gerenciado para DynamoDB</li><li>Latência de <strong>microsegundos</strong> (vs milissegundos do DynamoDB direto)</li><li>Drop-in substituição da API DynamoDB (mesmo endpoint, sem mudança de código)</li><li>Ideal para aplicações com leitura intensiva e dados quentes (hot keys)</li></ul>
+<h3>DynamoDB Streams</h3>
+<ul><li>Captura mudanças (insert, update, delete) em ordem cronológica por item</li><li>Retenção: 24 horas</li><li>Usa cases: acionar Lambda em mudanças, replicação cross-region customizada, auditoria, computação derivada</li></ul>
+<h3>DynamoDB TTL</h3>
+<ul><li>Atributo de timestamp (Unix epoch) em cada item</li><li>DynamoDB deleta itens expirados automaticamente (eventualmente, sem custo de WCU)</li><li>Útil para: sessões, carrinho de compra, tokens temporários, dados de telemetria</li></ul>
+<hr>
+<h2>Amazon ElastiCache</h2>
+<p>Cache in-memory gerenciado. Dois engines:</p>
+<h3>Redis vs Memcached</h3>
+<div class="table-wrap"><table><thead><tr><th>Característica</th><th>Redis</th><th>Memcached</th></tr></thead><tbody><tr><td>Estruturas de dados</td><td>Strings, Lists, Sets, Sorted Sets, Hashes, HLL</td><td>Apenas strings</td></tr><tr><td>Multi-threading</td><td>Single-thread (por padrão, Redis 6+ tem I/O threads)</td><td>Multi-thread</td></tr><tr><td>Persistence</td><td>RDB snapshots + AOF</td><td>Nenhuma</td></tr><tr><td>Replication</td><td>Réplicas de leitura (cluster mode off/on)</td><td>Não</td></tr><tr><td>Failover automático</td><td>Sim (Redis Sentinel/Cluster)</td><td>Não</td></tr><tr><td>Pub/Sub</td><td>Sim</td><td>Não</td></tr><tr><td>Lua scripting</td><td>Sim</td><td>Não</td></tr><tr><td><strong>Multi-AZ</strong></td><td>Sim</td><td>Não</td></tr><tr><td>Usar para</td><td>Sessões, leaderboards, pub/sub, filas leves, ML features</td><td>Cache simples multi-threaded</td></tr></tbody></table></div>
+<h3>Redis Cluster Mode</h3>
+<ul><li><strong>Cluster Mode Off</strong>: 1 shard, até 5 read replicas, Multi-AZ possível, simples</li><li><strong>Cluster Mode On</strong>: até 500 shards, distribui dados automaticamente (sharding), escala para PiB de dados</li></ul>
+<h3>Caching Patterns</h3>
+<div class="table-wrap"><table><thead><tr><th>Padrão</th><th>Descrição</th></tr></thead><tbody><tr><td><strong>Lazy Loading</strong></td><td>Cache miss → busca DB → armazena cache. Dados podem ficar stale</td></tr><tr><td><strong>Write-Through</strong></td><td>Escreve no cache e no DB juntos. Cache sempre atual, mas write latency maior</td></tr><tr><td><strong>Cache Aside</strong></td><td>App gerencia o cache manualmente</td></tr></tbody></table></div>
+<hr>
+<h2>Amazon Redshift</h2>
+<p>Data warehouse col-oriented (MPP — Massively Parallel Processing) para analytics de grande escala.</p>
+<ul><li><strong>Cluster</strong>: Leader node (query planning) + Compute nodes (armazenam e processam)</li><li><strong>Redshift Spectrum</strong>: executa queries SQL em dados no S3 sem carrega-los no cluster</li><li><strong>Columnar storage</strong>: compressão excelente, otimizado para agregações</li><li><strong>Enhanced VPC Routing</strong>: força tráfego COPY/UNLOAD a passar pela VPC (não pela internet)</li><li><strong>Snapshots</strong>: automáticos (retenção 1–35 dias) ou manuais; cross-region possível</li><li><strong>Redshift Serverless</strong>: auto-scaling sem gerenciar cluster, paga por RPU-segundo</li></ul>
+<hr>
+<h2>Bancos Especializados</h2>
+<div class="table-wrap"><table><thead><tr><th>Serviço</th><th>Tipo</th><th>Caso de Uso</th></tr></thead><tbody><tr><td><strong>Amazon DocumentDB</strong></td><td>Document (compatível MongoDB)</td><td>Catálogos, CMS, perfis de usuário</td></tr><tr><td><strong>Amazon Neptune</strong></td><td>Graph</td><td>Redes sociais, detecção de fraude, grafos de conhecimento</td></tr><tr><td><strong>Amazon Keyspaces</strong></td><td>Wide column (compatível Cassandra)</td><td>IoT, telemetria, time-series de grande escala</td></tr><tr><td><strong>Amazon QLDB</strong></td><td>Ledger (imutável, auditável)</td><td>Registros financeiros, supply chain, histórico de transações</td></tr><tr><td><strong>Amazon Timestream</strong></td><td>Time-series</td><td>IoT, DevOps metrics, telemetria de séries temporais</td></tr></tbody></table></div>
+<hr>
+<h2>Como Escolher o Banco Certo (Exame)</h2>
+<pre><code class="language-">Dado relacional + esquema fixo + ACID?
+  ├── Alta disponibilidade + compatibilidade MySQL/PostgreSQL → Aurora
+  └── Oracle/SQL Server (licença específica) → RDS
+
+Dados semi-estruturados (JSON) flexível, escala massiva?
+  └── DynamoDB (key-value/document)
+
+Analytics, BI, data warehouse?
+  └── Redshift
+
+Cache de alta velocidade?
+  ├── Sessão, leaderboard, pub/sub → ElastiCache Redis
+  └── Cache simples multi-threaded → ElastiCache Memcached
+
+Grafos (friends of friends, detecção de fraude)?
+  └── Neptune
+
+Auditoria imutável (não pode alterar histórico)?
+  └── QLDB
+
+IoT / time-series de alta ingestão?
+  └── Timestream
+
+MongoDB workload migrado?
+  └── DocumentDB</code></pre>
+<hr>
+<h2>Armadilhas comuns na prova</h2>
+<ul><li><strong>RDS Multi-AZ ≠ Read Replica</strong>: Multi-AZ é HA síncrona (standby não lê); Read Replica é escala assíncrona (legível)</li><li><strong>Aurora armazena 6 cópias em 3 AZs</strong>, quorum 4/6 para escrita</li><li><strong>Aurora Global Database</strong> &lt; 1s replicação cross-region — perfeito para RPO global baixo</li><li><strong>DynamoDB Partition Key</strong> deve ter alta cardinalidade para distribuição uniforme (hot partition = throttling)</li><li><strong>GSI</strong> = pode criar a qualquer momento; <strong>LSI</strong> = somente na criação da tabela</li><li><strong>DAX</strong> = µs latência; apenas para DynamoDB; não ajuda para writes (write-through)</li><li><strong>ElastiCache Redis</strong> tem Multi-AZ, persistence, replication — use quando esses recursos importam</li><li><strong>Redshift Spectrum</strong> = query em S3 sem carregar no cluster (serverless query on data lake)</li><li><strong>QLDB</strong> = ledger imutável — perguntas sobre auditoria de histórico financeiro</li><li><strong>RDS Proxy</strong> = conexão pool — ideal para Lambda + RDS</li></ul>
+<h2>Lab hands-on</h2>
+<p>Para prática de banco relacional e modelagem, utilize <a href="./054-11-rds-e-bancos-relacionais-labs-lab.html">11-RDS-e-Bancos-Relacionais-Labs/lab.md</a> e <a href="./056-12-dynamodb-lab.html">12-DynamoDB/lab.md</a>. Notas de custo: use classes pequenas, mantenha retenção de backup mínima para laboratório e remova instâncias, snapshots e tabelas de teste ao final.</p>
+<h2>Questões práticas</h2>
+<ul><li><a href="./052-10-banco-de-dados-questoes.html">questoes.md</a></li></ul>
+<h2>Revisão rápida / cheatsheet</h2>
+<ul><li><a href="./050-10-banco-de-dados-cheatsheet.html">cheatsheet.md</a></li><li><a href="./051-10-banco-de-dados-flashcards.html">flashcards.md</a></li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./052-10-banco-de-dados-questoes.html">Aula anterior</a>
+      <a href="./054-11-rds-e-bancos-relacionais-labs-lab.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

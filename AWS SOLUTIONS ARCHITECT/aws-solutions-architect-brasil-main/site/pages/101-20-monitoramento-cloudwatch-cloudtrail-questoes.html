@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questões — Módulo 14: Monitoramento CloudWatch, CloudTrail e Config - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#101-20-monitoramento-cloudwatch-cloudtrail-questoes">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 20 - Monitoramento CloudWatch CloudTrail - 10 min - 20-Monitoramento-CloudWatch-CloudTrail/questoes.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 20 - Monitoramento CloudWatch CloudTrail" loading="lazy">
+      <figcaption>Observabilidade e auditoria respondem: o que aconteceu, quando, por quem e com qual impacto.</figcaption>
+    </figure>
+    <h1>Questões — Módulo 14: Monitoramento CloudWatch, CloudTrail e Config</h1>
+<blockquote><p><strong>Domínio SAA-C03</strong>: Design de Aplicações Seguras | Excelência Operacional<br><strong>Dificuldade</strong>: Média</p></blockquote>
+<hr>
+<p><strong>1.</strong> Uma empresa nota que suas instâncias EC2 têm métricas de CPU e rede no CloudWatch, mas não conseguem monitorar o uso de memória RAM. O que precisam configurar?</p>
+<ul><li>A) Habilitar Detailed Monitoring nas instâncias EC2</li><li>B) Instalar o CloudWatch Agent nas instâncias e configurar coleta de métricas do SO</li><li>C) Usar AWS Trusted Advisor para métricas de memória</li><li>D) Criar métricas customizadas via CloudWatch API no user data das instâncias</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Métricas padrão do EC2 não incluem memória RAM, uso de disco e processos (são métricas do SO, não de hipervisor). O CloudWatch Agent instalado nas instâncias coleta essas métricas do sistema operacional e as publica como Custom Metrics no CloudWatch. Detailed Monitoring (A) aumenta granularidade de 5 min para 1 min, mas ainda sem memória.</p></details>
+<hr>
+<p><strong>2.</strong> Uma auditoria de segurança descobriu que recursos AWS foram deletados sem autorização. O analista precisa identificar quem deletou, quando e de qual IP. Qual serviço tem essa informação?</p>
+<ul><li>A) Amazon CloudWatch Logs</li><li>B) AWS CloudTrail (Management Events)</li><li>C) AWS Config (Configuration History)</li><li>D) Amazon GuardDuty</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — CloudTrail registra todas as API calls incluindo: quem fez (userIdentity), quando (eventTime), de onde (sourceIPAddress), qual ação (eventName como DeleteInstance, DeleteBucket). É o &quot;audit log&quot; da AWS. CloudWatch Logs tem logs de aplicação, não de API calls.</p></details>
+<hr>
+<p><strong>3.</strong> Uma empresa precisa ser alertada quando qualquer S3 bucket na conta se tornar publicamente acessível. Qual é a solução mais eficiente?</p>
+<ul><li>A) Lambda que verifica todos os bucket ACLs a cada hora</li><li>B) AWS Config Rule <code>s3-bucket-public-read-prohibited</code> com notificação SNS ao detectar non-compliance</li><li>C) CloudWatch Alarm monitorando métricas de acesso S3</li><li>D) Amazon Macie escaneando todos os buckets</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — AWS Config Rule <code>s3-bucket-public-read-prohibited</code>: avalia continuamente se buckets têm permissão de leitura pública. Quando um bucket fica public, o Config marca como NON_COMPLIANT e pode notificar via SNS ou executar remediação automática via SSM. Proativo e sem código customizado.</p></details>
+<hr>
+<p><strong>4.</strong> Um time de DevOps quer rastrear como as configurações de seus Security Groups mudaram ao longo do tempo (quem adicionou regra, qual regra, quando). Qual serviço fornece essa visão?</p>
+<ul><li>A) VPC Flow Logs</li><li>B) AWS Config com Configuration Timeline do recurso</li><li>C) CloudTrail com filtro para <code>AuthorizeSecurityGroupIngress</code></li><li>D) B e C fornecem visões complementares</li></ul>
+<details><summary>Resposta</summary><p><strong>D</strong> — AWS Config: mostra o histórico de configuração do Security Group (estado antes e depois de cada mudança). CloudTrail: mostra qual usuário/role fez a mudança via API. Juntos: &quot;o que mudou&quot; (Config) + &quot;quem mudou&quot; (CloudTrail). No exame, Config é para &quot;o quê&quot; e CloudTrail é para &quot;quem/quando&quot;.</p></details>
+<hr>
+<p><strong>5.</strong> Uma aplicação de microserviços tem latência alta intermitente. O time quer identificar qual serviço específico (Lambda, DynamoDB, API Gateway) está causando o atraso. Qual serviço de observabilidade usar?</p>
+<ul><li>A) CloudWatch Logs com parsing manual de timestamps</li><li>B) AWS X-Ray com tracing distribuído</li><li>C) CloudWatch Metrics com dashboards</li><li>D) CloudTrail para rastrear chamadas de API</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — X-Ray: instrumenta a aplicação para criar traces end-to-end. O Service Map visualiza o tempo gasto em cada componente (API GW → Lambda → DynamoDB). Subsegments mostram exatamente onde a latência ocorre. Identifica gargalos em sistemas distribuídos complexos.</p></details>
+<hr>
+<p><strong>6.</strong> Uma empresa precisa manter logs do CloudTrail por 7 anos por requisito regulatório, mas o custo de armazenamento precisa ser minimizado. Qual é a configuração ideal?</p>
+<ul><li>A) CloudTrail → CloudWatch Logs com retenção de 7 anos (2.555 dias)</li><li>B) CloudTrail → S3 com lifecycle policy: Standard (90 dias) → Glacier (90-365 dias) → Glacier Deep Archive (após 1 ano)</li><li>C) CloudTrail Lake com Event Data Store de 7 anos</li><li>D) CloudTrail → S3 com Intelligent-Tiering</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Para armazenamento de longo prazo com custo mínimo: CloudTrail entrega logs para S3, lifecycle policy move para camadas mais baratas ao longo do tempo. Glacier Deep Archive ($0.00099/GB/mês) é a opção mais barata para dados raramente acessados. CloudTrail Lake (C) é excelente para queries mas custa mais.</p></details>
+<hr>
+<p><strong>7.</strong> Uma empresa quer detectar automaticamente atividades suspeitas na AWS como: reconhecimento de instâncias, chamadas incomuns de API às 3h, acesso de IPs de países desconhecidos. Qual serviço usar?</p>
+<ul><li>A) AWS Config</li><li>B) Amazon GuardDuty</li><li>C) CloudTrail Insights</li><li>D) AWS Security Hub</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — GuardDuty: análise de Machine Learning sobre CloudTrail, VPC Flow Logs e DNS Logs. Detecta threats como reconhecimento, comprometimento de credenciais, atividade de mineração de criptomoedas, acesso de IPs de C&amp;C (Command &amp; Control). Sem configuração de regras manual.</p></details>
+<hr>
+<p><strong>8.</strong> Um desenvolvedor precisa executar comandos em instâncias EC2 em uma subnet privada sem abrir portas SSH (port 22). Qual solução implementar?</p>
+<ul><li>A) Adicionar uma regra no SG para o IP do dev</li><li>B) Criar um Bastion Host na subnet pública</li><li>C) Usar AWS Systems Manager Session Manager</li><li>D) Usar VPN Client AWS</li></ul>
+<details><summary>Resposta</summary><p><strong>C</strong> — SSM Session Manager: acesso ao shell da instância via console AWS ou CLI sem portas abertas, sem key pairs, sem bastion host. O SSM Agent na instância + IAM role com <code>AmazonSSMManagedInstanceCore</code> são os únicos requisitos. Sessões são auditadas (CloudTrail) e podem ser gravadas (S3/CloudWatch).</p></details>
+<hr>
+<p><strong>9.</strong> Uma empresa recebe uma notificação que suas instâncias EC2 estão sem a tag obrigatória <code>CostCenter</code>. Eles querem que instâncias sem essa tag sejam automaticamente paradas. Qual configuração implementa isso?</p>
+<ul><li>A) CloudWatch Alarm → SNS → Email para o time de operações</li><li>B) AWS Config Rule para <code>required-tags</code> + Remediation Action via SSM Automation (StopInstances)</li><li>C) Lambda agendada pelo EventBridge verificando tags via API</li><li>D) Trusted Advisor para checar tags ausentes</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — AWS Config <code>required-tags</code> rule detecta recursos sem as tags obrigatórias. Config Remediation com SSM Automation document para StopInstances executa a ação automaticamente quando a rule detecta Non-Compliant. Solução totalmente gerenciada sem código Lambda customizado.</p></details>
+<hr>
+<p><strong>10.</strong> Uma empresa tem 50 contas AWS na sua organização. O time de segurança precisa ter visibilidade centralizada de todos os findings de GuardDuty, Inspector, Macie e Config. Qual serviço consolida essa visão?</p>
+<ul><li>A) AWS CloudTrail com multi-account trail</li><li>B) AWS Security Hub com aggregação central na management account</li><li>C) Amazon Detective para investigação consolidada</li><li>D) VPC Flow Logs centralizados em S3</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — AWS Security Hub: consolida findings de segurança de GuardDuty, Inspector, Macie, Config, IAM Access Analyzer e ferramentas de terceiros em um único painel. Com Organizations, delega automaticamente para a management account ou conta de segurança designada. Prioriza findings com score de severidade.</p></details>
+<hr>
+<p><strong>11.</strong> Uma aplicação Lambda gera logs estruturados em JSON. O time quer monitorar a taxa de erros e criar um alarme quando ultrapassar 1% das invocações. Qual é a solução?</p>
+<ul><li>A) Usar as métricas padrão Lambda <code>Errors</code> e <code>Invocations</code> do CloudWatch</li><li>B) CloudWatch Logs Metric Filter para extrair erros dos logs → CloudWatch Metric → Alarm</li><li>C) CloudWatch Logs Insights com alertas</li><li>D) X-Ray com fault detection</li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — As métricas padrão Lambda (<code>Errors</code>, <code>Invocations</code>) no CloudWatch já registram erros de execução. Crie um Alarm com a métrica <code>sum(Errors)/sum(Invocations) * 100 &gt; 1</code>. Métrica Filter (B) é necessária apenas para erros customizados nos logs de aplicação que não são capturados pelas métricas padrão Lambda.</p></details>
+<hr>
+<p><strong>12.</strong> Uma empresa precisa manter um registro de todas as mudanças de configuração de recursos AWS por 2 anos para auditoria de conformidade. Qual configuração implementar?</p>
+<ul><li>A) CloudTrail habilitado em todas as regiões com entrega para S3 com Object Lock Compliance</li><li>B) AWS Config com delivery channel para S3 + retenção de histórico de configuração de 2 anos</li><li>C) CloudWatch Logs com retenção de 730 dias para todos os logs de serviços</li><li>D) A e B são complementares e ambas necessárias para auditoria completa</li></ul>
+<details><summary>Resposta</summary><p><strong>D</strong> — Config registra &quot;o que estava configurado&quot; (snapshots de recursos); CloudTrail registra &quot;o que mudou via API call&quot;. Para auditoria completa de conformidade, ambos são necessários. Config → S3 para retenção de longo prazo + CloudTrail → S3 com Object Lock para imutabilidade.</p></details>
+<hr>
+<p><strong>13.</strong> Uma empresa usa Parameter Store do Systems Manager para armazenar strings de conexão de banco de dados. Eles precisam garantir que esses parâmetros estejam criptografados com uma chave KMS específica e que apenas a aplicação possa descriptografar. Como implementar?</p>
+<ul><li>A) Usar parâmetros tipo <code>String</code> criptografados com SHA256</li><li>B) Usar parâmetros tipo <code>SecureString</code> com KMS CMK específico; IAM role da aplicação tem <code>kms:Decrypt</code> apenas para essa chave</li><li>C) Armazenar em S3 criptografado com KMS</li><li>D) Usar Secrets Manager ao invés de Parameter Store</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — SecureString no Parameter Store usa KMS para criptografar o valor. Com CMK (Customer Managed Key), você controla a key policy: apenas a IAM role da aplicação tem <code>kms:Decrypt</code> para essa chave específica. Outros services/users não podem ler o valor mesmo con <code>ssm:GetParameter</code>.</p></details>
+<hr>
+<p><strong>14.</strong> Um time de operações quer saber quando qualquer instância EC2 entra em estado &quot;impaired&quot; (falha de status check) e automaticamente reiniciar a instância. Qual configuração implementar?</p>
+<ul><li>A) CloudWatch Alarm na métrica <code>StatusCheckFailed_System</code> → Ação: EC2 Instance Recovery</li><li>B) Auto Scaling Group com health check que substitui instâncias com falha</li><li>C) Lambda agendada verificando status das instâncias</li><li>D) A para single instances; B para instâncias em ASG</li></ul>
+<details><summary>Resposta</summary><p><strong>D</strong> — Para instâncias únicas fora de ASG: EC2 Instance Recovery (via CloudWatch Alarm) move a instância para hardware saudável mantendo mesmo IP, EIP e instance ID. Para instâncias em ASG: o próprio ASG substitui instâncias unhealthy automaticamente (health checks). A escolha depende da arquitetura.</p></details>
+<hr>
+<p><strong>15.</strong> Uma empresa de segurança financeira precisa garantir que todos os logs de CloudTrail sejam imutáveis (ninguém possa deletar ou modificar, nem o root account). Qual configuração implementar?</p>
+<ul><li>A) CloudTrail → S3 com S3 Object Lock em modo Compliance + Bucket Policy negando delete</li><li>B) CloudTrail com CloudWatch Logs (logs ficam em CloudWatch que tem retenção automática)</li><li>C) CloudTrail com MFA Delete no bucket S3</li><li>D) S3 Versioning no bucket de logs do CloudTrail</li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — S3 Object Lock em modo Compliance com retention period: <strong>nem o root account</strong> pode deletar ou sobrescrever objetos durante o período de retenção. É a única forma de garantir imutabilidade absoluta. MFA Delete (C) e Versioning (D) ainda permitem deleção por admins autorizados.</p></details>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./100-20-monitoramento-cloudwatch-cloudtrail-links.html">Aula anterior</a>
+      <a href="./102-20-monitoramento-cloudwatch-cloudtrail-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

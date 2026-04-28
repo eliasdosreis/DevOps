@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#026-modulo-4-projeto-final-04-redis-deployment">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - projeto final - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - projeto final" loading="lazy">
+      <figcaption>Projeto final consolida manifestos de producao em uma arquitetura completa.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 04-redis-deployment.yaml
+# PROJETO FINAL - Redis (Cache e Sess�es)
+#
+# Redis � usado para:
+# - Cache de respostas da API (mais r�pido que ir ao banco)
+# - Armazenamento de sess�es de usu�rio
+# - Rate limiting
+# - Pub/Sub entre servi�os
+#
+# Usamos Deployment (n�o StatefulSet) pois:
+# - Cache pode ser perdido sem problema cr�tico (reconstroem)
+# - Redis sem persist�ncia n�o precisa de StatefulSet
+# - Se persist�ncia for necess�ria: use StatefulSet com PVC
+# ============================================================
+
+# Service do Redis
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: redis-service            # Nome referenciado no ConfigMap (REDIS_HOST)
+  namespace: ecommerce
+  labels:
+    app: redis
+    componente: cache
+
+spec:
+  type: ClusterIP                # S� acess�vel dentro do cluster
+                                 # Redis NUNCA deve ser exposto externamente!
+  selector:
+    app: redis
+
+  ports:
+    - name: redis
+      port: 6379                 # Porta padr�o do Redis
+      targetPort: 6379
+
+---
+# Deployment do Redis
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: redis
+  namespace: ecommerce
+  labels:
+    app: redis
+    componente: cache
+
+spec:
+  replicas: 1                    # 1 r�plica de Redis
+                                 # Para HA real: use Redis Sentinel ou Cluster
+
+  selector:
+    matchLabels:
+      app: redis
+
+  template:
+    metadata:
+      labels:
+        app: redis
+        componente: cache
+
+    spec:
+      securityContext:
+        runAsUser: 999           # N�o rodar como root
+        runAsGroup: 999
+
+      containers:
+        - name: redis
+          image: redis:7-alpine  # Alpine = imagem menor (seguran�a + velocidade)
+
+          # Comando para iniciar redis com senha e configura��es
+          command:
+            - redis-server
+            - &quot;--requirepass&quot;
+            - &quot;$(REDIS_PASSWORD)&quot;   # Referencia a env var abaixo
+            - &quot;--maxmemory&quot;
+            - &quot;256mb&quot;              # Limite de mem�ria do Redis
+            - &quot;--maxmemory-policy&quot;
+            - &quot;allkeys-lru&quot;        # Remove chaves menos usadas quando cheio
+
+          ports:
+            - containerPort: 6379
+              name: redis
+
+          # Pega a senha do Secret
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: REDIS_PASSWORD
+
+          resources:
+            requests:
+              memory: &quot;128Mi&quot;    # Redis � eficiente com mem�ria
+              cpu: &quot;100m&quot;
+            limits:
+              memory: &quot;512Mi&quot;    # M�ximo de RAM para o Redis
+              cpu: &quot;500m&quot;
+
+          # Liveness: Redis responde a PING?
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                # redis-cli PING retorna PONG se estiver vivo
+                - redis-cli -a $(REDIS_PASSWORD) ping | grep PONG
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Readiness: Redis aceita comandos?
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - redis-cli -a $(REDIS_PASSWORD) ping | grep PONG
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+
+# ============================================================
+# PADR�ES DE USO DO REDIS EM PRODU��O:
+#
+# Cache com TTL:
+#   SET usuario:123 &quot;{...json...}&quot; EX 3600   (expira em 1h)
+#
+# Rate limiting:
+#   INCR requisicoes:ip:192.168.1.1
+#   EXPIRE requisicoes:ip:192.168.1.1 60
+#
+# Pub/Sub:
+#   PUBLISH canal &quot;mensagem&quot;
+#   SUBSCRIBE canal
+#
+# ENTREVISTA:
+# &quot;Qual pol�tica maxmemory-policy usar?&quot;
+# allkeys-lru: Remove qualquer chave menos usada (cache geral)
+# volatile-lru: Remove apenas chaves com TTL (sess�es + cache)
+# noeviction: Retorna erro quando cheio (para dados cr�ticos)
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./025-modulo-4-projeto-final-03-postgres-statefulset.html">Aula anterior</a>
+      <a href="./027-modulo-4-projeto-final-05-api-deployment.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

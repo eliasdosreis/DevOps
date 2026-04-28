@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Casos de Uso — Módulo 05: Amazon S3 e Armazenamento - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#035-06-amazon-s3-e-armazenamento-casos-de-uso">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 06 - Amazon S3 e Armazenamento - 4 min - 06-Amazon-S3-e-Armazenamento/casos-de-uso.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 06 - Amazon S3 e Armazenamento" loading="lazy">
+      <figcaption>Armazenamento certo para cada dado: frequente, raro, arquivado, replicado ou versionado.</figcaption>
+    </figure>
+    <h1>Casos de Uso — Módulo 05: Amazon S3 e Armazenamento</h1>
+<h2>Caso 1: Hospedagem de Site Estático com CloudFront e Segurança</h2>
+<p><strong>Cenário:</strong> Empresa quer hospedar um site estático (React SPA) com baixa latência global, bucket S3 privado e HTTPS.</p>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">Usuário (Global)
+  └── Route 53 (Alias → CloudFront)
+        └── CloudFront Distribution
+              └── S3 Bucket (PRIVADO - Block Public Access ON)
+                    └── Origin Access Control (OAC) → Bucket Policy</code></pre>
+<p><strong>Configurações-chave:</strong></p>
+<ul><li>S3: Block Public Access = ON; Versioning = ON para rollback</li><li>CloudFront: OAC habilitado; Viewer Protocol Policy = HTTPS Only</li><li>Bucket Policy: <code>Allow cloudfront.amazonaws.com com condition aws:SourceArn = distribution ARN</code></li><li>ACM Certificate: us-east-1 (obrigatório para CloudFront)</li><li>Route 53: Alias record <code>www.empresa.com</code> → CloudFront distribution</li></ul>
+<p><strong>Por que este design?</strong> S3 privado + OAC impede acesso direto ao bucket; CloudFront é o único caminho de acesso. CloudFront faz caching global → menor latência. HTTPS enforçado em todas as camadas.</p>
+<hr>
+<h2>Caso 2: Backup Automatizado com Lifecycle e Glacier</h2>
+<p><strong>Cenário:</strong> Empresa financeira armazena relatórios mensais por 7 anos. Acesso nos primeiros 90 dias é frequente; depois, raramente acessado.</p>
+<p><strong>Lifecycle Policy:</strong></p>
+<pre><code class="language-">S3 Standard → (90 dias) → S3 Standard-IA → (180 dias) → S3 Glacier Instant Retrieval
+           → (365 dias) → S3 Glacier Deep Archive → (7 anos) → Expire</code></pre>
+<p><strong>Object Lock configurado:</strong></p>
+<ul><li>Modo Compliance com retention de 2.555 dias (7 anos)</li><li>Legal Hold adicional para documentos em auditoria</li></ul>
+<p><strong>Por que este design?</strong> Lifecycle reduz custo progressivamente conforme o dado &quot;envelhece&quot;. Object Lock Compliance garante conformidade regulatória sem possibilidade de apagamento prematuro.</p>
+<hr>
+<h2>Caso 3: Data Lake Multi-Região com Replicação</h2>
+<p><strong>Cenário:</strong> Empresa global precisa de dados disponíveis em us-east-1 (processamento) e ap-southeast-1 (conformidade de dados na Ásia).</p>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">Produção (us-east-1)             Leitura/Conformidade (ap-southeast-1)
+  └── S3 Bucket [Primary]   →CRR→  S3 Bucket [Replica]
+        ├── S3 Event Notification       └── S3 Inventory (compliance)
+        │     └── SQS → Lambda (ETL)
+        └── S3 Inventory (CSV diário)</code></pre>
+<p><strong>Configurações:</strong></p>
+<ul><li>Versioning: ON em ambos os buckets</li><li>CRR: replicação de todos os objetos (ou por prefix <code>data/raw/</code>)</li><li>Encryption: SSE-KMS com different CMKs por região</li><li>Access Points: um por equipe de dados com prefix isolation</li></ul>
+<hr>
+<h2>Caso 4: Upload Direto do Browser com Pre-signed URL</h2>
+<p><strong>Cenário:</strong> Plataforma de fotos permite usuários fazerem upload de imagens direto para S3 sem passar pelo servidor da aplicação.</p>
+<p><strong>Fluxo:</strong></p>
+<pre><code class="language-">1. Browser → API Gateway → Lambda
+              └── Lambda gera pre-signed URL (PutObject, TTL 15min)
+2. Browser → PUT diretamente para S3 usando pre-signed URL
+3. S3 Event Notification → SQS → Lambda (processamento da imagem)
+4. Lambda → escreve thumbnail em outro bucket</code></pre>
+<p><strong>Configurações:</strong></p>
+<ul><li>CORS no bucket S3: AllowedOrigins = <code>https://app.empresa.com</code>, AllowedMethods = PUT</li><li>Bucket Policy: permite apenas requests com a presigned URL signature</li><li>CloudFront na frente para servir imagens processadas (GET)</li></ul>
+<hr>
+<h2>Caso 5: Migração para AWS com Storage Gateway e DataSync</h2>
+<p><strong>Cenário:</strong> Data center corporativo com servidores Windows acessando shares de arquivo. Empresa quer migrar para S3 gradualmente.</p>
+<p><strong>Migração em Fases:</strong></p>
+<pre><code class="language-">FASE 1 (Convivência):
+  Windows Servers → File Gateway (NFS/SMB) → S3 Bucket
+  [File Gateway fica on-prem; dados primários no S3; cache local]
+
+FASE 2 (Migração em Massa):
+  DataSync Agent (on-prem) → AWS DataSync → S3 Bucket
+  [Migração de dados históricos com verificação de integridade]
+
+FASE 3 (Pós-migração):
+  Windows Servers → Amazon FSx for Windows (AWS) via Direct Connect
+  [File system gerenciado na AWS com AD integration]</code></pre>
+<p><strong>Por que Storage Gateway primeiro?</strong> Permite convivência gradual enquanto equipes se adaptam, sem big-bang cutover. DataSync para migração em massa dos dados existentes.</p>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./034-05-alta-disponibilidade-e-escalabilidade-readme.html">Aula anterior</a>
+      <a href="./036-06-amazon-s3-e-armazenamento-cheatsheet.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Módulo 15: Migração e Transferência - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#104-21-migracao-e-transferencia-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 21 - Migracao e Transferencia - 5 min - 21-Migracao-e-Transferencia/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 21 - Migracao e Transferencia" loading="lazy">
+      <figcaption>Migracao boa equilibra janela, volume, risco, custo e mudanca na aplicacao.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Módulo 15: Migração e Transferência</h1>
+<h2>Os 7 Rs — Estratégias de Migração</h2>
+<div class="table-wrap"><table><thead><tr><th>Estratégia</th><th>Nome</th><th>Mudança</th><th>Exemplo</th></tr></thead><tbody><tr><td><strong>Retire</strong></td><td>Descontinuar</td><td>Nenhuma</td><td>App não mais usado</td></tr><tr><td><strong>Retain</strong></td><td>Manter on-premises</td><td>Nenhuma</td><td>Compliance, latência</td></tr><tr><td><strong>Rehost</strong></td><td>Lift-and-shift</td><td>Mínima</td><td>EC2 = VM on-premises</td></tr><tr><td><strong>Relocate</strong></td><td>Mover VMware</td><td>Mínima</td><td>VMware Cloud on AWS</td></tr><tr><td><strong>Replatform</strong></td><td>Lift-and-optimize</td><td>Pontual</td><td>RDS em vez de MySQL self-managed</td></tr><tr><td><strong>Repurchase</strong></td><td>Trocar por SaaS</td><td>Mudança de produto</td><td>Salesforce em vez de CRM próprio</td></tr><tr><td><strong>Refactor</strong></td><td>Rearchitect</td><td>Grande</td><td>Microservices + Lambda + DynamoDB</td></tr></tbody></table></div>
+<hr>
+<h2>Snow Family — Capacidade e Uso</h2>
+<div class="table-wrap"><table><thead><tr><th>Dispositivo</th><th>Storage</th><th>Compute</th><th>Quando Usar</th></tr></thead><tbody><tr><td><strong>Snowcone Small</strong></td><td>8 TB SSD</td><td>2 vCPUs, 4 GB RAM</td><td>Locais remotos, peso: 2,1 kg</td></tr><tr><td><strong>Snowcone Large</strong></td><td>14 TB SSD</td><td>4 vCPUs, 4 GB RAM</td><td>Capacidade maior em campo</td></tr><tr><td><strong>Snowball Edge Storage</strong></td><td>80 TB HDD</td><td>40 vCPUs</td><td>Migração de dados grande escala</td></tr><tr><td><strong>Snowball Edge Compute</strong></td><td>42 TB HDD</td><td>52 vCPUs, GPU opcional</td><td>Edge computing pesado</td></tr><tr><td><strong>Snowmobile</strong></td><td>100 PB</td><td>N/A</td><td>Datacenter inteiro</td></tr></tbody></table></div>
+<p><strong>Regra de decisão:</strong> <code>tamanho_dados / bandwidth_disponível &gt; 1 semana</code> → usar Snow Family.</p>
+<hr>
+<h2>Comparativo: AWS MGN vs DMS vs DataSync</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>MGN</th><th>DMS</th><th>DataSync</th></tr></thead><tbody><tr><td><strong>Tipo</strong></td><td>Rehost de servidores</td><td>Migração de banco</td><td>Transferência de arquivos</td></tr><tr><td><strong>Source</strong></td><td>Qualquer servidor (Win/Linux)</td><td>Banco de dados</td><td>NFS, SMB, S3, HDFS</td></tr><tr><td><strong>Target</strong></td><td>EC2</td><td>RDS, Aurora, Redshift</td><td>S3, EFS, FSx</td></tr><tr><td><strong>Replicação</strong></td><td>Contínua (block-level)</td><td>CDC (transações)</td><td>Batch ou agendada</td></tr><tr><td><strong>Downtime</strong></td><td>Minutos (cutover manual)</td><td>Mínimo (CDC)</td><td>N/A</td></tr><tr><td><strong>Prerequisito</strong></td><td>Agente no servidor</td><td>Task DMS configurada</td><td>DataSync Agent on-premises</td></tr></tbody></table></div>
+<hr>
+<h2>DMS + SCT — Quando Usar Cada Um</h2>
+<div class="table-wrap"><table><thead><tr><th>Migração</th><th>DMS</th><th>SCT</th></tr></thead><tbody><tr><td>MySQL → MySQL RDS</td><td>✅</td><td>❌ Não necessário</td></tr><tr><td>Oracle → Oracle RDS</td><td>✅</td><td>❌ Não necessário</td></tr><tr><td>Oracle → Aurora PostgreSQL</td><td>✅ (dados)</td><td>✅ (schema conversion)</td></tr><tr><td>SQL Server → RDS PostgreSQL</td><td>✅ (dados)</td><td>✅ (schema conversion)</td></tr><tr><td>Oracle → Redshift</td><td>✅ (dados)</td><td>✅ (schema conversion)</td></tr></tbody></table></div>
+<p><strong>Regra:</strong> mesmo engine (homogêneo) = apenas DMS. Engines diferentes (heterogêneo) = SCT primeiro + DMS.</p>
+<hr>
+<h2>AWS DataSync — Casos de Uso</h2>
+<div class="table-wrap"><table><thead><tr><th>Caso de Uso</th><th>Configuração</th></tr></thead><tbody><tr><td>On-premises NFS → S3</td><td>DataSync Agent on-prem, Location NFS + S3</td></tr><tr><td>S3 → EFS</td><td>Sem agent (AWS-to-AWS), Location S3 + EFS</td></tr><tr><td>HDFS on-prem → S3</td><td>Agent on-prem, Location HDFS + S3</td></tr><tr><td>SMB/Windows → S3</td><td>Agent on-prem, Location SMB + S3</td></tr><tr><td>S3 → FSx for Windows</td><td>Sem agent, Location S3 + FSx WFS</td></tr></tbody></table></div>
+<p><strong>Preserva:</strong> POSIX permissions, timestamps, ACLs. <strong>Verifica:</strong> integridade via checksums end-to-end.</p>
+<hr>
+<h2>AWS Transfer Family — Protocolos</h2>
+<div class="table-wrap"><table><thead><tr><th>Protocolo</th><th>Porta</th><th>Criptografia</th><th>Caso de Uso</th></tr></thead><tbody><tr><td><strong>SFTP</strong></td><td>22</td><td>TLS</td><td>Padrão para transferência segura de arquivos</td></tr><tr><td><strong>FTPS</strong></td><td>990/21</td><td>TLS explicit/implicit</td><td>Sistemas legados que precisam de FTP + TLS</td></tr><tr><td><strong>FTP</strong></td><td>21</td><td>Nenhuma</td><td>Redes internas (não recomendado para internet)</td></tr><tr><td><strong>AS2</strong></td><td>443</td><td>TLS + S/MIME</td><td>EDI B2B (Electronic Data Interchange)</td></tr></tbody></table></div>
+<p>Storage backend: <strong>S3</strong> ou <strong>EFS</strong>.</p>
+<hr>
+<h2>Migration Hub — Fases de Migração</h2>
+<pre><code class="language-">Fase 1: DISCOVER
+   Application Discovery Service
+   ↓ (inventário + dependências)
+
+Fase 2: ASSESS  
+   Migration Evaluator (TCO)
+   Migration Hub (priorização)
+   ↓ (business case)
+
+Fase 3: MIGRATE
+   MGN (servidores) / DMS (bancos) / DataSync (arquivos)
+   ↓ (migração + replicação)
+
+Fase 4: CUTOVER
+   Parar source → Validar target → Redirecionar tráfego
+   ↓
+
+Fase 5: MODERNIZE
+   Refactoring pós-migração (opcional)</code></pre>
+<hr>
+<h2>Dicas de Prova — Padrões Comuns com Migração</h2>
+<div class="table-wrap"><table><thead><tr><th>Pista no Enunciado</th><th>Resposta Provável</th></tr></thead><tbody><tr><td>&quot;Mover servidor Windows para EC2 com downtime mínimo&quot;</td><td>AWS MGN</td></tr><tr><td>&quot;Migrar Oracle para Aurora PostgreSQL&quot;</td><td>SCT (schema) + DMS (dados + CDC)</td></tr><tr><td>&quot;Terabytes de dados, internet seria lenta&quot;</td><td>AWS Snowball Edge</td></tr><tr><td>&quot;100 PB de dados para AWS&quot;</td><td>AWS Snowmobile</td></tr><tr><td>&quot;Mover arquivos NFS para S3 preservando permissões&quot;</td><td>AWS DataSync</td></tr><tr><td>&quot;Parceiro externo precisa de SFTP&quot;</td><td>AWS Transfer Family</td></tr><tr><td>&quot;Migração de VM VMware com mínima mudança&quot;</td><td>AWS MGN ou Relocate (VMware Cloud)</td></tr><tr><td>&quot;Descobrir dependências de aplicações on-prem&quot;</td><td>Application Discovery Service</td></tr><tr><td>&quot;Calcular TCO antes de migrar&quot;</td><td>AWS Migration Evaluator</td></tr><tr><td>&quot;Acompanhar progresso de migração centralizado&quot;</td><td>AWS Migration Hub</td></tr><tr><td>&quot;Acesso contínuo de clientes via FTP para S3&quot;</td><td>AWS Transfer Family</td></tr><tr><td>&quot;Replicar mudanças de banco em tempo real durante migração&quot;</td><td>DMS com CDC</td></tr><tr><td>&quot;Dados de sensor edge sem conectividade confiável&quot;</td><td>Snowball Edge (Compute Optimized)</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./103-21-migracao-e-transferencia-casos-de-uso.html">Aula anterior</a>
+      <a href="./105-21-migracao-e-transferencia-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

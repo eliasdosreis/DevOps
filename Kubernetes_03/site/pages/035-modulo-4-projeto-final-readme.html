@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>🔴 Módulo 4 - Projeto Final (Nível Sênior) - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#035-modulo-4-projeto-final-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - projeto final - 2 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - projeto final" loading="lazy">
+      <figcaption>Projeto final consolida manifestos de producao em uma arquitetura completa.</figcaption>
+    </figure>
+    <h1>🔴 Módulo 4 - Projeto Final (Nível Sênior)</h1>
+<h2>🎯 O que vamos construir</h2>
+<p>Uma aplicação completa de <strong>e-commerce</strong> com:</p>
+<pre><code class="language-">[Internet]
+    |
+[Ingress / HTTPS]
+    |
+    ├── [Frontend - React]  --&gt; Service ClusterIP
+    ├── [API - Node.js]     --&gt; Service ClusterIP
+    └── [Admin - Django]    --&gt; Service ClusterIP
+         |
+    [PostgreSQL StatefulSet] --&gt; PVC (dados persistentes)
+    [Redis Deployment]       --&gt; Cache e sessões
+         |
+    [ConfigMap]  --&gt; Configurações
+    [Secrets]    --&gt; Senhas e tokens
+    [HPA]        --&gt; Auto scaling
+    [RBAC]       --&gt; Permissões
+    [NetworkPolicy] --&gt; Segurança de rede</code></pre>
+<hr>
+<h2>📁 Arquivos do Projeto Final</h2>
+<pre><code class="language-">00-namespace.yaml              --&gt; Namespace dedicado
+01-secrets.yaml                --&gt; Todas as senhas
+02-configmap.yaml              --&gt; Todas as configs
+03-postgres-statefulset.yaml   --&gt; Banco de dados
+04-redis-deployment.yaml       --&gt; Cache
+05-api-deployment.yaml         --&gt; Backend da API
+06-frontend-deployment.yaml    --&gt; Frontend
+07-services.yaml               --&gt; Todos os services
+08-ingress.yaml                --&gt; Roteamento externo
+09-hpa.yaml                    --&gt; Auto scaling
+10-networkpolicy.yaml          --&gt; Segurança de rede
+11-rbac.yaml                   --&gt; Controle de acesso
+12-poddisruptionbudget.yaml    --&gt; Alta disponibilidade</code></pre>
+<hr>
+<h2>🚀 Como subir o projeto completo</h2>
+<pre><code class="language-bash"># Habilitar addons no Minikube
+minikube addons enable ingress
+minikube addons enable metrics-server
+
+# Aplicar TUDO em ordem
+kubectl apply -f modulo-4-projeto-final/
+
+# Verificar tudo no namespace
+kubectl get all -n ecommerce
+
+# Acessar via Minikube
+minikube tunnel</code></pre>
+<hr>
+<h2>🎯 Checklist Sênior - Projeto Final</h2>
+<ul><li>[ ] Todo recurso está no namespace correto</li><li>[ ] Senhas usam Secrets (não hardcoded)</li><li>[ ] Configs usam ConfigMap</li><li>[ ] Todos os Deployments têm Probes</li><li>[ ] Todos têm Resource requests/limits</li><li>[ ] HPA configurado para API e Frontend</li><li>[ ] NetworkPolicy restringindo acesso entre pods</li><li>[ ] RBAC com mínimo privilégio</li><li>[ ] PodDisruptionBudget para alta disponibilidade</li><li>[ ] Ingress com TLS configurado</li></ul>
+    <nav class="page-nav">
+      <a href="./034-modulo-4-projeto-final-12-politicas-producao.html">Aula anterior</a>
+      <a href="./036-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

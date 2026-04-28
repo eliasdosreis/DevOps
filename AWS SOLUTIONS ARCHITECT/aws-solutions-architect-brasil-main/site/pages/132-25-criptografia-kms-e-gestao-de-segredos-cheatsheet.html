@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet - Criptografia, KMS e Gestao de Segredos - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#132-25-criptografia-kms-e-gestao-de-segredos-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 25 - Criptografia KMS e Gestao de Segredos - 1 min - 25-Criptografia-KMS-e-Gestao-de-Segredos/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 25 - Criptografia KMS e Gestao de Segredos" loading="lazy">
+      <figcaption>Criptografia separa dado, chave, segredo, permissao e rotacao.</figcaption>
+    </figure>
+    <h1>Cheatsheet - Criptografia, KMS e Gestao de Segredos</h1>
+<h2>Mapa rapido</h2>
+<div class="table-wrap"><table><thead><tr><th>Necessidade</th><th>Melhor escolha</th><th>Observacao</th></tr></thead><tbody><tr><td>Chave com controle de policy e auditoria</td><td>KMS customer-managed key</td><td>Mais controle para compliance</td></tr><tr><td>Rotacao automatica de segredos</td><td>Secrets Manager</td><td>Integracao forte com RDS</td></tr><tr><td>Parametros de app com baixo custo</td><td>Parameter Store</td><td>SecureString usa KMS</td></tr><tr><td>Certificado TLS para ALB/CloudFront/API Gateway</td><td>ACM</td><td>Public cert gratuito</td></tr><tr><td>Controle criptografico em HSM dedicado</td><td>CloudHSM</td><td>Maior complexidade operacional</td></tr></tbody></table></div>
+<h2>Regras de prova</h2>
+<ul><li>key policy e essencial para permissao no KMS</li><li>explicit deny sempre prevalece</li><li>use IAM role para apps em vez de chaves estaticas</li><li>CloudFront + ACM publico =&gt; certificado em us-east-1</li></ul>
+<h2>Armadilhas</h2>
+<ul><li>confundir Secrets Manager com Parameter Store em cenario de rotacao automatica</li><li>esquecer permissao kms:Decrypt no principal consumidor</li><li>assumir que criptografar no servico dispensa gestao de acesso</li><li>ignorar custo de chamadas KMS em alto throughput</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./131-25-criptografia-kms-e-gestao-de-segredos-casos-de-uso.html">Aula anterior</a>
+      <a href="./133-25-criptografia-kms-e-gestao-de-segredos-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

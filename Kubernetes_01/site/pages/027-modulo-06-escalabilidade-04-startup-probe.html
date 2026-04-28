@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#027-modulo-06-escalabilidade-04-startup-probe">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 06 - escalabilidade - 5 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 06 - escalabilidade" loading="lazy">
+      <figcaption>Escalabilidade e probes ajudam o cluster a reagir com saude e previsibilidade.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Define a Startup Probe (&quot;Sonda de Inicializa��o Lenta&quot;).
+# O recurso inventado na arquitetura Kubernetes 1.16+ 
+# pra salvar os Legados Lentos, Java Antigos e grandes blocos da morte prematura.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# A sonda base Liveness era quem? &quot;O cara perguntando pro vigia a cada 10 segs, Acordou?&quot;.
+# A Readiness Probe ? &quot;Painel de atendimento: J� ligo o PC Verde?&quot;.
+#
+# E a M�gica **Startup Probe**? Ela � o RH Da Empresa convers�rio. ELA ATUA ANTES de todos!
+# Imagina uma empresa cujo o Funcion�rio Novato � muito burro, e demore exatos 
+# DUAS HORAS pra conseguir fazer o Login no Windows antes de ficar &quot;Pronto&quot; pro sistema.
+# O &quot;Liveness&quot; mataria ele nos primeiros 5 mins de boot como aprendemos.
+# O **Startup Probe** assume e silencia Todo Mundo!. A Startup coloca a m�o na arma do liveness
+# e diz: &quot;Escutem as duas sondas atrasadas. Fiquem mutadas!!! O cara ta baixando gigas 
+# da internet da aplica��o enorme, deem a ele DUAS HORAS.
+# SE ele responder que ta 200 OK finalizado nestas duas horas. AI SIM EU PASSO O BAST�O 
+# DE GRA�A pra voc�s assumirem o loop natural&quot;.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# A StartupProbe protege Pods de inicializa��o pesada LENTA contra o pr�prio Kubelet matando-os
+# antes deles terminarem o boot e irem pro LivenessProbe (que tem timer impaciente). 
+# Caso ela engatilhe como SUCESSO. Ela desliga e some com louvor permanentemente, 
+# liberando a gest�o do container para Liveness e Readiness. (Temos as 3 sondas atuando com escopo diferente).
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: container-super-legado-lento
+  namespace: meu-primeiro-projeto
+spec:
+  containers:
+    - name: java-gigantesco-ee
+      image: openjdk:11        # Imagem Gordinha pesada
+      command: [&quot;/bin/sh&quot;, &quot;-c&quot;, &quot;echo Iniciando Tomcat Lento de 2 Minutos...; sleep 120; echo Acabei!; sleep 1000000&quot;]
+      
+      # M�GICA: A SONDA DE SHIELD INICIAL (&quot;Cala boca geral do Liveliness que o Monstro ta Acordando&quot;)
+      startupProbe:
+        exec:
+          # Um comando bash maroto apenas pra n�o depender der webservice e testar logica bruta 
+          command:
+            - cat
+            - /tmp/arquivo-feito-quando-concluir-tudo.txt  # So existiria no final do tempo obvio (Mas nao deixei a criacao nesse log para provarmos o timeout falhando abaixo de proposito test).
+        # &quot;Eu a startup sonda, vou checar at� 30 vezzes, em loopings de 10 segs cada&quot;. (Ou seja 30x10= 300 segundos, O app tem CINCO minutos totais de Imunidade garantida pra nascer e acordar!
+        failureThreshold: 30
+        periodSeconds: 10
+        
+      # S� atuar�o SE E SOMENTE SE o startup de cima bater sinal verde. 
+      livenessProbe:
+        exec:
+          command: [&quot;cat&quot;, &quot;/etc/os-release&quot;]
+        initialDelaySeconds: 5  # &lt; Nao existe mais o porqu� chutar prazos grotescos aqui no unltialDelay mais! Fica limpo
+        periodSeconds: 10
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Empurre a infraestrutura lent�ssima:
+#    kubectl apply -f 04-startup-probe.yaml
+#
+# 2. Liste os containers em vigia (E os eventos logo apos a criacao usando o --watch):
+#    kubectl get pods container-super-legado-lento -n meu-primeiro-projeto -w
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# O Troubleshooting n�o tem segredo, ver�s Logs nas abas em describe 
+# (&quot;Events: Warning: Startup probe failed....&quot;).
+# Importante observar que, SE bater as 30x falhas do tempo imune absurdo dele...  
+# E a� sim se acabar a imunidade e der falha final o kubelet APLICA UM KIIL igualzinho no   
+# LivenessProbe e far� restart infinito da sua VM!
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# Porqu� n�s inventamos C�rgos e Sondas diferentes, se o desenvolvedor Junior diz 
+# que &quot;� s� injetar *initialDelaySeconds: 300* &quot; na liveness que da no mesmo (!)? 
+#
+# Isso era a GAMBIARRA do passado (!). Um Liveness com `initialDelaySeconds: 500` causa um 
+# efeito catastr�fico e danoso silencioso � nuvem. Se sua aplica��o &quot;Terminou&quot; de subir e bootoou 
+# brilhantemente em m�dicos **15 segundos**.  A sua Livelienss/Readiness tem a diretriz de pedra pra ficar travada cega 
+# sem testar nada em ninguem por absurdos `500 segundos (8 minutos!!). A Sua API t� on. Os usuarios t�o usando 
+# A API Crsou por Deadlock do mal no minuto n� 2.. E O SEU KUBERNETES NAO VE NADA EM CEGUEIRA POIS TEM 500 SEG.. 
+# Demorando 8 min pra matar e corrigir.
+# Ao usar O STARTUP Probe de 500 seg... se no segudno de n 15 ele bater... O STARUP ABORTA OS TEMPOS DELE E ENCURTA TODO O LOOP PRA PROXIMA!!
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Startup probe executa simultaneamente e concorrentemente com Liveness e Readiness  
+# Probe checando a porta nas tres ferramentas ao mesmo tempo no Container?&quot;
+# Resposta Esperada: &quot;N�o. As configura��es de Liveness e Readiness Probe ficam completae 
+# e estritamente desativadas (Pausadas e com Bypass Completo) a n�vel control plane enquanto 
+# o &#39;StartupProbe&#39; n�o concluir com marca��o final igual a *Sucess=1* pela primeira vez na inicializa��o&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./026-modulo-06-escalabilidade-03-readiness-probe.html">Aula anterior</a>
+      <a href="./028-modulo-06-escalabilidade-05-hpa.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

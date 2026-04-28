@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Casos de Uso Reais — Machine Learning e IA (Módulo 13) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#089-19-machine-learning-e-ia-casos-de-uso">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 19 - Machine Learning e IA - 1 min - 19-Machine-Learning-e-IA/casos-de-uso.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 19 - Machine Learning e IA" loading="lazy">
+      <figcaption>IA no Associate costuma ser reconhecer o servico gerenciado certo para o caso.</figcaption>
+    </figure>
+    <h1>Casos de Uso Reais — Machine Learning e IA (Módulo 13)</h1>
+<h2>Caso 1 — Sistema de Recomendação de Produtos</h2>
+<p><strong>Contexto:</strong> E-commerce com 10 milhões de usuários precisa de recomendações personalizadas em tempo real na página de produto (&quot;quem comprou X também comprou Y&quot;) e em campanhas de e-mail personalizadas por segmento.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Recomendações em tempo real (&lt; 200ms por request)</li><li>Modelo retreinado diariamente com novos dados de comportamento</li><li>Não exige time de ML dedicado — usar serviço gerenciado</li><li>Segmentação para campanhas de marketing batch</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">DADOS DE ENTRADA:
+Clickstream → Kinesis → S3 (interações usuário-produto)
+Pedidos     → S3 (histórico de compras)
+
+TREINAMENTO (diário — batch):
+S3 (interações) → Amazon Personalize
+                  ├── Dataset Group
+                  ├── Solution (algoritmo USER_PERSONALIZATION)
+                  └── Campaign (endpoint de inferência)
+
+INFERÊNCIA (tempo real):
+App → Amazon Personalize Campaign → Recomendações JSON
+App → ElastiCache (cache resultado por user_id, TTL 1h)
+
+BATCH (campanhas email):
+EventBridge (diário) → Lambda → Personalize Batch Inference
+                                    └── S3 (recomendações por segmento)
+                                              └── SES (e-mails personalizados)</code></pre>
+<p><strong>Personalize vs SageMaker para este caso:</strong></p>
+<div class="table-wrap"><table><thead><tr><th>Critério</th><th>Personalize</th><th>SageMaker</th></tr></thead><tbody><tr><td>Time ML necessário</td><td>Não</td><td>Sim</td></tr><tr><td>Algoritmos disponíveis</td><td>Recomendação/ranking</td><td>Qualquer</td></tr><tr><td>Tempo setup</td><td>Horas</td><td>Dias/semanas</td></tr><tr><td>Flexibilidade</td><td>Baixa</td><td>Alta</td></tr><tr><td>Custo</td><td>Por TPS + horas treinamento</td><td>Por instância</td></tr></tbody></table></div>
+<hr>
+<h2>Caso 2 — Análise de Documentos Financeiros com Textract + Comprehend</h2>
+<p><strong>Contexto:</strong> Seguradora precisa processar 5.000 documentos/dia (formulários de sinistro, laudos médicos, faturas) para acelerar análise de apólices. Processo manual leva 3 dias por sinistro.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Extrair dados estruturados de formulários (campos, tabelas)</li><li>Detectar informações de PII (CPF, nome, data de nascimento) para proteção</li><li>Classificar tipo de documento (sinistro/laudo/fatura)</li><li>Verificar consistência dos dados extraídos</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">Documentos (PDF/imagem) → S3 (sinistros-entrada)
+                                │ S3 Event Notification
+                                ▼
+                           Lambda (orquestrador)
+                           ├── Textract StartDocumentAnalysis (async)
+                           │     (extrai formulários + tabelas)
+                           │     └── SNS callback → Lambda (resultado)
+                           ├── Comprehend DetectPiiEntities
+                           │     (detecta CPF, nome, data)
+                           ├── Comprehend ClassifyDocument
+                           │     (tipo: sinistro/laudo/fatura)
+                           └── Comprehend DetectSentiment
+                                 (urgência do cliente no texto livre)
+                                │
+                           DynamoDB (metadados + campos extraídos)
+                           S3 (resultado estruturado JSON)
+                           Step Functions (fluxo aprovação humana se confiança &lt; 80%)
+                           
+A2I (Augmented AI) → Revisão humana quando Textract tem baixa confiança</code></pre>
+<p><strong>Redução de Tempo:</strong></p>
+<ul><li>Antes: 3 dias (manual) → Depois: 2 horas (automatizado)</li><li>Taxa de automação: 85% dos documentos sem revisão humana</li><li>A2I cobre os 15% com baixa confiança</li></ul>
+<hr>
+<h2>Caso 3 — Chatbot de Atendimento com Lex v2 + Lambda</h2>
+<p><strong>Contexto:</strong> Empresa de telecomunicações quer reduzir volume de chamadas (200.000/mês) para SAC oferecendo chatbot que resolve os 5 problemas mais comuns: verificar fatura, 2ª via boleto, cancelar serviços, verificar saldo de dados, alterar plano.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Compreender linguagem natural em português</li><li>Autenticar usuário antes de operações sensíveis</li><li>Escalar chamadas complexas para atendente humano</li><li>Integrar com sistema de CRM existente (REST API)</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">Usuário (WhatsApp / App / Web)
+       │
+       ▼
+Amazon Lex v2 (Bot em português)
+  Intents:
+  ├── ConsultarFatura → Lambda (consulta CRM API)
+  ├── EmitirBoleto    → Lambda (gera boleto PDF → S3 → URL)
+  ├── CancelarServico → Lambda (verifica contrato + chama CRM)
+  ├── VerificarDados  → Lambda (consulta sistema de telemetria)
+  └── AlterarPlano    → Lambda (opções plano + Step Functions workflow)
+  
+  Autenticação:
+  ├── Slot: CPF + data nascimento
+  └── Lambda validator → consulta DynamoDB (sessão autenticada)
+  
+  Fallback:
+  └── Intent: TransferirAtendente → Amazon Connect (transferência)
+  
+Amazon Connect (call center integrado)
+CloudWatch (métricas: intent recognition rate, transfer rate)</code></pre>
+<p><strong>Métricas de Sucesso:</strong></p>
+<div class="table-wrap"><table><thead><tr><th>KPI</th><th>Antes</th><th>Depois</th></tr></thead><tbody><tr><td>Resolução sem atendente</td><td>0%</td><td>65%</td></tr><tr><td>Tempo médio resolução</td><td>8 min</td><td>90 seg</td></tr><tr><td>Custo por interação</td><td>R$15</td><td>R$0.12</td></tr><tr><td>Satisfação (CSAT)</td><td>3.2/5</td><td>4.1/5</td></tr></tbody></table></div>
+<hr>
+<h2>Caso 4 — Moderação de Conteúdo com Rekognition</h2>
+<p><strong>Contexto:</strong> Plataforma de UGC (User Generated Content) com 500.000 uploads de imagem/vídeo por dia precisa remover automaticamente conteúdo impróprio (violência, nudez, drogas) antes de publicar.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Analisar 100% dos conteúdos antes de publicar</li><li>Falsos positivos &lt; 5% (conteúdo válido bloqueado)</li><li>Revisão humana para casos border-line (confiança 50-80%)</li><li>Audit trail de decisões (compliance legal)</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">Upload usuário → S3 (content-pendente)
+                      │ Lambda trigger
+                      ▼
+                 Lambda (moderador)
+                 ├── Rekognition DetectModerationLabels
+                 │     (nudez, violência, drogas, etc.)
+                 │
+                 ├── Se score &gt; 80% (conteúdo impróprio):
+                 │     └── Mover para S3 (content-bloqueado)
+                 │         DynamoDB (log: bloqueado + motivo)
+                 │         SNS → Email usuário (notificação)
+                 │
+                 ├── Se score 20-80% (incerto):
+                 │     └── A2I (Augmented AI) → Fila revisão humana
+                 │         Step Functions aguarda decisão humana
+                 │
+                 └── Se score &lt; 20% (aprovado):
+                       └── S3 (content-aprovado) → CloudFront
+
+Audit: DynamoDB Streams → Lambda → S3 (log compliance imutável)</code></pre>
+<p><strong>Rekognition para Vídeo:</strong></p>
+<pre><code class="language-">Vídeo upload → S3 → Lambda → Rekognition StartContentModeration (async)
+                                    │ SNS callback quando completo
+                                    ▼
+                               Lambda (processar resultado)
+                               ├── Timestamps de cenas impróprias
+                               └── Decisão: aprovar/rejeitar/segmentar</code></pre>
+<hr>
+<h2>Caso 5 — Previsão de Demanda para Gestão de Estoque</h2>
+<p><strong>Contexto:</strong> Rede de supermercados precisa prever demanda de 50.000 SKUs nas próximas 4 semanas para otimizar pedidos de reposição e reduzir desperdício.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Previsão por SKU + loja + semana</li><li>Considerar sazonalidade, feriados, promoções</li><li>Retreinar modelo mensalmente com dados novos</li><li>Integrar previsões com sistema ERP de compras</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">DADOS HISTÓRICOS:
+S3 (vendas diárias últimos 3 anos, por SKU/loja)
+S3 (dados externos: feriados, promoções, clima)
+
+AMAZON FORECAST:
+├── Dataset Group (vendas + metadados + itens relacionados)
+├── Predictor (algoritmo: AutoML seleciona melhor)
+│     (opções: DeepAR+, Prophet, NPTS, CNN-QR)
+└── Forecast (gera P10/P50/P90 para 28 dias)
+
+INFERÊNCIA + INTEGRAÇÃO:
+EventBridge (1x/semana) → Lambda
+     │
+     ├── CreateForecastExportJob → S3 (previsoes.csv)
+     ├── Lambda processa CSV → DynamoDB (tabela compras_sugeridas)
+     └── API REST ERP → lê DynamoDB → gera pedidos de compra
+
+QuickSight (dashboard: previsão vs realizado, acurácia MAPE)
+SNS → Alert se MAPE &gt; 15% (modelo degradando)</code></pre>
+<p><strong>Métricas de Acurácia:</strong></p>
+<div class="table-wrap"><table><thead><tr><th>Métrica</th><th>Valor Típico</th><th>O que significa</th></tr></thead><tbody><tr><td>MAPE</td><td>&lt; 15%</td><td>Mean Absolute Percentage Error</td></tr><tr><td>WAPE</td><td>&lt; 10%</td><td>Weighted APE (considera volume)</td></tr><tr><td>P50</td><td>previsão mediana</td><td>50% confiança</td></tr><tr><td>P90</td><td>limite otimista</td><td>Para safety stock</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./088-18-dados-e-analytics-readme.html">Aula anterior</a>
+      <a href="./090-19-machine-learning-e-ia-cheatsheet.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

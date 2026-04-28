@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Casos de Uso — Introdução SAA-C03 - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#005-01-introducao-saa-c03-casos-de-uso">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 01 - Introducao SAA C03 - 4 min - 01-Introducao-SAA-C03/casos-de-uso.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 01 - Introducao SAA C03" loading="lazy">
+      <figcaption>Estrategia de prova: leia o cenario, encontre os requisitos e elimine distratores.</figcaption>
+    </figure>
+    <h1>Casos de Uso — Introdução SAA-C03</h1>
+<h2>Caso 1 — Plataforma SaaS iniciando revisão arquitetural</h2>
+<h3>Cenário</h3>
+<p>Uma SaaS B2B já roda na AWS, mas o time percebeu que sabe operar serviços sem conseguir justificar decisões de arquitetura. A liderança quer preparar dois arquitetos para o SAA-C03 e, ao mesmo tempo, revisar o desenho atual da plataforma.</p>
+<h3>Arquitetura de raciocínio</h3>
+<pre><code class="language-text">Negócio -&gt; Requisitos -&gt; Restrições -&gt; Escolha de serviço -&gt; Trade-off -&gt; Operação
+   |           |             |               |                  |          |
+   +-----------+-------------+---------------+------------------+----------+</code></pre>
+<h3>Decisões técnicas justificadas</h3>
+<ul><li>O estudo deve começar por serviços centrais como IAM, VPC, EC2, S3, RDS e Route 53, porque eles aparecem em grande parte dos cenários.</li><li>O grupo precisa revisar não só serviços, mas padrões: HA, DR, desacoplamento e custo total.</li><li>A melhor forma de internalizar isso é combinar teoria, questões e casos reais.</li></ul>
+<h3>Trade-offs considerados</h3>
+<ul><li>Estudar por serviço isolado é rápido, mas gera pouco contexto.</li><li>Estudar por cenário é mais lento, porém aproxima o candidato do formato real da prova.</li></ul>
+<h2>Caso 2 — E-commerce com dúvida entre robustez e simplicidade</h2>
+<h3>Cenário</h3>
+<p>Uma loja online quer crescer antes da Black Friday. O time técnico propõe várias soluções altamente sofisticadas, mas a diretoria quer saber qual abordagem é adequada sem inflar custo e operação. O objetivo do estudo é aprender a distinguir o necessário do excessivo.</p>
+<h3>Arquitetura de raciocínio</h3>
+<pre><code class="language-text">Usuários -&gt; ALB -&gt; ASG EC2 -&gt; Aurora Multi-AZ
+              |         |
+              |         +-&gt; CloudWatch
+              |
+              +-&gt; CloudFront -&gt; S3 estático</code></pre>
+<h3>Decisões técnicas justificadas</h3>
+<ul><li>ALB e ASG endereçam elasticidade com menor esforço do que gestão manual de múltiplas instâncias.</li><li>Aurora Multi-AZ atende continuidade regional sem exigir multi-region logo de início.</li><li>CloudFront reduz latência e descarrega conteúdo estático.</li></ul>
+<h3>Trade-offs considerados</h3>
+<ul><li>Multi-region ativo-ativo seria mais resiliente, mas pode ser exagero se o requisito real for apenas HA regional.</li><li>Instâncias dedicadas podem oferecer isolamento, mas aumentam custo sem necessidade explícita.</li></ul>
+<h2>Caso 3 — Startup de dados com orçamento apertado</h2>
+<h3>Cenário</h3>
+<p>Uma startup precisa processar eventos de aplicação com custo controlado. O exame SAA-C03 usaria esse contexto para avaliar se o candidato entende quando priorizar serviços gerenciados e cobrança sob demanda.</p>
+<h3>Arquitetura de raciocínio</h3>
+<pre><code class="language-text">Aplicação -&gt; EventBridge -&gt; Lambda -&gt; DynamoDB
+                          |
+                          +-&gt; CloudWatch Logs</code></pre>
+<h3>Decisões técnicas justificadas</h3>
+<ul><li>Lambda reduz ociosidade e patching para workloads variáveis.</li><li>EventBridge facilita integração orientada a eventos com baixo acoplamento.</li><li>DynamoDB encaixa bem quando o acesso é previsível por chave e a escala é horizontal.</li></ul>
+<h3>Trade-offs considerados</h3>
+<ul><li>EC2 pode oferecer mais controle, mas exige administração constante.</li><li>Banco relacional pode ser melhor em cenários transacionais complexos, mas aqui o padrão de acesso favorece NoSQL.</li></ul>
+<h2>Caso 4 — Empresa regulada com foco em governança</h2>
+<h3>Cenário</h3>
+<p>Uma organização financeira precisa de rastreabilidade, menor privilégio e chaves de criptografia controladas. Ela quer que a preparação para o exame reforce boas práticas reais de arquitetura segura.</p>
+<h3>Arquitetura de raciocínio</h3>
+<pre><code class="language-text">Usuários -&gt; IAM Identity Center -&gt; Contas AWS
+                       |
+                       +-&gt; IAM Roles / SCPs
+                       +-&gt; KMS
+                       +-&gt; CloudTrail</code></pre>
+<h3>Decisões técnicas justificadas</h3>
+<ul><li>IAM Identity Center simplifica acesso centralizado.</li><li>SCPs ajudam a limitar o que contas podem fazer no nível organizacional.</li><li>KMS e CloudTrail aparecem como pilares de criptografia e auditoria.</li></ul>
+<h3>Trade-offs considerados</h3>
+<ul><li>Mais governança centralizada reduz risco, mas exige desenho de permissões cuidadoso.</li><li>Políticas excessivamente amplas aceleram o curto prazo e prejudicam compliance.</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./004-github-workflows-deploy.html">Aula anterior</a>
+      <a href="./006-01-introducao-saa-c03-cheatsheet.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

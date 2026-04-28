@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#010-modulo-2-intermediario-03-deployment-rollout">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 02 - intermediario - 2 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 02 - intermediario" loading="lazy">
+      <figcaption>Intermediario: replicas, deployments, rollout, probes, ConfigMap e Secret.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 03-deployment-rollout.yaml
+# ROLLOUT SEM DOWNTIME - O Segredo do Zero Downtime Deploy
+#
+# Cenário: Você tem a v1 rodando. Quer atualizar para v2.
+# Com RollingUpdate, o Kubernetes substitui pods gradualmente.
+# Usuários não percebem a atualização!
+#
+# Linha do tempo:
+# Início:    [v1] [v1] [v1]          (3 pods v1)
+# Passo 1:   [v1] [v1] [v1] [v2]    (surge: +1 v2)
+# Passo 2:   [v1] [v1] [v2]         (remove 1 v1)
+# Passo 3:   [v1] [v1] [v2] [v2]    (surge: +1 v2)
+# Passo 4:   [v1] [v2] [v2]         (remove 1 v1)
+# Fim:       [v2] [v2] [v2]          (3 pods v2)
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: app-rollout
+  # ANOTAÇÕES são como post-its no recurso
+  # Não afetam comportamento, mas são úteis para histórico
+  annotations:
+    kubernetes.io/change-cause: &quot;Deploy versao v2 com nova feature X&quot;
+    # Aparece no: kubectl rollout history deployment/app-rollout
+
+  labels:
+    app: minha-app
+
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: minha-app
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1           # Pode ter 1 pod EXTRA durante update
+      maxUnavailable: 0     # ZERO pods podem ficar indisponíveis
+                            # Garante zero downtime!
+
+  template:
+    metadata:
+      labels:
+        app: minha-app
+
+    spec:
+      # -------------------------------------------------------
+      # terminationGracePeriodSeconds
+      # Tempo para o pod terminar requisições em andamento
+      # antes de ser forcadamente encerrado
+      # -------------------------------------------------------
+      terminationGracePeriodSeconds: 30   # 30 segundos para finalizar
+
+      containers:
+        - name: app
+          image: nginx:1.25    # &lt;-- Mude para nginx:1.26 para simular update!
+
+          ports:
+            - containerPort: 80
+
+          # lifecycle: O que fazer antes de morrer?
+          lifecycle:
+            preStop:            # Executado ANTES do container parar
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - &quot;sleep 5&quot;   # Espera 5s para novas conexões pararem
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            # SEM readiness probe: pods novos podem receber tráfego
+            # antes de estarem prontos -&gt; erros para o usuário!
+
+# ============================================================
+# FLUXO COMPLETO DE DEPLOY:
+#
+# 1. Editar a imagem no YAML (ex: nginx:1.25 -&gt; nginx:1.26)
+# 2. kubectl apply -f 03-deployment-rollout.yaml
+# 3. Acompanhar: kubectl rollout status deployment/app-rollout
+# 4. Ver histórico: kubectl rollout history deployment/app-rollout
+# 5. Se der errado: kubectl rollout undo deployment/app-rollout
+#
+# OU atualizar direto na linha de comando (sem editar YAML):
+# kubectl set image deployment/app-rollout app=nginx:1.26
+#
+# ENTREVISTA SÊNIOR DIFÍCIL:
+# &quot;Como garantir zero downtime no deploy?&quot;
+# RESPOSTA: Combinação de:
+# 1. RollingUpdate com maxUnavailable: 0
+# 2. Readiness probe configurada corretamente
+# 3. preStop hook para drenar conexões
+# 4. terminationGracePeriodSeconds adequado
+# 5. Replicas &gt;= 2 (nunca 1 réplica em produção!)
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./009-modulo-2-intermediario-02-deployment.html">Aula anterior</a>
+      <a href="./011-modulo-2-intermediario-04-configmap.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

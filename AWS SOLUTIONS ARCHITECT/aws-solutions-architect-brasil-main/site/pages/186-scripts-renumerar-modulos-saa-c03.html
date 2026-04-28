@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Execute na raiz do repositório. - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#186-scripts-renumerar-modulos-saa-c03">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Curso e materiais gerais - 2 min - scripts/renumerar-modulos-saa-c03.sh</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Curso e materiais gerais" loading="lazy">
+      <figcaption>Estrategia de prova: leia o cenario, encontre os requisitos e elimine distratores.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> Shell script</p>
+    <p><strong>Caminho original:</strong> <code>scripts/renumerar-modulos-saa-c03.sh</code></p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise variaveis, custos possiveis, permissoes e pontos de rollback.</p>
+    <pre><code>#!/usr/bin/env bash
+set -euo pipefail
+
+# Execute na raiz do repositório.
+# Objetivo: remover duplicidades de numeração e manter trilha sequencial 01..27.
+
+BASE_DIR=&quot;${1:-.}&quot;
+cd &quot;$BASE_DIR&quot;
+
+# Mapeamento origem -&gt; destino (trilha lógica SAA-C03).
+declare -a MAP=(
+  &quot;01-Introducao-SAA-C03|01-Introducao-SAA-C03&quot;
+  &quot;02-IAM-e-Seguranca|02-IAM-e-Seguranca&quot;
+  &quot;09-IAM-e-Seguranca|03-IAM-e-Seguranca-Labs&quot;
+  &quot;03-Computacao-EC2|04-Computacao-EC2&quot;
+  &quot;04-Alta-Disponibilidade-e-Escalabilidade|05-Alta-Disponibilidade-e-Escalabilidade&quot;
+  &quot;05-Amazon-S3-e-Armazenamento|06-Amazon-S3-e-Armazenamento&quot;
+  &quot;08-S3-Avancado|07-S3-Avancado&quot;
+  &quot;07-VPC-e-Redes|08-VPC-e-Redes&quot;
+  &quot;05-VPC-e-Redes|09-VPC-e-Redes-Labs&quot;
+  &quot;06-Banco-de-Dados|10-Banco-de-Dados&quot;
+  &quot;06-RDS-e-Bancos-Relacionais|11-RDS-e-Bancos-Relacionais&quot;
+  &quot;07-DynamoDB|12-DynamoDB&quot;
+  &quot;08-DNS-Route53-e-CloudFront|13-DNS-Route53-e-CloudFront&quot;
+  &quot;09-Desacoplamento-SQS-SNS-EventBridge|14-Desacoplamento-SQS-SNS-EventBridge&quot;
+  &quot;10-SQS-SNS-Mensageria|15-SQS-SNS-Mensageria-Labs&quot;
+  &quot;10-Containers-ECS-EKS-Fargate|16-Containers-ECS-EKS-Fargate&quot;
+  &quot;11-Serverless-Lambda-API-Gateway|17-Serverless-Lambda-API-Gateway&quot;
+  &quot;12-Dados-e-Analytics|18-Dados-e-Analytics&quot;
+  &quot;13-Machine-Learning-e-IA|19-Machine-Learning-e-IA&quot;
+  &quot;14-Monitoramento-CloudWatch-CloudTrail|20-Monitoramento-CloudWatch-CloudTrail&quot;
+  &quot;15-Migracao-e-Transferencia|21-Migracao-e-Transferencia&quot;
+  &quot;16-Well-Architected-Framework|22-Well-Architected-Framework&quot;
+  &quot;17-Casos-de-Uso-Reais|23-Casos-de-Uso-Reais&quot;
+  &quot;18-Labs-Praticos|24-Labs-Praticos&quot;
+  &quot;19-Simulados-e-Questoes|25-Simulados-e-Questoes&quot;
+  &quot;20-Glossario|26-Glossario&quot;
+  &quot;21-Recursos-e-Links|27-Recursos-e-Links&quot;
+)
+
+echo &quot;[1/2] Renomeando para nomes temporarios...&quot;
+for pair in &quot;${MAP[@]}&quot;; do
+  src=&quot;${pair%%|*}&quot;
+  dst=&quot;${pair##*|}&quot;
+
+  if [[ ! -d &quot;$src&quot; ]]; then
+    echo &quot;  - Aviso: pasta de origem nao encontrada: $src&quot;
+    continue
+  fi
+
+  tmp=&quot;__tmp__${dst}&quot;
+  if [[ -e &quot;$tmp&quot; ]]; then
+    echo &quot;  - Erro: nome temporario ja existe: $tmp&quot;
+    exit 1
+  fi
+
+  mv &quot;$src&quot; &quot;$tmp&quot;
+  echo &quot;  - $src -&gt; $tmp&quot;
+done
+
+echo &quot;[2/2] Aplicando nomes finais...&quot;
+for pair in &quot;${MAP[@]}&quot;; do
+  dst=&quot;${pair##*|}&quot;
+  tmp=&quot;__tmp__${dst}&quot;
+
+  if [[ ! -d &quot;$tmp&quot; ]]; then
+    echo &quot;  - Aviso: pasta temporaria nao encontrada: $tmp&quot;
+    continue
+  fi
+
+  if [[ -e &quot;$dst&quot; ]]; then
+    echo &quot;  - Erro: destino final ja existe: $dst&quot;
+    exit 1
+  fi
+
+  mv &quot;$tmp&quot; &quot;$dst&quot;
+  echo &quot;  - $tmp -&gt; $dst&quot;
+done
+
+echo &quot;Concluido. Estrutura renumerada sem duplicidades.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./185-readme.html">Aula anterior</a>
+      <a href="./187-template-modulo.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

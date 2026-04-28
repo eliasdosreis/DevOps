@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#032-modulo-4-projeto-final-10-rbac">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - projeto final - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - projeto final" loading="lazy">
+      <figcaption>Projeto final consolida manifestos de producao em uma arquitetura completa.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 10-rbac.yaml
+# PROJETO FINAL - Seguran�a e Permiss�es (RBAC)
+#
+# Quem pode fazer o qu� no nosso namespace &quot;ecommerce&quot;?
+#
+# PERSONAS deste arquivo:
+# 1. SA da API        -&gt; Pode ler ConfigMaps e Secrets pr�prios
+# 2. SA do Frontend   -&gt; Pode apenas ler sua pr�pria config
+# 3. Role dev-viewer  -&gt; Desenvolvedor pode VER (n�o editar)
+# ============================================================
+
+# -------------------------------------------------------
+# SERVICEACCOUNT 1: Identidade da API
+# -------------------------------------------------------
+apiVersion: v1
+kind: ServiceAccount
+
+metadata:
+  name: sa-api                # Crach� da API
+  namespace: ecommerce
+
+  labels:
+    app: api
+
+---
+# -------------------------------------------------------
+# SERVICEACCOUNT 2: Identidade do Frontend
+# -------------------------------------------------------
+apiVersion: v1
+kind: ServiceAccount
+
+metadata:
+  name: sa-frontend           # Crach� do Frontend
+  namespace: ecommerce
+
+  labels:
+    app: frontend
+
+---
+# -------------------------------------------------------
+# ROLE 1: Permiss�es para a API
+# A API precisa ler ConfigMaps e Secrets para funcionar
+# -------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+
+metadata:
+  name: role-api              # Nome da role
+  namespace: ecommerce
+
+rules:
+  # A API pode LER ConfigMaps (suas configura��es)
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;configmaps&quot;]
+    verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]
+    resourceNames: [&quot;config-ecommerce&quot;]  # S� este ConfigMap!
+    # Princ�pio do menor privil�gio:
+    # limitamos a qual ConfigMap ela tem acesso
+
+  # A API pode LER Secrets (senhas do banco)
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;secrets&quot;]
+    verbs: [&quot;get&quot;]
+    resourceNames: [&quot;secrets-ecommerce&quot;]  # S� este Secret!
+
+  # A API pode ver seus pr�prios pods (para health check interno)
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;pods&quot;]
+    verbs: [&quot;get&quot;, &quot;list&quot;]
+
+---
+# -------------------------------------------------------
+# ROLEBINDING 1: Dar a role para a API
+# -------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+
+metadata:
+  name: binding-api
+  namespace: ecommerce
+
+subjects:
+  - kind: ServiceAccount
+    name: sa-api              # O crach� da API
+    namespace: ecommerce
+
+roleRef:
+  kind: Role
+  name: role-api              # Recebe as permiss�es da role-api
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# -------------------------------------------------------
+# ROLE 2: Desenvolvedor - s� pode VER (n�o alterar)
+# Boa pr�tica: devs n�o t�m acesso de escrita em produ��o!
+# -------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+
+metadata:
+  name: role-dev-readonly     # Somente leitura para devs
+  namespace: ecommerce
+
+rules:
+  - apiGroups: [&quot;&quot;, &quot;apps&quot;]
+    resources:
+      - pods
+      - pods/log              # Ver logs dos pods
+      - deployments
+      - services
+      - configmaps
+    verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]
+    # N�O tem: create, delete, patch, update!
+
+  # Devs podem acessar o shell dos pods para debug
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;pods/exec&quot;]  # kubectl exec
+    verbs: [&quot;create&quot;]
+
+  # Devs N�O podem ver Secrets (dados sens�veis!)
+  # (simplesmente n�o listamos &quot;secrets&quot; aqui)
+
+---
+# -------------------------------------------------------
+# CLUSTERROLE: Para o sistema de monitoramento
+# Prometheus precisa de acesso em TODOS os namespaces
+# -------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+
+metadata:
+  name: clusterrole-monitoramento
+
+rules:
+  - apiGroups: [&quot;&quot;]
+    resources:
+      - nodes
+      - nodes/proxy
+      - services
+      - endpoints
+      - pods
+    verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]
+
+  - apiGroups: [&quot;extensions&quot;, &quot;networking.k8s.io&quot;]
+    resources: [&quot;ingresses&quot;]
+    verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]
+
+# ============================================================
+# RESUMO DE SEGURAN�A APLICADA:
+#
+# SA da API   -&gt; L� config e secret pr�prios APENAS
+# SA Frontend -&gt; L� apenas sua config
+# Devs        -&gt; Veem tudo, editam nada (produ��o!)
+# Prometheus  -&gt; L� m�tricas de todos os namespaces
+#
+# O QUE N�O FIZEMOS (propositalmente):
+# - Ningu�m tem acesso * (admin total)
+# - Secrets n�o s�o acess�veis para devs
+# - API n�o pode criar/deletar outros pods
+#
+# ENTREVISTA S�NIOR:
+# &quot;Como auditar quem acessou o que no K8s?&quot;
+# RESPOSTA: Audit Logs do API Server! Configure:
+# --audit-policy-file e --audit-log-path no kube-apiserver.
+# Registra quem (user/SA), fez o qu� (verbo), em qual recurso.
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./031-modulo-4-projeto-final-09-hpa.html">Aula anterior</a>
+      <a href="./033-modulo-4-projeto-final-11-networkpolicy.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

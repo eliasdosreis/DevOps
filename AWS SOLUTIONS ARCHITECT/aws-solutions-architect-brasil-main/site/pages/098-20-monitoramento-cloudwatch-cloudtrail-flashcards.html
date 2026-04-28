@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flashcards — Módulo 14: Monitoramento, CloudWatch e CloudTrail - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#098-20-monitoramento-cloudwatch-cloudtrail-flashcards">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 20 - Monitoramento CloudWatch CloudTrail - 8 min - 20-Monitoramento-CloudWatch-CloudTrail/flashcards.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 20 - Monitoramento CloudWatch CloudTrail" loading="lazy">
+      <figcaption>Observabilidade e auditoria respondem: o que aconteceu, quando, por quem e com qual impacto.</figcaption>
+    </figure>
+    <h1>Flashcards — Módulo 14: Monitoramento, CloudWatch e CloudTrail</h1>
+<blockquote><p><strong>Formato:</strong> P = Pergunta | R = Resposta<br><strong>Total:</strong> 25 flashcards</p></blockquote>
+<hr>
+<p><strong>P:</strong> Como o CloudWatch Agent permite monitorar memória e disco no EC2?<br><strong>R:</strong> Por padrão, CloudWatch <strong>não</strong> coleta métricas de memória RAM, uso de disco, processos. Instalar o <strong>CloudWatch Agent</strong> na instância permite enviar métricas customizadas ao CloudWatch (ex: <code>mem_used_percent</code>, <code>disk_used_percent</code>). O Agent também coleta logs e os envia ao CloudWatch Logs.</p>
+<hr>
+<p><strong>P:</strong> O que é CloudWatch Logs Insights?<br><strong>R:</strong> Engine de <strong>query interativa</strong> para CloudWatch Logs. Sintaxe própria (similar SQL). Permite: filtrar, agregar, visualizar logs. Ex: <code>fields @timestamp, @message | filter @message like /ERROR/ | sort @timestamp desc | limit 20</code>. Paga por dados escaneados. Resultados visuais (tabelas, gráficos de séries temporais).</p>
+<hr>
+<p><strong>P:</strong> O que é CloudTrail e quais eventos ele registra?<br><strong>R:</strong> Serviço de <strong>auditoria de API calls</strong> na AWS. Registra: quem chamou qual API, quando, de qual IP, com qual resultado. Tipos: <strong>Management Events</strong> (criar/deletar recursos — CloudFormation, IAM, EC2 start/stop), <strong>Data Events</strong> (operações sobre dados — S3 GetObject, Lambda Invoke; desabilitado por padrão), <strong>Insights Events</strong> (atividade incomum de API).</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre CloudTrail e AWS Config?<br><strong>R:</strong> <strong>CloudTrail:</strong> &quot;quem fez o quê e quando?&quot; — histórico de API calls. Auditoria de ações. <strong>AWS Config:</strong> &quot;como está configurado agora e como mudou?&quot; — histórico de configurações de recursos. Compliance: avaliar recursos contra regras. CloudTrail registra eventos; Config registra estados de configuração.</p>
+<hr>
+<p><strong>P:</strong> O que são AWS Config Rules e como funcionam?<br><strong>R:</strong> Regras que avaliam se recursos AWS estão conformes com políticas. <strong>Managed Rules:</strong> pré-construídas pela AWS (ex: <code>s3-bucket-public-read-prohibited</code>). <strong>Custom Rules:</strong> código Lambda que avalia conformidade. Avaliação: triggered por changes ou periódica. Status: COMPLIANT / NON_COMPLIANT. Remediações automáticas via SSM.</p>
+<hr>
+<p><strong>P:</strong> O que é o AWS X-Ray e quais conceitos são centrais?<br><strong>R:</strong> Serviço de <strong>distributed tracing</strong> para aplicações. Conceitos: <strong>Trace</strong> = request end-to-end; <strong>Segment</strong> = work feito por um serviço; <strong>Subsegment</strong> = granular sub-work; <strong>Annotations</strong> = key-value para filtrar traces; <strong>Sampling</strong> = % de requests a tracear (padrão: 5%). Service Map: visualização das dependências e latências.</p>
+<hr>
+<p><strong>P:</strong> O que é CloudWatch Anomaly Detection?<br><strong>R:</strong> Usa ML para criar um modelo de comportamento esperado para uma métrica (baseado em histórico). Cria uma banda dinâmica de &quot;normal&quot;. Alertas quando a métrica sai da banda. Adapta-se a sazonalidade (dias da semana, horários). Mais sofisticado que alarme de threshold estático.</p>
+<hr>
+<p><strong>P:</strong> O que é AWS Systems Manager Session Manager e por que é mais seguro que SSH?<br><strong>R:</strong> Acesso a instâncias EC2 (e on-premises gerenciados) via browser ou CLI <strong>sem abrir porta 22 (SSH) e sem SSH keys</strong>. Auditável: todas as sessões são logadas no CloudWatch/S3. Funciona em instâncias em subnets privadas sem bastion host. Requer SSM Agent na instância + IAM Role com permissão <code>ssm:StartSession</code>.</p>
+<hr>
+<p><strong>P:</strong> Quais são os dois tiers do SSM Parameter Store?<br><strong>R:</strong> <strong>Standard:</strong> gratuito, até 10.000 parâmetros, valor até 4 KB, sem Advanced Policies, sem TTL. <strong>Advanced:</strong> pago ($0.05/mês por parâmetro), até 100.000 parâmetros, valor até 8 KB, suporta Parameter Policies (TTL automático, notificações de expiração). Para secrets rotativos: usar Secrets Manager.</p>
+<hr>
+<p><strong>P:</strong> O que é CloudWatch Contributor Insights?<br><strong>R:</strong> Analisa logs e métricas para identificar os <strong>top contributors</strong> de latência, erro ou custo. Ex: &quot;quais 10 IPs geram mais erros 5XX?&quot; ou &quot;quais clientes têm maior latência de API?&quot;. Cria regras com padrões de log. Útil para: segurança (detecção de IPs suspeitos), performance (identificar usuários/recursos que degradam o sistema).</p>
+<hr>
+<p><strong>P:</strong> Como fazer o CloudTrail logs ser à prova de adulteração?<br><strong>R:</strong> Ativar <strong>Log File Validation</strong> no trail: CloudTrail gera um Digest file (hash SHA-256) por hora. Qualquer modificação no log file é detectável comparando com o digest. Armazenar logs em bucket S3 com <strong>Object Lock (Compliance mode)</strong> + MFA Delete + políticas restritivas. CloudTrail Lake para análise imutável.</p>
+<hr>
+<p><strong>P:</strong> O que é AWS Config Aggregator?<br><strong>R:</strong> Coleta dados de conformidade do AWS Config de múltiplas contas e regiões em uma <strong>conta central</strong>. Dois tipos de source: contas individuais (lista de account IDs) ou Organization (todas as contas da AWS Org automaticamente). Permite visão centralizada de compliance em multi-conta. A conta central precisa de permissão das fontes via delegated administrator.</p>
+<hr>
+<p><strong>P:</strong> O que é o SSM Patch Manager?<br><strong>R:</strong> Automatiza patching de instâncias EC2 (e on-premises). <strong>Patch Baselines:</strong> define quais patches instalar (severidade, classificação). <strong>Maintenance Windows:</strong> janelas de tempo para aplicar patches. <strong>Compliance Reporting:</strong> reporta no Config qual instância está em dia. Pode usar Run Command para aplicar patches on-demand.</p>
+<hr>
+<p><strong>P:</strong> Qual é a retenção padrão de logs do CloudWatch Logs?<br><strong>R:</strong> Por padrão: <strong>indefinida</strong> (logs nunca expiram). Configurável por Log Group: 1 dia a 10 anos, ou &quot;Never Expire&quot;. Para reduzir custo: configurar retention policy. Para compliance: configurar retention adequada. Para longo prazo: exportar para S3 (CloudWatch Logs Subscription Filters → Kinesis Firehose → S3).</p>
+<hr>
+<p><strong>P:</strong> O que é AWS Trusted Advisor?<br><strong>R:</strong> Advisor que analisa a conta AWS em 5 categorias: <strong>Cost Optimization</strong> (instâncias ociosas, Reserved não utilizadas), <strong>Performance</strong> (EBS throughput, EC2 type), <strong>Security</strong> (SGs abertos, MFA root, S3 público), <strong>Fault Tolerance</strong> (RDS backups, ELB health checks), <strong>Service Limits</strong> (alertas ao aproximar limites). Verificações básicas gratuitas; completo com Business/Enterprise Support.</p>
+<hr>
+<p><strong>P:</strong> Como o CloudWatch Alarm monitora o estado de uma instância EC2 e aciona recover?<br><strong>R:</strong> Alarme na métrica <code>StatusCheckFailed_System</code> (falha no hardware subjacente). Ação de alarme: <strong>EC2 Instance Recovery</strong> — move a instância para hardware saudável mantendo o mesmo IP privado, IP Elástico, metadados e volumes EBS. (vs. Reboot que apenas reinicia no mesmo hardware).</p>
+<hr>
+<p><strong>P:</strong> O que é CloudWatch Synthetics Canary?<br><strong>R:</strong> Scripts (Node.js ou Python) que emulam comportamento de usuário em aplicações web/APIs em intervalos configuráveis. Monitora: disponibilidade, latência, fluxos de usuário (login → checkout). Detecta problemas antes de usuários reais serem afetados. Métricas enviadas para CloudWatch. Diferente de Real User Monitoring.</p>
+<hr>
+<p><strong>P:</strong> O que é EventBridge (ex-CloudWatch Events)?<br><strong>R:</strong> Barramento de eventos serverless. Conecta serviços AWS e SaaS. Sources: EC2 state changes, CodePipeline stages, Scheduled events (cron), S3 events, custom events. Targets: Lambda, SQS, SNS, Step Functions, Kinesis, ECS, API Gateway. Rules com event pattern matching (filtros JSON). EventBridge Pipes para transformação ponto-a-ponto.</p>
+<hr>
+<p><strong>P:</strong> O que é CloudWatch Logs Subscription Filter?<br><strong>R:</strong> Em tempo real, filtra e entrega logs de um Log Group para: <strong>Kinesis Data Streams</strong>, <strong>Kinesis Firehose</strong>, <strong>Lambda</strong>. Use cases: análise em tempo real de logs (KDS → Lambda), armazenamento longo prazo (KDF → S3), agregação multi-conta (cross-account subscription destinations).</p>
+<hr>
+<p><strong>P:</strong> Como o AWS Config detecta recursos não conformes automaticamente e remedeia?<br><strong>R:</strong> <strong>Detecção:</strong> Config Rule avaliada continuamente ou por mudança. Status NON_COMPLIANT alertado no console e via EventBridge. <strong>Remediação automática:</strong> SSM Automation Document executado automaticamente quando regra detecta não conformidade. Ex: bucket S3 público → remediation executa SSM que aplica Block Public Access.</p>
+<hr>
+<p><strong>P:</strong> O que é CloudTrail Insights?<br><strong>R:</strong> Detecta atividade anômala de API calls. Analisa padrão normal de write management events e alerta quando há desvio significativo (ex: pico incomum de <code>TerminateInstances</code>, <code>DeleteSecurityGroup</code>). Casos de uso: detectar credenciais comprometidas, erros de automação, ataques. Insights events são cobrados separadamente.</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre CloudWatch Metrics e CloudWatch Custom Metrics?<br><strong>R:</strong> <strong>Built-in Metrics:</strong> coletadas automaticamente por serviços AWS (CPU EC2, latência ELB, InvocationDuration Lambda). Granularidade padrão: 5 minutos (1 min com &quot;detailed monitoring&quot;). <strong>Custom Metrics:</strong> enviadas via PutMetricData API ou CloudWatch Agent de aplicações customizadas. Granularidade: 1 segundo (High Resolution). Exemplos: métricas de negócio, memória da aplicação.</p>
+<hr>
+<p><strong>P:</strong> O que é o AWS Security Hub?<br><strong>R:</strong> Centralizador de <strong>security findings</strong> de múltiplos serviços (GuardDuty, Inspector, Macie, IAM Analyzer, Config, Firewall Manager, 3rd party). Dashboard unificado. Scoring de postura de segurança contra padrões (CIS AWS Benchmarks, AWS Foundational Security Best Practices). Automatiza remediações via EventBridge. Multi-account via Organization.</p>
+<hr>
+<p><strong>P:</strong> O que é o SSM Run Command?<br><strong>R:</strong> Executa scripts (Shell, PowerShell, etc.) em instâncias EC2 e servidores on-premises gerenciados em larga escala. Sem SSH necessário. Targets: instâncias por tag, por instance ID, todos os managed instances. Auditável: output enviado para S3/CloudWatch. Rate control para aplicar gradualmente. Base do Patch Manager e outros automação SSM.</p>
+<hr>
+<p><strong>P:</strong> Qual a diferença entre CloudWatch Logs e CloudTrail para auditoria de segurança?<br><strong>R:</strong> <strong>CloudTrail:</strong> auditoria de ações na AWS (API calls, console logins, IAM changes). Respondem: &quot;foi deletado/modificado? Por quem? Quando?&quot;. <strong>CloudWatch Logs:</strong> logs de aplicações, OS, serviços AWS (VPC Flow Logs, ALB access logs). Respondem: &quot;o que aconteceu dentro da aplicação?&quot;. Para auditoria completa: CloudTrail (quem fez o quê) + CloudWatch Logs (o que aconteceu no sistema).</p>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./097-20-monitoramento-cloudwatch-cloudtrail-cheatsheet.html">Aula anterior</a>
+      <a href="./099-20-monitoramento-cloudwatch-cloudtrail-lab.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

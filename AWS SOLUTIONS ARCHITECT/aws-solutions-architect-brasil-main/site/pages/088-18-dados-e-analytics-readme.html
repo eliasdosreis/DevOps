@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Módulo 12 — Dados e Analytics - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#088-18-dados-e-analytics-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 18 - Dados e Analytics - 6 min - 18-Dados-e-Analytics/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 18 - Dados e Analytics" loading="lazy">
+      <figcaption>Analytics e fluxo: coletar, transformar, consultar e entregar insight.</figcaption>
+    </figure>
+    <h1>Módulo 12 — Dados e Analytics</h1>
+<h2>Visão Geral do Ecossistema de Analytics AWS</h2>
+<pre><code class="language-">Ingestão → Armazenamento → Processamento → Análise → Visualização
+  Kinesis    S3 (Data Lake)   EMR / Glue     Athena    QuickSight
+  MSK        Redshift DW      Spark          OpenSearch BI tools
+  DataSync   OpenSearch       Lambda         Redshift</code></pre>
+<hr>
+<h2>Amazon Athena</h2>
+<p>SQL serverless sobre dados no S3:</p>
+<ul><li><strong>Pay-per-query</strong>: $5 por TB de dados escaneados</li><li>Sem infraestrutura para gerenciar; lê formatos: Parquet, ORC, Avro, JSON, CSV</li><li>Usa <strong>Glue Data Catalog</strong> como metastore</li><li>Suporta particionamento → <strong>crucial para reduzir custo</strong> (evita full table scan)</li><li><strong>Federated Query</strong>: consulta outras fontes de dados via Lambda connectors (DynamoDB, RDS, Redshift, CloudWatch)</li><li><strong>Athena for Apache Spark</strong>: notebooks interativos com Spark (sem cluster EMR)</li></ul>
+<h3>Otimizações para Reduzir Custo e Latência</h3>
+<pre><code class="language-sql">-- Particionamento (particiona por data → scan apenas partições relevantes)
+MSCK REPAIR TABLE vendas; -- atualiza partições no Glue Catalog
+
+-- Colunar (Parquet/ORC escaneiam apenas colunas necessárias)
+SELECT amount FROM vendas WHERE year=2024 AND month=01
+-- Só escaneia coluna &#39;amount&#39; nas partições de jan/2024 → 99% menos dados</code></pre>
+<hr>
+<h2>AWS Glue</h2>
+<p>ETL serverless e catálogo de dados:</p>
+<div class="table-wrap"><table><thead><tr><th>Componente</th><th>Função</th></tr></thead><tbody><tr><td><strong>Glue Data Catalog</strong></td><td>Metastore central: tabelas, schemas, localização S3</td></tr><tr><td><strong>Crawlers</strong></td><td>Descobre e registra schemas automaticamente (S3, RDS, DynamoDB, etc.)</td></tr><tr><td><strong>ETL Jobs</strong></td><td>Python/Scala Spark jobs gerenciados (escala automática de DPUs)</td></tr><tr><td><strong>Glue Studio</strong></td><td>Interface visual para ETL jobs</td></tr><tr><td><strong>DataBrew</strong></td><td>Preparação de dados visual (limpeza, normalização) sem código</td></tr><tr><td><strong>Glue Streaming</strong></td><td>ETL de streaming em tempo real (Kinesis, Kafka, S3)</td></tr><tr><td><strong>Workflow</strong></td><td>Orquestração de jobs ETL com triggers e dependências</td></tr></tbody></table></div>
+<p><strong>DPU (Data Processing Unit)</strong>: 4 vCPUs + 16 GB RAM. Jobs cobrados por DPU-hora.</p>
+<hr>
+<h2>Amazon EMR (Elastic MapReduce)</h2>
+<p>Cluster gerenciado para big data com Apache Hadoop, Spark, Hive, Presto, HBase:</p>
+<div class="table-wrap"><table><thead><tr><th>Modo</th><th>Descrição</th></tr></thead><tbody><tr><td><strong>EMR on EC2</strong></td><td>Cluster de instâncias EC2 (Master + Core + Task nodes)</td></tr><tr><td><strong>EMR on EKS</strong></td><td>Spark/Presto rodando como pods Kubernetes no EKS</td></tr><tr><td><strong>EMR Serverless</strong></td><td>Submete jobs sem gerenciar cluster (auto-scale de workers)</td></tr></tbody></table></div>
+<p><strong>Storage options:</strong></p>
+<ul><li><strong>HDFS</strong> (in-cluster, efêmero): máximo throughput para processamento</li><li><strong>EMRFS → S3</strong>: storage persistente; dados sobrevivem ao término do cluster</li></ul>
+<p><strong>Nodes:</strong></p>
+<ul><li><strong>Master</strong> (Primary): coordena o cluster (NameNode, YARN ResourceManager)</li><li><strong>Core</strong>: armazena dados HDFS + processa</li><li><strong>Task</strong>: apenas processa (sem HDFS); ideal para Spot instances</li></ul>
+<hr>
+<h2>Amazon OpenSearch Service</h2>
+<p>Search + analytics engine baseado em Elasticsearch/OpenSearch:</p>
+<ul><li><strong>Search</strong>: full-text search, autocompletion, faceted search para aplicações</li><li><strong>Log Analytics</strong>: CloudWatch Logs/Kinesis Firehose → OpenSearch → Kibana/Dashboards</li><li><strong>Real-time Analytics</strong>: indexação quase em tempo real para dashboards BI</li></ul>
+<div class="table-wrap"><table><thead><tr><th>Deployment</th><th>Nodes</th><th>HA</th></tr></thead><tbody><tr><td>Multi-AZ</td><td>Réplicas shards em diferentes AZs</td><td>SIM (2-3 AZs)</td></tr><tr><td>Dedicated Master</td><td>Nós master separados dos data nodes</td><td>Recomendado para prod</td></tr><tr><td>UltraWarm</td><td>Tier de storage mais barato para dados &quot;mornos&quot;</td><td>Read-only; S3-backed</td></tr><tr><td>Cold Storage</td><td>Armazena índices em S3, carrega quando necessário</td><td>Ainda mais barato</td></tr></tbody></table></div>
+<hr>
+<h2>Amazon MSK (Managed Streaming for Apache Kafka)</h2>
+<p>Kafka gerenciado na AWS:</p>
+<ul><li>Cria e gerencia clusters Kafka (broker nodes, zookeeper)</li><li>Compatível com APIs Kafka nativas (producers/consumers existentes têm zero mudanças)</li><li><strong>MSK Connect</strong> (Kafka Connect gerenciado): conectores source/sink para S3, RDS, OpenSearch, etc.</li><li><strong>MSK Serverless</strong>: capacidade automática, sem gerenciar brokers</li><li>Retenção de dados configurável; integra com IAM e VPC</li><li><strong>Quando usar MSK vs Kinesis?</strong> MSK: migração de Kafka existente; ecossistema Kafka (connectors, streams); compliance. Kinesis: AWS-native mais simples, sem Kafka expertise necessária.</li></ul>
+<hr>
+<h2>Amazon Redshift</h2>
+<p>Data Warehouse OLAP com MPP (Massively Parallel Processing):</p>
+<ul><li>Clusters: 1 Leader Node + 1-128 Compute Nodes</li><li><strong>Columnar storage</strong>: cada coluna armazenada separadamente → compressão + scan eficiente</li><li><strong>Distribution styles</strong>: EVEN, KEY, ALL (para tabelas dimensão pequenas)</li></ul>
+<div class="table-wrap"><table><thead><tr><th>Feature</th><th>Descrição</th></tr></thead><tbody><tr><td>Redshift Spectrum</td><td>Query S3 como tabelas externas sem COPY</td></tr><tr><td>Materialized Views</td><td>Pré-computação incremental de queries complexas</td></tr><tr><td>Concurrency Scaling</td><td>Auto-adiciona cluster capacity para picos de queries simultâneas</td></tr><tr><td>AQUA</td><td>Hardware-accelerated cache (apenas ra3 nodes)</td></tr><tr><td>Redshift Serverless</td><td>Capacidade automática por query (paga por RPU-hour)</td></tr><tr><td>Data Sharing</td><td>Leitura de dados entre clusters sem copiar (mesmo ou cross-account)</td></tr></tbody></table></div>
+<hr>
+<h2>Amazon QuickSight</h2>
+<p>BI serverless e dashboards:</p>
+<ul><li>Conecta a: S3 (Athena), Redshift, RDS, OpenSearch, third-party (Salesforce, etc.)</li><li><strong>SPICE</strong> (Super-fast Parallel In-memory Calculation Engine): cache in-memory para dashboards ultra-rápidos</li><li><strong>Embedding</strong>: dashboards embarcados em aplicações web com row-level security por usuário</li><li><strong>ML Insights</strong>: anomaly detection automática, forecasting, narrativas em linguagem natural</li><li>Pagamento por usuário/sessão (sem cluster para provisionar)</li></ul>
+<hr>
+<h2>AWS Lake Formation</h2>
+<p>Governança e segurança do Data Lake sobre S3 + Glue Catalog:</p>
+<ul><li><strong>Fine-grained access control</strong>: permissões por banco/tabela/coluna/row (cell-level security)</li><li><strong>Blueprint</strong>: automatiza criação de data lake a partir de uma fonte de dados</li><li><strong>DataFilters</strong>: compartilhar apenas subsets de tabelas entre contas</li><li><strong>Tagged-based access control (LF-TBAC)</strong>: tags em recursos e identidades para controle de acesso</li></ul>
+<hr>
+<h2>Pipeline Analytics Típico</h2>
+<pre><code class="language-">Dados Brutos (on-prem, RDs, APIs)
+  ├── Kinesis Data Firehose → S3 (raw layer)
+  ├── DMS → S3 (migração RDS/Oracle)
+  └── DataSync → S3 (arquivos on-prem)
+
+S3 (raw/bronze)
+  └── Glue Crawlers → Glue Catalog
+        └── Glue ETL Jobs (Spark)
+              └── S3 (processed/silver/gold - Parquet particionado)
+                    ├── Athena (queries ad-hoc, pay-per-scan)
+                    ├── Redshift Spectrum (DW queries misturadas)
+                    └── QuickSight (dashboards BI via SPICE)
+
+Streaming:
+  Kinesis/Kafka → Glue Streaming / Flink (Kinesis Analytics) → OpenSearch (real-time dash)</code></pre>
+<hr>
+<h2>Dicas de Prova</h2>
+<ul><li>Athena: <strong>Parquet + particionamento</strong> = combinação padrão para minimizar custo</li><li>Glue Catalog é compartilhado entre Athena, Redshift Spectrum, EMR — metastore único</li><li><strong>EMR node types</strong>: Master (coordena), Core (HDFS + compute), Task (compute only = Spot ideal)</li><li>MSK não tem retenção máxima; Kinesis tem 365 dias de retenção máxima</li><li>Redshift cluster vs Redshift Serverless: cluster para carga previsível; serverless para carga variável ou intermitente</li><li>OpenSearch: NOT serverless (em cloud) — você gerencia nodes e replication; usa compute instances</li><li>Lake Formation FGA overrides IAM policies for Glue Catalog permissions</li><li>AQUA (Redshift): hardware acceleration para aggregate queries; disponível apenas em ra3 nodes</li><li>QuickSight SPICE: dados importados, cache in-memory; refresh configurável (schedule ou manual)</li><li>Athena Federated Query usa Lambda Data Source Connectors → executa queries em fontes não-S3</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./087-18-dados-e-analytics-questoes.html">Aula anterior</a>
+      <a href="./089-19-machine-learning-e-ia-casos-de-uso.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

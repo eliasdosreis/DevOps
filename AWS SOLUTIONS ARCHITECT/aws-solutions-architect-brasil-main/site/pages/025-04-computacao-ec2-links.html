@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Links de Referência — Computação EC2 - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#025-04-computacao-ec2-links">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - Computacao EC2 - 3 min - 04-Computacao-EC2/links.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - Computacao EC2" loading="lazy">
+      <figcaption>Compute e escolha de motor: instancia, container, funcao ou servico gerenciado.</figcaption>
+    </figure>
+    <h1>Links de Referência — Computação EC2</h1>
+<h2>Documentação Oficial AWS</h2>
+<h3>EC2 Fundamentals</h3>
+<ul><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/">EC2 User Guide</a> — Guia completo do EC2</li><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html">Instance Types</a> — Todos os tipos e famílias</li><li><a href="https://aws.amazon.com/ec2/instance-explorer/">EC2 Instance Type Explorer</a> — Comparação interativa de tipos</li></ul>
+<h3>Purchasing Options</h3>
+<ul><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-on-demand-instances.html">On-Demand Instances</a></li><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-reserved-instances.html">Reserved Instances</a> — Standard e Convertible</li><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-instances.html">Spot Instances</a> — Guia completo Spot</li><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-fleet.html">Spot Fleet</a> — Configurar Spot Fleet</li><li><a href="https://docs.aws.amazon.com/savingsplans/latest/userguide/">Savings Plans</a> — Compute vs EC2 Instance Savings Plans</li><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/dedicated-hosts-overview.html">Dedicated Hosts</a> — BYO-L e compliance</li></ul>
+<h3>Instance Metadata e User Data</h3>
+<ul><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html">Instance Metadata (IMDS)</a> — IMDSv1 vs IMDSv2</li><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html">Transitioning to Using Instance Metadata Service Version 2</a> — Migrar para IMDSv2</li><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html">User Data</a> — Scripts de inicialização</li></ul>
+<h3>AMIs</h3>
+<ul><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html">Amazon Machine Images</a> — Criar, compartilhar, copiar</li><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/CopyingAMIs.html">Copying an AMI</a> — Cross-region copy</li></ul>
+<h3>EBS</h3>
+<ul><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html">EBS Volume Types</a> — Comparativo detalhado gp2/gp3/io1/io2/st1/sc1</li><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-optimized.html">EBS-Optimized Instances</a> — Instâncias com I/O dedicado</li><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/provisioned-iops.html">Amazon EBS io2 Block Express</a> — Até 256K IOPS</li><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/modify-volume-type.html">Migrating gp2 to gp3</a> — Migração de gp2 para gp3 sem downtime</li></ul>
+<h3>Placement Groups</h3>
+<ul><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html">Placement Groups</a> — Cluster, Spread, Partition</li></ul>
+<h3>EC2 Lifecycle</h3>
+<ul><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html">Instance Lifecycle</a> — Estados e transições</li><li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Hibernate.html">Hibernate Your Instance</a> — Requisitos e limitações do hibernate</li></ul>
+<hr>
+<h2>Calculadoras e Comparadores</h2>
+<ul><li><a href="https://calculator.aws/pricing/2/home">AWS Pricing Calculator</a> — Comparar custos On-Demand vs RI vs Spot</li><li><a href="https://aws.amazon.com/ec2/spot/instance-advisor/">EC2 Spot Instance Advisor</a> — Taxa de interrupção por tipo</li><li><a href="https://instances.vantage.sh/">EC2 Instance Comparison</a> — Ferramenta não-oficial excelente para comparar tipos</li></ul>
+<hr>
+<h2>Whitepapers</h2>
+<ul><li><a href="https://docs.aws.amazon.com/wellarchitected/latest/performance-efficiency-pillar/">Compute Pillar — Well-Architected Framework</a> — Pilar de eficiência de performance</li><li><a href="https://docs.aws.amazon.com/whitepapers/latest/cost-optimization-leveraging-ec2-spot-instances/">Amazon EC2 Spot Best Practices</a> — Whitepaper cost optimization com Spot</li><li><a href="https://docs.aws.amazon.com/whitepapers/latest/running-containerized-microservices/">Running Containerized Microservices on AWS</a> — Inclui EC2 launch types</li></ul>
+<hr>
+<h2>FAQs para o Exame</h2>
+<ul><li><a href="https://aws.amazon.com/ec2/faqs/">EC2 FAQ</a></li><li><a href="https://aws.amazon.com/ec2/pricing/reserved-instances/faq/">Reserved Instances FAQ</a></li><li><a href="https://aws.amazon.com/ec2/spot/faqs/">Spot Instances FAQ</a></li></ul>
+<hr>
+<h2>Conceitos SAA-C03 Chave Neste Módulo</h2>
+<div class="table-wrap"><table><thead><tr><th>Conceito</th><th>Frequência no Exame</th></tr></thead><tbody><tr><td>Spot para batch tolerante a falhas</td><td>Alta</td></tr><tr><td>gp3 vs gp2 (gp3 mais flexível e barato)</td><td>Alta</td></tr><tr><td>io2 Block Express para &gt;64K IOPS</td><td>Alta</td></tr><tr><td>Cluster PG para HPC/baixa latência</td><td>Alta</td></tr><tr><td>IMDSv2 obrigatório (HttpTokens: required)</td><td>Média</td></tr><tr><td>Dedicated Host para BYO-L (Oracle, SQL Server)</td><td>Alta</td></tr><tr><td>Hibernate para preservar estado de RAM</td><td>Média</td></tr><tr><td>Partition PG para HDFS/Cassandra/Kafka</td><td>Média</td></tr><tr><td>Compute Savings Plans vs EC2 Instance SP</td><td>Média</td></tr><tr><td>st1 para throughput sequencial (não boot)</td><td>Alta</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./024-04-computacao-ec2-lab.html">Aula anterior</a>
+      <a href="./026-04-computacao-ec2-questoes.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

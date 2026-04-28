@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>25 Criptografia, KMS e Gestao de Segredos - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#137-25-criptografia-kms-e-gestao-de-segredos-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 25 - Criptografia KMS e Gestao de Segredos - 2 min - 25-Criptografia-KMS-e-Gestao-de-Segredos/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 25 - Criptografia KMS e Gestao de Segredos" loading="lazy">
+      <figcaption>Criptografia separa dado, chave, segredo, permissao e rotacao.</figcaption>
+    </figure>
+    <h1>25 Criptografia, KMS e Gestao de Segredos</h1>
+<h2>Objetivos do modulo</h2>
+<ul><li>dominar criptografia em repouso e em transito no contexto SAA-C03</li><li>diferenciar AWS KMS, CloudHSM, Secrets Manager, Parameter Store e ACM</li><li>decidir entre chaves AWS-managed e customer-managed com base em compliance</li><li>aplicar padroes de seguranca com menor sobrecarga operacional</li></ul>
+<h2>Conceitos fundamentais</h2>
+<p>A prova SAA-C03 cobra seguranca aplicada: nao basta saber o nome do servico, e preciso escolher a melhor combinacao de criptografia, controle de acesso e rotacao de segredos.</p>
+<h2>KMS na pratica</h2>
+<ul><li>KMS gerencia chaves e operacoes criptograficas auditaveis.</li><li>Customer managed keys permitem controle de policy, rotacao e grants.</li><li>Key policy e obrigatoria para acesso correto.</li><li>Envelope encryption e padrao para dados em escala.</li></ul>
+<p>Fluxo resumido de envelope encryption:</p>
+<ol><li>aplicacao pede data key ao KMS (GenerateDataKey)</li><li>KMS retorna data key plaintext e cifrada</li><li>aplicacao cifra os dados com a key plaintext</li><li>armazena dados cifrados + data key cifrada</li></ol>
+<h2>Segredos e certificados</h2>
+<ul><li>Secrets Manager: segredos com rotacao automatica (forte para credenciais de banco).</li><li>Parameter Store SecureString: configuracoes e segredos simples, custo menor.</li><li>ACM: certificados TLS para ALB, CloudFront e API Gateway.</li><li>ACM Private CA: emissao de certificados privados internos.</li></ul>
+<h2>Dicas de exame</h2>
+<ul><li>se houver requisito de rotacao automatica de credencial, resposta tende a Secrets Manager.</li><li>se pede &quot;full control over encryption keys&quot;, use customer managed KMS key.</li><li>se precisa HSM dedicado e controle criptografico especializado, considere CloudHSM.</li><li>para CloudFront com ACM, certificado publico deve estar em us-east-1.</li><li>criptografia sem controle de permissao nao resolve risco; IAM + key policy importam.</li></ul>
+<h2>Links relacionados</h2>
+<ul><li><a href="./132-25-criptografia-kms-e-gestao-de-segredos-cheatsheet.html">Cheatsheet</a></li><li><a href="./131-25-criptografia-kms-e-gestao-de-segredos-casos-de-uso.html">Casos de uso</a></li><li><a href="./136-25-criptografia-kms-e-gestao-de-segredos-questoes.html">Questoes</a></li><li><a href="./133-25-criptografia-kms-e-gestao-de-segredos-flashcards.html">Flashcards</a></li><li><a href="./134-25-criptografia-kms-e-gestao-de-segredos-lab.html">Lab</a></li><li><a href="./135-25-criptografia-kms-e-gestao-de-segredos-links.html">Links oficiais</a></li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./136-25-criptografia-kms-e-gestao-de-segredos-questoes.html">Aula anterior</a>
+      <a href="./138-26-well-architected-framework-casos-de-uso.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#018-modulo-3-avancado-04-rbac">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 03 - avancado - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 03 - avancado" loading="lazy">
+      <figcaption>Avancado: ingress, HPA, storage, RBAC, NetworkPolicy e stateful workloads.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 04-rbac.yaml
+# RBAC - Role-Based Access Control
+#
+# Quem pode fazer o quê no cluster?
+#
+# Analogia com um hospital:
+# - ServiceAccount = Crachá de identificação do funcionário
+# - Role           = Lista de permissões (o que pode fazer)
+# - RoleBinding    = Dar o crachá ao funcionário
+#
+# Sem RBAC, qualquer pod poderia:
+# - Ler secrets de outros times
+# - Deletar deployments
+# - Modificar configurações do cluster
+# Isso é um RISCO DE SEGURANÇA enorme!
+#
+# TIPOS:
+# Role + RoleBinding         = Permissões em 1 Namespace
+# ClusterRole + ClusterRoleBinding = Permissões em TODO o cluster
+# ============================================================
+
+# PARTE 1: ServiceAccount
+# É a &quot;identidade&quot; do pod dentro do Kubernetes
+# Pods usam isso para se autenticar na API do K8s
+
+apiVersion: v1
+kind: ServiceAccount
+
+metadata:
+  name: sa-minha-app            # Nome do ServiceAccount
+  namespace: default            # Em qual namespace
+
+---
+# PARTE 2: Role (permissões dentro de 1 namespace)
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+
+metadata:
+  name: role-leitura-pods       # Nome da Role
+  namespace: default            # Só vale neste namespace!
+
+rules:                          # Lista de permissões
+  - apiGroups: [&quot;&quot;]             # &quot;&quot; = core API (pods, services, etc)
+    resources: [&quot;pods&quot;]         # Em quais recursos
+    verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]  # Quais ações são permitidas
+
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;pods/log&quot;]     # Logs dos pods
+    verbs: [&quot;get&quot;]              # Só leitura de logs
+
+  - apiGroups: [&quot;apps&quot;]         # apps = deployments, replicasets
+    resources: [&quot;deployments&quot;]
+    verbs: [&quot;get&quot;, &quot;list&quot;]      # Pode ver deployments
+
+# VERBOS DISPONÍVEIS:
+# get, list, watch  --&gt; leitura
+# create            --&gt; criar recursos
+# update, patch     --&gt; modificar recursos
+# delete            --&gt; apagar recursos
+# &quot;*&quot;               --&gt; TUDO (cuidado!)
+
+---
+# PARTE 3: RoleBinding (conecta Role ao ServiceAccount)
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+
+metadata:
+  name: bind-sa-role-leitura    # Nome do binding
+  namespace: default
+
+subjects:                       # QUEM recebe as permissões?
+  - kind: ServiceAccount
+    name: sa-minha-app          # O ServiceAccount que criamos
+    namespace: default
+
+roleRef:                        # QUAL permissão está sendo dada?
+  kind: Role
+  name: role-leitura-pods       # A Role que criamos
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# PARTE 4: ClusterRole (permissões em TODO o cluster)
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+
+metadata:
+  name: clusterrole-monitoramento   # Sem namespace! É cluster-wide
+
+rules:
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;nodes&quot;, &quot;pods&quot;, &quot;services&quot;, &quot;endpoints&quot;]
+    verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]   # Leitura em todos namespaces
+
+  - apiGroups: [&quot;metrics.k8s.io&quot;]
+    resources: [&quot;pods&quot;, &quot;nodes&quot;]
+    verbs: [&quot;get&quot;, &quot;list&quot;]
+
+---
+# PARTE 5: ClusterRoleBinding
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+
+metadata:
+  name: bind-monitoramento
+
+subjects:
+  - kind: ServiceAccount
+    name: sa-minha-app
+    namespace: default
+
+roleRef:
+  kind: ClusterRole                    # ClusterRole, não Role!
+  name: clusterrole-monitoramento
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# PARTE 6: Pod usando o ServiceAccount
+
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: pod-com-rbac
+  labels:
+    app: com-rbac
+
+spec:
+  serviceAccountName: sa-minha-app    # USA o ServiceAccount criado!
+                                      # Se não especificar: usa &quot;default&quot;
+
+  containers:
+    - name: app
+      image: nginx:1.25
+
+# ============================================================
+# ENTREVISTA SÊNIOR:
+# &quot;Qual o princípio de segurança por trás do RBAC?&quot;
+# RESPOSTA: Principle of Least Privilege (menor privilégio).
+# Cada app/usuário tem APENAS as permissões que precisa.
+# Nada a mais. Isso limita o impacto de um pod comprometido.
+#
+# &quot;Como verificar as permissões de um ServiceAccount?&quot;
+# kubectl auth can-i list pods --as=system:serviceaccount:default:sa-minha-app
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./017-modulo-3-avancado-03-pv-pvc.html">Aula anterior</a>
+      <a href="./019-modulo-3-avancado-05-networkpolicy.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

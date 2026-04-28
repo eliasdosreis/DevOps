@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#010-modulo-02-workloads-04-statefulset">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 02 - workloads - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 02 - workloads" loading="lazy">
+      <figcaption>Workloads controlam replicas, atualizacoes, jobs e execucao programada.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um StatefulSet, o complexo mecanismo respons�vel por rodar 
+# Stateful Aplications (Aplica��es com Estado / Bancos de Dados)
+# mantendo nomes ordinais r�gidos e discos inamov�veis.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Imagine um time de Futebol. 
+# O &quot;Deployment&quot; � do tipo que se camisa &quot;Atacante-XYZ23&quot; sumir de campo, ele simplesmente
+# recria um &quot;Atacante-LKM44&quot;, taca l� no meio com qualquer disco (qualquer chuteira) e foda-se a ordem.
+#
+# O &quot;StatefulSet&quot;, por outro lado, � um Rei r�gido e burocr�tico. Seus Pods t�m ORDEM.
+# Subir� primeiro o &quot;BancodeDados-0&quot;. S� quando o 0 estiver 100% � que sobe o &quot;BancodeDados-1&quot;...
+# E se o &quot;-1&quot; morrer durante o uso, ele RECRIA exatamente o &quot;BancodeDados-1&quot;. E com uma 
+# magia genial: a chuteira (disco/PersistentVolume) continuar� colada cirurgicamente no &quot;-1&quot;.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# O StatefulSet (STS) gerencia a implanta��o e escala de Pods fornecendo 
+# garantias rigorosas sobre a ordena��o (startup e termination order) e 
+# identidades de rede inconfund�veis (Identificadores Ordinais Fixos). 
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: meu-banco-mongo
+  namespace: meu-primeiro-projeto
+spec:
+  serviceName: &quot;mongo-headless&quot; # O STS requer um Service &quot;sem cabe�a&quot; para amarra��o de DNS
+  replicas: 3
+  selector:
+    matchLabels:
+      app: meu-mongo
+  
+  template:
+    metadata:
+      labels:
+        app: meu-mongo
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:6.0
+          ports:
+            - containerPort: 27017
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplique o arquivo:
+#    kubectl apply -f 04-statefulset.yaml
+#
+# 2. ABRA UM OUTRO TERMINAL e rode e fique observando (m�gica em progresso):
+#    kubectl get pods -w -n meu-primeiro-projeto
+# Perceba que os Pods subir�o em O-R-D-E-M. 
+# &quot;meu-banco-mongo-0&quot; (Sua tag mestre), &quot;meu-banco-mongo-1&quot;, &quot;meu-banco-mongo-2&quot;.
+#
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# O Delete do StatefulSet � LENTO DE PROP�SITO:
+# Se voc� pedir `kubectl scale statefulset meu-banco-mongo --replicas=0`, 
+# ele N�O mata todos pra valer em s�rie. Ele matar� do Z ao A. Deletar�
+# o &quot;-2&quot;. Esperar� o commit. Deletar� o &quot;-1&quot;... Respeito m�tuo a consist�ncia.
+#
+# E a dor dos Discos?
+# Em cen�rios avan�ados usamos um bloco chamado `volumeClaimTemplates` onde 
+# o K8s injeta um disco na AWS para cada POD dinamicamente (1 disco pro -0, 1 pro -1).
+# Se voc� der delete no StatefulSet, OS DISCOS FICAM VIVOS pra sempre. O STS n�o
+# apaga volumes pra n�o voc� ser demitido! Eles s�o intoc�veis salvo manualidade.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# Cluster de BD (ex: Galera/Cassandra) precisam de DNS preditivo. Quando um mongod 
+# Slave precisa se juntar ao Master, a qual IP ele manda tr�fego? Ele n�o sabe IP&#39;s! 
+# Com STS n�s geramos DNSs fixos perfeitos que dizem: O master est� pra sempre em
+# `meu-banco-mongo-0.mongo-headless.meu-primeiro-projeto.svc.cluster.local`. 
+# O DNS n�o morrer� mais a cada boot falho de pod! Genialidade arquitetural.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;O que acontece se um n�-oper�rio (Worker Node) falhar em um Cluster 
+# (Falta de energia, CPU offline), onde roda o seu Pod `mongo-0` gerado por StatefulSet? Ele recriar� em outro N� automaticamente r�pido?&quot;
+# Resposta Esperada: &quot;Por padr�o ABSOLUTO: N�o (!). Se o Kubernetes n�o puder
+# ter a certeza matem�tica que o N� morreu (Network Partition), o STS jamais
+# criar� o `mongo-0` em outro servidor concorrentemente, pois ter 2 c�pias ativas acessando o 
+# Mesmo Volume geraria &quot;Data Corruption / Split Brain&quot;. Ele esperar� uma interven��o.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./009-modulo-02-workloads-03-daemonset.html">Aula anterior</a>
+      <a href="./011-modulo-02-workloads-05-job.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

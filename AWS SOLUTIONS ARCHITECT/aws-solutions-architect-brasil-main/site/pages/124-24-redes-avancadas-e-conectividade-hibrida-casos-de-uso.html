@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Casos de Uso - Redes Avancadas e Conectividade Hibrida - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#124-24-redes-avancadas-e-conectividade-hibrida-casos-de-uso">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 24 - Redes Avancadas e Conectividade Hibrida - 1 min - 24-Redes-Avancadas-e-Conectividade-Hibrida/casos-de-uso.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 24 - Redes Avancadas e Conectividade Hibrida" loading="lazy">
+      <figcaption>Conectividade hibrida conecta data center, VPCs e servicos com isolamento e escala.</figcaption>
+    </figure>
+    <h1>Casos de Uso - Redes Avancadas e Conectividade Hibrida</h1>
+<h2>Caso 1: Grupo empresarial multi-conta</h2>
+<p>Cenario:</p>
+<ul><li>50 VPCs em varias contas</li><li>necessidade de comunicacao controlada</li></ul>
+<p>Arquitetura:</p>
+<ul><li>Transit Gateway central</li><li>route tables separadas por dominio</li><li>inspeção de trafego em VPC de seguranca</li></ul>
+<h2>Caso 2: SaaS privado para clientes enterprise</h2>
+<p>Cenario:</p>
+<ul><li>clientes em contas AWS diferentes</li><li>sem exposicao publica</li></ul>
+<p>Arquitetura:</p>
+<ul><li>NLB + Endpoint Service</li><li>consumo via Interface VPC Endpoint (PrivateLink)</li></ul>
+<h2>Caso 3: Datacenter para AWS com baixa variacao de latencia</h2>
+<p>Cenario:</p>
+<ul><li>cargas sensiveis a variacao de rede</li><li>alto volume de dados</li></ul>
+<p>Arquitetura:</p>
+<ul><li>AWS Direct Connect principal</li><li>Site-to-Site VPN como backup</li><li>BGP para failover</li></ul>
+<h2>Caso 4: Integracao DNS hibrida</h2>
+<p>Cenario:</p>
+<ul><li>aplicacoes on-premises precisam resolver zonas privadas na AWS</li></ul>
+<p>Arquitetura:</p>
+<ul><li>Route 53 Resolver inbound endpoint</li><li>conditional forwarding no DNS on-premises</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./123-23-aws-organizations-governanca-e-custos-readme.html">Aula anterior</a>
+      <a href="./125-24-redes-avancadas-e-conectividade-hibrida-cheatsheet.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

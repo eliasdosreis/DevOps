@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Introdução SAA-C03 - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#006-01-introducao-saa-c03-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 01 - Introducao SAA C03 - 3 min - 01-Introducao-SAA-C03/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 01 - Introducao SAA C03" loading="lazy">
+      <figcaption>Estrategia de prova: leia o cenario, encontre os requisitos e elimine distratores.</figcaption>
+    </figure>
+    <aside class="official-note">
+    <strong>Atualização oficial SAA-C03 conferida em 2026-04-28</strong>
+    <p>Este arquivo fonte menciona pesos antigos em algum trecho. Para estudo de prova, use o guia oficial atual: Secure Architectures 30%, Resilient Architectures 26%, High-Performing Architectures 24% e Cost-Optimized Architectures 20%.</p>
+    <p><a href="https://docs.aws.amazon.com/aws-certification/latest/solutions-architect-associate-03/solutions-architect-associate-03.html">Guia oficial AWS Certified Solutions Architect - Associate (SAA-C03)</a></p>
+  </aside><h1>Cheatsheet — Introdução SAA-C03</h1>
+<h2>📌 Pesos do Exame</h2>
+<div class="table-wrap"><table><thead><tr><th>Domínio</th><th>Peso</th><th>Foco prático</th></tr></thead><tbody><tr><td>Design Resilient Architectures</td><td>30%</td><td>HA, DR, desacoplamento, tolerância a falhas</td></tr><tr><td>Design High-Performing Architectures</td><td>28%</td><td>Compute, performance de storage, banco, cache, rede</td></tr><tr><td>Design Secure Applications and Architectures</td><td>24%</td><td>IAM, KMS, isolamento, auditoria, criptografia</td></tr><tr><td>Design Cost-Optimized Architectures</td><td>18%</td><td>Rightsizing, serviços gerenciados, classes e modelos de compra</td></tr></tbody></table></div>
+<h2>🧠 Palavras-Chave do Enunciado</h2>
+<div class="table-wrap"><table><thead><tr><th>Termo</th><th>O que normalmente sinaliza</th></tr></thead><tbody><tr><td>least operational overhead</td><td>serviço gerenciado</td></tr><tr><td>cost-effective</td><td>menor custo total coerente com o requisito</td></tr><tr><td>highly available</td><td>multi-AZ, redundância, failover</td></tr><tr><td>fault tolerant</td><td>tolerância a falha sem indisponibilidade percebida</td></tr><tr><td>near real-time</td><td>streaming, evento, baixa latência</td></tr><tr><td>minimal changes</td><td>evitar refatoração grande</td></tr><tr><td>securely</td><td>IAM, KMS, endpoint privado, menor privilégio</td></tr><tr><td>global users</td><td>CloudFront, Route 53, Global Accelerator</td></tr></tbody></table></div>
+<h2>🧱 Serviços Mais Frequentes</h2>
+<div class="table-wrap"><table><thead><tr><th>Grupo</th><th>Serviços</th></tr></thead><tbody><tr><td>Compute</td><td>EC2, Auto Scaling, ELB, Lambda</td></tr><tr><td>Storage</td><td>S3, EBS, EFS</td></tr><tr><td>Database</td><td>RDS, Aurora, DynamoDB, ElastiCache</td></tr><tr><td>Network</td><td>VPC, Route 53, CloudFront, Transit Gateway</td></tr><tr><td>Security</td><td>IAM, KMS, Secrets Manager, Security Groups</td></tr><tr><td>Messaging</td><td>SQS, SNS, EventBridge</td></tr><tr><td>Observability</td><td>CloudWatch, CloudTrail, Config</td></tr></tbody></table></div>
+<h2>⚖️ Comparações que Mais Caem</h2>
+<div class="table-wrap"><table><thead><tr><th>Comparação</th><th>Regra rápida</th></tr></thead><tbody><tr><td>CloudFront vs Global Accelerator</td><td>cache HTTP vs aceleração global de tráfego</td></tr><tr><td>RDS vs DynamoDB</td><td>relacional/transacional vs NoSQL altamente escalável</td></tr><tr><td>SQS vs SNS</td><td>fila desacoplada vs pub/sub fan-out</td></tr><tr><td>Secrets Manager vs Parameter Store</td><td>rotação de segredos vs configuração/segredo simples</td></tr><tr><td>Lambda vs EC2</td><td>serverless elástico vs controle granular</td></tr><tr><td>Multi-AZ vs Multi-Region</td><td>HA regional vs DR regional completo</td></tr></tbody></table></div>
+<h2>⏱️ Gestão de Tempo de Prova</h2>
+<div class="table-wrap"><table><thead><tr><th>Item</th><th>Referência</th></tr></thead><tbody><tr><td>Questões</td><td>65</td></tr><tr><td>Tempo total</td><td>130 minutos</td></tr><tr><td>Meta média por questão</td><td>~2 minutos</td></tr><tr><td>Questões longas</td><td>marcar, avançar e voltar</td></tr><tr><td>Revisão final</td><td>reservar 10 a 15 minutos</td></tr></tbody></table></div>
+<h2>🚫 Armadilhas Comuns</h2>
+<div class="table-wrap"><table><thead><tr><th>Armadilha</th><th>Correção</th></tr></thead><tbody><tr><td>escolher a solução mais complexa</td><td>escolha a mais aderente ao requisito</td></tr><tr><td>ignorar operação</td><td>inclua esforço administrativo na decisão</td></tr><tr><td>confundir HA com DR</td><td>HA não substitui plano multi-region</td></tr><tr><td>superestimar serviço raro</td><td>concentre-se no núcleo do exame</td></tr><tr><td>decorar sem contexto</td><td>pratique cenários completos</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./005-01-introducao-saa-c03-casos-de-uso.html">Aula anterior</a>
+      <a href="./007-01-introducao-saa-c03-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

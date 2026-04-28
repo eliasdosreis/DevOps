@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Prático — S3: Versionamento, Lifecycle, Replicação e Eventos (Módulo 08) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#040-07-s3-avancado-labs-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #b45309">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 07 - S3 Avancado Labs - 4 min - 07-S3-Avancado-Labs/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 07 - S3 Avancado Labs" loading="lazy">
+      <figcaption>S3 avancado pede atencao a lifecycle, replicacao, seguranca e custo.</figcaption>
+    </figure>
+    <h1>Lab Prático — S3: Versionamento, Lifecycle, Replicação e Eventos (Módulo 08)</h1>
+<blockquote><p><strong>Região:</strong> us-east-1 | <strong>Custo estimado:</strong> ~$0.01 (armazenamento mínimo, &lt; 1h)<br><strong>Pré-requisitos:</strong> AWS CLI configurado, Python 3.8+</p></blockquote>
+<hr>
+<h2>Objetivo</h2>
+<p>Praticar S3 avançado: versionamento de objetos, lifecycle policies, CRR, presigned URLs, e notificações de eventos com Lambda.</p>
+<hr>
+<h2>Parte 1 — Versionamento e Lifecycle</h2>
+<pre><code class="language-bash">ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+BUCKET_MAIN=&quot;lab-s3-lab-${ACCOUNT_ID}&quot;
+BUCKET_REPLICA=&quot;lab-s3-replica-${ACCOUNT_ID}&quot;
+
+# Criar buckets
+aws s3api create-bucket --bucket &quot;$BUCKET_MAIN&quot;
+
+# Habilitar versionamento
+aws s3api put-bucket-versioning \
+  --bucket &quot;$BUCKET_MAIN&quot; \
+  --versioning-configuration Status=Enabled
+
+# Habilitar criptografia padrão
+aws s3api put-bucket-encryption \
+  --bucket &quot;$BUCKET_MAIN&quot; \
+  --server-side-encryption-configuration &#39;{
+    &quot;Rules&quot;: [{
+      &quot;ApplyServerSideEncryptionByDefault&quot;: {
+        &quot;SSEAlgorithm&quot;: &quot;AES256&quot;
+      },
+      &quot;BucketKeyEnabled&quot;: true
+    }]
+  }&#39;
+
+# Criar múltiplas versões do mesmo objeto
+for i in 1 2 3; do
+  echo &quot;Versão ${i} do arquivo — $(date)&quot; &gt; /tmp/config.txt
+  aws s3 cp /tmp/config.txt &quot;s3://${BUCKET_MAIN}/config.txt&quot;
+  sleep 1
+done
+
+# Listar versões
+aws s3api list-object-versions \
+  --bucket &quot;$BUCKET_MAIN&quot; \
+  --prefix &quot;config.txt&quot; \
+  --query &#39;Versions[*].[VersionId, LastModified, IsLatest]&#39; \
+  --output table
+
+# Recuperar versão específica
+FIRST_VERSION=$(aws s3api list-object-versions \
+  --bucket &quot;$BUCKET_MAIN&quot; \
+  --prefix &quot;config.txt&quot; \
+  --query &#39;Versions[-1].VersionId&#39; --output text)
+
+aws s3api get-object \
+  --bucket &quot;$BUCKET_MAIN&quot; \
+  --key &quot;config.txt&quot; \
+  --version-id &quot;$FIRST_VERSION&quot; \
+  /tmp/config_v1.txt
+
+echo &quot;Conteúdo da versão mais antiga:&quot;
+cat /tmp/config_v1.txt
+
+# Lifecycle Policy
+aws s3api put-bucket-lifecycle-configuration \
+  --bucket &quot;$BUCKET_MAIN&quot; \
+  --lifecycle-configuration &#39;{
+    &quot;Rules&quot;: [
+      {
+        &quot;ID&quot;: &quot;mover-para-ia-30-dias&quot;,
+        &quot;Status&quot;: &quot;Enabled&quot;,
+        &quot;Filter&quot;: {&quot;Prefix&quot;: &quot;logs/&quot;},
+        &quot;Transitions&quot;: [
+          {&quot;Days&quot;: 30, &quot;StorageClass&quot;: &quot;STANDARD_IA&quot;},
+          {&quot;Days&quot;: 90, &quot;StorageClass&quot;: &quot;GLACIER&quot;}
+        ],
+        &quot;Expiration&quot;: {&quot;Days&quot;: 365}
+      },
+      {
+        &quot;ID&quot;: &quot;limpar-versoes-antigas&quot;,
+        &quot;Status&quot;: &quot;Enabled&quot;,
+        &quot;Filter&quot;: {&quot;Prefix&quot;: &quot;&quot;},
+        &quot;NoncurrentVersionTransitions&quot;: [
+          {&quot;NoncurrentDays&quot;: 30, &quot;StorageClass&quot;: &quot;STANDARD_IA&quot;}
+        ],
+        &quot;NoncurrentVersionExpiration&quot;: {&quot;NoncurrentDays&quot;: 90},
+        &quot;AbortIncompleteMultipartUpload&quot;: {&quot;DaysAfterInitiation&quot;: 7}
+      }
+    ]
+  }&#39;
+
+echo &quot;Lifecycle configurado!&quot;</code></pre>
+<hr>
+<h2>Parte 2 — Presigned URLs</h2>
+<pre><code class="language-bash"># Criar arquivo privado para demo de presigned URL
+echo &quot;Documento confidencial de acesso temporário&quot; &gt; /tmp/documento_privado.txt
+aws s3 cp /tmp/documento_privado.txt &quot;s3://${BUCKET_MAIN}/privado/documento.txt&quot;
+
+# Verificar que o objeto é privado
+aws s3api get-object-acl \
+  --bucket &quot;$BUCKET_MAIN&quot; \
+  --key &quot;privado/documento.txt&quot; \
+  --query &#39;Grants[*].[Permission, Grantee.Type]&#39; \
+  --output table
+
+# Gerar presigned URL (válida por 60 segundos)
+PRESIGNED_URL=$(aws s3 presign \
+  &quot;s3://${BUCKET_MAIN}/privado/documento.txt&quot; \
+  --expires-in 60)
+
+echo &quot;Presigned URL (60s):&quot;
+echo &quot;$PRESIGNED_URL&quot; | head -c 100
+echo &quot;...&quot;
+
+# Usar a URL para download
+curl -s &quot;$PRESIGNED_URL&quot; -o /tmp/download_presigned.txt
+echo &quot;Download via presigned URL:&quot;
+cat /tmp/download_presigned.txt
+
+# Presigned URL para UPLOAD (PUT)
+PRESIGNED_PUT=$(aws s3 presign \
+  &quot;s3://${BUCKET_MAIN}/uploads/arquivo_usuario.txt&quot; \
+  --expires-in 300)
+
+echo &quot;Presigned PUT URL gerada (simulando upload de cliente)&quot;
+# curl -X PUT &quot;$PRESIGNED_PUT&quot; -T /tmp/config.txt  # descomentar para testar</code></pre>
+<hr>
+<h2>Parte 3 — S3 Event Notification com Lambda</h2>
+<pre><code class="language-bash"># IAM Role para Lambda
+LAMBDA_ROLE_ARN=$(aws iam create-role \
+  --role-name &quot;lab-s3-event-lambda-role&quot; \
+  --assume-role-policy-document &#39;{&quot;Version&quot;:&quot;2012-10-17&quot;,&quot;Statement&quot;:[{&quot;Action&quot;:&quot;sts:AssumeRole&quot;,&quot;Effect&quot;:&quot;Allow&quot;,&quot;Principal&quot;:{&quot;Service&quot;:&quot;lambda.amazonaws.com&quot;}}]}&#39; \
+  --query &#39;Role.Arn&#39; --output text)
+
+aws iam attach-role-policy \
+  --role-name &quot;lab-s3-event-lambda-role&quot; \
+  --policy-arn &quot;arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole&quot;
+
+sleep 10
+
+# Lambda que processa novos objetos
+zip -j /tmp/s3_event_handler.zip - &lt;&lt; &#39;PYTHON&#39;
+import json
+
+def handler(event, context):
+    for record in event[&#39;Records&#39;]:
+        bucket = record[&#39;s3&#39;][&#39;bucket&#39;][&#39;name&#39;]
+        key    = record[&#39;s3&#39;][&#39;object&#39;][&#39;key&#39;]
+        size   = record[&#39;s3&#39;][&#39;object&#39;][&#39;size&#39;]
+        event_name = record[&#39;eventName&#39;]
+        print(f&quot;[S3 EVENT] {event_name}: s3://{bucket}/{key} ({size} bytes)&quot;)
+    return {&#39;statusCode&#39;: 200}
+PYTHON
+
+FUNC_ARN=$(aws lambda create-function \
+  --function-name &quot;lab-s3-event-processor&quot; \
+  --runtime python3.12 \
+  --role &quot;$LAMBDA_ROLE_ARN&quot; \
+  --handler s3_event_handler.handler \
+  --zip-file fileb:///tmp/s3_event_handler.zip \
+  --query &#39;FunctionArn&#39; --output text)
+
+# Permissão para S3 invocar Lambda
+aws lambda add-permission \
+  --function-name &quot;lab-s3-event-processor&quot; \
+  --principal s3.amazonaws.com \
+  --action lambda:InvokeFunction \
+  --statement-id &quot;s3-invoke&quot; \
+  --source-arn &quot;arn:aws:s3:::${BUCKET_MAIN}&quot; \
+  --source-account &quot;$ACCOUNT_ID&quot;
+
+# Configurar notificação no S3
+aws s3api put-bucket-notification-configuration \
+  --bucket &quot;$BUCKET_MAIN&quot; \
+  --notification-configuration &quot;{
+    \&quot;LambdaFunctionConfigurations\&quot;: [{
+      \&quot;LambdaFunctionArn\&quot;: \&quot;${FUNC_ARN}\&quot;,
+      \&quot;Events\&quot;: [\&quot;s3:ObjectCreated:*\&quot;],
+      \&quot;Filter\&quot;: {
+        \&quot;Key\&quot;: {
+          \&quot;FilterRules\&quot;: [{\&quot;Name\&quot;: \&quot;prefix\&quot;, \&quot;Value\&quot;: \&quot;uploads/\&quot;}]
+        }
+      }
+    }]
+  }&quot;
+
+# Fazer upload para disparar evento
+echo &quot;Arquivo de teste $(date)&quot; &gt; /tmp/novo_upload.txt
+aws s3 cp /tmp/novo_upload.txt &quot;s3://${BUCKET_MAIN}/uploads/novo_arquivo.txt&quot;
+
+sleep 15
+
+# Ver logs da Lambda
+aws logs filter-log-events \
+  --log-group-name &quot;/aws/lambda/lab-s3-event-processor&quot; \
+  --filter-pattern &quot;S3 EVENT&quot; \
+  --query &#39;events[*].message&#39; \
+  --output text</code></pre>
+<hr>
+<h2>Limpeza</h2>
+<pre><code class="language-bash"># Deletar Lambda
+aws lambda delete-function --function-name &quot;lab-s3-event-processor&quot;
+aws iam detach-role-policy \
+  --role-name &quot;lab-s3-event-lambda-role&quot; \
+  --policy-arn &quot;arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole&quot;
+aws iam delete-role --role-name &quot;lab-s3-event-lambda-role&quot;
+
+# Deletar todas as versões dos objetos S3
+python3 &lt;&lt; PYTHON
+import boto3
+s3 = boto3.client(&#39;s3&#39;, region_name=&#39;us-east-1&#39;)
+bucket = &quot;$BUCKET_MAIN&quot;
+paginator = s3.get_paginator(&#39;list_object_versions&#39;)
+for page in paginator.paginate(Bucket=bucket):
+    for obj_type in [&#39;Versions&#39;, &#39;DeleteMarkers&#39;]:
+        for item in page.get(obj_type, []):
+            s3.delete_object(Bucket=bucket, Key=item[&#39;Key&#39;], VersionId=item[&#39;VersionId&#39;])
+print(&quot;Todos os objetos e versões deletados&quot;)
+PYTHON
+
+aws s3api delete-bucket --bucket &quot;$BUCKET_MAIN&quot;
+
+# Remover arquivos locais
+rm -f /tmp/config.txt /tmp/config_v1.txt /tmp/documento_privado.txt \
+      /tmp/download_presigned.txt /tmp/novo_upload.txt /tmp/s3_event_handler.zip</code></pre>
+<hr>
+<h2>O Que Você Aprendeu</h2>
+<ul><li><strong>Versionamento:</strong> uma vez habilitado, nunca &quot;desabilitado&quot; — só &quot;suspenso&quot;; toda versão armazenada é cobrada</li><li><strong>Delete marker:</strong> deletar objeto versionado cria Delete Marker (objeto não some de fato)</li><li><strong>Lifecycle transitions:</strong> STANDARD → STANDARD_IA (mín 30 dias) → GLACIER (mín 90 dias)</li><li><strong>Presigned URL:</strong> permite acesso temporário sem credenciais; expira no tempo definido; auditorado via CloudTrail</li><li><strong>S3 Events:</strong> pattern push (S3 → Lambda/SNS/SQS); ideal para pipelines de processamento de arquivos</li><li><strong>CRR:</strong> replication cross-region requer versionamento nos dois buckets e IAM role com s3:ReplicateObject</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./039-06-amazon-s3-e-armazenamento-readme.html">Aula anterior</a>
+      <a href="./041-07-s3-avancado-labs-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

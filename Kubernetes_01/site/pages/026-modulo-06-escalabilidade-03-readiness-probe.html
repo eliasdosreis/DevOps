@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#026-modulo-06-escalabilidade-03-readiness-probe">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 06 - escalabilidade - 5 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 06 - escalabilidade" loading="lazy">
+      <figcaption>Escalabilidade e probes ajudam o cluster a reagir com saude e previsibilidade.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Define a Readiness Probe (&quot;Sonda de Prontid�o&quot; / Readiness). Ensina o
+# Kubernetes a s� repassar clientes de neg�cio / conex�es web pro
+# Pod se ele de fato, jurar que estiver &quot;Pronto pra Atender&quot;.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# A Aula Anterior era a &quot;LivenessProbe&quot; = &quot;O Vigia ta acordado pra n�o ser demitido&quot;?
+# O **ReadinessProbe** � igual ao &quot;Atendente do Guich� e o Painel de Senha do Banco&quot;.
+# A Ag�ncia abriu as portas e o Atendente (Pod) LIGOU o PC dele e Clico no icone do sisema do banco... 
+#
+# Enquanto o &quot;Wording&quot; inicial de Boot da m�quina do atendente est� ocorrendo, 
+# se a recepcionista botar do nada um Client�o VVIP na frente dele, vai gerar constrangimento da empresa 
+# (Request Failed: Endpoint desativado!). Ent�o o ReadinessProbe PINGA o atendente e diz: 
+# &quot;Quando a janelinha verde do seu sistema de caixa acender, me avisa. Enquanto isso, eu o Service PABX, 
+# NAO VOU MANDAR NENHUM CONVIDADO (TRAFEGO) PRA VOC�. Vou mandar pros outros caixas que ja est�o com luz verde&quot;.
+# Assim nenhum usu�rio seu recebe tela preta.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# ReadinessProbe indica explicitamente se o conteiner est� pronto para lidar com REQUESTS HTTP ou de Rede.
+# Se a sonda de Readiness der FALHA, o controlador de Endpoint do Service VIRTUAL do cluster 
+# RE-MO-VE imediatamente o IP sujo/apag�o do Pod dos Endpoints balance�veis  
+# de LoadBalance e ingress. Diferente da Liveness, ELA NAO &quot;MATA&quot; o container! 
+# Ela apenas bota ele de &quot;Escanteio tempor�rio da rede&quot;.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: container-com-escudo-de-trafego
+  namespace: meu-primeiro-projeto
+  labels:
+    app: backend-loja         # Uma label pronta pra amarra��o do PABX/Service
+spec:
+  containers:
+    - name: api-escudada
+      image: nginx:1.24
+      
+      # M�GICA: A SONDA DE PRONTID�O (&quot;O Service pode encaminhar os clientes?&quot;)
+      readinessProbe:
+        httpGet:
+          path: /index.html   
+          port: 80
+        
+        # Assim que o container Bootar e a imgem come�ar a inflar na ram...  
+        # Espere 5 segundos pra ir checar se a tela HTML &quot;verde&quot; do front  
+        # ou Banco ja subiu para colocar a Label &quot;Endpoint: IP(Ready)&quot; no Service! 
+        initialDelaySeconds: 5  
+        periodSeconds: 5      # De tempo em tempo eu olho pra luz dele pra ver se apagou
+        successThreshold: 1   # Precisou apenas 1 sucesso para liberar a Catraca 
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Crie o container blindado de tr�fego quebrado:
+#    kubectl apply -f 03-readiness-probe.yaml
+#
+# 2. Observe uma coisa FUNDAMENTAL no Get Pods do terminal abaixo:
+#    kubectl get pods container-com-escudo-de-trafego -n meu-primeiro-projeto
+#    (Na aba REAL &#39;READY&#39;, estar� marcado &quot;0/1&quot; nos primeiros instantes. Mesmo que  
+#     a coluna STATUS ao lado j� mostre bonito &quot;Running&quot;! Running n�o � Ready! 
+#     Running � vivacidade nua. Ready &quot;1/1&quot; � quando a Readiness Probe que criamos retornou 200!).
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# O erro mais comum em Deployments Multiplos.
+# A Tela de GetPods do DEV diz &#39;STATUS: Running&#39;. E ele jura que o Ingress na nuvem e o sistema
+# Service DNS PABX n�o acham o Pod. D� erro 502/Gateway na Tela do Google Chrome.
+# V� l� e observe a Coluna &quot;READY: 0/1&quot; pra sempre travada. O &quot;Service&quot;
+# e os PABXs Loadbalancers CORTAM as pernas de todos os pods  
+# que a &quot;ReadinessProbe&quot; retorna erro 400, 500 ou timeout. 
+# SEMPRE conserte a sonda do seu Readiness pra sua AWS funcionar!
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# N�s podemos usar o Readiness de forma inteligente para Gerenciar BackPressure 
+# (Prote��o anti-DDoS da pr�pria aplica��o). Como a Readiness NAO MATA o cont�iner ao falhar  
+# n�s podemos program�-la num Endpoint `/ready` no seu Python FastAPI para que... 
+# Se a Queue do SQS da aplica��o da amazon estiver com  2.000 mensagens (Lotada Quase Morreno)...
+# O Python retorna na Probre 1 HTTP &quot;429 Too Many Requests&quot;(!). 
+# ISSO FAZ o Kubernetes ARRANCAR IMEDIATAMENTE a sua API entupida do fluxo da Tela dos usu�rios... 
+# Assim ngm novo entra por 2 minutos. Quando o python esvaziar a Queue pra 0, ele retoma em &quot;/ready&quot; 
+# e devolvemos HTTP 200 OK. E O Kubernetes magicamente RE-ACOPLA o trafego nela! Elegante d+.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se LivenessProbe pinga internamento e ReadinessProbe pinga tr�fego. Eu 
+# n�o poderia botar a MESMA rota HTTP (`/health`) em AMBOS os spec no mesmo Container, 
+# j� que no final das contas ambos checam a saude?&quot;
+# Resposta Esperada: &quot;Voc� pode. Mas � contra o livro do Kubernetes se a verifica��o 
+# envolver amarras pesadas a recursos externos (Banco etc) !!
+# O Seu Banco MySQL da rede remota desconectou da empresa momentaneamente. E voc� usou no `/health` 
+# com *Select 1* ligado ao Banco em Liveness e Readiness. Resultando: A Readiness falhou e tirou do PABX 
+# (Perfeito! Usu�rios resguardados de tela de crash DB).
+# Mas... como voc� copiou sua rota tamb�m A LivenessProbe MATA sua WebAPI. Ela tentar� BOOTAR por Restart repetidamente 100x na maquina... 
+# O BD continua caido. Daqui a 1 hora a maquina trava por excesso brusco de Startups e CrashLoops.
+# A melhor conduta: Liveness verifica APENAS CPU Local (`/ping -&gt; Pong`), e Readiness checa Banco (`/banco -&gt; Ok`).&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./025-modulo-06-escalabilidade-02-liveness-probe.html">Aula anterior</a>
+      <a href="./027-modulo-06-escalabilidade-04-startup-probe.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#002-modulo-00-preparacao-02-instalacao-e-primeiro-cluster">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 00 - preparacao - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 00 - preparacao" loading="lazy">
+      <figcaption>Prepare o ambiente local e entenda o papel do Kind antes dos manifestos.</figcaption>
+    </figure>
+    <h1>============================================================</h1>
+<h1>O QUE ESTE ARQUIVO FAZ:</h1>
+<h1>Fornece as instru��es exatas para voc� instalar o Docker, </h1>
+<h1>o kind e criar seu primeiro cluster de estudos.</h1>
+<h1>============================================================</h1>
+<h3>1. ANALOGIA DO DIA A DIA</h3>
+<p>Antes de construir uma casa, voc� precisa bater a funda��o. O Docker � o nosso tijolo (permite os containers existirem), o kind � o terreno (onde vamos erguer nosso cluster de treino) e o kubectl � o nosso r�dio comunicador (a ferramenta que envia os comandos para os pedreiros).</p>
+<hr>
+<h3>2. O QUE � (defini��o t�cnica Senior)</h3>
+<ul><li><strong>Docker/Container Runtime:</strong> Requisito base no SO Host.</li><li><strong>kubectl:</strong> O utilit�rio de linha de comando (CLI) oficial que interage com a API REST do Control Plane (kube-apiserver).</li><li><strong>kind (Kubernetes in Docker):</strong> CLI em Go que cria cont�ineres Docker pr�-configurados com o systemd, kubelet e todos os componentes base de um n� Kubernetes para simular um cluster real.</li></ul>
+<hr>
+<h3>4. COMANDOS PASSO A PASSO (Para Windows via PowerShell/WSL)</h3>
+<p><strong>Passo 1: Instale o Docker Desktop</strong> Se n�o tiver, baixe e instale: https://docs.docker.com/desktop/install/windows-install/ Garanta que ele est� aberto e rodando.</p>
+<p><strong>Passo 2: Instale os execut�veis (kind e kubectl)</strong> Voc� pode usar o pacote <code>winget</code> do pr�prio Windows ou o <code>Chocolatey</code>. Via prompt (PowerShell como Administrador):</p>
+<pre><code class="language-powershell"># Instala o cliente do kubernetes
+winget install Kubernetes.kubectl
+
+# Instala o kind
+winget install Kubernetes.kind</code></pre>
+<p>Se o <code>winget</code> falhar, as alternativas manuais est�o aqui:</p>
+<ul><li>Kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/</li><li>Kind: https://kind.sigs.k8s.io/docs/user/quick-start/#installation</li></ul>
+<p><strong>Passo 3: Crie seu Primeiro Cluster!</strong> Abra um terminal PowerShell (n�o precisa ser admin) e digite:</p>
+<pre><code class="language-powershell">kind create cluster --name meu-cluster-senior</code></pre>
+<p><em>O que ele faz:</em> Baixa a &quot;Node Image&quot; do kind (uma imagem Docker pesada contendo o ambiente K8s) e sobe um container que age magicamente como um cluster inteiro. <em>O que esperar:</em> Logs mostrando &quot;Creating cluster...&quot;, &quot;Starting control-plane&quot;, e no final uma mensagem de sucesso.</p>
+<p><strong>Passo 4: Aponte o kubectl para o cluster</strong> O Kind normalmente j� configura isso de forma autom�tica.</p>
+<pre><code class="language-powershell">kubectl cluster-info --context kind-meu-cluster-senior</code></pre>
+<hr>
+<h3>5. VERIFICA��O E TROUBLESHOOTING</h3>
+<ul><li><strong>Como saber se estou vivo:</strong> </li></ul>
+<p><br>Rode <code>kubectl get nodes</code>. Voc� deve ver um n� com o nome <code>meu-cluster-senior-control-plane</code> no status <code>Ready</code>.</p>
+<ul><li><strong>Como ver que � fake (Docker):</strong> </li></ul>
+<p><br>Rode <code>docker ps</code>. Voc� ver� um �nico container assustadoramente pesado rodando, com o nome <code>meu-cluster-senior-control-plane</code>. Isso � o kind em a��o.</p>
+<p><strong>Erro Comum:</strong> <em><code>connection to the server localhost:8080 was refused</code></em> Isso significa que o seu <code>kubectl</code> n�o faz ideia de onde o cluster est� (o arquivo <code>~/.kube/config</code> n�o foi gerado) ou o seu Docker n�o est� rodando. Verifique o Docker Desktop.</p>
+<hr>
+<h3>6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)</h3>
+<p>O arquivo sagrado do Kubernetes � o <strong>Kubeconfig</strong> (normalmente em <code>~/.kube/config</code>). Este arquivo em YAML guarda as credenciais, certificados TLS e a URL da API do seu cluster. Quando o comando <code>kind create cluster</code> terminou com sucesso, ele silenciosamente ejetou o certificado do novo cluster dentro do seu arquivo <code>~/.kube/config</code>. O <code>kubectl</code> � burro ? ele apenas l� esse arquivo e faz chadas HTTP(S) no endere�o que estiver l�. Se um dia voc� n�o conseguir acessar um cluster, o problema quase sempre estar� no contexto atual apontado no seu Kubeconfig.</p>
+<hr>
+<h3>7. PERGUNTA DE ENTREVISTA</h3>
+<p><strong>Pergunta:</strong> &quot;Quando voc� executa um comando <code>kubectl get pods</code>, qual � o caminho exato que esse comando faz at� retornar os pods na tela?&quot;</p>
+<p><strong>Resposta Esperada:</strong> &quot;O <code>kubectl</code> l� meu Kubeconfig local para achar a URL do Control Plane, junta meus certificados de autentica��o e faz uma chamada REST (HTTP GET) para a porta 6443 no componente <code>kube-apiserver</code>. O <code>kube-apiserver</code> autentica minha requisi��o, verifica no RBAC se eu tenho autoriza��o para listar Pods, pesquisa os registros do cluster no banco <code>etcd</code> e devolve a resposta em formato JSON para o meu <code>kubectl</code>, que renderiza na tela em formato de tabela.&quot;</p>
+    <nav class="page-nav">
+      <a href="./001-modulo-00-preparacao-01-o-que-e-kubernetes-e-kind.html">Aula anterior</a>
+      <a href="./003-modulo-01-fundamentos-01-namespace.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

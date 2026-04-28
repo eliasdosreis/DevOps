@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Casos de Uso - Criptografia, KMS e Gestao de Segredos - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#131-25-criptografia-kms-e-gestao-de-segredos-casos-de-uso">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 25 - Criptografia KMS e Gestao de Segredos - 1 min - 25-Criptografia-KMS-e-Gestao-de-Segredos/casos-de-uso.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 25 - Criptografia KMS e Gestao de Segredos" loading="lazy">
+      <figcaption>Criptografia separa dado, chave, segredo, permissao e rotacao.</figcaption>
+    </figure>
+    <h1>Casos de Uso - Criptografia, KMS e Gestao de Segredos</h1>
+<h2>Caso 1: Banco relacional com rotacao de senha</h2>
+<p>Cenario:</p>
+<ul><li>aplicacao em ECS acessa Aurora</li><li>auditoria exige rotacao automatica</li></ul>
+<p>Arquitetura:</p>
+<ul><li>Secrets Manager com rotacao</li><li>task role do ECS para ler segredo</li><li>KMS customer-managed key para criptografia do segredo</li></ul>
+<h2>Caso 2: API publica com TLS gerenciado</h2>
+<p>Cenario:</p>
+<ul><li>API Gateway + CloudFront</li><li>sem gerenciamento manual de certificados</li></ul>
+<p>Arquitetura:</p>
+<ul><li>ACM publico com renovacao automatica</li><li>certificado em us-east-1 para CloudFront</li></ul>
+<h2>Caso 3: Empresa com exigencia de chave sob controle estrito</h2>
+<p>Cenario:</p>
+<ul><li>compliance exige segregacao de acesso a chaves</li></ul>
+<p>Arquitetura:</p>
+<ul><li>customer-managed keys no KMS</li><li>key policy minima + grants para aplicacoes</li><li>trilha de auditoria via CloudTrail</li></ul>
+<h2>Caso 4: Aplicacao legado com segredo em arquivo</h2>
+<p>Cenario:</p>
+<ul><li>senha hardcoded no codigo</li></ul>
+<p>Arquitetura:</p>
+<ul><li>migrar para Parameter Store/Secrets Manager</li><li>remover credencial do repositorio</li><li>uso de IAM role no runtime</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./130-24-redes-avancadas-e-conectividade-hibrida-readme.html">Aula anterior</a>
+      <a href="./132-25-criptografia-kms-e-gestao-de-segredos-cheatsheet.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

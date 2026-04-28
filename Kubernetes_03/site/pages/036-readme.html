@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>🚀 Kubernetes Senior - Do Zero ao Senior - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#036-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Curso e materiais gerais - 2 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Curso e materiais gerais" loading="lazy">
+      <figcaption>Materiais gerais para alinhar conceitos e revisar antes dos labs.</figcaption>
+    </figure>
+    <h1>🚀 Kubernetes Senior - Do Zero ao Senior</h1>
+<h2>👨‍💻 Alex DevOps Coach | Projeto Completo de Kubernetes</h2>
+<hr>
+<h2>🎯 Objetivo</h2>
+<p>Ao final deste projeto, você saberá explicar e criar qualquer aplicação Kubernetes. Estará pronto para entrevistas técnicas de nível Sênior.</p>
+<hr>
+<h2>📦 Estrutura do Projeto</h2>
+<pre><code class="language-">k8s-senior-project/
+├── modulo-1-fundamentos/       # O básico que todo Senior sabe
+├── modulo-2-intermediario/     # Subindo o nível
+├── modulo-3-avancado/          # Recursos avançados
+└── modulo-4-projeto-final/     # Projeto real de produção</code></pre>
+<hr>
+<h2>🗺️ Mapa de Aprendizado</h2>
+<pre><code class="language-">[Módulo 1]          [Módulo 2]          [Módulo 3]          [Módulo 4]
+Fundamentos    --&gt;  Intermediário  --&gt;  Avançado       --&gt;  Projeto Final
+  Pod               Deployment          HPA                  App Completa
+  Service           ConfigMap           NetworkPolicy        Monitoramento
+  Namespace         Secret              RBAC                 CI/CD Ready</code></pre>
+<hr>
+<h2>🛠️ Pré-requisitos</h2>
+<pre><code class="language-bash"># Instale o kubectl
+curl -LO &quot;https://dl.k8s.io/release/$(curl -L -s \
+  https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl&quot;
+
+# Instale o Minikube (cluster local)
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+
+# Inicie o cluster
+minikube start
+
+# Verifique se está funcionando
+kubectl get nodes</code></pre>
+<hr>
+<h2>📚 Módulos</h2>
+<div class="table-wrap"><table><thead><tr><th>Módulo</th><th>Tema</th><th>Arquivos</th><th>Nível</th></tr></thead><tbody><tr><td>1</td><td>Fundamentos</td><td>5 arquivos</td><td>🟢 Iniciante</td></tr><tr><td>2</td><td>Intermediário</td><td>6 arquivos</td><td>🟡 Júnior+</td></tr><tr><td>3</td><td>Avançado</td><td>6 arquivos</td><td>🟠 Pleno</td></tr><tr><td>4</td><td>Projeto Final</td><td>App completa</td><td>🔴 Sênior</td></tr></tbody></table></div>
+<hr>
+<blockquote><p>💡 <strong>Dica do Coach</strong>: Leia cada arquivo com calma. Cada linha tem um comentário. Não pule etapas!</p></blockquote>
+    <nav class="page-nav">
+      <a href="./035-modulo-4-projeto-final-readme.html">Aula anterior</a>
+      <span></span>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet - AWS Organizations, Governanca e Custos - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#118-23-aws-organizations-governanca-e-custos-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #b45309">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 23 - AWS Organizations Governanca e Custos - 2 min - 23-AWS-Organizations-Governanca-e-Custos/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 23 - AWS Organizations Governanca e Custos" loading="lazy">
+      <figcaption>Governanca multi-conta combina limites, visibilidade, padroes e FinOps.</figcaption>
+    </figure>
+    <h1>Cheatsheet - AWS Organizations, Governanca e Custos</h1>
+<h2>Mapa rapido</h2>
+<div class="table-wrap"><table><thead><tr><th>Necessidade</th><th>Servico/Padrao</th><th>Dica de prova</th></tr></thead><tbody><tr><td>Guardrail de permissao em varias contas</td><td>SCP</td><td>Lembrar: nao concede, apenas restringe</td></tr><tr><td>Provisionar landing zone padrao</td><td>Control Tower</td><td>Menor overhead para multi-account</td></tr><tr><td>Acesso centralizado de usuarios</td><td>IAM Identity Center</td><td>Evita IAM users em cada conta</td></tr><tr><td>Alertar estouro de orcamento</td><td>AWS Budgets</td><td>Alerta antes da fatura fechar</td></tr><tr><td>Analise detalhada de gastos</td><td>CUR + Athena</td><td>Visao granular por servico/tag</td></tr><tr><td>Reduzir custo de compute previsivel</td><td>Savings Plans / RI</td><td>Compromisso de uso reduz preco</td></tr></tbody></table></div>
+<h2>Otimizacao de custo</h2>
+<ul><li>rightsizing de EC2 e RDS</li><li>desligamento de ambientes nao produtivos</li><li>classes de storage adequadas (S3 lifecycle)</li><li>usar Spot em workloads stateless</li><li>revisar transferencias entre AZ/regioes</li></ul>
+<h2>Frases gatilho</h2>
+<ul><li>&quot;across multiple AWS accounts&quot; =&gt; Organizations/Control Tower</li><li>&quot;prevent specific actions&quot; =&gt; SCP</li><li>&quot;cost visibility by team&quot; =&gt; Cost Allocation Tags + CUR</li><li>&quot;predictable usage&quot; =&gt; RI/Savings Plans</li><li>&quot;variable workload&quot; =&gt; Savings Plans ou on-demand + autoscaling</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./117-23-aws-organizations-governanca-e-custos-casos-de-uso.html">Aula anterior</a>
+      <a href="./119-23-aws-organizations-governanca-e-custos-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

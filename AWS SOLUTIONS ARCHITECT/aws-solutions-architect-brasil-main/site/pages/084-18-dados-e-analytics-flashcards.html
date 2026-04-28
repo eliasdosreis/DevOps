@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flashcards — Módulo 12: Dados e Analytics - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#084-18-dados-e-analytics-flashcards">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 18 - Dados e Analytics - 8 min - 18-Dados-e-Analytics/flashcards.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 18 - Dados e Analytics" loading="lazy">
+      <figcaption>Analytics e fluxo: coletar, transformar, consultar e entregar insight.</figcaption>
+    </figure>
+    <h1>Flashcards — Módulo 12: Dados e Analytics</h1>
+<blockquote><p><strong>Formato:</strong> P = Pergunta | R = Resposta<br><strong>Total:</strong> 25 flashcards</p></blockquote>
+<hr>
+<p><strong>P:</strong> O que é o Amazon Athena e qual é o modelo de precificação?<br><strong>R:</strong> Serviço serverless de query interativo usando SQL padrão diretamente em arquivos S3. Modelo: <strong>pay-per-query</strong> — $5 por TB de dados varridos. Otimizações para reduzir custo: usar formato colunar (Parquet/ORC) e particionamento (varrem menos dados).</p>
+<hr>
+<p><strong>P:</strong> Por que Parquet reduz o custo das queries no Athena?<br><strong>R:</strong> Parquet é <strong>colunar</strong>: Athena lê apenas as colunas necessárias para a query, ignorando as outras. Também tem compressão nativa (Snappy, Gzip). Resultado: escaneia menos dados → menos custos ($5/TB varrido). CSV é row-based — escaneia linha inteira mesmo se a query precise de 2 colunas.</p>
+<hr>
+<p><strong>P:</strong> O que é o AWS Glue Data Catalog?<br><strong>R:</strong> Repositório central de metadados (schemas, tabelas, partições) para dados no S3, RDS, Redshift etc. Funciona como metastore para Athena e EMR. Glue Crawlers populam o Catalog automaticamente. Cada data source tem um &quot;database&quot; com &quot;tables&quot; no Catalog.</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre Glue ETL Jobs e AWS Glue DataBrew?<br><strong>R:</strong> <strong>Glue ETL Jobs:</strong> código Python/Scala (Spark) para transformações customizadas complexas. <strong>AWS Glue DataBrew:</strong> interface visual de preparação de dados sem código. Mais de 250 transformações pré-construídas (deduplicate, filter, format). Para analistas de dados sem habilidades de programação.</p>
+<hr>
+<p><strong>P:</strong> Quais são os 3 tipos de nó em um cluster Amazon EMR?<br><strong>R:</strong> <strong>Master Node:</strong> coordena o cluster (YARN ResourceManager, HDFS NameNode). <strong>Core Node:</strong> processa tasks + armazena dados HDFS (YARN NodeManager). <strong>Task Node:</strong> apenas processa tasks, sem armazenamento HDFS — ideal para Spot Instances (perder Task Node não afeta dados).</p>
+<hr>
+<p><strong>P:</strong> Quando usar Amazon MSK em vez de Amazon Kinesis?<br><strong>R:</strong> <strong>MSK:</strong> quando já usa Apache Kafka em on-premises e quer migrar sem mudar produtores/consumidores (fully managed Kafka); quando precisa de protocol Kafka nativo. <strong>Kinesis:</strong> serviço proprietário AWS mais integrado; sem operação de brokers; melhor integração com Lambda, Firehose etc. MSK = lift-and-shift Kafka; Kinesis = nativo AWS.</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre Redshift Multi-AZ e Redshift Cross-Region Snapshot?<br><strong>R:</strong> <strong>Multi-AZ:</strong> cluster Redshift com réplicas em múltiplas AZs — HA para failover automático (disponível no RA3). <strong>Cross-Region Snapshot:</strong> backup do cluster copiado para outra região para DR. Snapshots: automáticos (1-35 dias). Para migração/restore em outra região.</p>
+<hr>
+<p><strong>P:</strong> O que é Redshift Concurrency Scaling?<br><strong>R:</strong> Feature que adiciona automaticamente clusters transientes quando a demanda de concorrência excede a capacidade do cluster principal. Queries roteadas para os clusters de scaling. Créditos gratuitos: 1 hora por dia de cluster principal ativo. Custo adicional além dos créditos.</p>
+<hr>
+<p><strong>P:</strong> O que é o SPICE no Amazon QuickSight?<br><strong>R:</strong> Super-fast Parallel In-memory Calculation Engine: cache in-memory dos dados importados no QuickSight. Dashboards ficam ultra-rápidos pois não precisam fazer query ao banco a cada interação. Quota por usuário (GB). Refresh agendado ou sob demanda para atualizar os dados.</p>
+<hr>
+<p><strong>P:</strong> Quais são os casos de uso do Amazon Kinesis Data Firehose?<br><strong>R:</strong> Entrega de streaming data para <strong>destinos</strong>: S3, Redshift (via S3 staging), OpenSearch, Splunk, HTTP endpoints customizados. Características: near-real-time (buffering de 60s a 900s ou 1-128 MB), transformação opcional com Lambda, conversão de formato (JSON→Parquet), compressão. Não requer consumer — entrega automática.</p>
+<hr>
+<p><strong>P:</strong> O que é o AWS Lake Formation e qual problema resolve?<br><strong>R:</strong> Simplifica construção de <strong>Data Lakes</strong> seguros no S3. Problema: segurança granular em data lakes é complexa. Solução: Fine-Grained Access Control (FGAC) — controle por coluna, row-level filters, cell-level security. Centraliza permissões em vez de policy individual por bucket/pasta.</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre OpenSearch Service e Amazon Kendra?<br><strong>R:</strong> <strong>OpenSearch:</strong> search e analytics engine para logs, métricas, full-text search, visualizações (Kibana/OpenSearch Dashboards). <strong>Kendra:</strong> search engine com IA para documentos corporativos — entende linguagem natural (&quot;quais são as férias?&quot;), busca em PDFs, Word, SharePoint. OpenSearch = técnico/analytics; Kendra = search inteligente de documentos.</p>
+<hr>
+<p><strong>P:</strong> O que é Redshift Spectrum?<br><strong>R:</strong> Extensão do Redshift que permite fazer query de dados diretamente no <strong>S3</strong> sem carregar no Redshift. Usa nós de escalabilidade independente (Spectrum layer). Acessa o Glue Data Catalog para metadata. Ideal para: dados históricos/frios no S3 + dados quentes no Redshift em uma única query SQL.</p>
+<hr>
+<p><strong>P:</strong> Como funciona o particionamento no Athena e por que é importante?<br><strong>R:</strong> Particionamento: organizar dados no S3 em pastas hierárquicas por campo de alta cardinalidade (ex: <code>s3://bucket/year=2024/month=01/day=15/</code>). Na query: <code>WHERE year=2024 AND month=01</code> → Athena varrre apenas essas partições. Reduz drasticamente dados escaneados → menor custo e melhor performance.</p>
+<hr>
+<p><strong>P:</strong> Quais são as diferenças entre Kinesis Data Streams e Kinesis Data Firehose?<br><strong>R:</strong> <strong>KDS:</strong> streaming em tempo real, consumers customizados (Lambda, apps, Kinesis Analytics), retenção 1-365 dias, shards configuráveis. Requer consumer code. <strong>KDF:</strong> delivery gerenciado para destinos (S3, Redshift, OpenSearch), near-real-time (buffer), sem consumer code, compressão/transformação automática. KDS = flexibilidade; KDF = simplicidade de entrega.</p>
+<hr>
+<p><strong>P:</strong> O que é o AWS Glue Streaming ETL?<br><strong>R:</strong> Extensão do Glue para processar dados <strong>em streaming</strong> de Kinesis Data Streams, Kafka/MSK ou SQS. Processa micro-batches continuamente (streaming ETL). Usa Apache Spark Structured Streaming. Alternativa gerenciada ao Apache Flink para transformações de streaming.</p>
+<hr>
+<p><strong>P:</strong> Como funciona o Amazon EMR Serverless?<br><strong>R:</strong> Executa workloads Spark/Hive sem gerenciar clusters. Submit um job → AWS provisiona automaticamente os recursos necessários → executa → desaloca. Sem nós para gerenciar. Pay-per-vCPU-second e GB-second. Ideal para workloads intermitentes ou imprevisíveis. Sem cold start de provisionamento manual de cluster.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon OpenSearch UltraWarm e Cold Tiers?<br><strong>R:</strong> Camadas de armazenamento econômicas para dados históricos no OpenSearch: <strong>UltraWarm:</strong> dados menos acessados em S3 (warm tier), mais barato que instâncias hot, ainda queryable em segundos. <strong>Cold:</strong> ainda mais barato, dados arquivados, latência maior para acesso. Migration: índices movidos entre hot → warm → cold conforme ficam mais antigos.</p>
+<hr>
+<p><strong>P:</strong> O que é o AWS Glue Workflow?<br><strong>R:</strong> Orquestração de pipelines ETL no Glue. Permite criar grafos de execução com triggers, crawlers e jobs. Trigger types: on-demand, schedule (cron), event-based (completion de outro job). Visualização gráfica no console. Para pipelines ETL complexos multi-step sem Step Functions.</p>
+<hr>
+<p><strong>P:</strong> Quando usar Amazon EMR vs AWS Glue para ETL?<br><strong>R:</strong> <strong>Glue:</strong> ETL simples-médio, sem infraestrutura para gerenciar, integração nativa com Catalog/S3/Redshift, ideal para engenheiros não-Spark. <strong>EMR:</strong> workloads Spark/Hive/Presto complexas, controle total sobre cluster config, múltiplos frameworks (HDFS local), workloads HPC, maior flexibilidade e performance para big data.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon Kinesis Data Analytics (agora Amazon Managed Service for Apache Flink)?<br><strong>R:</strong> Serviço gerenciado para aplicações Apache Flink — processa streams em real-time com SQL ou Java/Python/Scala. Input: KDS ou MSK. Output: S3, KDS, KDF, Lambda etc. Use cases: detecção de anomalias em tempo real, aggregações janeladas (sliding/tumbling windows), joins de múltiplos streams.</p>
+<hr>
+<p><strong>P:</strong> Qual é o modelo de cobrança do Amazon Athena?<br><strong>R:</strong> $5.00 por TB de dados <strong>escaneados</strong> (não por tempo de query). Sem cobrança por queries que falham. Para reduzir custo: (1) Compressão — dados menores = menos TB; (2) Colunar (Parquet/ORC) — escaneia apenas colunas necessárias; (3) Particionamento — escaneia apenas partições relevantes.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon QuickSight Q?<br><strong>R:</strong> Engine de NLP (Natural Language Processing) do QuickSight: permite fazer perguntas em linguagem natural em português/inglês sobre os dashboards. Ex: &quot;qual foi a receita em janeiro?&quot; → QuickSight interpreta e gera visualização automaticamente. Requer treinamento de topicos com os dados.</p>
+<hr>
+<p><strong>P:</strong> O que é o DMS (Database Migration Service) e quando usar SCT?<br><strong>R:</strong> <strong>DMS:</strong> migração de banco de dados com mínima downtime (ongoing replication CDC). Suporta homo e heterogêneo. <strong>SCT (Schema Conversion Tool):</strong> converte schema + código (stored procedures, views) entre engines diferentes (Oracle → PostgreSQL, SQL Server → Aurora). DMS = migra dados; SCT = converte schema incompatível. Homogêneo (MySQL→MySQL): DMS sem SCT. Heterogêneo: DMS + SCT.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon Redshift Serverless?<br><strong>R:</strong> Redshift sem necessidade de provisionar ou gerenciar clusters. AWS automaticamente provisiona e escala capacidade baseado na workload. Pay-per-use (RPU-hours — Redshift Processing Units). Ideal para: workloads intermitentes, ambientes de dev/test, analytics esporádicos. Vs cluster: sem gerenciamento, mas custo pode ser maior para workloads constantes.</p>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./083-18-dados-e-analytics-cheatsheet.html">Aula anterior</a>
+      <a href="./085-18-dados-e-analytics-lab.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

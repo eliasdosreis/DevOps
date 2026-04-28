@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Módulo 06: Banco de Dados - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#050-10-banco-de-dados-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 10 - Banco de Dados - 4 min - 10-Banco-de-Dados/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 10 - Banco de Dados" loading="lazy">
+      <figcaption>Dados pedem arquitetura: relacional, chave-valor, cache, analytics ou busca.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Módulo 06: Banco de Dados</h1>
+<h2>Comparativo RDS Multi-AZ vs Read Replica</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>Multi-AZ</th><th>Read Replica</th></tr></thead><tbody><tr><td>Propósito</td><td>Alta disponibilidade / DR</td><td>Escalabilidade de leitura</td></tr><tr><td>Replicação</td><td>Síncrona</td><td>Assíncrona</td></tr><tr><td>RPO</td><td>~0 (sem perda de dados)</td><td>Pequeno lag possível</td></tr><tr><td>RTO</td><td>~1-2 minutos (DNS flip)</td><td>Manual (promoção a standalone)</td></tr><tr><td>Pode receber leituras?</td><td>NÃO (standby apenas)</td><td>SIM (apenas leitura)</td></tr><tr><td>Cross-region?</td><td>Não (mesma região)</td><td>Sim (até 5 por DB)</td></tr><tr><td>Failover</td><td>Automático</td><td>Manual</td></tr></tbody></table></div>
+<h2>Aurora vs RDS</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>Aurora</th><th>RDS</th></tr></thead><tbody><tr><td>Cópias</td><td>6 (em 3 AZs)</td><td>2 (Multi-AZ: primário + standby)</td></tr><tr><td>Write quorum</td><td>4/6</td><td>1 (primary síncrona para standby)</td></tr><tr><td>Read Replicas</td><td>Até 15</td><td>Até 5</td></tr><tr><td>Failover RR</td><td>~30 segundos</td><td>Promote manual</td></tr><tr><td>Global Database</td><td>Sim (&lt; 1s lag)</td><td>Não (apenas DX/VPN manual)</td></tr><tr><td>Serverless</td><td>v2 (0,5-128 ACU)</td><td>Não (exceto Aurora)</td></tr><tr><td>Performance</td><td>3x MySQL / 5x PostgreSQL</td><td>Padrão</td></tr></tbody></table></div>
+<h2>DynamoDB — Valores-Chave</h2>
+<div class="table-wrap"><table><thead><tr><th>Parâmetro</th><th>Valor</th></tr></thead><tbody><tr><td>1 RCU (Eventually Consistent)</td><td>2 reads de 4 KB/s</td></tr><tr><td>1 RCU (Strongly Consistent)</td><td>1 read de 4 KB/s</td></tr><tr><td>1 WCU</td><td>1 write de 1 KB/s</td></tr><tr><td>DAX latência</td><td>Microssegundos</td></tr><tr><td>TTL</td><td>Gratuito; deleção eventual dentro de 48h</td></tr><tr><td>Streams retenção</td><td>24 horas</td></tr><tr><td>Global Tables</td><td>Replicação multi-região ativa</td></tr></tbody></table></div>
+<h2>DynamoDB Indexes</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>LSI</th><th>GSI</th></tr></thead><tbody><tr><td>Quando criar</td><td>Apenas na criação da tabela</td><td>Qualquer momento</td></tr><tr><td>Partition Key</td><td>Mesma da tabela</td><td>Diferente</td></tr><tr><td>Sort Key</td><td>Diferente da tabela</td><td>Qualquer atributo</td></tr><tr><td>Throughput</td><td>Compartilha com a tabela</td><td>Independente</td></tr><tr><td>Consistência</td><td>Strong ou Eventually</td><td>Apenas Eventually</td></tr></tbody></table></div>
+<h2>ElastiCache Redis vs Memcached</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>Redis</th><th>Memcached</th></tr></thead><tbody><tr><td>Persistência</td><td>Sim (RDB, AOF)</td><td>Não</td></tr><tr><td>Replicação</td><td>Sim (Replica)</td><td>Não</td></tr><tr><td>Multi-AZ</td><td>Sim</td><td>Não</td></tr><tr><td>Cluster Mode</td><td>Sim (sharding)</td><td>Sim (multi-thread)</td></tr><tr><td>Estruturas</td><td>String, Hash, List, Set, Sorted Set, Geo, Streams</td><td>String apenas</td></tr><tr><td>Pub/Sub</td><td>Sim</td><td>Não</td></tr><tr><td>Caso de uso</td><td>Sessions, leaderboards, cache rico, queues</td><td>Cache simples, alta velocidade multi-thread</td></tr></tbody></table></div>
+<h2>Caching Patterns</h2>
+<div class="table-wrap"><table><thead><tr><th>Pattern</th><th>Cache Miss</th><th>Cache Hit</th><th>Prós</th><th>Contras</th></tr></thead><tbody><tr><td>Lazy Loading</td><td>Busca DB → escreve cache</td><td>Retorna cache</td><td>Só armazena o necessário</td><td>3 round-trips no miss; dados podem ficar stale</td></tr><tr><td>Write-Through</td><td>Escreve DB + cache</td><td>Retorna cache</td><td>Dados sempre frescos</td><td>Write penalty; caches de dados nunca lidos</td></tr><tr><td>Write-Behind</td><td>Escreve cache → async DB</td><td>Retorna cache</td><td>Menor latência de write</td><td>Risco de perda se cache falhar antes de persistir</td></tr></tbody></table></div>
+<h2>Escolha de Banco de Dados</h2>
+<div class="table-wrap"><table><thead><tr><th>Necessidade</th><th>Banco</th></tr></thead><tbody><tr><td>Relacional OLTP (latência baixa)</td><td>RDS MySQL/PostgreSQL/Aurora</td></tr><tr><td>Relacional OLTP (alta performance)</td><td>Aurora</td></tr><tr><td>Relacional OLAP / Data Warehouse</td><td>Redshift</td></tr><tr><td>NoSQL key-value / documentos</td><td>DynamoDB</td></tr><tr><td>Cache in-memory</td><td>ElastiCache Redis</td></tr><tr><td>Grafos</td><td>Amazon Neptune</td></tr><tr><td>Documentos (MongoDB)</td><td>Amazon DocumentDB</td></tr><tr><td>Time series (IoT, metrics)</td><td>Amazon Timestream</td></tr><tr><td>Ledger imutável</td><td>Amazon QLDB</td></tr><tr><td>Cassandra gerenciado</td><td>Amazon Keyspaces</td></tr></tbody></table></div>
+<h2>Dicas Rápidas de Prova</h2>
+<ul><li>RDS Multi-AZ endpoint não muda após failover (mesmo DNS CNAME)</li><li>Aurora: 2 endpoints principais — Cluster Endpoint (write) + Reader Endpoint (read LB)</li><li>DynamoDB Global Tables requer On-Demand ou ativa replicação via replica write capacity</li><li>Redshift Spectrum: query dados S3 diretamente do Redshift sem COPY</li><li>RDS Proxy: obrigatório quando Lambda acessa RDS (connection pooling, IAM auth, Secrets Manager)</li><li>ElastiCache Redis Cluster Mode: distribui keyspace em múltiplos shards → maior capacity e write throughput</li><li>Aurora Serverless v2: escala em ~1 segundo (não requer reinicialização como v1)</li><li>PITR RDS retention: 1-35 dias; Aurora: até 35 dias</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./049-10-banco-de-dados-casos-de-uso.html">Aula anterior</a>
+      <a href="./051-10-banco-de-dados-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

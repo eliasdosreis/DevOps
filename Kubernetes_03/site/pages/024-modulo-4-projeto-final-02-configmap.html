@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#024-modulo-4-projeto-final-02-configmap">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - projeto final - 2 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - projeto final" loading="lazy">
+      <figcaption>Projeto final consolida manifestos de producao em uma arquitetura completa.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 02-configmap.yaml
+# PROJETO FINAL - Configura��es centralizadas
+#
+# Separamos as configs em 2 ConfigMaps:
+# 1. config-geral    -&gt; configs compartilhadas por todos
+# 2. config-api      -&gt; configs espec�ficas da API
+#
+# Regra: Se � sens�vel (senha, token) -&gt; Secret
+#        Se n�o � sens�vel (URL, porta, flag) -&gt; ConfigMap
+# ============================================================
+
+# ConfigMap 1: Configura��es gerais compartilhadas
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: config-geral             # Nome do ConfigMap
+  namespace: ecommerce           # Namespace do projeto
+
+data:
+  # Ambiente
+  APP_ENV: &quot;production&quot;          # Ambiente atual
+  LOG_LEVEL: &quot;info&quot;             # N�vel de log (debug/info/warn/error)
+  LOG_FORMAT: &quot;json&quot;            # Formato de log (json � ideal para ELK)
+
+  # Banco de dados (sem senha - senha fica no Secret!)
+  DB_HOST: &quot;postgres-service&quot;   # Nome do Service do PostgreSQL
+  DB_PORT: &quot;5432&quot;               # Porta padr�o do PostgreSQL
+  DB_NAME: &quot;ecommerce_db&quot;       # Nome do banco
+
+  # Redis
+  REDIS_HOST: &quot;redis-service&quot;   # Nome do Service do Redis
+  REDIS_PORT: &quot;6379&quot;            # Porta padr�o do Redis
+  REDIS_TTL: &quot;3600&quot;             # Tempo de expira��o do cache (1h)
+
+  # Features flags (ativar/desativar funcionalidades sem redeploy)
+  FEATURE_PAGAMENTO_PIX: &quot;true&quot;
+  FEATURE_CUPOM_DESCONTO: &quot;true&quot;
+  FEATURE_NOTIFICACAO_EMAIL: &quot;false&quot;  # Desabilitado temporariamente
+
+---
+# ConfigMap 2: Configura��es espec�ficas da API
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: config-api
+  namespace: ecommerce
+
+data:
+  # Servidor
+  PORT: &quot;8080&quot;                  # Porta que a API escuta
+  HOST: &quot;0.0.0.0&quot;              # Aceita conex�es de qualquer IP
+
+  # Performance
+  MAX_CONNECTIONS: &quot;100&quot;        # M�ximo de conex�es simult�neas
+  REQUEST_TIMEOUT: &quot;30s&quot;        # Timeout por requisi��o
+  RATE_LIMIT: &quot;1000&quot;           # Requisi��es por minuto por IP
+
+  # CORS - Quem pode chamar a API
+  CORS_ORIGINS: &quot;https://loja.empresa.com,https://admin.empresa.com&quot;
+
+  # Arquivo de configura��o do nginx (para o container nginx)
+  nginx.conf: |
+    # Arquivo de configura��o montado como volume no nginx
+    worker_processes auto;          # Usa todos os CPUs dispon�veis
+
+    events {
+      worker_connections 1024;      # Conex�es por worker
+    }
+
+    http {
+      # Compress�o gzip para economizar banda
+      gzip on;
+      gzip_types text/plain application/json;
+
+      server {
+        listen 8080;                # Porta que nginx escuta
+        server_name _;             # Qualquer hostname
+
+        location /health {
+          return 200 &#39;OK&#39;;         # Endpoint de health check
+          add_header Content-Type text/plain;
+        }
+
+        location / {
+          proxy_pass http://localhost:3000;  # Repassa para o app
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+        }
+      }
+    }
+
+# ============================================================
+# DICA DE ARQUITETURA S�NIOR:
+#
+# Separe ConfigMaps por responsabilidade:
+# - config-geral:   compartilhado por todos os services
+# - config-api:     espec�fico do servi�o de API
+# - config-nginx:   configura��o do nginx
+#
+# Isso segue o princ�pio de separa��o de responsabilidades
+# e facilita auditoria (quem mudou o qu� e quando).
+# Use git para versionar seus ConfigMaps!
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./023-modulo-4-projeto-final-01-secrets.html">Aula anterior</a>
+      <a href="./025-modulo-4-projeto-final-03-postgres-statefulset.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Casos de Uso - AWS Organizations, Governanca e Custos - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#117-23-aws-organizations-governanca-e-custos-casos-de-uso">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #b45309">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 23 - AWS Organizations Governanca e Custos - 2 min - 23-AWS-Organizations-Governanca-e-Custos/casos-de-uso.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 23 - AWS Organizations Governanca e Custos" loading="lazy">
+      <figcaption>Governanca multi-conta combina limites, visibilidade, padroes e FinOps.</figcaption>
+    </figure>
+    <h1>Casos de Uso - AWS Organizations, Governanca e Custos</h1>
+<h2>Caso 1: Empresa em crescimento rapido</h2>
+<p>Cenario:</p>
+<ul><li>40 contas AWS em 6 meses</li><li>times independentes por produto</li><li>necessidade de guardrails comuns</li></ul>
+<p>Arquitetura:</p>
+<ul><li>AWS Control Tower para landing zone</li><li>OUs por ambiente (Sandbox, Dev, Prod)</li><li>SCP bloqueando desativacao de CloudTrail e uso fora de regioes permitidas</li><li>Identity Center para acesso federado</li></ul>
+<h2>Caso 2: FinOps com chargeback</h2>
+<p>Cenario:</p>
+<ul><li>diretoria quer custo por produto e por squad</li></ul>
+<p>Arquitetura:</p>
+<ul><li>Tags obrigatorias (Owner, CostCenter, Product, Environment)</li><li>CUR no S3</li><li>Athena + QuickSight para dashboards de chargeback</li><li>Budgets por conta e por tag</li></ul>
+<h2>Caso 3: Reducao de custo compute</h2>
+<p>Cenario:</p>
+<ul><li>gasto elevado em EC2 e Fargate</li></ul>
+<p>Arquitetura:</p>
+<ul><li>Savings Plans para base estavel</li><li>Spot para batch e workers stateless</li><li>autoscaling com limites</li><li>rightsizing com Compute Optimizer</li></ul>
+<h2>Caso 4: Governanca de seguranca</h2>
+<p>Cenario:</p>
+<ul><li>auditoria exige trilhas imutaveis</li></ul>
+<p>Arquitetura:</p>
+<ul><li>conta de log central</li><li>CloudTrail org trail</li><li>bucket de log com Object Lock</li><li>bloqueios SCP para impedir alteracao de trilha</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./116-22-recuperacao-de-desastres-e-continuidade-readme.html">Aula anterior</a>
+      <a href="./118-23-aws-organizations-governanca-e-custos-cheatsheet.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

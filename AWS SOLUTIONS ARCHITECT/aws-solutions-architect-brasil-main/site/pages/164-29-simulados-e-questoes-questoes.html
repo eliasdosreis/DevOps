@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questões — Módulo 29: Simulados e Questões - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#164-29-simulados-e-questoes-questoes">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 29 - Simulados e Questoes - 9 min - 29-Simulados-e-Questoes/questoes.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 29 - Simulados e Questoes" loading="lazy">
+      <figcaption>Simulado e treino de decisao sob tempo: leia, elimine, escolha e revise.</figcaption>
+    </figure>
+    <h1>Questões — Módulo 29: Simulados e Questões</h1>
+<blockquote><p>Estratégia de estudo para a prova</p></blockquote>
+<hr>
+<p><strong>Sobre as questões do simulado</strong></p>
+<p>O README deste módulo contém o simulado completo com 65 questões. Este arquivo reúne questões complementares de estratégia de prova e meta-perguntas sobre o formato do exame.</p>
+<hr>
+<p><strong>1.</strong> No exame SAA-C03, uma questão pede para escolher a solução &quot;mais custo-efetiva&quot;. Qual abordagem de eliminação usar?</p>
+<ul><li>A) Escolher sempre a opção com Lambda (serverless é sempre mais barato)</li><li>B) Eliminar opções com recursos ociosos (EC2 sempre ligado, instâncias sobre-provisionadas), depois comparar custo das restantes</li><li>C) Escolher sempre Reserved Instances (maior desconto)</li><li>D) Escolher a opção com menos serviços AWS (menos serviços = menos custo)</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — &quot;Mais custo-efetiva&quot; varia pelo contexto: para cargas intermitentes, Lambda/Fargate/Spot são mais baratos. Para cargas 24/7 estáveis, Reserved Instances. Elimine primeiro: (1) over-provisioning, (2) recursos idle, (3) redundância desnecessária. Então compare os serviços restantes pelo modelo de precificação.</p></details>
+<hr>
+<p><strong>2.</strong> Uma questão do exame pede para escolher 2 respostas corretas de 5 opções. Qual é a melhor estratégia?</p>
+<ul><li>A) Marcar as 2 primeiras opções que parecem corretas</li><li>B) Identificar as 2 incorretas mais óbvias, eliminar, e das 3 restantes escolher as 2 mais corretas</li><li>C) Marcar como incerto e voltar depois</li><li>D) Procurar por palavras-chave como &quot;sem servidor&quot; ou &quot;gerenciado&quot; nas opções</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Estratégia de eliminação: remova primeiro as opções claramente erradas (serviço errado para o contexto, viola princípio de segurança óbvio). Das restantes, escolha as 2 que melhor atendem TODOS os requisitos da questão. Em questões de múltipla seleção, todas as opções corretas devem ser escolhidas para pontuar.</p></details>
+<hr>
+<p><strong>3.</strong> O exame pede uma arquitetura &quot;altamente disponível&quot;. Qual é o critério mínimo que a resposta deve atender?</p>
+<ul><li>A) Usar o serviço mais novo da AWS</li><li>B) Ter recursos em pelo menos 2 Availability Zones com failover automático</li><li>C) Usar Reserved Instances em 3 regiões</li><li>D) Ter backup diário dos dados</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Alta disponibilidade = tolerância a falha de uma AZ. Mínimo: recursos em 2+ AZs com failover automático (ELB + ASG multi-AZ, RDS Multi-AZ, etc.). Backup é para recovery (não HA). Multi-region é para disaster recovery ou alcance global (diferente de HA simples).</p></details>
+<hr>
+<p><strong>4.</strong> Uma questão descreve uma aplicação que &quot;às vezes tem picos de tráfego imprevisíveis&quot; e precisa de uma solução de compute. Qual serviço é a resposta mais provável?</p>
+<ul><li>A) EC2 On-Demand fixo</li><li>B) EC2 Reserved Instances</li><li>C) Lambda ou ECS Fargate com Auto Scaling</li><li>D) EC2 Spot Instances</li></ul>
+<details><summary>Resposta</summary><p><strong>C</strong> — &quot;Imprevisível&quot; e &quot;picos&quot; = serverless/auto-scaling. Lambda escala para zero quando não há carga e para milhares quando há pico, sem configuração manual. Fargate com ASG baseado em métricas também. Reserved Instances são para carga previsível; Spot pode ser interrompida durante picos.</p></details>
+<hr>
+<p><strong>5.</strong> No exame, quando a questão menciona &quot;menor mudança na aplicação existente&quot; (lift-and-shift), qual categoria de resposta é mais provável?</p>
+<ul><li>A) Lambda e DynamoDB (serverless nativo)</li><li>B) EC2 + RDS (equivalente de VM + banco relacional)</li><li>C) EKS + S3 (containers + armazenamento)</li><li>D) CloudFormation + CodePipeline (automação)</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — &quot;Menor mudança possível&quot; = lift-and-shift = EC2 (VM equivalente), RDS (banco gerenciado, mesma engine), ELB (load balancer). A aplicação não precisa ser reescrita. Lambda/DynamoDB requerem refactoring. EKS requer containerização. A questão está testando reconhecer o padrão &quot;Rehost&quot; dos 7Rs.</p></details>
+<hr>
+<p><strong>6.</strong> Qual é a dica mais importante ao ler uma questão do exame SAA-C03?</p>
+<ul><li>A) Ler a última frase da questão primeiro para entender o que está sendo perguntado</li><li>B) Identificar todos os requisitos (disponibilidade, custo, segurança, performance) explicitamente mencionados antes de olhar as opções</li><li>C) Eliminar as opções mais longas (geralmente complexidade desnecessária)</li><li>D) Sempre escolher a opção com o serviço mais gerenciado</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Leia o cenário completo e anote os requisitos explícitos (ex: &quot;RTO &lt; 1 hora&quot;, &quot;sem código customizado&quot;, &quot;menor custo&quot;). Cada requisito pode eliminar opções. Algumas questões têm distractors que atendem parte dos requisitos mas violam outros. Identificar TODOS os requisitos antes de avaliar as respostas é a estratégia mais efetiva.</p></details>
+<hr>
+<p><strong>7.</strong> No dia do exame, quanto tempo dedicar para a primeira passagem pelas 65 questões?</p>
+<ul><li>A) Resolver todas as questões meticulosamente na primeira passagem (sem pular)</li><li>B) ~1,5 minuto por questão na primeira passagem (~97 min); marcar questões difíceis; usar tempo restante para revisar</li><li>C) Pular as primeiras 20 questões (geralmente mais difíceis)</li><li>D) Responder as mais fáceis primeiro (últimas 30 questões)</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Gestão de tempo: 130 minutos / 65 questões = 2 min/questão. Reserve ~97 min para primeira passagem (~1,5 min/questão). Questões que você está confiante: responder e seguir. Questões difíceis: marcar e pular. Com os 33 min restantes, revise as marcadas. Nunca fique preso em uma única questão por 10 minutos.</p></details>
+<hr>
+<p><strong>8.</strong> Uma questão do exame tem as seguintes opções e pede a resposta &quot;mais segura&quot;:</p>
+<ul><li>A) Usar access keys IAM hardcoded no código da aplicação</li><li>B) Usar IAM Role associada ao EC2 instance profile</li><li>C) Armazenar access keys em variáveis de ambiente do EC2</li><li>D) Usar um arquivo ~/.aws/credentials no servidor</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — IAM Role via Instance Profile: credenciais temporárias rotacionadas automaticamente pelo STS; nunca expostas em código, env vars ou arquivos. Access keys hardcoded (A), env vars (C) e arquivo de credenciais (D) são todos riscos de vazamento. A regra geral: nunca use long-lived credentials quando IAM Roles são possíveis.</p></details>
+<hr>
+<p><strong>9.</strong> Qual domínio do exame SAA-C03 tem o maior peso?</p>
+<ul><li>A) Design de Arquiteturas Resilientes (26%)</li><li>B) Design de Arquiteturas de Alta Performance (24%)</li><li>C) Design de Aplicações Seguras (30%)</li><li>D) Design de Arquiteturas Otimizadas em Custo (20%)</li></ul>
+<details><summary>Resposta</summary><p><strong>C</strong> — Design de Aplicações Seguras tem 30% do exame — é o domínio mais pesado. Foque em: IAM (roles, policies, conditions), KMS, VPC security (SG vs NACL), S3 (Block Public Access, OAC, pre-signed), Cognito, SecretsManager, GuardDuty, Shield, WAF. 30% das questões são sobre segurança.</p></details>
+<hr>
+<p><strong>10.</strong> Qual é a pontuação mínima para aprovação no SAA-C03?</p>
+<ul><li>A) 65% (700/1000)</li><li>B) 72% (720/1000)</li><li>C) 75% (750/1000)</li><li>D) 80% (800/1000)</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Score mínimo: <strong>720/1000</strong> (numa escala de 100-1000). Não é 72% das questões corretas — a pontuação usa modelo psicométrico (questões de pruning não pontuam). Na prática, precisar acertar aproximadamente 43-47 das 65 questões pontuadas (existem questões de teste não pontuadas que aparecem aleatórias).</p></details>
+<hr>
+<p><strong>11.</strong> Uma questão descreve: &quot;a empresa precisa de uma solução que processe dados <strong>em lote</strong> uma vez por dia&quot;. Qual serviço/combinação é candidato a resposta correta?</p>
+<ul><li>A) Kinesis Data Streams + Lambda</li><li>B) EventBridge Scheduler + Lambda (ou ECS/Batch)</li><li>C) SQS FIFO + Lambda</li><li>D) Kinesis Data Firehose</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — &quot;Uma vez por dia&quot; = processamento agendado. EventBridge Scheduler (ou Rule do tipo <code>schedule</code>) + Lambda/ECS Fargate/AWS Batch é o padrão. Kinesis é para streaming contínuo em tempo real, não batch diário. AWS Batch é excelente para jobs de computação pesada em batch.</p></details>
+<hr>
+<p><strong>12.</strong> Você está no exame e uma questão pede para escolher entre RDS Multi-AZ e Read Replicas. O requisito diz &quot;alta disponibilidade para escrita&quot;. O que escolher?</p>
+<ul><li>A) Read Replicas (podem ser promovidas para primary em caso de falha)</li><li>B) RDS Multi-AZ (failover automático síncrono para standy; sem perda de dados de escrita)</li><li>C) Ambos, com Read Replicas apontando para o standby Multi-AZ</li><li>D) Aurora em vez de RDS padrão</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Multi-AZ: replicação <strong>síncrona</strong> para standby em outra AZ. Failover automático em 1-2 minutos. Sem perda de writes (síncrono). Read Replicas: replicação <strong>assíncrona</strong> — podem ter lag; se o primary falhar, requer promoção manual (não automático para RDS — apenas Aurora promove automaticamente).</p></details>
+<hr>
+<p><strong>13.</strong> Uma questão menciona &quot;custo de saída de dados&quot; (data transfer out). Qual é o impacto arquitetural disso?</p>
+<ul><li>A) Dados transferidos entre regiões AWS são gratuitos</li><li>B) Upload para S3 é gratuito; transferência S3 → internet tem custo (~$0.09/GB); usar CloudFront reduz o custo de transferência</li><li>C) VPC Peering nunca tem custo de transferência de dados</li><li>D) Lambda não tem custo de transferência de dados</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Data transfer pricing: UPLOAD para AWS = gratuito. Download da AWS para internet = ~$0.09/GB. CloudFront tem custo menor por GB que S3 direto + inclui edge caching. Transferência intra-região (mesma AZ) = geralmente gratuito entre serviços. AZ para AZ na mesma região = com custo ($0.01/GB). Entre regiões = sempre tem custo.</p></details>
+<hr>
+<p><strong>14.</strong> No exame, quando uma questão menciona uma &quot;startup com orçamento limitado&quot; precisando de alta disponibilidade, qual abordagem o exame geralmente favorece?</p>
+<ul><li>A) Multi-region active-active para máxima HA</li><li>B) Multi-AZ com instâncias menores + Auto Scaling (HA sem super-provisionar)</li><li>C) On-Demand instances em única AZ (mais barato)</li><li>D) Reserved Instances de 3 anos imediatamente</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — O exame frequentemente testa: alta disponibilidade custo-efetiva. Multi-AZ é suficiente para a maioria dos casos de HA. Instâncias menores + Auto Scaling evitam on-demand caro e desnecessário. Multi-region é para DR (diferente de HA) e custa muito mais. Reserve só após o crescimento estabilizar.</p></details>
+<hr>
+<p><strong>15.</strong> Qual é o propósito das questões &quot;unscored&quot; (não pontuadas) no exame SAA-C03?</p>
+<ul><li>A) Não existem questões não pontuadas no SAA-C03</li><li>B) São questões de piloting (testando novas questões para futuras versões do exame), distribuídas aleatoriamente entre as 65</li><li>C) São as 5 questões mais fáceis para garantir pontuação mínima</li><li>D) São questões sobre serviços novos que foram anunciados recentemente</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — AWS inclui questões de &quot;field trial&quot; ou &quot;pre-operational&quot; — questões novas que estão sendo testadas para calibração. Você não sabe quais são pontuadas e quais não são. Implicação: não pule nenhuma questão (mesmo as que parecem muito difíceis podem ser não-pontuadas; mesmo as fáceis são pontuadas). Responda todas.</p></details>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./163-29-simulados-e-questoes-links.html">Aula anterior</a>
+      <a href="./165-29-simulados-e-questoes-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

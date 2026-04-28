@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#027-modulo-4-projeto-final-05-api-deployment">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - projeto final - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - projeto final" loading="lazy">
+      <figcaption>Projeto final consolida manifestos de producao em uma arquitetura completa.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 05-api-deployment.yaml
+# PROJETO FINAL - API Backend (Node.js/Express)
+#
+# Este é o coração do nosso e-commerce.
+# A API recebe requisições do frontend e:
+# 1. Verifica autenticação (JWT)
+# 2. Busca dados no PostgreSQL
+# 3. Cacheia no Redis
+# 4. Retorna resposta JSON
+#
+# RECURSOS USADOS AQUI:
+# - Deployment com RollingUpdate
+# - Liveness + Readiness + Startup Probes
+# - Resources (requests/limits)
+# - Variables de ConfigMap e Secret
+# - SecurityContext (sem root)
+# - Affinity (preferência de nó)
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: api                      # Nome do deployment da API
+  namespace: ecommerce
+
+  annotations:
+    kubernetes.io/change-cause: &quot;API v1.0.0 - versao inicial&quot;
+
+  labels:
+    app: api
+    componente: backend
+    versao: &quot;1.0.0&quot;
+
+spec:
+  replicas: 3                    # 3 réplicas para HA e load balancing
+
+  selector:
+    matchLabels:
+      app: api
+
+  # Zero downtime deploy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1                # Máximo 1 pod extra durante update
+      maxUnavailable: 0          # Nunca fica sem pods (zero downtime!)
+
+  template:
+    metadata:
+      labels:
+        app: api
+        componente: backend
+        versao: &quot;1.0.0&quot;
+
+      # Anotações no pod (para Prometheus raspar métricas)
+      annotations:
+        prometheus.io/scrape: &quot;true&quot;    # Prometheus deve coletar métricas
+        prometheus.io/port: &quot;8080&quot;      # De qual porta
+        prometheus.io/path: &quot;/metrics&quot;  # Qual endpoint
+
+    spec:
+      # -------------------------------------------------------
+      # securityContext: Segurança do pod
+      # -------------------------------------------------------
+      securityContext:
+        runAsNonRoot: true         # NUNCA rodar como root!
+        runAsUser: 1000            # UID do usuário da aplicação
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault     # Perfil de segurança padrão
+
+      # -------------------------------------------------------
+      # Terminar graciosamente (para zero downtime)
+      # -------------------------------------------------------
+      terminationGracePeriodSeconds: 30  # 30s para finalizar requisições
+
+      # -------------------------------------------------------
+      # affinity: Preferências de agendamento
+      # Preferimos pods da API em nós DIFERENTES (HA!)
+      # -------------------------------------------------------
+      affinity:
+        podAntiAffinity:           # Antiaffinidade = espalhar pods
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100          # Peso da preferência (0-100)
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: api       # Outros pods com app=api
+                topologyKey: kubernetes.io/hostname  # Em nós diferentes
+
+      containers:
+        - name: api
+          image: node:20-alpine   # Imagem Node.js (troque pela sua!)
+                                  # Em produção: sua imagem customizada
+
+          # Comando para iniciar a API
+          command: [&quot;node&quot;, &quot;server.js&quot;]
+
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+
+          # -------------------------------------------------------
+          # ENV VARS: misturando ConfigMap e Secret
+          # -------------------------------------------------------
+          env:
+            # Do ConfigMap geral
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: config-geral
+                  key: APP_ENV
+
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: config-geral
+                  key: DB_HOST
+
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: config-geral
+                  key: DB_PORT
+
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: config-geral
+                  key: REDIS_HOST
+
+            # Do ConfigMap da API
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: config-api
+                  key: PORT
+
+            # Do Secret da API (dados sensíveis!)
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-secret
+                  key: JWT_SECRET
+
+            # Da URL completa de conexão do banco
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: DATABASE_URL
+
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: REDIS_PASSWORD
+
+          # -------------------------------------------------------
+          # Resources: API Node.js precisa de boa memória
+          # -------------------------------------------------------
+          resources:
+            requests:
+              memory: &quot;256Mi&quot;    # Node.js precisa de memória
+              cpu: &quot;200m&quot;
+            limits:
+              memory: &quot;512Mi&quot;
+              cpu: &quot;1000m&quot;       # Permite burst de CPU
+
+          # -------------------------------------------------------
+          # PROBES
+          # -------------------------------------------------------
+
+          # Startup: dá tempo para a API inicializar completamente
+          startupProbe:
+            httpGet:
+              path: /health      # Endpoint simples de health
+              port: 8080
+            failureThreshold: 20  # 20 * 10s = 200s para iniciar
+            periodSeconds: 10
+
+          # Liveness: a API está viva e responsiva?
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Readiness: a API está pronta para receber tráfego?
+          # Verifica também se banco e redis estão conectados
+          readinessProbe:
+            httpGet:
+              path: /ready       # Endpoint que verifica dependências!
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+            successThreshold: 1
+
+          # securityContext no CONTAINER (complementa o do pod)
+          securityContext:
+            allowPrivilegeEscalation: false  # Não pode escalar privilégios
+            readOnlyRootFilesystem: true     # Filesystem readonly (segurança)
+            capabilities:
+              drop: [&quot;ALL&quot;]                  # Remove TODAS as capabilities Linux
+
+          # Volume para tmp (necessário com readOnlyRootFilesystem)
+          volumeMounts:
+            - name: tmp                      # Pasta /tmp writeable
+              mountPath: /tmp
+
+      volumes:
+        - name: tmp
+          emptyDir: {}                       # Volume temporário em memória
+
+# ============================================================
+# PERGUNTAS DIFÍCEIS DE ENTREVISTA:
+#
+# &quot;O que é podAntiAffinity?&quot;
+# RESPOSTA: Regra que instrui o scheduler a EVITAR colocar
+# pods com o mesmo label no mesmo nó. Garante que se um nó
+# cair, não perdemos TODOS os pods da API.
+#
+# &quot;Por que readOnlyRootFilesystem aumenta segurança?&quot;
+# RESPOSTA: Se um atacante comprometer o container, não
+# consegue modificar o filesystem. Arquivos maliciosos
+# não podem ser escritos. Reduz superfície de ataque.
+#
+# &quot;O que é seccomp?&quot;
+# RESPOSTA: Filtra chamadas de sistema (syscalls) que o
+# container pode fazer. RuntimeDefault bloqueia syscalls
+# perigosas e raramente necessárias.
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./026-modulo-4-projeto-final-04-redis-deployment.html">Aula anterior</a>
+      <a href="./028-modulo-4-projeto-final-06-frontend-deployment.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

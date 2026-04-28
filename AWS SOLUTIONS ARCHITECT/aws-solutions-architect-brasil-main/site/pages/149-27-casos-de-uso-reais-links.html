@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Links e Recursos — Casos de Uso Reais (Módulo 27) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#149-27-casos-de-uso-reais-links">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 27 - Casos de Uso Reais - 2 min - 27-Casos-de-Uso-Reais/links.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 27 - Casos de Uso Reais" loading="lazy">
+      <figcaption>Casos reais treinam trade-offs: seguro, resiliente, rapido, barato e operavel.</figcaption>
+    </figure>
+    <h1>Links e Recursos — Casos de Uso Reais (Módulo 27)</h1>
+<h2>Documentação Oficial AWS</h2>
+<ul><li><a href="https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html">AWS Step Functions — Documentação</a></li><li><a href="https://docs.aws.amazon.com/step-functions/latest/dg/concepts-standard-vs-express.html">Step Functions — Express vs Standard Workflows</a></li><li><a href="https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-what-is.html">Amazon EventBridge — Documentação</a></li><li><a href="https://docs.aws.amazon.com/sns/latest/dg/welcome.html">Amazon SNS — Documentação</a></li><li><a href="https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html">SNS — Message Filtering</a></li><li><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html">Amazon SQS — Documentação</a></li><li><a href="https://docs.aws.amazon.com/appflow/latest/userguide/what-is-appflow.html">Amazon AppFlow — Documentação</a></li><li><a href="https://aws.amazon.com/microservices/">AWS Microservices Architecture</a></li><li><a href="https://docs.aws.amazon.com/ivs/latest/userguide/what-is.html">Amazon IVS (Interactive Video Service) — Documentação</a></li></ul>
+<h2>FAQs</h2>
+<ul><li><a href="https://aws.amazon.com/step-functions/faqs/">AWS Step Functions FAQ</a></li><li><a href="https://aws.amazon.com/sns/faqs/">Amazon SNS FAQ</a></li><li><a href="https://aws.amazon.com/eventbridge/faqs/">Amazon EventBridge FAQ</a></li></ul>
+<h2>Whitepapers</h2>
+<ul><li><a href="https://docs.aws.amazon.com/whitepapers/latest/microservices-on-aws/microservices-on-aws.html">Microservices on AWS Whitepaper</a></li><li><a href="https://docs.aws.amazon.com/whitepapers/latest/building-event-driven-architectures/building-event-driven-architectures.html">Building Event-Driven Architectures on AWS</a></li><li><a href="https://docs.aws.amazon.com/whitepapers/latest/saas-architecture-fundamentals/saas-architecture-fundamentals.html">SaaS on AWS Whitepaper</a></li></ul>
+<h2>Artigos de Blog AWS</h2>
+<ul><li><a href="https://aws.amazon.com/blogs/compute/building-an-event-driven-application-with-amazon-eventbridge/">Implementing event-driven architectures with EventBridge</a></li><li><a href="https://aws.amazon.com/blogs/compute/implementing-the-saga-pattern-with-aws-step-functions/">Saga pattern with Step Functions</a></li><li><a href="https://aws.amazon.com/blogs/architecture/modernizing-banking-applications-using-microservices-on-aws/">Strangler Fig pattern migration on AWS</a></li><li><a href="https://aws.amazon.com/blogs/saas/aws-saas-factory-multi-tenant-isolation-patterns/">Building SaaS multi-tenant architectures on AWS</a></li></ul>
+<h2>Vídeos re:Invent</h2>
+<ul><li><a href="https://www.youtube.com/results?search_query=aws+reinvent+event+driven+architecture+API203">Event-Driven Architecture (API203)</a></li><li><a href="https://www.youtube.com/results?search_query=aws+reinvent+microservices+architecture+ARC307">Microservices on AWS (ARC307)</a></li><li><a href="https://www.youtube.com/results?search_query=aws+reinvent+step+functions+orchestration">Step Functions for orchestration (SVS303)</a></li><li><a href="https://www.youtube.com/results?search_query=aws+reinvent+saas+multi+tenancy+SDD404">SaaS on AWS Multi-Tenancy (SDD404)</a></li></ul>
+<h2>Ferramentas de Estudo</h2>
+<ul><li><a href="https://tutorialsdojo.com/aws-step-functions/">Tutorials Dojo — AWS Step Functions Cheat Sheet</a></li><li><a href="https://tutorialsdojo.com/amazon-eventbridge/">Tutorials Dojo — Amazon EventBridge Cheat Sheet</a></li><li><a href="https://explore.skillbuilder.aws/learn/course/external/view/elearning/12246/building-event-driven-architectures-on-aws">AWS Skill Builder — Event-Driven Architectures Workshop</a></li></ul>
+<h2>Padrões de Arquitetura — Resumo</h2>
+<div class="table-wrap"><table><thead><tr><th>Padrão</th><th>Descrição</th><th>Serviços AWS</th></tr></thead><tbody><tr><td>Fan-out</td><td>1 produtor → N consumidores</td><td>SNS → SQS</td></tr><tr><td>Saga (coreografado)</td><td>Eventos locais por serviço</td><td>EventBridge, SNS</td></tr><tr><td>Saga (orquestrado)</td><td>Coordenador central</td><td>Step Functions</td></tr><tr><td>Event Sourcing</td><td>Imutabilidade de eventos</td><td>DynamoDB Streams, Kinesis</td></tr><tr><td>Strangler Fig</td><td>Migração incremental</td><td>API Gateway, ALB</td></tr><tr><td>CQRS</td><td>Separação leitura/escrita</td><td>DynamoDB + ElastiCache</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./148-27-casos-de-uso-reais-lab.html">Aula anterior</a>
+      <a href="./150-27-casos-de-uso-reais-questoes.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

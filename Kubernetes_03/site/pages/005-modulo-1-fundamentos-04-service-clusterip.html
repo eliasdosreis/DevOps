@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#005-modulo-1-fundamentos-04-service-clusterip">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 01 - fundamentos - 2 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 01 - fundamentos" loading="lazy">
+      <figcaption>Fundamentos: pods, namespaces e services para formar a base operacional.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 04-service-clusterip.yaml
+# O QUE � UM SERVICE?
+#
+# Problema: Pods morrem e nascem com IPs diferentes.
+# Como outros apps acham o seu pod se o IP muda?
+#
+# SOLU��O: Service � como a RECEP��O de um hotel.
+# Voc� n�o fala com o quarto diretamente (pod),
+# voc� fala com a recep��o (service) e ela te direciona.
+#
+# TIPOS DE SERVICE:
+# 1. ClusterIP  --&gt; S� acess�vel DENTRO do cluster (padr�o)
+# 2. NodePort   --&gt; Acess�vel de FORA pelo IP do n�
+# 3. LoadBalancer --&gt; Cria um IP externo na nuvem
+# 4. ExternalName --&gt; Aponta para DNS externo
+# ============================================================
+
+# Primeiro criamos o Pod que o Service vai apontar
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: app-backend           # Pod que ser� exposto pelo service
+  labels:
+    app: backend              # LABEL CRUCIAL! O Service usa isso
+    versao: &quot;v1&quot;              # para encontrar o pod
+
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.25
+      ports:
+        - containerPort: 80
+
+---
+# ============================================================
+# AGORA O SERVICE
+# ============================================================
+
+apiVersion: v1
+kind: Service               # Tipo: Service
+
+metadata:
+  name: service-backend     # Nome do service
+                            # Outros pods usam ESSE nome para
+                            # se comunicar! Ex: http://service-backend
+
+  labels:
+    app: backend
+
+spec:
+  type: ClusterIP           # Tipo ClusterIP = s� dentro do cluster
+                            # Este � o tipo PADR�O
+                            # Acess�vel apenas dentro do cluster
+
+  selector:                 # COMO o service acha os pods?
+    app: backend            # Ele procura pods com label app=backend
+                            # DEVE BATER com os labels do Pod acima!
+                            # Isso � a &quot;cola&quot; entre Service e Pod
+
+  ports:
+    - name: http            # Nome da porta (opcional mas boa pr�tica)
+      protocol: TCP         # Protocolo (TCP � o padr�o)
+      port: 80              # Porta que o SERVICE exp�e
+                            # Outros pods chamam: service-backend:80
+      targetPort: 80        # Porta que o POD est� escutando
+                            # Precisa bater com containerPort do pod
+
+# ============================================================
+# COMO FUNCIONA O SELECTOR:
+#
+#   Pod tem label:     app: backend  ?
+#   Service selector:  app: backend  ?
+#   RESULTADO: Service roteia tr�fego para o Pod!
+#
+#   Se o label N�O bater, o Service n�o encontra o Pod.
+#   Essa � uma das causas mais comuns de bug em K8s!
+#
+# TESTAR:
+#   kubectl apply -f 04-service-clusterip.yaml
+#   kubectl get services
+#   kubectl describe service service-backend
+#   kubectl get endpoints service-backend   # Ver os IPs dos pods
+#
+# ENTREVISTA:
+# &quot;O que s�o Endpoints no Kubernetes?&quot;
+# RESPOSTA: S�o os IPs reais dos Pods que o Service aponta.
+# Voc� pode ver com: kubectl get endpoints &lt;service-name&gt;
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./004-modulo-1-fundamentos-03-namespace.html">Aula anterior</a>
+      <a href="./006-modulo-1-fundamentos-05-service-nodeport.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Casos de Uso Reais — Recursos de Estudo em Ação (Módulo 21) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#173-31-recursos-e-links-casos-de-uso">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #b45309">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 31 - Recursos e Links - 6 min - 31-Recursos-e-Links/casos-de-uso.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1488998427799-e3362cec87c3?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 31 - Recursos e Links" loading="lazy">
+      <figcaption>Links oficiais mantem o estudo conectado ao comportamento atual dos servicos AWS.</figcaption>
+    </figure>
+    <h1>Casos de Uso Reais — Recursos de Estudo em Ação (Módulo 21)</h1>
+<h2>Caso 1 — Plano de Estudo para Quem Tem 8 Semanas</h2>
+<p><strong>Contexto:</strong> Profissional de TI com experiência em infraestrutura on-premises (sem experiência AWS prévia) planeja obter SAA-C03 em 8 semanas, estudando 2 horas por dia.</p>
+<p><strong>Plano Semana a Semana:</strong></p>
+<pre><code class="language-">SEMANA 1 — BASE E COMPUTAÇÃO (14h):
+Recursos:
+  ├── Curso Udemy Stephane Maarek: Seções 1-5 (EC2, ELB, ASG)
+  ├── AWS Free Tier: criar conta + explorar console
+  └── Skill Builder: &quot;AWS Cloud Practitioner Essentials&quot; (gratuito)
+  
+Prática:
+  └── Criar EC2 t3.micro, conectar via SSH, instalar nginx, acessar via browser
+  
+Meta: entender EC2, tipos de instância, pricing, ELB, Auto Scaling
+
+SEMANA 2 — STORAGE E BANCO DE DADOS (14h):
+Recursos:
+  ├── Curso Maarek: Seções 6-10 (EBS, EFS, S3, RDS, DynamoDB)
+  └── AWS Docs: S3 FAQ + RDS FAQ (30min cada)
+  
+Prática:
+  └── Criar S3 bucket, versioning, lifecycle policy
+  └── Criar RDS Free Tier, conectar via DBeaver
+
+SEMANA 3 — REDE E SEGURANÇA (14h):
+Recursos:
+  ├── Curso Maarek: Seções 11-14 (VPC, Route 53, CloudFront, WAF)
+  └── Whitepaper: &quot;AWS Security Best Practices&quot; (1h)
+  
+Prática:
+  └── Criar VPC com 2 subnets (public+private), NAT GW, bastion host
+
+SEMANA 4 — SERVERLESS E INTEGRAÇÃO (14h):
+Recursos:
+  ├── Curso Maarek: Seções 15-19 (Lambda, SQS, SNS, API GW, Kinesis)
+  └── Tutorial: &quot;Build a Serverless App&quot; (AWS Labs gratuito)
+  
+Prática:
+  └── Lambda + API GW + DynamoDB (todo app completo)
+
+SEMANA 5 — MICROSSERVIÇOS, MONITORING E ANALÍTICA (14h):
+Recursos:
+  ├── Curso Maarek: Seções 20-24 (ECS, CloudWatch, CloudTrail, Athena)
+  └── AWS Architecture Center: Well-Architected examples
+
+SEMANA 6 — MIGRAÇÃO, CUSTO, BOAS PRÁTICAS (14h):
+Recursos:
+  ├── Curso Maarek: Seções finais
+  └── Whitepaper: &quot;AWS Well-Architected Framework&quot;
+  
+SEMANA 7 — PRIMEIRO SIMULADO (14h):
+Recursos:
+  ├── Tutorials Dojo: 1 simulado completo (65 questões)
+  └── Revisar TODAS as questões erradas (ler explicação com cuidado)
+  
+Meta: score &gt; 65% no primeiro simulado
+
+SEMANA 8 — REVISÃO INTENSIVA + EXAME (14h):
+Recursos:
+  ├── Tutorials Dojo: segundo simulado completo
+  ├── Revisão de cheatsheets dos serviços mais errados
+  └── Flashcards nos dias anteriores ao exame
+  
+AGENDAR EXAME: no início da semana 7 (motivação para estudar!)</code></pre>
+<hr>
+<h2>Caso 2 — Usando Skill Builder para Laboratórios Práticos</h2>
+<p><strong>Contexto:</strong> Candidato sabe teoria mas nunca operou na AWS. Skill Builder oferece labs práticos com créditos incluídos.</p>
+<p><strong>Plano de Labs no Skill Builder:</strong></p>
+<pre><code class="language-">AWS Skill Builder Individual ($29/mês ou $299/ano): 
+  Acesso a labs em sandbox real (jamais paga custos de AWS nos labs)
+  
+LABS PRIORITÁRIOS PARA SAA-C03:
+├── &quot;Introduction to Amazon EC2&quot; (grátis no Skill Builder básico)
+├── &quot;Introduction to Amazon S3&quot; 
+├── &quot;Creating an Amazon Virtual Private Cloud (VPC)&quot;
+├── &quot;Introduction to Amazon RDS&quot;
+├── &quot;Introduction to AWS Lambda&quot;
+├── &quot;Introduction to Amazon DynamoDB&quot;
+├── &quot;Introduction to Amazon CloudWatch&quot;
+├── &quot;Introduction to AWS IAM&quot;
+└── &quot;AWS Well-Architected Best Practices&quot; (não é lab, é módulo teórico)
+
+EXAM READINESS: &quot;AWS Certified Solutions Architect - Associate&quot; 
+  (curso oficial gratuito, 3h, cobre todos os domínios do exame)
+  Disponível em: skillbuilder.aws → pesquisar &quot;SAA Exam Readiness&quot;
+
+GRATUITO NO SKILL BUILDER BÁSICO (sem pagar):
+├── Cloud Practitioner Essentials
+├── AWS Technical Essentials  
+├── Exam Readiness SAA-C03
+└── Vários labs de nível introdutório</code></pre>
+<hr>
+<h2>Caso 3 — Estratégia para Questões de Diagrama de Arquitetura</h2>
+<p><strong>Contexto:</strong> Exame SAA-C03 apresenta cenários complexos de múltiplos serviços. Como estruturar o raciocínio.</p>
+<p><strong>Framework de Análise:</strong></p>
+<pre><code class="language-">MÉTODO EM 4 PASSOS:
+
+PASSO 1 — LER O ÚLTIMO PARÁGRAFO PRIMEIRO:
+(geralmente contém a constraint principal)
+&quot;A empresa precisa da solução com MENOR CUSTO que atenda os requisitos.&quot;
+→ Isso elimina imediatamente todas as soluções mais caras
+
+PASSO 2 — IDENTIFICAR PALAVRAS-CHAVE:
+┌─────────────────────────────────────────────────────────┐
+│ &quot;serverless&quot;       → Lambda, Fargate, Aurora Serverless  │
+│ &quot;menor overhead&quot;   → Serviços gerenciados                │
+│ &quot;real-time&quot;        → Kinesis, EventBridge                │
+│ &quot;desacoplar&quot;       → SQS, SNS                            │
+│ &quot;global&quot;           → CloudFront, Route 53, DynamoDB GT   │
+│ &quot;failover auto&quot;    → Multi-AZ, Route 53 Failover         │
+│ &quot;escalar leituras&quot; → Read Replica (NÃO Multi-AZ)         │
+│ &quot;sem perda dados&quot;  → Multi-AZ, síncrono                  │
+│ &quot;compliance/audit&quot; → CloudTrail + S3 + Object Lock       │
+│ &quot;dados sensíveis&quot;  → Macie, KMS, Secrets Manager         │
+└─────────────────────────────────────────────────────────┘
+
+PASSO 3 — ELIMINAR OPÇÕES CLARAMENTE ERRADAS:
+&quot;Instalar software em instâncias EC2&quot; → flag de alerta (mais overhead)
+&quot;Gerenciar manualmente&quot; em questão sobre HA → quase sempre errado
+&quot;Compartilhar credenciais root&quot; → sempre errado
+
+PASSO 4 — ESCOLHER ENTRE AS 2 RESTANTES:
+Aplicar critério da questão (custo? performance? disponibilidade?)
+Se ainda em dúvida: serviço managed &gt; self-managed na AWS</code></pre>
+<hr>
+<h2>Caso 4 — Usando Tutorials Dojo vs Exame Real</h2>
+<p><strong>Contexto:</strong> Candidato tem score 78% no Tutorials Dojo. Estará pronto para o exame real?</p>
+<p><strong>Calibração de Simulados:</strong></p>
+<pre><code class="language-">CORRELAÇÃO SCORE SIMULADO × EXAME REAL (empírico):
+Tutorials Dojo 75% → Exame real provavelmente 70-75% (aprovado: 72%)
+Tutorials Dojo 80% → Exame real provavelmente 75-82% (aprovação confortável)
+Tutorials Dojo 85% → Exame real provavelmente 80-88% (aprovação boa)
+
+POR QUÊ SIMULADOS PODEM SER MAIS DIFÍCEIS:
+Tutorials Dojo e ExamTopics têm questões mais técnicas/detalhadas
+Exame real tem mais questões de cenário do que questões técnicas puras
+Exame real: 50 válidas + 15 experimentais (novas questões não contam)
+
+INTERPRETANDO SCORE POR DOMÍNIO:
+Domínio 1 (Segurança 30%): score &lt; 70% → rever IAM, KMS, VPC
+Domínio 2 (Resiliência 26%): score &lt; 70% → rever Multi-AZ, Auto Scaling, DR
+Domínio 3 (Performance 24%): score &lt; 70% → rever ElastiCache, Kinesis, CloudFront
+Domínio 4 (Custo 20%): score &lt; 70% → rever S3 tiers, Reserved, Spot
+
+META RECOMENDADA:
+Fazer 2-3 simulados completos de 65 questões
+Score médio &gt; 78% nos últimos 2 simulados → agendar exame
+Não fazer simulado no dia anterior ao exame (ansiedade)</code></pre>
+<hr>
+<h2>Caso 5 — Pós-Certificação: Próximos Passos na Carreira</h2>
+<p><strong>Contexto:</strong> Candidato acabou de passar no SAA-C03. O que fazer a seguir para maximizar o retorno do investimento.</p>
+<p><strong>Plano de Carreira:</strong></p>
+<pre><code class="language-">IMEDIATO (primeiros 7 dias):
+├── Atualizar LinkedIn:
+│   Seção Licenças e Certificações:
+│   Nome: &quot;AWS Certified Solutions Architect - Associate&quot;
+│   Emissor: Amazon Web Services (AWS)
+│   Link verificação: badge Credly
+├── Aceitar badge no Credly (email da AWS)
+└── Atualizar currículo/perfil em vagas
+
+PRÓXIMAS CERTIFICAÇÕES (recomendação de ordem):
+OPÇÃO A — Ampliar (outras Associate antes do Professional):
+SAA-C03 → DVA-C02 (Developer) → SOA-C02 (SysOps) → SAP-C02 (Pro)
+
+OPÇÃO B — Aprofundar direto:
+SAA-C03 → SAP-C02 (Professional — nível máximo Architect)
+           (SAA renova automaticamente ao passar no SAP)
+
+OPÇÃO C — Especialização:
+SAA-C03 → DOP-C02 (DevOps Pro) ou ANS-C01 (Advanced Network)
+           ou SCS-C02 (Security Specialty)
+
+PARA QUEM BUSCA EMPREGO:
+AWS Partner Network (registrar conta gratuita) → encontrar vagas
+LinkedIn: &quot;AWS Solutions Architect&quot; → alertas de vagas
+GitHub: criar repositório com projetos AWS (evidência prática)
+Blog: escrever sobre o que aprendeu → visibilidade
+
+PARA FREELANCER:
+Upwork/Toptal: certificação aumenta taxa/hora
+AWS Marketplace: empresas buscam SAs certificados para consultorias
+AWS Partner: empresa pode se tornar parceira com 2+ SAs certificados
+
+MANTER RELEVÂNCIA:
+AWS re:Invent (novembro): conferência principal, novidades do ano
+AWS Blogs (aws.amazon.com/blogs): novidades semanais dos serviços
+re:Post: responder perguntas da comunidade (solidificar conhecimento)</code></pre>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./172-30-glossario-readme.html">Aula anterior</a>
+      <a href="./174-31-recursos-e-links-cheatsheet.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

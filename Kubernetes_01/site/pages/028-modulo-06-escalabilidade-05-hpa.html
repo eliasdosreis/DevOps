@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#028-modulo-06-escalabilidade-05-hpa">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 06 - escalabilidade - 5 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 06 - escalabilidade" loading="lazy">
+      <figcaption>Escalabilidade e probes ajudam o cluster a reagir com saude e previsibilidade.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um componente espetacular: HPA (Horizontal Pod Autoscaler).
+# Configura seu Deployment para escalar (clonar a caixa) 
+# autom�gicamente quando a carga de trabalho de usu�rios subir!
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Voc� � o Gerente da Bilheteria do Cinema.
+# Num feriado comum, 1 M�quina de vender Guich� de Pipoca com 1 atendente da conta do trabalho.  
+# Mas hoje, sexta-feira de estr�ia dos Vingadores: Filas Imensas de Estresse! 
+# Ao inv�s de voc� olhar a fila e ligar pra sua Chefe e pedir pra 
+# mandar &quot;Contratar + Mais 3 Pipocamos via Deploy&quot; (Manual).
+#
+# O (HPA) � um &quot;Scanner Rob� na Filac&quot; . A Regra dele �: &quot;Se o n�vel de Stress e  
+# Suor na camisa (CPU%) dos Operadores das Pipocas vigentes passar de  
+# &#39;50% de suor&#39; cont�nuo. EU, O ROB� KUBERNETES CLONO ESSE ATENTENDE
+# SOZINHO. Posso colocar eles at� um teto limite de no maximo de 10 Atendentes!&quot;. 
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# HorizontalPodAutoscaler automatiza o aumento de n�mero de r�plicas
+# (Scale-Out) e retra��o de n�mero de r�plicas via garbage-collect natural temporal 
+# (Scale-In). Baseando-se em observabilidades providas pelo Metrics-Server na matriz
+# do controle de `targetCPUUtilizationPercentage` ou mem�rias e custom metrics Cloud.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: autoscaling/v2          # API de Auto-scale moderna
+kind: HorizontalPodAutoscaler
+metadata:
+  name: robocop-escala-pipeline
+  namespace: meu-primeiro-projeto
+spec:
+  # QUEM EU VOU VIGIAR E APLICAR AS CLONAGEMS? (Lembro do meu Deployment antigo!)
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-loja                  # Nome Exato daquele `02-deployment.yaml` da Aula 02 
+    
+  # AS REGRAS DE TETO MACIO
+  minReplicas: 1                    # Se ninguem comprar nada de madrugada, desista aos prantos de enxugar pra apagar custo Amazon (Ate 1 sobrar).
+  maxReplicas: 10                   # Teto MAXIMO do cluster. N�o clona 100 senao quebra o or�amento financeiro!
+  
+  # A REGRA DE STRESS GATILHO: A M�gica de fato!
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu                     # Metrica Foco (O &#39;suor&#39; na camisa do operario)
+      target:
+        type: Utilization
+        averageUtilization: 50      # Se a Media da CPU dos viventes bater 50% alocada do limit... ESCAAAALA! GERA +1!
+        
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. CUIDADO. PARA O HPA FUNCIONAR OBRIGATORIAMENTE O CLUSTER PRECISA 
+#    DO PLUGIN &quot;Metrics-Server&quot; instalado nele para dar &quot;Visao do hardware&quot; ao k8s:
+#    (No Kind puro, aplique isso pro cluster enxergar CPUs:)
+#    kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+#
+# 2. Invoque as leis e regras o Robocop Escalador:
+#    kubectl apply -f 05-hpa.yaml
+#
+# 3. VER AO VIVO NA TELA O K8S LENDO AS PORCENTAGENS DO USO DE HARDWRE!
+#    kubectl get hpa robocop-escala-pipeline -n meu-primeiro-projeto -w
+#    (Voc� ver� as colunas `TARGETS` dizendo  `0% / 50%`... Se vc bombardiar de requisi��es apache-bench o pod... isso bater� os `70% / 50%`... No mesmo exato momemnto a coluna final &quot;REPLICAS&quot; crescera de 1 para 3 magicamente!!)
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# DE LEEEENGE O ERRO MAIS ABSURDO DAS TREADS DE INTERNET DO JUNIOR DEVOPS:
+# `kubectl get hpa` mostra `TARGETS: &lt;unknown&gt; / 50%`. Unknown n�o escala NADA!! 
+# MOTIVOS DE UNKNOWN DA MORTE:
+# 1. O Adm do cluster nunca instalou o Componente de `metrics-server` e o cluster � CEGO.
+# 2. **ERRO MESTRE:** Seu Deployment base (ex: `api-loja`) N�O FOI CRIADO COM O BLOCO
+#   `&quot;resources.requests&quot;` de CPU que vimos na Aula_01 daqui do modulo!
+#   Pense s�: Se o K8s n�o sabe que o &quot;teto absoluto do request exato&quot; do cpu � 200m.. 
+#   como que voc�, Rob�, calcular� que &#39;50% foi usado&#39; ??? A conta matem�tica precisa da BASE PRA DIVIS�O PERCENTUAL ! K8s nao mede o teto geral da maquinna pra porcentagem.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# Senior usa HPA para m�tricas de neg�cio! N�o s� via CPU!.
+# Hoje na Amazon / GKE... podemos emparelhar o HPA com Ferramentas &quot;CustomMetrics/PrometheusAdapter&quot;.
+# Seu Robocop PODE escalar PODS se e somente se: &quot;Se na tela de GoogleAnalytics do Site Oficial... bater
+# 3mil pessoas logadas de uma vez, mande a CPU do meu servidor do fundo injetar +2 pods antecipadamente antes mesmo 
+# deles atacarem nossa api, preditivamente! Baseada Numa Metrica Logica Externa e nao est�tica Hardware Like&quot;.
+# O OPA/KEDA Moderno � de explodir cabe�as na fluidez.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se n�s temos um Autoscaler na Media 50% de TargetCpu, que escalou de 2 pra MAX:10 Pods
+# porque entremositou no Jornal Nacional em propaganda. E acabou a propaganda.. E o CPU dos Pods caiam no relogue instant�neamento 
+# pra p�fios 5%, O HPA matar� os 10 rec�m-nascidos do ar abruptamente aos pares pra voltar as &quot;MinReplicas=2&quot; correndo em milissegundos? &quot;
+# Resposta Esperada: &quot;N�o. O Kubernetes tem implementado um mecanismo protetivo brutal 
+# anti-thrashing (Flapping). Ele chama de Cooldown Period (ScaleDown behavior window). 
+# Basicamente ele observar� uma taxa congelada da poeira abaixar, esperando um padr�o `hardcoded`
+# can�nico de aprox. 5 minutos inalterado de paz absoluta pra ter coragem de MATAR progressivamente o pool. 
+# Previne que a montanha-russa do fluxo mate e recrie infraestruura quebrando o controle manager e desestablizando o cluster.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./027-modulo-06-escalabilidade-04-startup-probe.html">Aula anterior</a>
+      <a href="./029-modulo-07-rbac-01-serviceaccount.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

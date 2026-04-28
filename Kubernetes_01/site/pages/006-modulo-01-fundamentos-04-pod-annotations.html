@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#006-modulo-01-fundamentos-04-pod-annotations">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 01 - fundamentos - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 01 - fundamentos" loading="lazy">
+      <figcaption>Fundamentos: namespaces, pods, labels e annotations para organizar o cluster.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Demonstra qual a gigantesca diferen�a entre Labels, e
+# as Annotations (Anota��es).
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Lembre-se, as Labels s�o como a *Cor do Carro* (vermelho) onde um policial
+# te v� de longe em uma batida que mandou parar &quot;todos os vermelhos&quot;.
+#
+# Annotations seria o *Manual T�cnico do porta-luvas* do carro.
+# Serve apenas pra voc� arquivar quem construiu (Data/Hora de Produ��o), 
+# quem revisou a documenta��o, ou uma nota longa de um mec�nico sobre a embreagem. 
+# O Policial da estrada n�o consegue te filtrar olhando apenas pra isso de longe.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# Annotations s�o dicion�rios de chave/valor projetados especificamente 
+# para armazenar metadados n�o-identificadores em blocos enormes de string.
+# Diferente das Labels, as Ferramentas internas do Kubernetes n�o buscam 
+# objetos via Selectors de strings de Annotation. Ela serve primordialmente para 
+# ferramentas de automa��o externas gravarem dados complexos no pr�prio yaml vivo.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-super-anotado
+  namespace: meu-primeiro-projeto
+  # Este era o bloco anterior: Identificadores que servem pra fazer Buscas/Rede
+  labels:                    
+    aplicacao: worker-pdf
+  # AQUI EST� A NOVIDADE: As anota��es ricas de conhecimento humano ou ferramentas  
+  annotations:
+    autor.email: &quot;elias@dominio.com.br&quot;
+    revisao.git.hash: &quot;6f5a3c9b4e&quot;
+    documentacao.url: &quot;https://minha-wiki.srv/pdf-worker.html&quot;
+    # Anota��es suportam blocos enormes, sem as duras regras das labels:
+    nota.do.dev: |
+      &quot;Este componente fuma CPU e quebra facilmente se vier PDF zipado.
+       Rever ticket JIRA-4091 na pr�xima sprint de Mar�o&quot; 
+spec:
+  containers:
+    - name: worker-pdf
+      image: alpine:latest 
+      command: [&quot;sleep&quot;, &quot;3600&quot;] # Comando s� pra manter o pod vivo atoa.
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplicar o arquivo no cluster:
+#    kubectl apply -f 04-pod-annotations.yaml
+#
+# 2. Tente fazer uma busca pela anota��o (ISSO VAI DAR ERRO PORQUE � PROIBIDO)
+#    kubectl get pods -l autor.email=elias@dominio.com.br -n meu-primeiro-projeto
+#
+# 3. Ler o conte�do que est� l� dentro, de forma completa com Output YAML Localho:
+#    kubectl get pod pod-super-anotado -n meu-primeiro-projeto -o yaml
+#
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# Voc� n�o costuma ter &quot;crashing bugs&quot; por conta de Annotations.
+# Mas elas t�m limite: 256kb no Kubernetes vanilla por anota��o (para n�o quebrar 
+# o banco de dados interno etcd explodindo o tamanho dos objetos na listagem pesada).
+# O limite de Labels, ali�s, tem em m�dia de chave m�ximo 63 caracteres.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# &quot;Elias, se eu n�o consigo filtrar por Annotations, pra que diabos eu s�nior usaria?&quot;
+# Na vida real: Ferramentas de nuvem. Se voc� subir um Service &quot;LoadBalancer&quot; na AWS 
+# (Para abrir seu site pra internet), voc� � OBRIGADO a socar uma Annotation no seu yaml
+# no estilo: `service.beta.kubernetes.io/aws-load-balancer-type: &quot;nlb&quot;`.
+# Porqu�? O motor do kubernetes em si vai ignorar isso por completo. MAS O ROB� DA AWS
+# C.C.M (Cloud Controller Manager) que ronda todos os clusters secretamente vai ler 
+# aquele yaml, ver a Annotation com o nome da pr�pria AWS, e magicamente criar os 
+# hardwares na aba da conta AWS Billing. O ecossistema se comunica assim pelo mundo!
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se eu preciso que meu Continuous Delivery mude algo em um Deployment 
+# antigo para for�ar todos os Pods a reiniciar, sem alterar a imagem do container. Como faremos se 
+# n�o houver mudan�a formal de spec?&quot;
+# Resposta Esperada: &quot;Podemos alterar dinamicamente uma Annotation. Ao usar uma 
+# annotation de timestamp, por exemplo, o Kubernetes enxerga que o estado desejado 
+# (YAML) foi levemente alterado em metadados. Essa s�til mudan�a far� com que o
+# Rollout seja deflagrado de cima pra baixo e ele substituir� os antigos por rec�m 
+# nascidos graciosamente sem causar interrup��o geral. � uma t�cnica muito validada para soft-restarts.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./005-modulo-01-fundamentos-03-pod-labels.html">Aula anterior</a>
+      <a href="./007-modulo-02-workloads-01-replicaset.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

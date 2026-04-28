@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Módulo 27 — Casos de Uso Reais: Arquiteturas Multi-Serviço - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#151-27-casos-de-uso-reais-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 27 - Casos de Uso Reais - 6 min - 27-Casos-de-Uso-Reais/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 27 - Casos de Uso Reais" loading="lazy">
+      <figcaption>Casos reais treinam trade-offs: seguro, resiliente, rapido, barato e operavel.</figcaption>
+    </figure>
+    <h1>Módulo 27 — Casos de Uso Reais: Arquiteturas Multi-Serviço</h1>
+<h2>Sobre Este Módulo</h2>
+<p>Arquiteturas reais integram múltiplos serviços AWS. Este módulo apresenta padrões arquiteturais recorrentes no exame SAA-C03, onde a combinação certa de serviços determina a solução ótima.</p>
+<hr>
+<h2>Caso 1: E-commerce de Alta Disponibilidade</h2>
+<p><strong>Requisitos</strong>: Aplicação web global, escalável, com pagamentos seguros e catálogo de produtos.</p>
+<pre><code class="language-">Usuários Globais
+    ↓
+Route 53 (DNS + Health Checks + failover/latency routing)
+    ↓
+CloudFront (CDN — assets estáticos em edge locations)
+    ↓
+WAF + Shield Standard (proteção DDoS na borda)
+    ↓
+ALB (Application Load Balancer — distribui para múltiplas AZs)
+    ↓
+Auto Scaling Group → EC2 (app tier) ou ECS Fargate
+    │
+    ├── RDS Aurora MySQL (Multi-AZ para pedidos/usuários)
+    │     └── Aurora Read Replicas (leitura pesada)
+    ├── ElastiCache Redis (cache de sessão e catálogo)
+    ├── DynamoDB (carrinho de compras — latência baixa)
+    │
+    └── S3 (imagens de produto) → CloudFront origin
+         └── SQS (filas de pedidos) → Lambda (processamento async)
+              └── SNS (notificações) → SES (email confirmação)</code></pre>
+<p><strong>Serviços-chave e justificativas:</strong></p>
+<ul><li>Aurora Multi-AZ: disponibilidade para dados transacionais<br></li><li>ElastiCache: reduz latência e carga no banco de dados</li><li>SQS desacopla processamento de pedidos (tolerância a falha na integração)</li><li>CloudFront reduz latência mundial e custo de transferência</li></ul>
+<hr>
+<h2>Caso 2: Pipeline de Dados em Tempo Real</h2>
+<p><strong>Requisitos</strong>: Ingestão de eventos de IoT, processamento em tempo real, analytics e alertas.</p>
+<pre><code class="language-">Dispositivos IoT
+    ↓
+IoT Core (MQTT) ou Kinesis Data Streams
+    ↓
+Lambda (transformação de eventos) ─── DynamoDB (estado atual dispositivo)
+    │
+    ├── Kinesis Firehose → S3 (raw data lake, Parquet)
+    │         └── Glue Crawlers → Glue Catalog
+    │               └── Athena (queries ad-hoc analistas)
+    │
+    └── Kinesis Data Analytics (Apache Flink)
+          └── Anomaly detection → SNS → Lambda → PagerDuty
+                                → CloudWatch Alarms</code></pre>
+<p><strong>Serviços-chave e justificativas:</strong></p>
+<ul><li>Kinesis Data Streams: ingestão de alto volume em tempo real</li><li>Kinesis Firehose: near real-time delivery para S3 (zero código de gerenciamento)</li><li>Lambda ESM: processa eventos de Kinesis em batches<br></li><li>Athena: análise sem servidor dos dados no S3</li></ul>
+<hr>
+<h2>Caso 3: Aplicação Serverless com Autenticação</h2>
+<p><strong>Requisitos</strong>: API REST serverless, autenticação de usuários, dados variáveis.</p>
+<pre><code class="language-">Mobile/Web App
+    ↓
+Amazon Cognito User Pool (signup/login/MFA/tokens JWT)
+    ↓
+API Gateway HTTP API (+ JWT Authorizer com Cognito)
+    ↓
+Lambda Functions:
+    ├── GET /products   → DynamoDB (leitura, DAX para cache)
+    ├── POST /orders    → DynamoDB + EventBridge
+    ├── GET /files      → Pre-signed URL S3 retornada ao cliente
+    └── POST /files     → Pre-signed URL S3 para upload direto
+
+EventBridge:
+    └── Rule: order.created → Lambda (enviar email) → SES
+    └── Rule: order.created → SQS → Lambda (processar pagamento)
+
+Monitoramento:
+    X-Ray (tracing API GW → Lambda → DynamoDB)
+    CloudWatch Logs (structured logging)
+    CloudWatch Alarms (Lambda errors, throttles)</code></pre>
+<p><strong>Serviços-chave e justificativas:</strong></p>
+<ul><li>Cognito User Pool: auth completo (OAuth2/OIDC) sem código próprio</li><li>API GW HTTP API: custo 71% menor que REST API para endpoints simples</li><li>Pre-signed URLs S3: clientes fazem upload/download direto no S3 (não passa pela Lambda)</li><li>DAX: cache in-memory para DynamoDB (µs para leituras repetidas)</li></ul>
+<hr>
+<h2>Caso 4: Disaster Recovery Multi-Region</h2>
+<p><strong>Requisitos</strong>: RTO &lt; 15 min, RPO &lt; 5 min para aplicação crítica.</p>
+<pre><code class="language-">Região Primária (us-east-1)
+    ├── RDS Aurora (primary)     ──[global database]──→  Região DR (us-west-2)
+    ├── DynamoDB Global Tables   ──[multi-master]──────→  DynamoDB Global Table
+    ├── S3 (dados aplicação)     ──[CRR]──────────────→  S3 réplica
+    └── EC2 ASG (app)
+
+Route 53:
+    ├── Health Check → ALB us-east-1 (primary, weight 100)
+    └── Failover Record → ALB us-west-2 (DR, weight 0)
+           └── Trigger: health check falha → DNS TTL flip para us-west-2
+
+DR Region (us-west-2) — Warm Standby:
+    ├── Aurora Secondary (read, promotes to primary on failover)
+    ├── DynamoDB Global Table (já ativo — leitura local disponível)
+    ├── EC2 ASG (capacidade reduzida — escala ao receber tráfego)
+    └── ALB</code></pre>
+<p><strong>Estratégia: Warm Standby</strong> → RTO ~10-15 min, RPO ~1-5 min (replicação assíncrona Aurora ~1s)</p>
+<hr>
+<h2>Caso 5: Migração de Monolito para Microserviços</h2>
+<p><strong>Requisitos</strong>: Migrar aplicação legada .NET para arquitetura moderna, sem downtime.</p>
+<pre><code class="language-">Fase 1 — Strangler Fig Pattern:
+  Monolito original → Route 53 (via path-based routing no ALB)
+      ├── /api/auth → Novo serviço auth (Fargate + Cognito)
+      ├── /api/catalog → Novo serviço catálogo (Lambda + DynamoDB)
+      └── /* → Monolito (EC2) ainda em produção
+
+Fase 2 — Async Decoupling:
+  Monolito emite eventos → SNS/EventBridge
+    └── Microserviços consomem eventos (substituindo chamadas síncronas)
+
+Fase 3 — Complete Migration:
+  ECS/EKS (containers) ou Lambda (serverless) por domínio de negócio
+  API Gateway (facade única para todos microserviços)
+  Service Connect ou App Mesh (comunicação inter-serviços)</code></pre>
+<p><strong>Padrões usados:</strong></p>
+<ul><li><strong>Strangler Fig</strong>: substitui partes incrementalmente, nunca cutover total de uma vez</li><li><strong>Event-driven</strong>: desacopla serviços com EventBridge/SNS/SQS</li><li><strong>API Gateway as facade</strong>: clientes não precisam conhecer topologia interna</li></ul>
+<hr>
+<h2>Caso 6: Analytics de Big Data com Lake House</h2>
+<p><strong>Requisitos</strong>: Data lake escalável para analytics em batch e em tempo real.</p>
+<pre><code class="language-">Fontes Diversas:
+  ├── RDS/Aurora → DMS (CDC) → S3 (raw) 
+  ├── SaaS APIs → Lambda → S3
+  ├── Clickstream → Kinesis Firehose → S3
+  └── Files → DataSync → S3
+
+S3 Lake (zonas):
+  raw/ → bronze/ (Glue ETL) → silver/ (Parquet + particionado) → gold/ (aggregated)
+
+Catálogo:
+  Glue Crawlers → Glue Data Catalog → Lake Formation (FGA permissions)
+
+Consumo:
+  Athena → reporting ad-hoc (paga por scan)
+  Redshift Spectrum → DW queries misturando S3 + Redshift
+  QuickSight (SPICE) → dashboards executivos
+  SageMaker → modelos ML sobre dados gold/</code></pre>
+<hr>
+<h2>Padrões Recorrentes no Exame</h2>
+<div class="table-wrap"><table><thead><tr><th>Padrão</th><th>Serviços</th><th>Contexto</th></tr></thead><tbody><tr><td>Fan-out</td><td>SNS → múltiplos SQS</td><td>Notificar vários sistemas ao mesmo tempo</td></tr><tr><td>Desacoplamento</td><td>SQS entre producer/consumer</td><td>Buffer, tolerar picos, retry</td></tr><tr><td>CQRS</td><td>DynamoDB (write) + ElastiCache (read)</td><td>Separar leituras de escritas para otimizar</td></tr><tr><td>Event Sourcing</td><td>Kinesis/EventBridge → Lambda → DynamoDB</td><td>Audit trail + processamento assíncrono</td></tr><tr><td>Cache-aside</td><td>Lambda → ElastiCache miss → DynamoDB</td><td>Reduzir latência de leituras repetidas</td></tr><tr><td>Blue/Green</td><td>CodeDeploy ou R53 weighted</td><td>Zero-downtime deployment</td></tr></tbody></table></div>
+<hr>
+<h2>Dicas de Prova</h2>
+<ul><li>Questões de arquitetura: procure o serviço <strong>mais gerenciado</strong> que satisfaz os requisitos</li><li>&quot;Alta disponibilidade&quot; → Multi-AZ (RDS Multi-AZ, ASG em múltiplas AZs, ELB)</li><li>&quot;Baixa latência global&quot; → CloudFront (assets), Global Accelerator (TCP/UDP), Aurora Global DB</li><li>&quot;Desacoplamento&quot; → SQS (ponto-a-ponto) ou SNS (fan-out)</li><li>&quot;Processamento assíncrono&quot; → SQS + Lambda ou EventBridge + Lambda</li><li>&quot;Econômico para cargas variáveis&quot; → Lambda (serverless), Fargate On-Demand, Spot ASG</li><li>&quot;Segurança em camadas&quot; → WAF + Shield + SG + NACL + KMS + Macie</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./150-27-casos-de-uso-reais-questoes.html">Aula anterior</a>
+      <a href="./152-28-labs-praticos-casos-de-uso.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

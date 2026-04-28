@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Casos de Uso Reais — Monitoramento: CloudWatch, CloudTrail e Config (Módulo 14) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#096-20-monitoramento-cloudwatch-cloudtrail-casos-de-uso">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 20 - Monitoramento CloudWatch CloudTrail - 5 min - 20-Monitoramento-CloudWatch-CloudTrail/casos-de-uso.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 20 - Monitoramento CloudWatch CloudTrail" loading="lazy">
+      <figcaption>Observabilidade e auditoria respondem: o que aconteceu, quando, por quem e com qual impacto.</figcaption>
+    </figure>
+    <h1>Casos de Uso Reais — Monitoramento: CloudWatch, CloudTrail e Config (Módulo 14)</h1>
+<h2>Caso 1 — Observabilidade Full Stack de Aplicação Crítica</h2>
+<p><strong>Contexto:</strong> Plataforma de pagamentos precisa de monitoramento 360° — infraestrutura, aplicação e negócio — com alertas proativos e dashboards executivos. SLA de 99,95% de disponibilidade.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Alertas em &lt; 5 minutos para qualquer degradação</li><li>Correlacionar erros de aplicação com métricas de infraestrutura</li><li>Dashboard em tempo real para NOC (Network Operations Center)</li><li>Post-mortem automatizado após cada incidente</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">CAMADA INFRAESTRUTURA:
+EC2/ECS → CloudWatch Agent → CW Metrics
+  (CPU, mem, disco, conexões ativas)
+
+CAMADA APLICAÇÃO:
+Lambda/ECS → CloudWatch Logs
+           → Embedded Metrics Format (métricas a partir de logs)
+           → X-Ray (rastreamento distribuído)
+
+CAMADA NEGÓCIO:
+Lambda → PutMetricData → CW Custom Metrics
+  (pedidos/min, valor transacionado, taxa de aprovação)
+
+ALERTAS:
+CW Alarms (composite) → SNS → PagerDuty + Slack + Email
+  └── Composite Alarm: CPU &gt; 80% AND Latência &gt; 2s AND Error Rate &gt; 5%
+
+DASHBOARDS:
+CloudWatch Dashboard (NOC — métricas técnicas)
+QuickSight (executivos — métricas de negócio)
+
+POST-MORTEM:
+CloudTrail → S3 → Athena (quem fez o quê durante o incidente)
+X-Ray Service Map (onde a latência apareceu primeiro)
+CloudWatch Logs Insights (query logs do período do incidente)</code></pre>
+<p><strong>Composite Alarm (não aciona sem coocorrência de condições):</strong></p>
+<pre><code class="language-">ALARM IF:
+  (CPUAlarm = ALARM)
+  AND (LatencyAlarm = ALARM)
+  → Evita falsos positivos isolados</code></pre>
+<hr>
+<h2>Caso 2 — Auditoria de Segurança e Compliance com CloudTrail</h2>
+<p><strong>Contexto:</strong> Empresa de saúde (HIPAA) precisa rastrear todas as ações de usuários e serviços sobre dados de pacientes. Auditoria externa anual exige evidências de 365 dias de logs imutáveis.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Log de 100% das ações de API AWS</li><li>Logs imutáveis (não podem ser alterados nem deletados)</li><li>Alertas em tempo real para ações de alto risco (deletar EC2, alterar IAM)</li><li>Query de logs para investigações: &quot;quem deletou o bucket S3 na sexta?&quot;</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">FONTE:
+CloudTrail (trail multi-região habilitado)
+├── Management Events (ações de controle — sempre habilitado)
+├── Data Events (S3 GetObject/PutObject para buckets PHI)
+└── Insights Events (atividade incomum de API)
+
+ARMAZENAMENTO IMUTÁVEL:
+CloudTrail → S3 (cloudtrail-logs-hipaa)
+               └── Object Lock (COMPLIANCE mode, 365 dias)
+               └── SSE-KMS (criptografia com CMK)
+               └── MFA Delete habilitado
+
+ANÁLISE:
+S3 (logs CloudTrail) → Athena (queries de investigação)
+
+ALERTAS TEMPO REAL:
+CloudTrail → CloudWatch Logs → CW Metric Filters
+  ├── Filter: &quot;DeleteBucket&quot; → CW Alarm → SNS → PagerDuty
+  ├── Filter: &quot;CreateUser&quot; ou &quot;AttachUserPolicy&quot; → Alarm
+  └── Filter: &quot;ConsoleLoginFailures&quot; &gt; 5/min → Alarm
+
+EXEMPLO DE QUERY ATHENA (investigação):
+SELECT eventtime, useridentity.arn, sourceIPAddress, requestParameters
+FROM cloudtrail_logs
+WHERE eventname = &#39;DeleteBucket&#39;
+  AND DATE(eventtime) = &#39;2024-01-15&#39;
+ORDER BY eventtime DESC;</code></pre>
+<hr>
+<h2>Caso 3 — Governança de EC2 com AWS Config + Systems Manager</h2>
+<p><strong>Contexto:</strong> Empresa com 500 instâncias EC2 em múltiplas contas precisa garantir que todas as instâncias seguem padrões de segurança: sem IP público direto, patches aplicados, AMI aprovada, tags obrigatórias.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Detectar automaticamente instâncias não-conformes</li><li>Remediar automaticamente quando possível (ex: aplicar patch)</li><li>Relatório mensal de compliance para o CISO</li><li>Impedir criação de recursos não conformes (preventivo)</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">AWS Config (habilitado em todas as contas via Organizations)
+  Managed Rules:
+  ├── ec2-no-amazon-key-pair ✓ (sem key pair = SSH hardcoded)
+  ├── ec2-instance-no-public-ip ✓ (sem IP público direto)
+  ├── approved-amis-by-id ✓ (apenas AMIs do catálogo interno)
+  ├── required-tags ✓ (Environment, Owner, CostCenter)
+  └── ec2-managedinstance-patch-compliance-status-check ✓
+
+  NON-COMPLIANT:
+  Config → EventBridge → Lambda (remediação automática)
+    ├── Tag faltando → Lambda adiciona tag padrão
+    └── Patch desatualizado → SSM Automation (patch group)
+
+  SSM Patch Manager:
+  ├── Patch Baseline (aprovação automática patches críticos em 7 dias)
+  ├── Maintenance Window (janela: domingos 02h-06h)
+  └── Patch Group por tag: Environment=Production
+
+RELATÓRIO:
+AWS Config → Conformance Pack → S3 (relatório conformidade)
+Security Hub (agrega findings de Config + GuardDuty + Inspector)</code></pre>
+<hr>
+<h2>Caso 4 — Detecção de Ameaças com GuardDuty + Security Hub</h2>
+<p><strong>Contexto:</strong> Startup atacada por crypto mining em instâncias EC2 comprometidas. Precisam de sistema proativo que detecte e responda automaticamente a ameaças.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Detectar comportamento anômalo (exfiltração, mineração, comunicação C2)</li><li>Resposta automática em &lt; 1 minuto (isolar instância comprometida)</li><li>Centralizar findings de múltiplas fontes de segurança</li><li>Notificar time de segurança imediatamente</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">DETECÇÃO:
+GuardDuty (analisa VPC Flow Logs + DNS Logs + CloudTrail)
+  Findings de alto risco:
+  ├── CryptoCurrency:EC2/BitcoinTool.B (comunicação para pool mining)
+  ├── Backdoor:EC2/Spambot (envio de spam)
+  ├── Trojan:EC2/BlackholeTraffic (conexão a domínio malicioso)
+  └── UnauthorizedAccess:IAMUser/ConsoleLoginSuccess.B (login suspeito)
+
+RESPOSTA AUTOMÁTICA:
+GuardDuty Finding → EventBridge Rule (severity &gt;= HIGH)
+       │
+       ▼
+  Lambda (incident-responder)
+  ├── EC2: RemoveFromLoadBalancer (tira do tráfego)
+  ├── EC2: CreateSecurityGroup (bloqueia toda entrada/saída)
+  ├── EC2: ModifyInstanceAttribute (isola na SG quarentena)
+  ├── IAM: DetachUserPolicies (se usuário IAM comprometido)
+  └── SNS → PagerDuty (alerta time segurança)
+
+CENTRALIZAÇÃO:
+Security Hub (agrega GuardDuty + Config + Inspector + Macie)
+     └── Findings padronizados (ASFF format)
+     └── Dashboard executivo (compliance score por conta)</code></pre>
+<hr>
+<h2>Caso 5 — Rastreamento de Requisições com X-Ray em Microsserviços</h2>
+<p><strong>Contexto:</strong> Plataforma de e-commerce com 12 microsserviços nota que algumas compras levam 8 segundos (objetivo: &lt; 2s). Sem visibilidade de qual serviço está causando a lentidão.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Identificar gargalo exato (qual serviço, qual chamada)</li><li>Ver dependências entre serviços</li><li>Alertar quando p99 latência &gt; 3s</li><li>Correlacionar com erros (quais requests lentos também têm erro)</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">API Gateway (X-Ray habilitado)
+     │ X-Ray Trace ID propagado nos headers
+     ▼
+Lambda order-service (X-Ray SDK)
+  Segments/Subsegments:
+  ├── DynamoDB GetItem (products) — 15ms ✓
+  ├── DynamoDB PutItem (order) — 12ms ✓
+  ├── HTTP call → payment-service — 6.800ms ⚠️ GARGALO
+  └── SNS Publish — 8ms ✓
+
+payment-service (ECS/Lambda com X-Ray)
+  ├── HTTP call → fraud-checker — 200ms
+  ├── HTTP call → external-card-processor — 6.400ms ← ROOT CAUSE
+  └── DynamoDB PutItem — 10ms
+
+X-Ray Service Map:
+  → Visualização gráfica de todas as dependências
+  → Latência média por conexão destacada
+
+CloudWatch Insights (correlação):
+  filter @duration &gt; 5000
+  | stats avg(@duration), count(*) by service</code></pre>
+<p><strong>Descoberta:</strong> <code>external-card-processor</code> com timeout de 6s sem retry configurado e sem circuit breaker. Solução: cache de resultados + timeout reduzido + fallback local.</p>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./095-19-machine-learning-e-ia-readme.html">Aula anterior</a>
+      <a href="./097-20-monitoramento-cloudwatch-cloudtrail-cheatsheet.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

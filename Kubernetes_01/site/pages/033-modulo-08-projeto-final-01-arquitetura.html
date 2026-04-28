@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#033-modulo-08-projeto-final-01-arquitetura">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 08 - projeto final - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 08 - projeto final" loading="lazy">
+      <figcaption>Projeto final junta banco, backend, frontend e rede em uma entrega completa.</figcaption>
+    </figure>
+    <h1>============================================================</h1>
+<h1>O QUE ESTE ARQUIVO FAZ:</h1>
+<h1>Desenha e explica a Topologia de Rede da nossa Aplica��o </h1>
+<h1>Senior do Mundo Real. Ele � o &quot;Mapa da Mina&quot;.</h1>
+<h1>============================================================</h1>
+<h1>1. A VIS�O GERAL</h1>
+<p>Chegou a hora de provar valor. Ningu�m ganha vaga de S�nior escrevendo<br>apenas 1 Pod avulso. Aplica��es de mercado possuem &quot;Tiers&quot; (Camadas). Vamos subir juntos uma aplica��o de &quot;Vendas de Livros&quot;.</p>
+<p>Ela � composta por 3 blocos gigantescos que se conversam magicamente<br>usando 100% dos blocos que aprendemos em todos os m�dulos at� aqui:</p>
+<h3>Camada 1: Database (Arquivo <code>02-database.yaml</code>)</h3>
+<ul><li><strong>Quem �:</strong> Um pod de MySQL.</li><li><strong>O Isolamento:</strong> Ele N�O POSSUI <code>NodePort</code> nem <code>Ingress</code>. Ningu�m da RUA no mundo f�sico pode escanear portas ou tentar &quot;Hackear&quot; direto o seu banco de dados, pois ele s� possui um <code>Service (ClusterIP)</code> 100% trancado e isolado na rede virtual de Overlay.</li><li><strong>A Sobreviv�ncia:</strong> Tem um <code>PVC</code> pr�prio amarado para reter os livros e Senhas vindas de um <code>Secret</code> encriptado.</li></ul>
+<h3>Camada 2: Backend API (Arquivo <code>03-backend.yaml</code>)</h3>
+<ul><li><strong>Quem �:</strong> Uma API REST simulada que o FrontEnd consome.</li><li><strong>A Resili�ncia:</strong> Tem <code>2 R�plicas</code>. Tem <code>LivenessProbe</code> protegendo contra deadlocks, tem <code>Requests/Limits</code> limitando pra 512mb de ram pra n�o sugar o cluster. E ele tem uma ponte que injeta nele um <code>ConfigMap</code> com os dados literais do Ramal-PABX do MySQL para a query funcionar.</li><li><strong>O Isolamento:</strong> Ele APENAS POSSUI UM <code>Service (ClusterIP)</code>. Tamb�m � intoc�vel pra hacker externo cru! A �nica forma de bater na API � vindo do Nginx/Ingress.</li></ul>
+<h3>Camada 3: Frontend e Ingress (Arquivo <code>04-frontend.yaml</code>)</h3>
+<ul><li><strong>Quem �:</strong> O Site SPA/Nginx na ponta do Funil Web.</li><li><strong>Exposi��o Segura:</strong> N�s criamos um <code>Ingress</code> (A Recepcionista da Empresa) focada exclusivamente em rotear quem bater pelo DNS de URL &quot;www.livrariak8s.com.br&quot;. Todo request da URL cai magicamente no Servi�o Front, que bate no Nginx e retorna o html seguro.</li></ul>
+<hr>
+<h3>O Efeito Domin� do Deploy Completo S�nior</h3>
+<p>Quando voc� aplicar o M�dulo 8, os rob�s de controle <code>Kube-Controller-Manager</code> far�o o seguinte milagre em fra��es de segundo:</p>
+<ol><li>Buscar disco na AWS pra faturar HDD (PVC do MYSQL).</li><li>Plugar PVC e ligar banco com token criptografado (Secret).</li><li>Levantar a API segurando o tr�fego nela na marra (<code>ReadinessProbe</code>) at� o Java confirmar que pingou o MySQL no IP fixo CoreDNS do ClusterIP.</li><li>Escalar dois Backend clones.</li><li>Ingress Nginx atualizando seu conf raiz de Proxy-Pass recebendo permiss�o pra jogar pacote do Crome do hospede pro Node isolado... Tudo sem voc� relar num terminal SSH.</li></ol>
+<p><em>Bem Vindo ao mundo Cloud Native! V� para o arquivo 02.</em></p>
+    <nav class="page-nav">
+      <a href="./032-modulo-07-rbac-04-clusterrole.html">Aula anterior</a>
+      <a href="./034-modulo-08-projeto-final-02-database.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

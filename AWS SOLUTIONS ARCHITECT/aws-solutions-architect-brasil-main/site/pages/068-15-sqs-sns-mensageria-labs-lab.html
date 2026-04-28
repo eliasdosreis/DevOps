@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Prático — SQS e SNS: Filas, DLQ e Fan-out (Módulo 10) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#068-15-sqs-sns-mensageria-labs-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #b45309">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 15 - SQS SNS Mensageria Labs - 3 min - 15-SQS-SNS-Mensageria-Labs/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 15 - SQS SNS Mensageria Labs" loading="lazy">
+      <figcaption>Mensageria em lab mostra retry, DLQ, fanout e buffers contra picos.</figcaption>
+    </figure>
+    <h1>Lab Prático — SQS e SNS: Filas, DLQ e Fan-out (Módulo 10)</h1>
+<blockquote><p><strong>Região:</strong> us-east-1 | <strong>Custo estimado:</strong> ~$0 (primeiro milhão de mensagens gratuito/mês)<br><strong>Pré-requisitos:</strong> AWS CLI configurado, Python 3.8+</p></blockquote>
+<hr>
+<h2>Objetivo</h2>
+<p>Praticar SQS Standard e FIFO, Dead Letter Queue, visibility timeout, SNS fan-out e integração SQS → Lambda.</p>
+<hr>
+<h2>Parte 1 — SQS Standard + DLQ</h2>
+<pre><code class="language-bash">ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+# Criar DLQ primeiro
+DLQ_URL=$(aws sqs create-queue \
+  --queue-name &quot;lab-pedidos-dlq&quot; \
+  --attributes &quot;MessageRetentionPeriod=1209600&quot; \
+  --query &#39;QueueUrl&#39; --output text)
+
+DLQ_ARN=$(aws sqs get-queue-attributes \
+  --queue-url &quot;$DLQ_URL&quot; \
+  --attribute-names QueueArn \
+  --query &#39;Attributes.QueueArn&#39; --output text)
+
+echo &quot;DLQ criada: $DLQ_ARN&quot;
+
+# Criar fila principal com redrive policy
+QUEUE_URL=$(aws sqs create-queue \
+  --queue-name &quot;lab-pedidos&quot; \
+  --attributes &quot;{
+    \&quot;VisibilityTimeout\&quot;: \&quot;30\&quot;,
+    \&quot;ReceiveMessageWaitTimeSeconds\&quot;: \&quot;20\&quot;,
+    \&quot;MessageRetentionPeriod\&quot;: \&quot;345600\&quot;,
+    \&quot;RedrivePolicy\&quot;: \&quot;{\\\&quot;deadLetterTargetArn\\\&quot;:\\\&quot;${DLQ_ARN}\\\&quot;,\\\&quot;maxReceiveCount\\\&quot;:\\\&quot;3\\\&quot;}\&quot;
+  }&quot; \
+  --query &#39;QueueUrl&#39; --output text)
+
+echo &quot;Fila principal criada: $QUEUE_URL&quot;
+
+# Verificar atributos
+aws sqs get-queue-attributes \
+  --queue-url &quot;$QUEUE_URL&quot; \
+  --attribute-names All \
+  --query &#39;Attributes.[VisibilityTimeout, ReceiveMessageWaitTimeSeconds, RedrivePolicy]&#39; \
+  --output json | python3 -m json.tool</code></pre>
+<hr>
+<h2>Parte 2 — Produzir e Consumir Mensagens</h2>
+<pre><code class="language-python"># sqs_lab.py
+import boto3
+import json
+import time
+
+sqs = boto3.client(&#39;sqs&#39;, region_name=&#39;us-east-1&#39;)
+QUEUE_URL = &quot;SUBSTITUIR_PELA_URL_DA_FILA&quot;  # terraform output ou CLI
+
+# ──────────────────────────────────────────
+# 1. Enviar mensagens em batch
+# ──────────────────────────────────────────
+pedidos = [
+    {&quot;pedido_id&quot;: f&quot;PED-{i:03}&quot;, &quot;cliente&quot;: f&quot;CLI-{i % 5:03}&quot;,
+     &quot;produto&quot;: f&quot;Produto {i}&quot;, &quot;valor&quot;: i * 50.0}
+    for i in range(10)
+]
+
+entries = [
+    {
+        &#39;Id&#39;: str(i),
+        &#39;MessageBody&#39;: json.dumps(p),
+        &#39;MessageAttributes&#39;: {
+            &#39;prioridade&#39;: {
+                &#39;DataType&#39;: &#39;String&#39;,
+                &#39;StringValue&#39;: &#39;alta&#39; if p[&#39;valor&#39;] &gt; 200 else &#39;normal&#39;
+            }
+        }
+    }
+    for i, p in enumerate(pedidos)
+]
+
+# Batch de 10 (máximo por chamada)
+resp = sqs.send_message_batch(QueueUrl=QUEUE_URL, Entries=entries)
+print(f&quot;Enviadas: {len(resp[&#39;Successful&#39;])} mensagens&quot;)
+
+# ──────────────────────────────────────────
+# 2. Consumir mensagens (long polling)
+# ──────────────────────────────────────────
+processadas = 0
+MAX = 10
+
+print(&quot;\nConsumindo mensagens...&quot;)
+while processadas &lt; MAX:
+    resp = sqs.receive_message(
+        QueueUrl=QUEUE_URL,
+        MaxNumberOfMessages=5,
+        WaitTimeSeconds=5,
+        MessageAttributeNames=[&#39;All&#39;]
+    )
+    
+    mensagens = resp.get(&#39;Messages&#39;, [])
+    if not mensagens:
+        print(&quot;Fila vazia.&quot;)
+        break
+    
+    for msg in mensagens:
+        corpo = json.loads(msg[&#39;Body&#39;])
+        prioridade = msg.get(&#39;MessageAttributes&#39;, {}).get(&#39;prioridade&#39;, {}).get(&#39;StringValue&#39;, &#39;normal&#39;)
+        
+        print(f&quot;  Processando: {corpo[&#39;pedido_id&#39;]} | prioridade={prioridade}&quot;)
+        time.sleep(0.1)  # simular processamento
+        
+        # Deletar após processar
+        sqs.delete_message(QueueUrl=QUEUE_URL, ReceiptHandle=msg[&#39;ReceiptHandle&#39;])
+        processadas += 1
+
+print(f&quot;\nTotal processadas: {processadas}&quot;)
+
+# ──────────────────────────────────────────
+# 3. Simular mensagem que falha (vai para DLQ)
+# ──────────────────────────────────────────
+sqs.send_message(
+    QueueUrl=QUEUE_URL,
+    MessageBody=json.dumps({&quot;pedido_id&quot;: &quot;PED-FALHA&quot;, &quot;tipo&quot;: &quot;invalido&quot;})
+)
+print(&quot;\nMensagem de falha enviada (maxReceive=3 → DLQ)&quot;)
+print(&quot;Recepcionar sem deletar 3x para enviar à DLQ...&quot;)
+
+DLQ_URL = QUEUE_URL.replace(&#39;lab-pedidos&#39;, &#39;lab-pedidos-dlq&#39;)
+for tentativa in range(3):
+    msgs = sqs.receive_message(
+        QueueUrl=QUEUE_URL,
+        MaxNumberOfMessages=1,
+        WaitTimeSeconds=1
+    ).get(&#39;Messages&#39;, [])
+    
+    for msg in msgs:
+        corpo = json.loads(msg[&#39;Body&#39;])
+        if corpo.get(&#39;tipo&#39;) == &#39;invalido&#39;:
+            print(f&quot;  Tentativa {tentativa+1}: fingindo falha (NÃO deletando)&quot;)
+            # Aguardar visibility timeout expirar (30s = aguardar ou usar ChangeMessageVisibility)
+            sqs.change_message_visibility(
+                QueueUrl=QUEUE_URL,
+                ReceiptHandle=msg[&#39;ReceiptHandle&#39;],
+                VisibilityTimeout=0  # torna visível imediatamente para próxima tentativa
+            )</code></pre>
+<pre><code class="language-bash"># Substituir URL e executar
+QUEUE_URL=$(aws sqs get-queue-url --queue-name &quot;lab-pedidos&quot; --query &#39;QueueUrl&#39; --output text)
+sed -i &quot;s|SUBSTITUIR_PELA_URL_DA_FILA|$QUEUE_URL|&quot; sqs_lab.py
+python3 sqs_lab.py</code></pre>
+<hr>
+<h2>Parte 3 — SQS FIFO</h2>
+<pre><code class="language-bash"># Criar fila FIFO (nome deve terminar em .fifo)
+FIFO_URL=$(aws sqs create-queue \
+  --queue-name &quot;lab-pagamentos.fifo&quot; \
+  --attributes &quot;{
+    \&quot;FifoQueue\&quot;: \&quot;true\&quot;,
+    \&quot;ContentBasedDeduplication\&quot;: \&quot;false\&quot;,
+    \&quot;VisibilityTimeout\&quot;: \&quot;30\&quot;,
+    \&quot;ReceiveMessageWaitTimeSeconds\&quot;: \&quot;10\&quot;,
+    \&quot;DeduplicationScope\&quot;: \&quot;messageGroup\&quot;,
+    \&quot;FifoThroughputLimit\&quot;: \&quot;perMessageGroupId\&quot;
+  }&quot; \
+  --query &#39;QueueUrl&#39; --output text)
+
+echo &quot;FIFO criada: $FIFO_URL&quot;
+
+# Enviar mensagens com MessageGroupId e MessageDeduplicationId
+for i in 1 2 3 4 5; do
+  aws sqs send-message \
+    --queue-url &quot;$FIFO_URL&quot; \
+    --message-body &quot;{\&quot;pagamento_id\&quot;: \&quot;PAG-$i\&quot;, \&quot;valor\&quot;: $((i*100))}&quot; \
+    --message-group-id &quot;cliente-001&quot; \
+    --message-deduplication-id &quot;pay-cli001-seq-$i&quot;
+done
+
+# Mensagens chegam NA ORDEM de envio para o mesmo MessageGroupId
+echo &quot;5 pagamentos enviados em ordem para cliente-001&quot;
+
+# Consumir FIFO
+aws sqs receive-message \
+  --queue-url &quot;$FIFO_URL&quot; \
+  --max-number-of-messages 5 \
+  --query &#39;Messages[*].Body&#39; \
+  --output text</code></pre>
+<hr>
+<h2>Parte 4 — SNS Fan-out para SQS</h2>
+<pre><code class="language-bash"># Criar SNS Topic
+SNS_ARN=$(aws sns create-topic \
+  --name &quot;lab-eventos-compra&quot; \
+  --query &#39;TopicArn&#39; --output text)
+
+# Criar filas para subscrever
+FILA_ESTOQUE_URL=$(aws sqs create-queue \
+  --queue-name &quot;lab-fila-estoque&quot; \
+  --query &#39;QueueUrl&#39; --output text)
+FILA_ESTOQUE_ARN=$(aws sqs get-queue-attributes \
+  --queue-url &quot;$FILA_ESTOQUE_URL&quot; \
+  --attribute-names QueueArn \
+  --query &#39;Attributes.QueueArn&#39; --output text)
+
+FILA_EMAIL_URL=$(aws sqs create-queue \
+  --queue-name &quot;lab-fila-email&quot; \
+  --query &#39;QueueUrl&#39; --output text)
+FILA_EMAIL_ARN=$(aws sqs get-queue-attributes \
+  --queue-url &quot;$FILA_EMAIL_URL&quot; \
+  --attribute-names QueueArn \
+  --query &#39;Attributes.QueueArn&#39; --output text)
+
+# Policy para SQS aceitar mensagens do SNS
+for ARN in &quot;$FILA_ESTOQUE_ARN&quot; &quot;$FILA_EMAIL_ARN&quot;; do
+  URL=$(aws sqs get-queue-url --queue-name &quot;$(basename &quot;${ARN%:*}&quot; )&quot; 2&gt;/dev/null \
+        || echo &quot;$FILA_ESTOQUE_URL&quot;)
+done
+
+aws sqs set-queue-attributes \
+  --queue-url &quot;$FILA_ESTOQUE_URL&quot; \
+  --attributes &quot;{
+    \&quot;Policy\&quot;: \&quot;{\\\&quot;Statement\\\&quot;:[{\\\&quot;Effect\\\&quot;:\\\&quot;Allow\\\&quot;,\\\&quot;Principal\\\&quot;:{\\\&quot;Service\\\&quot;:\\\&quot;sns.amazonaws.com\\\&quot;},\\\&quot;Action\\\&quot;:\\\&quot;sqs:SendMessage\\\&quot;,\\\&quot;Resource\\\&quot;:\\\&quot;${FILA_ESTOQUE_ARN}\\\&quot;,\\\&quot;Condition\\\&quot;:{\\\&quot;ArnEquals\\\&quot;:{\\\&quot;aws:SourceArn\\\&quot;:\\\&quot;${SNS_ARN}\\\&quot;}}}]}\&quot;
+  }&quot;
+
+aws sqs set-queue-attributes \
+  --queue-url &quot;$FILA_EMAIL_URL&quot; \
+  --attributes &quot;{
+    \&quot;Policy\&quot;: \&quot;{\\\&quot;Statement\\\&quot;:[{\\\&quot;Effect\\\&quot;:\\\&quot;Allow\\\&quot;,\\\&quot;Principal\\\&quot;:{\\\&quot;Service\\\&quot;:\\\&quot;sns.amazonaws.com\\\&quot;},\\\&quot;Action\\\&quot;:\\\&quot;sqs:SendMessage\\\&quot;,\\\&quot;Resource\\\&quot;:\\\&quot;${FILA_EMAIL_ARN}\\\&quot;,\\\&quot;Condition\\\&quot;:{\\\&quot;ArnEquals\\\&quot;:{\\\&quot;aws:SourceArn\\\&quot;:\\\&quot;${SNS_ARN}\\\&quot;}}}]}\&quot;
+  }&quot;
+
+# Subscrever filas ao topic
+aws sns subscribe \
+  --topic-arn &quot;$SNS_ARN&quot; \
+  --protocol sqs \
+  --notification-endpoint &quot;$FILA_ESTOQUE_ARN&quot;
+
+aws sns subscribe \
+  --topic-arn &quot;$SNS_ARN&quot; \
+  --protocol sqs \
+  --notification-endpoint &quot;$FILA_EMAIL_ARN&quot;
+
+# Publicar mensagem — vai para AMBAS as filas
+aws sns publish \
+  --topic-arn &quot;$SNS_ARN&quot; \
+  --message &#39;{&quot;compra_id&quot;:&quot;C001&quot;,&quot;cliente&quot;:&quot;joao@ex.com&quot;,&quot;total&quot;:350.00}&#39; \
+  --subject &quot;Nova Compra Confirmada&quot;
+
+sleep 5
+
+# Verificar mensagens nas filas
+echo &quot;Fila Estoque:&quot;
+aws sqs receive-message --queue-url &quot;$FILA_ESTOQUE_URL&quot; \
+  --query &#39;Messages[0].Body&#39; --output text | python3 -m json.tool
+
+echo &quot;Fila Email:&quot;
+aws sqs receive-message --queue-url &quot;$FILA_EMAIL_URL&quot; \
+  --query &#39;Messages[0].Body&#39; --output text | python3 -m json.tool</code></pre>
+<hr>
+<h2>Limpeza</h2>
+<pre><code class="language-bash"># Deletar subscrições e SNS
+aws sns delete-topic --topic-arn &quot;$SNS_ARN&quot;
+aws sqs delete-queue --queue-url &quot;$FILA_ESTOQUE_URL&quot;
+aws sqs delete-queue --queue-url &quot;$FILA_EMAIL_URL&quot;
+aws sqs delete-queue --queue-url &quot;$QUEUE_URL&quot;
+aws sqs delete-queue --queue-url &quot;$DLQ_URL&quot;
+aws sqs delete-queue --queue-url &quot;$FIFO_URL&quot;
+
+rm -f sqs_lab.py</code></pre>
+<hr>
+<h2>O Que Você Aprendeu</h2>
+<ul><li><strong>Visibility Timeout:</strong> durante processamento a mensagem fica &quot;invisível&quot;; se não deletar, volta à fila</li><li><strong>Long Polling (WaitTimeSeconds=20):</strong> reduz chamadas vazias em 99% vs short polling — SEMPRE preferir</li><li><strong>DLQ:</strong> após <code>maxReceiveCount</code> falhas, mensagem desviada para DLQ; alarmar sobre mensagens na DLQ</li><li><strong>FIFO:</strong> garante ordem (FIFO rigoroso), exactly-once via MessageDeduplicationId; máx 300 TPS sem batching</li><li><strong>Standard:</strong> at-least-once, out-of-order, throughput praticamente ilimitado — para maioria dos casos</li><li><strong>SNS fan-out:</strong> publicar uma vez → múltiplos consumidores independentes; DLQ no SQS protege mensagens perdidas</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./067-14-desacoplamento-sqs-sns-eventbridge-readme.html">Aula anterior</a>
+      <a href="./069-15-sqs-sns-mensageria-labs-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

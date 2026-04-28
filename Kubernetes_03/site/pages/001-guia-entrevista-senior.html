@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>? Guia de Entrevista T�cnica S�nior - Kubernetes - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#001-guia-entrevista-senior">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Curso e materiais gerais - 5 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Curso e materiais gerais" loading="lazy">
+      <figcaption>Materiais gerais para alinhar conceitos e revisar antes dos labs.</figcaption>
+    </figure>
+    <h1>? Guia de Entrevista T�cnica S�nior - Kubernetes</h1>
+<h2>Perguntas GARANTIDAS e como responder</h2>
+<hr>
+<h2>? N�vel 1 - Conceitos Fundamentais</h2>
+<p><strong>&quot;O que � Kubernetes e por que usamos?&quot;</strong></p>
+<blockquote><p>K8s � um orquestrador de containers. Resolve: automatizar deploy, escalar, self-healing e service discovery. Sem K8s: voc� gerencia cada servidor manualmente. Com K8s: voc� descreve o estado desejado, ele garante.</p></blockquote>
+<p><strong>&quot;Qual a diferen�a entre Pod e Container?&quot;</strong></p>
+<blockquote><p>Container = processo isolado (Docker). Pod = envelope K8s com 1+ containers compartilhando rede (mesmo IP) e volumes. Menor unidade deploy�vel do K8s.</p></blockquote>
+<p><strong>&quot;Qual a hierarquia: Deployment, ReplicaSet, Pod?&quot;</strong></p>
+<blockquote><p>Deployment gerencia ReplicaSets. ReplicaSet gerencia Pods. Deployment --&gt; ReplicaSet --&gt; Pod(s) Voc� cria Deployment. K8s cria os outros automaticamente.</p></blockquote>
+<hr>
+<h2>? N�vel 2 - Servi�os e Rede</h2>
+<p><strong>&quot;Tipos de Service e quando usar cada um?&quot;</strong></p>
+<blockquote><p>ClusterIP: interno ao cluster. Padr�o. Comunica��o entre pods. NodePort: exp�e via porta no n�. Dev/teste. Range 30000-32767. LoadBalancer: IP externo na nuvem. Produ��o. Caro se muito uso. ExternalName: aponta para DNS externo. Para servi�os fora do cluster.</p></blockquote>
+<p><strong>&quot;O que � Ingress e por que usar?&quot;</strong></p>
+<blockquote><p>Ingress = roteamento L7 (HTTP/HTTPS) para m�ltiplos Services. Sem Ingress: 1 LoadBalancer por Service = caro! Com Ingress: 1 LoadBalancer + regras por host/path = econ�mico.</p></blockquote>
+<p><strong>&quot;Como pods se descobrem no cluster (Service Discovery)?&quot;</strong></p>
+<blockquote><p>DNS interno (CoreDNS). Todo Service vira um registro DNS. http://nome-service.namespace.svc.cluster.local Dentro do mesmo namespace: basta usar o nome: http://api</p></blockquote>
+<hr>
+<h2>? N�vel 3 - Configura��o e Storage</h2>
+<p><strong>&quot;Diferen�a entre ConfigMap e Secret?&quot;</strong></p>
+<blockquote><p>ConfigMap: configura��es n�o-sens�veis em texto puro. Secret: dados sens�veis em base64 (N�O � criptografia!). Para seguran�a real: Secret + etcd encryption + Vault.</p></blockquote>
+<p><strong>&quot;O que � PV, PVC e StorageClass?&quot;</strong></p>
+<blockquote><p>StorageClass: como o storage � provisionado (tipo/fabricante). PersistentVolume: disco f�sico ou l�gico dispon�vel. PersistentVolumeClaim: pedido de um pod por storage. PVC se &quot;casa&quot; com PV compat�vel automaticamente.</p></blockquote>
+<p><strong>&quot;O que � Dynamic Provisioning?&quot;</strong></p>
+<blockquote><p>StorageClass cria o PV automaticamente quando um PVC � criado. N�o precisa criar PV manualmente. Modo preferido em produ��o.</p></blockquote>
+<hr>
+<h2>? N�vel 4 - Avan�ado (S�nior Real)</h2>
+<p><strong>&quot;Como garantir zero downtime no deploy?&quot;</strong></p>
+<blockquote><ol><li>Deployment com RollingUpdate</li><li>maxUnavailable: 0 (nunca reduz pods durante update)</li><li>Readiness Probe correta (novo pod s� entra se pronto)</li><li>preStop hook (drena conex�es antes de morrer)</li><li>terminationGracePeriodSeconds adequado</li><li>M�nimo 2 r�plicas SEMPRE</li></ol></blockquote>
+<p><strong>&quot;Liveness vs Readiness vs Startup Probe?&quot;</strong></p>
+<blockquote><p>Liveness: &quot;Est� vivo?&quot; -&gt; falhou = reinicia container Readiness: &quot;Est� pronto?&quot; -&gt; falhou = remove do Service (n�o reinicia) Startup: &quot;Terminou de iniciar?&quot; -&gt; protege apps lentos no in�cio Regra de ouro: Liveness NUNCA checa o banco! (causaria rein�cio em cascata)</p></blockquote>
+<p><strong>&quot;O que � RBAC e princ�pio do menor privil�gio?&quot;</strong></p>
+<blockquote><p>RBAC controla quem pode fazer o qu� no cluster. ServiceAccount = identidade do pod Role = lista de permiss�es (verbs + resources) RoleBinding = associa SA com Role Menor privil�gio: dar apenas o m�nimo necess�rio para funcionar.</p></blockquote>
+<p><strong>&quot;HPA vs VPA vs KEDA?&quot;</strong></p>
+<blockquote><p>HPA: escala horizontal (mais pods). Stateless apps. VPA: escala vertical (mais CPU/RAM). Apps com estado. KEDA: escala por m�tricas customizadas (filas, eventos Kafka/SQS).</p></blockquote>
+<p><strong>&quot;O que acontece quando um n� falha?&quot;</strong></p>
+<blockquote><ol><li>Node Controller detecta n� n�o responsivo (~40s)</li><li>N� marcado como NotReady</li><li>Ap�s ~5min: pods marcados para evic��o</li><li>Scheduler reagenda pods em outros n�s</li><li>PDB garante m�nimo de pods dispon�veis durante o processo</li></ol></blockquote>
+<p><strong>&quot;O que � etcd e por que � cr�tico?&quot;</strong></p>
+<blockquote><p>etcd � o banco de dados do cluster (chave-valor distribu�do). Guarda TUDO: estado dos pods, configs, secrets, etc. Se etcd morrer: cluster para de funcionar (n�o destr�i pods) Boas pr�ticas: backup regular, m�nimo 3 inst�ncias, etcd separado.</p></blockquote>
+<p><strong>&quot;Explique o fluxo de cria��o de um pod (kubectl apply at� rodar)&quot;</strong></p>
+<blockquote><ol><li>kubectl envia YAML para kube-apiserver</li><li>apiserver valida e salva no etcd</li><li>Scheduler encontra n� adequado (resources, affinity, taints)</li><li>kubelet do n� recebe a instru��o</li><li>kubelet chama o container runtime (containerd/docker)</li><li>Runtime puxa imagem e inicia container</li><li>kubelet reporta status de volta ao apiserver</li><li>Probes verificam sa�de do pod</li></ol></blockquote>
+<hr>
+<h2>? Dicas de Ouro para a Entrevista</h2>
+<ol><li><strong>Sempre d� exemplos reais</strong>: &quot;Em produ��o eu usaria...&quot;</li><li><strong>Mencione trade-offs</strong>: &quot;A vantagem � X, mas o custo � Y&quot;</li><li><strong>Cite ferramentas do ecossistema</strong>: Helm, ArgoCD, Prometheus</li><li><strong>Fale de troubleshooting</strong>: kubectl describe, logs, events</li><li><strong>Mostre que pensa em seguran�a</strong>: RBAC, NetworkPolicy, Secrets</li></ol>
+<hr>
+<h2>?? Comandos Que Todo S�nior Sabe de Cor</h2>
+<pre><code class="language-bash"># Debug de pod com problema
+kubectl describe pod &lt;nome&gt;       # Ver eventos e status
+kubectl logs &lt;pod&gt; -c &lt;container&gt; # Logs do container
+kubectl logs &lt;pod&gt; --previous     # Logs antes do crash
+
+# Entrar no container
+kubectl exec -it &lt;pod&gt; -- /bin/sh
+
+# Ver recursos consumidos
+kubectl top pods
+kubectl top nodes
+
+# Rollback r�pido
+kubectl rollout undo deployment/&lt;nome&gt;
+
+# For�ar restart sem downtime
+kubectl rollout restart deployment/&lt;nome&gt;
+
+# Ver todos os eventos (�timo para debug)
+kubectl get events --sort-by=&#39;.lastTimestamp&#39; -n &lt;namespace&gt;
+
+# Port forward para acesso local
+kubectl port-forward pod/&lt;nome&gt; 8080:80
+
+# Ver YAML do recurso atual
+kubectl get deployment &lt;nome&gt; -o yaml</code></pre>
+    <nav class="page-nav">
+      <span></span>
+      <a href="./002-modulo-1-fundamentos-01-pod-simples.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#022-modulo-4-projeto-final-00-namespace">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - projeto final - 1 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - projeto final" loading="lazy">
+      <figcaption>Projeto final consolida manifestos de producao em uma arquitetura completa.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 00-namespace.yaml
+# PROJETO FINAL - Namespace dedicado para o e-commerce
+#
+# Sempre crie um namespace dedicado para cada projeto!
+# Facilita: gestão, monitoramento, RBAC e isolamento.
+#
+# Boa prática: número no início do arquivo = ordem de aplicação
+# 00 = primeiro a ser aplicado (namespace deve existir antes!)
+# ============================================================
+
+apiVersion: v1
+kind: Namespace
+
+metadata:
+  name: ecommerce               # Namespace do nosso projeto
+
+  labels:
+    app.kubernetes.io/name: ecommerce       # Label padrão K8s
+    app.kubernetes.io/managed-by: kubectl   # Quem gerencia
+    ambiente: producao                      # Qual ambiente
+    time: plataforma                        # Qual time é dono
+
+  annotations:
+    # Anotações são metadados extras (não afetam comportamento)
+    description: &quot;Namespace do sistema de ecommerce&quot;
+    contact: &quot;time-plataforma@empresa.com&quot;
+    criado-em: &quot;2024-01-01&quot;
+
+# ============================================================
+# APÓS CRIAR O NAMESPACE, SEMPRE ESPECIFIQUE ELE:
+# kubectl apply -f . -n ecommerce
+# OU coloque namespace: ecommerce em cada arquivo
+#
+# VERIFICAR:
+# kubectl get namespace ecommerce
+# kubectl describe namespace ecommerce
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./021-modulo-3-avancado-readme.html">Aula anterior</a>
+      <a href="./023-modulo-4-projeto-final-01-secrets.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

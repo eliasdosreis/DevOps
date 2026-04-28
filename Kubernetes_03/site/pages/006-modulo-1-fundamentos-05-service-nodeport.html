@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#006-modulo-1-fundamentos-05-service-nodeport">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 01 - fundamentos - 2 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 01 - fundamentos" loading="lazy">
+      <figcaption>Fundamentos: pods, namespaces e services para formar a base operacional.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 05-service-nodeport.yaml
+# NODEPORT - Acessando de FORA do cluster
+#
+# ClusterIP: Só dentro do cluster (cozinha do restaurante)
+# NodePort: Abre uma porta no servidor para o mundo ver (cardápio)
+#
+# Como funciona:
+# [Usuário na Internet] --&gt; [IP do Servidor:30080] --&gt; [Pod:80]
+#                               ↑
+#                           NodePort (30000-32767)
+# ============================================================
+
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: app-web-publica
+  labels:
+    app: web-publica         # Label que o Service vai buscar
+
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.25
+      ports:
+        - containerPort: 80
+
+---
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: service-nodeport      # Nome do service
+
+spec:
+  type: NodePort              # TIPO: NodePort
+                              # Abre uma porta em TODOS os nós
+                              # do cluster (diferente do ClusterIP!)
+
+  selector:
+    app: web-publica          # Busca pods com este label
+
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80                # Porta interna do cluster
+                              # (usada por outros serviços)
+
+      targetPort: 80          # Porta do container/pod
+
+      nodePort: 30080         # Porta externa no nó (servidor)
+                              # Range: 30000-32767
+                              # Se não especificar, K8s escolhe
+
+# ============================================================
+# COMO ACESSAR:
+#
+# Minikube:
+#   minikube service service-nodeport --url
+#   # Vai mostrar a URL para acessar no navegador
+#
+# Cluster normal:
+#   http://&lt;IP-DO-NO&gt;:30080
+#
+# QUANDO USAR NodePort vs LoadBalancer?
+#
+# NodePort   --&gt; Desenvolvimento, testes, ambientes simples
+# LoadBalancer --&gt; Produção na nuvem (AWS, GCP, Azure)
+#                 Cria um IP externo dedicado automaticamente
+#
+# ENTREVISTA SÊNIOR:
+# &quot;NodePort tem alguma limitação?&quot;
+# RESPOSTA: Sim! Range limitado (30000-32767), expõe porta
+# em TODOS os nós (mesmo sem pod naquele nó), não ideal
+# para produção. Em produção, use LoadBalancer + Ingress.
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./005-modulo-1-fundamentos-04-service-clusterip.html">Aula anterior</a>
+      <a href="./007-modulo-1-fundamentos-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

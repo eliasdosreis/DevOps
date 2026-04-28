@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#004-modulo-01-fundamentos-02-pod">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 01 - fundamentos - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 01 - fundamentos" loading="lazy">
+      <figcaption>Fundamentos: namespaces, pods, labels e annotations para organizar o cluster.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um �nico Pod rodando um container NGINX na vers�o 1.25.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Pense no seu aplicativo (Ex: um site de supermercado) como o motorzinho do liquidificador.
+# O Container de Docker � o corpo de pl�stico que protege o motor para ele encaixar na base.
+# Mas o Kubernetes n�o lida diretamente com o corpo de pl�stico. Ele pede que voc� ponha 
+# isso dentro de uma &quot;Caixa Transparente&quot;.
+# Essa caixa � o POD. O Kubernetes s� sabe mover, criar e destruir as caixas inteiras, 
+# junto de quem quer que esteja dentro. Em 99% das vezes, h� apenas 1 container Docker em 1 Pod.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# O Pod � o menor objeto de computa��o fatur�vel e implant�vel (deployable) que pode ser 
+# criado e gerenciado no K8s. Um Pod representa um ambiente de execu��o e um processo.
+# Todos os containers de um mesmo Pod compartilham o mesmo endere�o de IP (localhost) e 
+# o mesmo Volume (storage). 
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1            # Vers�o da API onde Pods s�o mapeados
+kind: Pod                 # O tipo de recurso: Literalmente o tijolo essencial
+metadata:                 # Identifica��o do Pod
+  name: meu-primeiro-pod  # O &quot;RG&quot; da caixa. (Obrigat�rio)
+  namespace: meu-primeiro-projeto # Em qual &quot;Sala&quot; (Namespace) esse Pod ficar� isolado
+spec:                     # Especifica��es: Como � essa caixa por dentro?
+  containers:             # Lista de containers (lembre-se, quase sempre ser� apenas 1)
+    - name: servidor-web  # Nome interno cont�iner Docker. 
+      image: nginx:1.25   # Qual imagem do DocketHub baixar (NUNCA usar :latest em Produ��o)
+      ports:              # Lista de portas que este container atende
+        - containerPort: 80 # A porta 80 ficar� aguardando trafego (Dentro do Pod)
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Subir a aplica��o usando a sala j� criada (Namespace):
+#    kubectl apply -f 02-pod.yaml
+#
+# 2. Assistir o estado dele criando at� mudar para Running:
+#    kubectl get pods -n meu-primeiro-projeto -w
+#
+# 3. Ver detalhes brutais internos do Pod:
+#    kubectl describe pod meu-primeiro-pod -n meu-primeiro-projeto
+#
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# Se a imagem quebrar ou estiver digitada errada (&quot;nginxx:123&quot;), o Kubernetes far� v�rias 
+# retentativas em loop. 
+#   - O status do pod ficar�: &#39;ImagePullBackOff&#39; ou &#39;ErrImagePull&#39;. 
+# Outro Erro Mestre: &#39;CrashLoopBackOff&#39;. Isso significa que baixou e rodou o app, mas o app 
+# retornava um erro &quot;Fatal&quot; de c�digo e fechava na hora em que tentava dar BOOT, ent�o o 
+# K8s morria e tentava subir de novo infinitamente. Para ver o erro exato:
+#   kubectl logs meu-primeiro-pod -n meu-primeiro-projeto
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# Quando utilizar v�rios containers em 1 �nico Pod? (Padr�o Sidecar)
+# Juniors nunca fazem isso, Seniors amam! Exemplo: Um container (Site PHP antigo) gera 
+# logs em um arquivo f�sico no disco. Voc� pode botar um 2� container lev�ssimo (como Promtail / Fluentbit) 
+# rodando NO MESMO POD apenas para ler aquele arquivo do primeiro container e jogar na nuvem, 
+# j� que eles compartilham o mesmo volume automaticamente por estarem juntos.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se eu der um scale-up de Mem�ria RAM na minha pr�pria m�quina enquanto meu 
+# Pod est� rodando e reinici�-lo, o Pod manter� o seu IP atual?&quot;
+# Resposta Esperada: &quot;N�o. O Pod � fundamentalmente ef�mero (mortal e descart�vel). 
+# Quando ele reinicia ou morre, um novo IP interno � assinado a ele de forma din�mica 
+# pelo cluster. Depender do IP duro de um Pod fatalmente quebra infraestruturas. Devemos usar Services.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./003-modulo-01-fundamentos-01-namespace.html">Aula anterior</a>
+      <a href="./005-modulo-01-fundamentos-03-pod-labels.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

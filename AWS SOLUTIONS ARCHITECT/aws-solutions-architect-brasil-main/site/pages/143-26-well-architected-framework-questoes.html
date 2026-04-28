@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questões — Módulo 26: Well-Architected Framework - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#143-26-well-architected-framework-questoes">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 26 - Well Architected Framework - 10 min - 26-Well-Architected-Framework/questoes.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 26 - Well Architected Framework" loading="lazy">
+      <figcaption>Well-Architected organiza decisoes por pilares para melhorar sistemas reais.</figcaption>
+    </figure>
+    <h1>Questões — Módulo 26: Well-Architected Framework</h1>
+<blockquote><p><strong>Domínio SAA-C03</strong>: Todos os domínios (framework transversal)<br><strong>Dificuldade</strong>: Média-Alta</p></blockquote>
+<hr>
+<p><strong>1.</strong> Uma empresa quer implementar os princípios do pilar de Confiabilidade do Well-Architected Framework. Qual das seguintes ações NÃO é um princípio desse pilar?</p>
+<ul><li>A) Escalar horizontalmente para aumentar disponibilidade do sistema</li><li>B) Recuperar automaticamente de falhas</li><li>C) Minimizar o impacto ambiental das workloads</li><li>D) Parar de adivinhar capacidade usando Auto Scaling</li></ul>
+<details><summary>Resposta</summary><p><strong>C</strong> — Minimizar impacto ambiental pertence ao pilar de <strong>Sustentabilidade</strong> (6° pilar). Os princípios do pilar Confiabilidade são: recuperar automaticamente de falhas, testar procedimentos de recuperação, escalar horizontalmente, parar de adivinhar capacidade e gerenciar mudanças por automação.</p></details>
+<hr>
+<p><strong>2.</strong> Uma empresa tem uma aplicação crítica com RPO de 1 hora e RTO de 30 minutos. Qual estratégia de DR é a mais custo-efetiva para esses requisitos?</p>
+<ul><li>A) Backup &amp; Restore (snapshots a cada hora)</li><li>B) Pilot Light com componentes críticos rodando em segunda região</li><li>C) Warm Standby com capacidade reduzida em segunda região</li><li>D) Multi-site Active-Active</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Pilot Light: mantém o BD replicado (via Aurora Global DB ou DMS CDC → RPO ~segundos) e AMIs prontas na segunda região. Em caso de desastre, em ~10-15 minutos é possível provisionar os componentes e redirecionar o DNS (Route 53 failover). RTO 30 min e RPO 1h são alcançáveis com custo menor que Warm Standby.</p></details>
+<hr>
+<p><strong>3.</strong> Uma empresa está revisando seu workload com o AWS Well-Architected Tool e identificou que não possui logging de todas as API calls. Sob qual pilar esse risco se enquadra?</p>
+<ul><li>A) Performance Efficiency</li><li>B) Cost Optimization</li><li>C) Security</li><li>D) Operational Excellence</li></ul>
+<details><summary>Resposta</summary><p><strong>C</strong> — O pilar de Segurança exige &quot;habilitar rastreabilidade&quot; — CloudTrail para APIs, CloudWatch Logs, Config para configurações. Ausência de logging é um High Risk Item de segurança (impossibilita detecção e investigação de incidentes).</p></details>
+<hr>
+<p><strong>4.</strong> Uma startup usa EC2 On-Demand para executar suas cargas de trabalho de produção que ficam online 24/7 há 18 meses. O CTO quer reduzir custos imediatamente. Qual é a principal recomendação do pilar de Cost Optimization?</p>
+<ul><li>A) Comprar Reserved Instances ou Savings Plans de 1 ano para a carga de trabalho estável</li><li>B) Migrar tudo para Lambda (serverless)</li><li>C) Mover para instâncias Spot</li><li>D) Reduzir o número de Availability Zones</li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — Workloads 24/7 estáveis são ideais para Reserved Instances ou Savings Plans. RI/SP de 1 ano oferecem ~40% de desconto vs On-Demand. Spot (C) é interruptível (inadequado para produção 24/7 sem tolerância a falhas). Lambda nem sempre é mais barato para workloads de longa duração.</p></details>
+<hr>
+<p><strong>5.</strong> Uma empresa está desenvolvendo uma nova aplicação e quer aplicar o princípio de &quot;implementar uma base de identidade forte&quot; do pilar de Segurança. Quais práticas representam isso? (Selecione 2)</p>
+<ul><li>A) Usar IAM roles para todas as aplicações (sem access keys hardcoded)</li><li>B) Habilitar MFA para usuários humanos que acessam o Console AWS</li><li>C) Configurar CloudFront para todos os endpoints</li><li>D) Usar instâncias com maior capacidade de memória</li></ul>
+<details><summary>Resposta</summary><p><strong>A e B</strong> — IAM roles (sem credenciais de longa duração) e MFA são os fundamentos de &quot;base de identidade forte&quot; do pilar Security. CloudFront é Performance Efficiency/Reliability. Memória maior é Performance Efficiency.</p></details>
+<hr>
+<p><strong>6.</strong> Uma empresa sofreu um incidente de segurança. Após a investigação, perceberam que não tinham logs suficientes para identificar a causa raiz. Qual princípio do Well-Architected Framework foi negligenciado e qual pilar?</p>
+<ul><li>A) &quot;Automatizar boas práticas de segurança&quot; — Pilar: Security</li><li>B) &quot;Habilitar rastreabilidade&quot; — Pilar: Security</li><li>C) &quot;Refinar procedimentos operacionais frequentemente&quot; — Pilar: Operational Excellence</li><li>D) &quot;Antecipar falhas&quot; — Pilar: Reliability</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — &quot;Habilitar rastreabilidade&quot; é um design principle do pilar Security. Rastreabilidade = logs de CloudTrail (APIs), VPC Flow Logs (rede), CloudWatch Logs (aplicação), Config (configuração). Sem esses logs, investigação forense é impossível.</p></details>
+<hr>
+<p><strong>7.</strong> Uma empresa tem um ambiente de desenvolvimento que funciona 8 horas por dia, 5 dias por semana. Atualmente usa instâncias On-Demand e gasta $500/mês. O que o pilar de Cost Optimization recomenda?</p>
+<ul><li>A) Converter para Reserved Instances de 1 ano</li><li>B) Usar Spot Instances para desenvolvimento</li><li>C) Criar automação (Lambda + EventBridge) para ligar/desligar as instâncias fora do horário de uso</li><li>D) Migrar o ambiente de desenvolvimento para containers no Fargate</li></ul>
+<details><summary>Resposta</summary><p><strong>C</strong> — Ambientes não-produção devem rodar apenas quando necessários. Ligar/desligar (8h × 5 dias = 40h/semana) vs 168h/semana On-Demand → ~76% de redução de custo. EventBridge Rules (schedule) → Lambda (start/stop EC2). Cost Optimization: adote modelo de consumo (pague pelo que usa).</p></details>
+<hr>
+<p><strong>8.</strong> Uma empresa usa um servidor de banco de dados com especificação muito alta (64 vCPUs) mas o uso médio de CPU é de apenas 5%. O pilar de Performance Efficiency e Cost Optimization recomendam o quê?</p>
+<ul><li>A) Manter a especificação alta para garantir headroom</li><li>B) Usar o AWS Compute Optimizer para identificar o tipo de instância RDS adequado (rightsizing)</li><li>C) Migrar para Lambda</li><li>D) Adicionar Read Replicas para distribuir a carga</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Compute Optimizer analisa métricas históricas (CPU, memória — com CloudWatch agent, rede) e recomenda o tipo de instância ideal. Over-provisioned = custo desnecessário sem benefício de performance. Rightsizing é um princípio central de Cost Optimization.</p></details>
+<hr>
+<p><strong>9.</strong> Uma empresa percebe que seu processo de deploy manual (SSH + rsync de código) é lento e propenso a erros, causando incidentes frequentes. Qual pilar do Well-Architected Framework endereça isso e qual tecnologia AWS?</p>
+<ul><li>A) Reliability — usar Multi-AZ para evitar downtime durante deploys</li><li>B) Operational Excellence — implementar CI/CD com CodePipeline + CodeDeploy (realizar operações como código)</li><li>C) Performance Efficiency — usar Elastic Beanstalk para deploy automático</li><li>D) Security — usar IAM para controlar quem pode fazer deploy</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Operational Excellence: &quot;realizar operações como código&quot; e &quot;fazer mudanças frequentes, pequenas e reversíveis&quot;. CI/CD automatiza deploys, reduz erros humanos e permite rollback rápido. CodePipeline + CodeDeploy implementa esse princípio diretamente.</p></details>
+<hr>
+<p><strong>10.</strong> Uma aplicação global precisa servir conteúdo com latência mínima para usuários em todo o mundo sem manter múltiplos clusters de aplicação em cada região. Qual princípio do pilar de Performance Efficiency é aplicado?</p>
+<ul><li>A) Usar a tecnologia certa para cada tarefa</li><li>B) Ser global em minutos usando CloudFront, Global Accelerator e S3</li><li>C) Parar de adivinhar capacidade</li><li>D) Democratizar tecnologias avançadas</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — &quot;Ser global em minutos&quot;: CloudFront distribui conteúdo para 400+ edge locations sem precisar de infraestrutura em cada região. Global Accelerator roteia tráfego pela rede privada AWS para reduzir latência. Performance sem escalar a aplicação horizontalmente por região.</p></details>
+<hr>
+<p><strong>11.</strong> Uma empresa quer medir se suas workloads na AWS estão alinhadas com os princípios do Well-Architected Framework de forma formal e documentada. Qual é o processo correto?</p>
+<ul><li>A) Comparar manualmente a arquitetura com os whitepapers</li><li>B) Usar o AWS Well-Architected Tool (WAT) para realizar uma revisão formal por workload</li><li>C) Contratar AWS Professional Services para uma auditoria</li><li>D) Usar Trusted Advisor para verificar as 5 categorias</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — AWS Well-Architected Tool: define o workload, responde perguntas sobre cada pilar, gera relatório de riscos (HRI e MRI — High/Medium Risk Items), cria Improvement Plan e rastreia progresso. Gratuito e pode ser realizado pelo próprio time de arquitetura.</p></details>
+<hr>
+<p><strong>12.</strong> Do ponto de vista do pilar de Sustentabilidade, qual das seguintes arquiteturas tem o menor impacto ambiental para uma carga de trabalho intermitente?</p>
+<ul><li>A) EC2 On-Demand sempre ligado (24/7) com alta utilização</li><li>B) AWS Lambda (serverless) para cargas intermitentes e Fargate para containers</li><li>C) EC2 Reserved Instances para garantir disponibilidade</li><li>D) EC2 com Auto Scaling com mínimo de 5 instâncias</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Sustentabilidade: maximizar utilização de recursos. Lambda e Fargate cobram apenas quando executando (zero consumo idle). Menos hardware sendo usado = menor pegada de carbono. Serverless alinha recursos precisamente com a demanda, eliminando recursos ociosos.</p></details>
+<hr>
+<p><strong>13.</strong> Uma empresa tem diferentes ambientes (dev, staging, prod) e quer implementar o princípio de &quot;usar IaC&quot; do pilar Operational Excellence. Qual benefício direto isso traz?</p>
+<ul><li>A) Ambientes dev/staging/prod ficam idênticos, eliminando bugs de &quot;funciona na minha máquina&quot;</li><li>B) Reduz o custo de EC2 automaticamente</li><li>C) Aumenta a segurança das instâncias EC2</li><li>D) Melhora o desempenho de queries RDS</li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — IaC (CloudFormation, CDK, Terraform) permite criar ambientes idênticos de forma reproduzível. O mesmo template provisiona dev, staging e prod com as mesmas configurações, eliminando deriva de configuração (configuration drift) e o famoso problema de &quot;funciona no dev mas não no prod&quot;.</p></details>
+<hr>
+<p><strong>14.</strong> O time de segurança quer garantir que nenhuma porta SSH (22) esteja aberta para 0.0.0.0/0 em qualquer Security Group da empresa. Qual é a abordagem preventiva mais robusta do pilar Security?</p>
+<ul><li>A) Auditar os SGs manualmente toda semana</li><li>B) Config Rule <code>restricted-ssh</code> + Remediation automática que remove a regra infratora</li><li>C) CloudTrail alert quando alguém adiciona regra no SG</li><li>D) IAM Permission negando <code>AuthorizeSecurityGroupIngress</code> para todos os usuários</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Config Rule detecta continuamente SGs com porta 22 aberta para 0.0.0.0/0. Com Remediation configurada, o Config executa uma SSM Automation que remove a regra infratora automaticamente (ou notifica para ação manual). Automates security best practices — princípio do pilar Security.</p></details>
+<hr>
+<p><strong>15.</strong> Uma empresa está avaliando o custo total de operação (TCO) para uma carga de trabalho que consome 1.000 horas de EC2 m5.large por mês, consistentemente há 2 anos. Qual modelo de compra o pilar Cost Optimization recomenda?</p>
+<ul><li>A) On-Demand (sem compromisso, máxima flexibilidade)</li><li>B) Spot Instances (máximo desconto)</li><li>C) Compute Savings Plans de 1 ano ($X por hora comprometido)</li><li>D) Reserved Instances Convertible de 3 anos (máximo desconto)</li></ul>
+<details><summary>Resposta</summary><p><strong>C</strong> — Compute Savings Plans de 1 ano: ~66% de desconto vs On-Demand, mais flexível que RI (pode mudar instância type, OS, região dentro do Compute SP). Para carga previsível há 2 anos, algum compromisso é claramente o caminho. 3 anos (D) dá mais desconto mas menos flexibilidade; 1 ano é o ponto de equilíbrio typical recomendado.</p></details>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./142-26-well-architected-framework-links.html">Aula anterior</a>
+      <a href="./144-26-well-architected-framework-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

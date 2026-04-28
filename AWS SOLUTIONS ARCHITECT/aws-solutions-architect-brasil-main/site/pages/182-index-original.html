@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>index original - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#182-index-original">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Curso e materiais gerais - 12 min - index-original.html</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Curso e materiais gerais" loading="lazy">
+      <figcaption>Estrategia de prova: leia o cenario, encontre os requisitos e elimine distratores.</figcaption>
+    </figure>
+    <aside class="official-note">
+    <strong>Atualização oficial SAA-C03 conferida em 2026-04-28</strong>
+    <p>Este arquivo fonte menciona pesos antigos em algum trecho. Para estudo de prova, use o guia oficial atual: Secure Architectures 30%, Resilient Architectures 26%, High-Performing Architectures 24% e Cost-Optimized Architectures 20%.</p>
+    <p><a href="https://docs.aws.amazon.com/aws-certification/latest/solutions-architect-associate-03/solutions-architect-associate-03.html">Guia oficial AWS Certified Solutions Architect - Associate (SAA-C03)</a></p>
+  </aside><div class="code-study">
+    <p><strong>Tipo:</strong> HTML</p>
+    <p><strong>Caminho original:</strong> <code>index-original.html</code></p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise variaveis, custos possiveis, permissoes e pontos de rollback.</p>
+    <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;pt-BR&quot;&gt;
+&lt;head&gt;
+  &lt;meta charset=&quot;UTF-8&quot;&gt;
+  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+  &lt;title&gt;AWS SAA-C03 | Portal de Estudos&lt;/title&gt;
+  &lt;meta name=&quot;description&quot; content=&quot;Portal de estudos AWS Certified Solutions Architect Associate (SAA-C03).&quot;&gt;
+  &lt;link rel=&quot;preconnect&quot; href=&quot;https://fonts.googleapis.com&quot;&gt;
+  &lt;link rel=&quot;preconnect&quot; href=&quot;https://fonts.gstatic.com&quot; crossorigin&gt;
+  &lt;link href=&quot;https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap&quot; rel=&quot;stylesheet&quot;&gt;
+  &lt;style&gt;
+    :root {
+      --bg: #16131f;
+      --surface: #1e1a2e;
+      --surface-elev: #252038;
+      --border: #2e2845;
+      --border-accent: #6d28d9;
+      --text: #f0ecff;
+      --text-2: #8b85a8;
+      --text-3: #4d4870;
+      --accent: #7c3aed;
+      --accent-soft: #2d1f52;
+      --accent-gradient: linear-gradient(90deg, #7c3aed, #a855f7);
+      --card-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    *::selection {
+      background: #6d28d9;
+      color: #ffffff;
+    }
+
+    html,
+    body {
+      scrollbar-color: #2e2845 #16131f;
+      scrollbar-width: thin;
+    }
+
+    body::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    body::-webkit-scrollbar-track {
+      background: #16131f;
+    }
+
+    body::-webkit-scrollbar-thumb {
+      background: #2e2845;
+      border-radius: 999px;
+    }
+
+    body::-webkit-scrollbar-thumb:hover {
+      background: #6d28d9;
+    }
+
+    body {
+      font-family: &quot;Manrope&quot;, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shell {
+      width: min(1140px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    header {
+      background: #16131f;
+      border-bottom: 1px solid #2e2845;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .topbar {
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: relative;
+    }
+
+    .left-nav {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+      font-size: 0.87rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
+
+    .brand-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #7c3aed;
+      flex-shrink: 0;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .nav-link {
+      font-size: 0.78rem;
+      color: #8b85a8;
+      padding: 5px 10px;
+      border-radius: 6px;
+    }
+
+    .nav-link.active {
+      background: #2d1f52;
+      color: #a78bfa;
+      font-weight: 600;
+    }
+
+    .repo-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #2d1f52;
+      border: 1px solid #6d28d9;
+      color: #a78bfa;
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .menu-toggle {
+      display: none;
+    }
+
+    .menu-btn {
+      display: none;
+      border: 1px solid #2e2845;
+      background: #1e1a2e;
+      color: #a78bfa;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 1rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .mobile-nav {
+      display: none;
+      position: absolute;
+      top: 56px;
+      left: 0;
+      right: 0;
+      background: #1e1a2e;
+      border: 1px solid #2e2845;
+      border-radius: 10px;
+      padding: 10px;
+      z-index: 35;
+    }
+
+    .mobile-nav a {
+      display: block;
+      color: #8b85a8;
+      font-size: 0.8rem;
+      padding: 8px 10px;
+      border-radius: 6px;
+    }
+
+    .mobile-nav a.active {
+      background: #2d1f52;
+      color: #a78bfa;
+      font-weight: 600;
+    }
+
+    .hero-wrap {
+      padding: 20px 0 14px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      background: #1e1a2e;
+      border: 1px solid #2e2845;
+      border-radius: 14px;
+      padding: 36px;
+      display: grid;
+      grid-template-columns: 1.35fr 0.95fr;
+      gap: 22px;
+    }
+
+    .hero::before {
+      content: &quot;&quot;;
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      right: -110px;
+      top: -140px;
+      pointer-events: none;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, rgba(124, 58, 237, 0) 70%);
+    }
+
+    .eyebrow {
+      position: relative;
+      z-index: 1;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace;
+      font-size: 11px;
+      color: #a78bfa;
+      background: #2d1f52;
+      border: 1px solid #4c2d8f;
+      border-radius: 99px;
+      padding: 5px 12px;
+      margin-bottom: 14px;
+      letter-spacing: 0.04em;
+    }
+
+    .eyebrow .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #7c3aed;
+      flex-shrink: 0;
+    }
+
+    .hero-title {
+      position: relative;
+      z-index: 1;
+      color: #f0ecff;
+      font-size: clamp(2rem, 3.8vw, 3.15rem);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+      max-width: 14ch;
+      margin-bottom: 14px;
+    }
+
+    .hero-title .accent {
+      color: #a855f7;
+    }
+
+    .hero-body {
+      position: relative;
+      z-index: 1;
+      color: #8b85a8;
+      max-width: 64ch;
+      font-size: 1rem;
+      margin-bottom: 16px;
+    }
+
+    .hero-ctas {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .cta-primary,
+    .cta-secondary {
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+
+    .cta-primary {
+      color: #ffffff;
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      border: 1px solid #7c3aed;
+    }
+
+    .cta-secondary {
+      color: #a78bfa;
+      background: transparent;
+      border: 1px solid #4c2d8f;
+    }
+
+    .hero-stats {
+      border-top: 1px solid #2e2845;
+      margin-top: 2px;
+      padding-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat {
+      background: #2d1f52;
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 20px;
+      font-weight: 500;
+      line-height: 1;
+      color: #f0ecff;
+      margin-bottom: 4px;
+    }
+
+    .stat span {
+      font-size: 11px;
+      color: #4d4870;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace;
+    }
+
+    .prog-card {
+      background: #1e1a2e;
+      border: 1px solid #2e2845;
+      border-radius: 12px;
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+      align-self: start;
+    }
+
+    .prog-card .label,
+    .prog-of,
+    .prog-sublabel,
+    .prog-note,
+    .count-pill,
+    .sec-head p,
+    .chip,
+    .mod-id,
+    .open-link {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, &quot;Liberation Mono&quot;, &quot;Courier New&quot;, monospace;
+    }
+
+    .prog-card .label {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8b85a8;
+    }
+
+    .prog-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .prog-num {
+      font-size: 40px;
+      line-height: 1;
+      color: #f0ecff;
+      letter-spacing: -0.04em;
+      font-weight: 600;
+    }
+
+    .prog-of {
+      color: #8b85a8;
+      font-size: 12px;
+    }
+
+    .prog-sublabel {
+      color: #8b85a8;
+      font-size: 11px;
+    }
+
+    .prog-bar {
+      height: 6px;
+      border-radius: 999px;
+      background: #2d1f52;
+      overflow: hidden;
+    }
+
+    .prog-fill {
+      height: 100%;
+      width: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #7c3aed, #a855f7);
+    }
+
+    .prog-note {
+      color: #4d4870;
+      font-size: 11px;
+    }
+
+    .section {
+      padding-top: 20px;
+    }
+
+    .sec-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .sec-head h3 {
+      color: #f0ecff;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .sec-head p,
+    .count-pill {
+      font-size: 11px;
+      color: #8b85a8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .filter-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .chip {
+      border: 1px solid #2e2845;
+      background: #1e1a2e;
+      color: #8b85a8;
+      border-radius: 99px;
+      padding: 5px 12px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .chip.on {
+      background: #2d1f52;
+      color: #a78bfa;
+      border-color: #6d28d9;
+    }
+
+    .mod-grid,
+    .sim-grid,
+    .gloss-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .mod-card,
+    .sim-card,
+    .gloss-card {
+      background: #1e1a2e;
+      border: 1px solid #2e2845;
+      border-radius: 12px;
+      padding: 14px 16px 16px;
+      position: relative;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+    }
+
+    .mod-card::before,
+    .sim-card::before,
+    .gloss-card::before {
+      content: &quot;&quot;;
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 3px;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+      background: linear-gradient(90deg, #7c3aed, #a855f7);
+    }
+
+    .mod-card:hover,
+    .sim-card:hover,
+    .gloss-card:hover {
+      background: #252038;
+      border-color: #6d28d9;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
+    }
+
+    .mod-id {
+      margin-top: 4px;
+      font-size: 10px;
+      color: #4d4870;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .mod-title,
+    .sim-title,
+    .gloss-title {
+      margin-top: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #f0ecff;
+      line-height: 1.35;
+      letter-spacing: -0.01em;
+    }
+
+    .mod-desc,
+    .sim-desc,
+    .gloss-desc {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #8b85a8;
+      line-height: 1.6;
+    }
+
+    .open-link {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 11px;
+      color: #a855f7;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    footer {
+      margin-top: 28px;
+      border-top: 1px solid #2e2845;
+      padding: 20px 0 28px;
+      color: #8b85a8;
+      font-size: 0.85rem;
+      background: #16131f;
+    }
+
+    @media (max-width: 980px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .mod-grid,
+      .sim-grid,
+      .gloss-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 768px) {
+      .shell {
+        width: min(1140px, calc(100% - 32px));
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .menu-btn {
+        display: inline-flex;
+      }
+
+      .menu-toggle:checked ~ .mobile-nav {
+        display: block;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .hero-title {
+        font-size: clamp(1.6rem, 5vw, 2.2rem);
+      }
+
+      .hero-ctas {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .cta-primary,
+      .cta-secondary {
+        width: 100%;
+        text-align: center;
+      }
+
+      .mod-grid,
+      .sim-grid,
+      .gloss-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;header&gt;
+    &lt;div class=&quot;shell topbar&quot;&gt;
+      &lt;div class=&quot;left-nav&quot;&gt;
+        &lt;a class=&quot;brand&quot; href=&quot;https://github.com/Thiago-code-lab/aws-solutions-architect-brasil.git&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;
+          &lt;span class=&quot;brand-dot&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
+          AWS SAA-C03
+        &lt;/a&gt;
+        &lt;nav class=&quot;nav-links&quot; aria-label=&quot;Navegacao interna&quot;&gt;
+          &lt;a class=&quot;nav-link active&quot; href=&quot;https://github.com/Thiago-code-lab/aws-solutions-architect-brasil.git&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;Modulos&lt;/a&gt;
+          &lt;a class=&quot;nav-link&quot; href=&quot;https://github.com/Thiago-code-lab/aws-solutions-architect-brasil.git&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;Simulados&lt;/a&gt;
+          &lt;a class=&quot;nav-link&quot; href=&quot;https://github.com/Thiago-code-lab/aws-solutions-architect-brasil.git&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;Glossario&lt;/a&gt;
+        &lt;/nav&gt;
+      &lt;/div&gt;
+
+      &lt;input class=&quot;menu-toggle&quot; type=&quot;checkbox&quot; id=&quot;menu-toggle&quot; aria-label=&quot;Abrir menu&quot;&gt;
+      &lt;label class=&quot;menu-btn&quot; for=&quot;menu-toggle&quot;&gt;☰&lt;/label&gt;
+
+      &lt;a class=&quot;repo-btn&quot; href=&quot;https://github.com/Thiago-code-lab/aws-solutions-architect-brasil.git&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;Repositorio&lt;/a&gt;
+
+      &lt;nav class=&quot;mobile-nav&quot; aria-label=&quot;Navegacao mobile&quot;&gt;
+        &lt;a class=&quot;active&quot; href=&quot;https://github.com/Thiago-code-lab/aws-solutions-architect-brasil.git&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;Modulos&lt;/a&gt;
+        &lt;a href=&quot;https://github.com/Thiago-code-lab/aws-solutions-architect-brasil.git&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;Simulados&lt;/a&gt;
+        &lt;a href=&quot;https://github.com/Thiago-code-lab/aws-solutions-architect-brasil.git&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;Glossario&lt;/a&gt;
+      &lt;/nav&gt;
+    &lt;/div&gt;
+  &lt;/header&gt;
+
+  &lt;div class=&quot;shell hero-wrap&quot;&gt;
+    &lt;section class=&quot;hero&quot; id=&quot;topo&quot;&gt;
+      &lt;article&gt;
+        &lt;div class=&quot;eyebrow&quot;&gt;
+          &lt;span class=&quot;dot&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
+          SAA-C03 · EM PREPARACAO
+        &lt;/div&gt;
+        &lt;h1 class=&quot;hero-title&quot;&gt;Estude para pensar como &lt;span class=&quot;accent&quot;&gt;arquiteto&lt;/span&gt; na AWS.&lt;/h1&gt;
+        &lt;p class=&quot;hero-body&quot;&gt;O exame cobra decisao tecnica contextual. Este portal organiza o repositorio por modulos, simulados e progresso pessoal para uma revisao objetiva.&lt;/p&gt;
+
+        &lt;div class=&quot;hero-ctas&quot;&gt;
+          &lt;a class=&quot;cta-primary&quot; href=&quot;https://github.com/Thiago-code-lab/aws-solutions-architect-brasil.git&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;Acessar portal de estudos →&lt;/a&gt;
+          &lt;a class=&quot;cta-secondary&quot; href=&quot;https://github.com/Thiago-code-lab/aws-solutions-architect-brasil.git&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;Ver repositorio&lt;/a&gt;
+        &lt;/div&gt;
+
+        &lt;div class=&quot;hero-stats&quot;&gt;
+          &lt;div class=&quot;stat&quot;&gt;&lt;strong&gt;21&lt;/strong&gt;&lt;span&gt;Modulos&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;stat&quot;&gt;&lt;strong&gt;315&lt;/strong&gt;&lt;span&gt;Questoes&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;stat&quot;&gt;&lt;strong&gt;8&lt;/strong&gt;&lt;span&gt;Semanas&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;stat&quot;&gt;&lt;strong&gt;4&lt;/strong&gt;&lt;span&gt;Dominios&lt;/span&gt;&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/article&gt;
+
+      &lt;aside class=&quot;prog-card&quot;&gt;
+        &lt;div class=&quot;label&quot;&gt;Progresso Geral&lt;/div&gt;
+        &lt;div&gt;
+          &lt;div class=&quot;prog-row&quot;&gt;
+            &lt;span class=&quot;prog-num&quot; id=&quot;progN&quot;&gt;0&lt;/span&gt;
+            &lt;span class=&quot;prog-of&quot;&gt;/ 21 modulos&lt;/span&gt;
+          &lt;/div&gt;
+          &lt;p class=&quot;prog-sublabel&quot; id=&quot;progSub&quot; style=&quot;margin-top: 4px;&quot;&gt;0 concluidos&lt;/p&gt;
+        &lt;/div&gt;
+        &lt;div&gt;
+          &lt;div class=&quot;prog-bar&quot;&gt;&lt;div class=&quot;prog-fill&quot; id=&quot;progFill&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+          &lt;p class=&quot;prog-note&quot; style=&quot;margin-top: 8px;&quot;&gt;Salvo em localStorage neste navegador.&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/aside&gt;
+    &lt;/section&gt;
+  &lt;/div&gt;
+
+  &lt;main class=&quot;shell&quot;&gt;
+    &lt;section class=&quot;section&quot; id=&quot;modulos&quot;&gt;
+      &lt;div class=&quot;sec-head&quot;&gt;
+        &lt;div&gt;
+          &lt;h3&gt;Modulos&lt;/h3&gt;
+          &lt;p&gt;Selecione um dominio no filtro e abra as sessoes.&lt;/p&gt;
+        &lt;/div&gt;
+        &lt;span class=&quot;count-pill&quot; id=&quot;countPill&quot;&gt;21 modulos&lt;/span&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;filter-strip&quot; id=&quot;filters&quot;&gt;&lt;/div&gt;
+      &lt;div class=&quot;mod-grid&quot; id=&quot;moduleGrid&quot;&gt;&lt;/div&gt;
+    &lt;/section&gt;
+
+    &lt;section class=&quot;section&quot; id=&quot;simulados&quot;&gt;
+      &lt;div class=&quot;sec-head&quot;&gt;
+        &lt;div&gt;
+          &lt;h3&gt;Simulados&lt;/h3&gt;
+          &lt;p&gt;Publicados conforme ficarem prontos no repositorio.&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;sim-grid&quot; id=&quot;simuladosGrid&quot;&gt;&lt;/div&gt;
+    &lt;/section&gt;
+
+    &lt;section class=&quot;section&quot; id=&quot;glossario&quot;&gt;
+      &lt;div class=&quot;sec-head&quot;&gt;
+        &lt;div&gt;
+          &lt;h3&gt;Glossario&lt;/h3&gt;
+          &lt;p&gt;Acesso rapido ao modulo de revisao final.&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;gloss-grid&quot;&gt;
+        &lt;article class=&quot;gloss-card&quot;&gt;
+          &lt;div class=&quot;mod-id&quot;&gt;MODULO 20&lt;/div&gt;
+          &lt;h4 class=&quot;gloss-title&quot;&gt;Glossario AWS&lt;/h4&gt;
+          &lt;p class=&quot;gloss-desc&quot;&gt;Termos e conceitos essenciais para revisar antes do exame.&lt;/p&gt;
+          &lt;a class=&quot;open-link&quot; href=&quot;https://github.com/Thiago-code-lab/aws-solutions-architect-brasil.git&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;Abrir sessao →&lt;/a&gt;
+        &lt;/article&gt;
+      &lt;/div&gt;
+    &lt;/section&gt;
+  &lt;/main&gt;
+
+  &lt;footer&gt;
+    &lt;div class=&quot;shell&quot;&gt;AWS SAA-C03 · Portal de estudos minimalista&lt;/div&gt;
+  &lt;/footer&gt;
+
+  &lt;script&gt;
+    const DPCT = { Resilient: &quot;30%&quot;, &quot;High-Performing&quot;: &quot;28%&quot;, Secure: &quot;24%&quot;, &quot;Cost-Optimized&quot;: &quot;18%&quot;, Fundamentos: &quot;-&quot;, Todos: &quot;-&quot; };
+
+    const mods = [
+      { id: &quot;01&quot;, title: &quot;Introducao SAA-C03&quot;, domain: &quot;Fundamentos&quot;, status: &quot;complete&quot;, folder: &quot;01-Introducao-SAA-C03&quot;, desc: &quot;Estrutura do exame, dominios, estrategia de estudo e plano de evolucao.&quot; },
+      { id: &quot;02&quot;, title: &quot;IAM e Seguranca&quot;, domain: &quot;Secure&quot;, status: &quot;complete&quot;, folder: &quot;02-IAM-e-Seguranca&quot;, desc: &quot;Identidade, autorizacao, KMS, Organizations e protecao de credenciais.&quot; },
+      { id: &quot;03&quot;, title: &quot;Computacao EC2&quot;, domain: &quot;High-Performing&quot;, status: &quot;complete&quot;, folder: &quot;03-Computacao-EC2&quot;, desc: &quot;Familias de instancia, EBS, AMIs e estrategias de computacao.&quot; },
+      { id: &quot;04&quot;, title: &quot;Alta Disponibilidade e Escalabilidade&quot;, domain: &quot;Resilient&quot;, status: &quot;complete&quot;, folder: &quot;04-Alta-Disponibilidade-e-Escalabilidade&quot;, desc: &quot;ALB, NLB, ASG, health checks e escalabilidade automatica.&quot; },
+      { id: &quot;05&quot;, title: &quot;Amazon S3 e Armazenamento&quot;, domain: &quot;Resilient&quot;, status: &quot;complete&quot;, folder: &quot;05-Amazon-S3-e-Armazenamento&quot;, desc: &quot;Versioning, lifecycle, replicacao e classes de armazenamento.&quot; },
+      { id: &quot;06&quot;, title: &quot;Banco de Dados&quot;, domain: &quot;High-Performing&quot;, status: &quot;complete&quot;, folder: &quot;06-Banco-de-Dados&quot;, desc: &quot;RDS, Aurora, DynamoDB e criterios de escolha para o exame.&quot; },
+      { id: &quot;07&quot;, title: &quot;VPC e Redes&quot;, domain: &quot;Secure&quot;, status: &quot;complete&quot;, folder: &quot;07-VPC-e-Redes&quot;, desc: &quot;Subnets, rotas, NAT, endpoints e conectividade hibrida.&quot; },
+      { id: &quot;08&quot;, title: &quot;DNS, Route 53 e CloudFront&quot;, domain: &quot;Resilient&quot;, status: &quot;complete&quot;, folder: &quot;08-DNS-Route53-e-CloudFront&quot;, desc: &quot;DNS gerenciado, CDN e distribuicao global com baixa latencia.&quot; },
+      { id: &quot;09&quot;, title: &quot;Desacoplamento: SQS, SNS, EventBridge&quot;, domain: &quot;Resilient&quot;, status: &quot;complete&quot;, folder: &quot;09-Desacoplamento-SQS-SNS-EventBridge&quot;, desc: &quot;Mensageria orientada a eventos e padroes para resiliencia.&quot; },
+      { id: &quot;10&quot;, title: &quot;Containers: ECS, EKS, Fargate&quot;, domain: &quot;High-Performing&quot;, status: &quot;complete&quot;, folder: &quot;10-Containers-ECS-EKS-Fargate&quot;, desc: &quot;Execucao de containers gerenciados e escolha por caso de uso.&quot; },
+      { id: &quot;11&quot;, title: &quot;Serverless: Lambda e API Gateway&quot;, domain: &quot;Cost-Optimized&quot;, status: &quot;complete&quot;, folder: &quot;11-Serverless-Lambda-API-Gateway&quot;, desc: &quot;Arquiteturas sem servidor com foco em simplicidade e custo.&quot; },
+      { id: &quot;12&quot;, title: &quot;Dados e Analytics&quot;, domain: &quot;High-Performing&quot;, status: &quot;complete&quot;, folder: &quot;12-Dados-e-Analytics&quot;, desc: &quot;Athena, Glue, Kinesis e pipelines analiticos na AWS.&quot; },
+      { id: &quot;13&quot;, title: &quot;Machine Learning e IA&quot;, domain: &quot;High-Performing&quot;, status: &quot;complete&quot;, folder: &quot;13-Machine-Learning-e-IA&quot;, desc: &quot;Servicos de IA gerenciados mais cobrados para arquitetos.&quot; },
+      { id: &quot;14&quot;, title: &quot;Monitoramento: CloudWatch e CloudTrail&quot;, domain: &quot;Secure&quot;, status: &quot;complete&quot;, folder: &quot;14-Monitoramento-CloudWatch-CloudTrail&quot;, desc: &quot;Logs, metricas e trilhas de auditoria para governanca.&quot; },
+      { id: &quot;15&quot;, title: &quot;Migracao e Transferencia&quot;, domain: &quot;Cost-Optimized&quot;, status: &quot;complete&quot;, folder: &quot;15-Migracao-e-Transferencia&quot;, desc: &quot;DMS, DataSync, Snow Family e estrategias de migracao.&quot; },
+      { id: &quot;16&quot;, title: &quot;Well-Architected Framework&quot;, domain: &quot;Resilient&quot;, status: &quot;complete&quot;, folder: &quot;16-Well-Architected-Framework&quot;, desc: &quot;Os pilares e revisoes arquiteturais para melhorias continuas.&quot; },
+      { id: &quot;17&quot;, title: &quot;Casos de Uso Reais&quot;, domain: &quot;Resilient&quot;, status: &quot;complete&quot;, folder: &quot;17-Casos-de-Uso-Reais&quot;, desc: &quot;Cenarios completos com trade-offs de arquitetura reais.&quot; },
+      { id: &quot;18&quot;, title: &quot;Labs Praticos&quot;, domain: &quot;Todos&quot;, status: &quot;complete&quot;, folder: &quot;18-Labs-Praticos&quot;, desc: &quot;Implementacoes praticas para consolidar a revisao teorica.&quot; },
+      { id: &quot;19&quot;, title: &quot;Simulados e Questoes&quot;, domain: &quot;Todos&quot;, status: &quot;complete&quot;, folder: &quot;19-Simulados-e-Questoes&quot;, desc: &quot;Treino final com questoes no estilo da certificacao.&quot; },
+      { id: &quot;20&quot;, title: &quot;Glossario&quot;, domain: &quot;Fundamentos&quot;, status: &quot;complete&quot;, folder: &quot;20-Glossario&quot;, desc: &quot;Revisao de termos tecnicos e vocabulario da prova.&quot; },
+      { id: &quot;21&quot;, title: &quot;Recursos e Links&quot;, domain: &quot;Fundamentos&quot;, status: &quot;complete&quot;, folder: &quot;21-Recursos-e-Links&quot;, desc: &quot;Curadoria de referencias para estudo continuo.&quot; }
+    ].map((m) =&gt; ({ ...m, link: &quot;https://github.com/Thiago-code-lab/aws-solutions-architect-brasil.git&quot; }));
+
+    const sims = [
+      { title: &quot;Simulado 01&quot;, desc: &quot;65 questoes com distribuicao proporcional aos dominios do exame.&quot;, href: &quot;https://github.com/Thiago-code-lab/aws-solutions-architect-brasil.git&quot;, status: &quot;Em producao&quot; },
+      { title: &quot;Simulado 02&quot;, desc: &quot;65 questoes com foco em cenarios arquiteturais complexos.&quot;, href: &quot;https://github.com/Thiago-code-lab/aws-solutions-architect-brasil.git&quot;, status: &quot;Em producao&quot; },
+      { title: &quot;Simulado 03&quot;, desc: &quot;65 questoes mais desafiadoras com multi-step reasoning.&quot;, href: &quot;https://github.com/Thiago-code-lab/aws-solutions-architect-brasil.git&quot;, status: &quot;Em producao&quot; }
+    ];
+
+    const FILTERS = [&quot;Todos&quot;, &quot;Fundamentos&quot;, &quot;Resilient&quot;, &quot;High-Performing&quot;, &quot;Secure&quot;, &quot;Cost-Optimized&quot;];
+    let active = &quot;Todos&quot;;
+    const SK = &quot;aws-saa-v4&quot;;
+    let prog = JSON.parse(localStorage.getItem(SK) || &quot;{}&quot;);
+
+    function filtered() {
+      return active === &quot;Todos&quot; ? mods : mods.filter((m) =&gt; m.domain === active);
+    }
+
+    function renderFilters() {
+      const b = document.getElementById(&quot;filters&quot;);
+      b.innerHTML = &quot;&quot;;
+      FILTERS.forEach((f) =&gt; {
+        const el = document.createElement(&quot;button&quot;);
+        el.type = &quot;button&quot;;
+        el.className = &quot;chip&quot; + (f === active ? &quot; on&quot; : &quot;&quot;);
+        el.textContent = f;
+        el.addEventListener(&quot;click&quot;, () =&gt; {
+          active = f;
+          renderFilters();
+          renderMods();
+        });
+        b.appendChild(el);
+      });
+    }
+
+    function renderMods() {
+      const grid = document.getElementById(&quot;moduleGrid&quot;);
+      const pill = document.getElementById(&quot;countPill&quot;);
+      const arr = filtered();
+      pill.textContent = arr.length + &quot; modulo&quot; + (arr.length !== 1 ? &quot;s&quot; : &quot;&quot;);
+      grid.innerHTML = &quot;&quot;;
+      arr.forEach((m) =&gt; {
+        const pct = DPCT[m.domain] || &quot;-&quot;;
+        const card = document.createElement(&quot;article&quot;);
+        card.className = &quot;mod-card&quot;;
+        card.innerHTML = `
+          &lt;div class=&quot;mod-id&quot; data-id=&quot;${m.id}&quot;&gt;MODULO ${m.id}${pct !== &quot;-&quot; ? ` · ${pct}` : &quot;&quot;}&lt;/div&gt;
+          &lt;h4 class=&quot;mod-title&quot;&gt;${m.title}&lt;/h4&gt;
+          &lt;p class=&quot;mod-desc&quot;&gt;${m.desc}&lt;/p&gt;
+          &lt;a class=&quot;open-link&quot; href=&quot;${m.link}&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;Abrir sessao →&lt;/a&gt;
+        `;
+        grid.appendChild(card);
+      });
+
+      grid.querySelectorAll(&quot;.mod-id[data-id]&quot;).forEach((el) =&gt; {
+        el.addEventListener(&quot;click&quot;, (event) =&gt; {
+          const id = event.currentTarget.getAttribute(&quot;data-id&quot;);
+          prog[id] = !prog[id];
+          localStorage.setItem(SK, JSON.stringify(prog));
+          updateProg();
+        });
+      });
+    }
+
+    function updateProg() {
+      const total = mods.length;
+      const done = Object.values(prog).filter(Boolean).length;
+      document.getElementById(&quot;progN&quot;).textContent = done;
+      document.getElementById(&quot;progSub&quot;).textContent = `${done} concluido${done !== 1 ? &quot;s&quot; : &quot;&quot;}`;
+      document.getElementById(&quot;progFill&quot;).style.width = `${Math.round((done / total) * 100)}%`;
+    }
+
+    function renderSims() {
+      document.getElementById(&quot;simuladosGrid&quot;).innerHTML = sims
+        .map(
+          (s) =&gt; `
+        &lt;article class=&quot;sim-card&quot;&gt;
+          &lt;h4 class=&quot;sim-title&quot;&gt;${s.title}&lt;/h4&gt;
+          &lt;p class=&quot;sim-desc&quot;&gt;${s.desc}&lt;/p&gt;
+          ${s.href ? `&lt;a class=&quot;open-link&quot; href=&quot;${s.href}&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;Abrir sessao →&lt;/a&gt;` : `&lt;span class=&quot;open-link&quot;&gt;${s.status}&lt;/span&gt;`}
+        &lt;/article&gt;`
+        )
+        .join(&quot;&quot;);
+    }
+
+    renderFilters();
+    renderMods();
+    renderSims();
+    updateProg();
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./181-contributing.html">Aula anterior</a>
+      <a href="./183-index.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

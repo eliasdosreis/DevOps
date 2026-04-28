@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Módulo 14 — Monitoramento: CloudWatch, CloudTrail, Config e Afins - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#102-20-monitoramento-cloudwatch-cloudtrail-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 20 - Monitoramento CloudWatch CloudTrail - 6 min - 20-Monitoramento-CloudWatch-CloudTrail/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 20 - Monitoramento CloudWatch CloudTrail" loading="lazy">
+      <figcaption>Observabilidade e auditoria respondem: o que aconteceu, quando, por quem e com qual impacto.</figcaption>
+    </figure>
+    <h1>Módulo 14 — Monitoramento: CloudWatch, CloudTrail, Config e Afins</h1>
+<h2>Visão Geral do Monitoring Stack AWS</h2>
+<pre><code class="language-">Observabilidade = Métricas + Logs + Traces + Eventos
+
+CloudWatch    → Métricas, Logs, Alarmes, Dashboards, Anomaly Detection
+CloudTrail    → Auditoria de API calls (quem fez o quê, quando, de onde)
+AWS Config    → Configuração de recursos (o que está configurado como)
+X-Ray         → Tracing distribuído (latência e gargalos em microserviços)
+Systems Manager → Gerenciamento de instâncias e parâmetros operacionais</code></pre>
+<hr>
+<h2>Amazon CloudWatch</h2>
+<h3>Métricas</h3>
+<ul><li>Dados de ponto no tempo com namespace, nome e dimensões</li><li><strong>EC2 padrão</strong>: CPUUtilization, NetworkIn/Out, StatusCheckFailed (<strong>não inclui memória/disco</strong>)</li><li><strong>Métricas personalizadas</strong>: via CloudWatch Agent ou <code>PutMetricData</code> API</li><li><strong>Granularidade padrão</strong>: 1 minuto (básico) ou 5 minutos (EC2 sem detailed monitoring)</li><li><strong>High Resolution Metrics</strong>: até 1 segundo (standard = 1 min; high-resolution = 1s, 5s, 10s, 30s)</li><li>Retenção: 3h (1s), 15 dias (1min), 63 dias (5min), 15 meses (1h)</li></ul>
+<h3>CloudWatch Alarms</h3>
+<div class="table-wrap"><table><thead><tr><th>Estado</th><th>Descrição</th></tr></thead><tbody><tr><td>OK</td><td>Métrica dentro do threshold</td></tr><tr><td>ALARM</td><td>Métrica ultrapassou threshold</td></tr><tr><td>INSUFFICIENT_DATA</td><td>Dados insuficientes para avaliar</td></tr></tbody></table></div>
+<p><strong>Ações de Alarme:</strong></p>
+<ul><li>EC2 Actions (stop, terminate, reboot, recover)</li><li>Auto Scaling Actions (scale out/in)</li><li>SNS Notification (email, webhook, Lambda, SQS)</li><li>Systems Manager OpsItem</li></ul>
+<p><strong>Composite Alarms</strong>: um alarme que combina múltiplos alarmes com AND/OR lógico → evita &quot;alarm storms&quot;</p>
+<h3>CloudWatch Logs</h3>
+<pre><code class="language-">Log Group (ex: /aws/lambda/minha-funcao)
+  └── Log Streams (geradas por cada execution environment ou instância)
+        └── Log Events (linhas individuais de log + timestamp)</code></pre>
+<p><strong>Retenção</strong>: configurável por grupo (1 dia a Never Expire); logs expiram automaticamente se configurado</p>
+<p><strong>Insights</strong>: query SQL-like nos logs; suporta pattern/parse/stats/sort/dedup</p>
+<pre><code class="language-">fields @timestamp, @message
+| filter @message like /ERROR/
+| stats count() by bin(5m)</code></pre>
+<p><strong>CloudWatch Agent</strong>: coleta métricas do SO (memória, disco, processos) e logs de arquivos customizados; usa <code>config.json</code> ou SSM Parameter Store</p>
+<p><strong>Subscriptions</strong>: envio em tempo real de logs para Lambda, Kinesis Streams, Kinesis Firehose, OpenSearch</p>
+<h3>CloudWatch Contributor Insights</h3>
+<p>Analisa logs para identificar &quot;top contributors&quot; a erros/latência (ex: top 10 URLs com mais erros, top IPs)</p>
+<h3>CloudWatch Anomaly Detection</h3>
+<p>Cria banda de valores esperados para uma métrica usando ML; alarma quando valor sai da banda</p>
+<hr>
+<h2>AWS CloudTrail</h2>
+<p>Auditoria de API calls em todos os serviços AWS:</p>
+<h3>Tipos de Eventos</h3>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Exemplos</th><th>Padrão</th></tr></thead><tbody><tr><td><strong>Management Events</strong></td><td>CreateBucket, TerminateInstances, CreateUser</td><td>Habilitado por padrão</td></tr><tr><td><strong>Data Events</strong></td><td>S3 GetObject/PutObject, Lambda Invoke, DynamoDB GetItem</td><td>Desabilitado (alto volume)</td></tr><tr><td><strong>Insights Events</strong></td><td>Atividade de API incomum (ML-based)</td><td>Habilitado separadamente</td></tr></tbody></table></div>
+<h3>Trails</h3>
+<ul><li><strong>Single-region</strong>: registra eventos somente na região onde criado</li><li><strong>All-regions</strong>: recomendado para organização; replica eventos a S3 bucket central</li><li><strong>Multi-account via Organizations</strong>: um trail cobrindo toda a org</li></ul>
+<h3>CloudTrail Lake</h3>
+<ul><li>Aggregação e query de eventos CloudTrail em SQL (EventBridge Schema)</li><li>Retenção configurável até 7 anos</li><li>Alternativa ao envio para S3 + Athena</li></ul>
+<hr>
+<h2>AWS Config</h2>
+<p>Registro contínuo de configuração de recursos e avaliação de compliance:</p>
+<p><strong>Config Recording</strong>: snapshot e histórico de configuração de recursos (o que mudou, quando, quem mudou)</p>
+<p><strong>Config Rules</strong>: avalia compliance de recursos:</p>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Descrição</th></tr></thead><tbody><tr><td><strong>AWS Managed Rules</strong></td><td>100+ regras prontas (ex: s3-bucket-public-read-prohibited, required-tags)</td></tr><tr><td><strong>Custom Rules</strong></td><td>Lambda function que avalia a configuração</td></tr><tr><td><strong>Detective Rules</strong></td><td>Avalia configuração atual (when change happens)</td></tr><tr><td><strong>Proactive Rules</strong></td><td>Avalia <strong>antes</strong> de criar recurso via CloudFormation (evita criar non-compliant resource)</td></tr></tbody></table></div>
+<p><strong>Remediation</strong>: Config + SSM Automation (corrige automaticamente recursos não-conformes)</p>
+<p><strong>Aggregator</strong>: agrega dados de Config de múltiplas regiões/contas em uma única conta central</p>
+<hr>
+<h2>AWS X-Ray</h2>
+<p>Tracing distribuído para aplicações:</p>
+<pre><code class="language-">Request trace = conjunto de segments de uma requisição end-to-end
+  └── Segment: operação em um único serviço/recurso
+        └── Subsegement: operação dentro do segment (ex: chamada ao DynamoDB)
+              └── Annotations: key-value indexados (filtráveis)
+              └── Metadata: key-value não-indexados (para depuração)</code></pre>
+<p><strong>Service Map</strong>: visualização gráfica das dependências e latência entre serviços</p>
+<p><strong>X-Ray Daemon</strong>: coleta os traces enviados pelo SDK e os envia para X-Ray API (evita ter cada app chamando a API diretamente)</p>
+<p><strong>Integrações nativas</strong>: Lambda, API Gateway, ALB, ECS, EC2 (com daemon), Elastic Beanstalk, Step Functions</p>
+<hr>
+<h2>AWS Systems Manager (SSM)</h2>
+<h3>Session Manager</h3>
+<ul><li>Acesso SSH/RDP sem abrir portas (sem security groups inbound), sem bastion, sem key pairs</li><li>Sessões gravadas no S3/CloudWatch; auditadas via CloudTrail</li><li>Requer SSM Agent no host + IAM role <code>AmazonSSMManaged​InstanceCore</code></li></ul>
+<h3>Parameter Store</h3>
+<ul><li>Armazenamento de configuração e segredos hierárquico</li><li><strong>/Standard</strong>: gratuito; até 4KB por parâmetro; sem histórico rotação</li><li><strong>/Advanced</strong>: pago; até 8KB; TTL policies; integração com Secrets Manager</li></ul>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Criptografia</th><th>Custo</th></tr></thead><tbody><tr><td>String</td><td>Não</td><td>Grátis (Standard)</td></tr><tr><td>StringList</td><td>Não</td><td>Grátis (Standard)</td></tr><tr><td>SecureString</td><td>AWS KMS</td><td>Grátis (Standard) + KMS costs</td></tr></tbody></table></div>
+<h3>Patch Manager</h3>
+<ul><li>Define Patch Baselines (quais patches aprovar/rejeitar)</li><li>Patch Groups: agrupa instâncias por tag para patch diferenciado</li><li>Maintenance Windows: agenda patches para janelas de manutenção</li></ul>
+<h3>Run Command</h3>
+<ul><li>Executa comandos ou scripts em instâncias sem acesso SSH</li><li>Usa SSM Documents (JSON/YAML que define ações)</li></ul>
+<hr>
+<h2>AWS Trusted Advisor</h2>
+<p>Recomendações em 6 categorias:</p>
+<ul><li><strong>Cost Optimization</strong>: recursos ociosos/subutilizados</li><li><strong>Performance</strong>: limites de serviços, throughput</li><li><strong>Security</strong>: grupos de segurança abertos, root MFA, bucket público</li><li><strong>Fault Tolerance</strong>: backups, Multi-AZ, snapshots</li><li><strong>Service Quotas</strong>: uso próximo de limites de serviços</li><li><strong>Operational Excellence</strong> (Business/Enterprise Support)</li></ul>
+<p>Plano <strong>Developer</strong>: apenas checks básicos (Service Quotas + Security essentials) Plano <strong>Business/Enterprise</strong>: todos os checks + programmatic access via API</p>
+<hr>
+<h2>Dicas de Prova</h2>
+<ul><li>CloudWatch <strong>não</strong> coleta memória RAM/uso de disco do EC2 por padrão → precisa do CloudWatch Agent</li><li>CloudTrail <strong>Management Events</strong> habilitados por padrão; <strong>Data Events</strong> são opt-in (custam extra)</li><li>CloudTrail Insights: detecta <strong>atividade de API incomum</strong> (ex: pico de chamadas a <code>TerminateInstances</code>)</li><li>AWS Config Rule: avalia <strong>compliance</strong> (não bloqueia criação); para bloquear use <strong>Service Control Policies</strong> ou <strong>Config Proactive Rules com CloudFormation hooks</strong></li><li><strong>X-Ray Sampling</strong>: por padrão, 5% das requests são tracedas (configurável para reduzir custo)</li><li>Parameter Store vs Secrets Manager: Secrets Manager tem <strong>rotação automática nativa</strong> (RDS, Redshift, DocumentDB); Parameter Store não tem rotação nativa</li><li>SSM Session Manager: <strong>zero SSH ports</strong> — melhor prática de segurança ao invés de bastion hosts</li><li>CloudWatch Logs Insights suporta queries like <code>fields @timestamp | filter level = &quot;ERROR&quot; | sort @timestamp desc | limit 20</code></li><li>Composite Alarms: combinam múltiplos alarmes para reduzir notificações desnecessárias</li><li>config:// (AWS Config) = snapshot de <strong>recursos</strong>; cloudtrail:// = snapshot de <strong>API actions</strong></li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./101-20-monitoramento-cloudwatch-cloudtrail-questoes.html">Aula anterior</a>
+      <a href="./103-21-migracao-e-transferencia-casos-de-uso.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

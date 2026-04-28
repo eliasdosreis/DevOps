@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#031-modulo-4-projeto-final-09-hpa">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - projeto final - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - projeto final" loading="lazy">
+      <figcaption>Projeto final consolida manifestos de producao em uma arquitetura completa.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 09-hpa.yaml
+# PROJETO FINAL - Auto Scaling da API
+#
+# A loja tem picos de acesso:
+# - Black Friday: 10x mais usu�rios!
+# - Madrugada: quase ningu�m
+#
+# HPA resolve isso automaticamente.
+# Sem HPA: voc� paga por 10 pods 24h (mesmo sem usar)
+# Com HPA: paga 2 pods normalmente, sobe para 10 no pico
+# Economia real de dinheiro em cloud!
+# ============================================================
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+
+metadata:
+  name: hpa-api               # Nome do HPA
+  namespace: ecommerce        # Mesmo namespace
+
+spec:
+  # O que o HPA vai controlar?
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api                 # O Deployment da API (05-api-deployment.yaml)
+
+  minReplicas: 2              # M�nimo: 2 pods SEMPRE
+                              # Nunca menos (alta disponibilidade!)
+  maxReplicas: 15             # M�ximo: 15 pods
+                              # Limite de custo e capacidade do cluster
+
+  # -------------------------------------------------------
+  # M�TRICAS PARA DECIS�O DE SCALE
+  # -------------------------------------------------------
+  metrics:
+
+    # M�trica 1: CPU m�dia dos pods
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65   # Se CPU m�dia &gt; 65%: sobe pods
+                                   # Se CPU m�dia &lt; 65%: desce pods
+                                   # 65% � um bom balan�o (n�o 80%!)
+
+    # M�trica 2: Mem�ria m�dia dos pods
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: AverageValue
+          averageValue: 200Mi      # Se mem�ria m�dia &gt; 200MB: sobe
+
+  # -------------------------------------------------------
+  # COMPORTAMENTO FINO DO SCALING
+  # -------------------------------------------------------
+  behavior:
+
+    # Como subir (scale out) - pode ser R�PIDO em picos
+    scaleUp:
+      stabilizationWindowSeconds: 30   # Espera 30s antes de subir
+                                       # Evita scale por pico de 5 segundos
+      policies:
+        - type: Percent               # Escala por porcentagem
+          value: 100                  # Pode DOBRAR os pods de uma vez
+          periodSeconds: 60           # A cada 1 minuto
+        - type: Pods                  # Ou adiciona pods fixos
+          value: 3                    # M�ximo 3 pods por per�odo
+          periodSeconds: 60
+      selectPolicy: Max               # Usa a pol�tica que escalar MAIS
+
+    # Como descer (scale in) - deve ser CONSERVADOR
+    scaleDown:
+      stabilizationWindowSeconds: 300  # Espera 5 MINUTOS antes de descer
+                                       # Evita flapping (sobe/desce/sobe)
+      policies:
+        - type: Pods
+          value: 1                     # Remove s� 1 pod por vez
+          periodSeconds: 120           # A cada 2 minutos
+                                       # Descida lenta = mais segura!
+
+# ============================================================
+# TIMELINE DE UM PICO (BLACK FRIDAY):
+#
+# 23:59 - 2 pods rodando (normal)
+# 00:00 - Black Friday come�a! CPU vai a 90%
+# 00:00:30 - HPA detecta (stabilizationWindow=30s)
+# 00:01:00 - Sobe para 4 pods (dobrou: policy Percent 100%)
+# 00:01:30 - Ainda alta, sobe para 8 pods
+# 00:02:00 - CPU se estabiliza em 60% com 8 pods
+# ...
+# 02:00 - Tr�fego cai, CPU vai a 20%
+# 02:05 - HPA aguarda 5 min (stabilizationWindow=300s)
+# 02:07 - Remove 1 pod -&gt; 7 pods
+# 02:09 - Remove 1 pod -&gt; 6 pods  (lento e controlado)
+# ...
+# 04:00 - Volta para 2 pods (m�nimo)
+#
+# ENTREVISTA S�NIOR:
+# &quot;Por que scaleDown � mais lento que scaleUp?&quot;
+# RESPOSTA: Seguran�a! Descer r�pido demais pode causar
+# sobrecarga nos pods restantes se o tr�fego voltar.
+# Subir r�pido � seguro (mais pods = mais capacidade).
+# Descer deve ser conservador para evitar instabilidade.
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./030-modulo-4-projeto-final-08-ingress.html">Aula anterior</a>
+      <a href="./032-modulo-4-projeto-final-10-rbac.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

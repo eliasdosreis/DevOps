@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Módulo 10: Containers (ECS, EKS, Fargate) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#071-16-containers-ecs-eks-fargate-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 16 - Containers ECS EKS Fargate - 5 min - 16-Containers-ECS-EKS-Fargate/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 16 - Containers ECS EKS Fargate" loading="lazy">
+      <figcaption>Containers organizam workloads portaveis com escolhas entre ECS, EKS e Fargate.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Módulo 10: Containers (ECS, EKS, Fargate)</h1>
+<h2>ECS Launch Types</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>EC2 Launch Type</th><th>Fargate Launch Type</th><th>External (ECS Anywhere)</th></tr></thead><tbody><tr><td>Gerencia instâncias?</td><td>SIM (você)</td><td>NÃO (AWS)</td><td>SIM (on-prem/edge)</td></tr><tr><td>Custo</td><td>EC2 + ECS (cluster grátis)</td><td>vCPU/hora + GB/hora</td><td>EC2-like por node</td></tr><tr><td>Controle</td><td>Total sobre o host</td><td>Apenas task level</td><td>Total sobre o hardware</td></tr><tr><td>Rede disponível</td><td>bridge, host, awsvpc</td><td>Apenas <strong>awsvpc</strong></td><td>bridge, host, awsvpc</td></tr></tbody></table></div>
+<h2>ECS Task Definition — Parâmetros Críticos</h2>
+<pre><code class="language-json">{
+  &quot;family&quot;: &quot;minha-app&quot;,
+  &quot;taskRoleArn&quot;: &quot;arn:aws:iam::...:role/TaskRole&quot;,
+  &quot;executionRoleArn&quot;: &quot;arn:aws:iam::...:role/TaskExecutionRole&quot;,
+  &quot;networkMode&quot;: &quot;awsvpc&quot;,
+  &quot;requiresCompatibilities&quot;: [&quot;FARGATE&quot;],
+  &quot;cpu&quot;: &quot;512&quot;,
+  &quot;memory&quot;: &quot;1024&quot;,
+  &quot;containerDefinitions&quot;: [{
+    &quot;name&quot;: &quot;app&quot;,
+    &quot;image&quot;: &quot;account.dkr.ecr.region.amazonaws.com/app:v1.0&quot;,
+    &quot;portMappings&quot;: [{&quot;containerPort&quot;: 8080}],
+    &quot;secrets&quot;: [{&quot;name&quot;: &quot;DB_PASSWORD&quot;, &quot;valueFrom&quot;: &quot;arn:aws:secretsmanager:...&quot;}],
+    &quot;logConfiguration&quot;: {&quot;logDriver&quot;: &quot;awslogs&quot;, &quot;options&quot;: {&quot;awslogs-group&quot;: &quot;/ecs/app&quot;}}
+  }]
+}</code></pre>
+<h2>ECS IAM Roles</h2>
+<div class="table-wrap"><table><thead><tr><th>Role</th><th>Quem usa</th><th>Para que</th></tr></thead><tbody><tr><td>Task Role</td><td>Aplicação no container</td><td>Acessar AWS services (S3, DynamoDB, SQS)</td></tr><tr><td>Task Execution Role</td><td>ECS Agent / Fargate</td><td>Pull imagem ECR, push CloudWatch Logs, ler Secrets Manager</td></tr><tr><td>Instance Profile</td><td>EC2 node (EC2 Launch Type)</td><td>ECS Agent se registrar no cluster</td></tr></tbody></table></div>
+<h2>Modos de Rede ECS</h2>
+<div class="table-wrap"><table><thead><tr><th>Modo</th><th>Funciona com</th><th>IP da Task</th><th>SG por Task</th><th>Notas</th></tr></thead><tbody><tr><td>bridge</td><td>EC2</td><td>IP do host + porta dinâmica</td><td>Não (SG do host)</td><td>Dynamic port mapping com ALB</td></tr><tr><td>host</td><td>EC2</td><td>IP do host</td><td>Não</td><td>Sem NAT, alta performance</td></tr><tr><td><strong>awsvpc</strong></td><td>EC2 e <strong>Fargate</strong></td><td><strong>IP próprio da VPC</strong></td><td><strong>SIM</strong></td><td>Recomendado; ENI por task</td></tr><tr><td>none</td><td>EC2</td><td>Nenhum</td><td>Não</td><td>Tasks offline</td></tr></tbody></table></div>
+<h2>ECS vs EKS — Quando Usar</h2>
+<div class="table-wrap"><table><thead><tr><th>Critério</th><th>ECS</th><th>EKS</th></tr></thead><tbody><tr><td>Simples + AWS-native</td><td>✅ Melhor</td><td>Pode usar</td></tr><tr><td>Kubernetes compatível</td><td>❌</td><td>✅ Obrigatório</td></tr><tr><td>Helm Charts / Operators</td><td>❌</td><td>✅</td></tr><tr><td>Multi-cloud / portabilidade</td><td>❌</td><td>✅</td></tr><tr><td>Custo de control plane</td><td>Gratuito</td><td>$0,10/hora ≈ $72/mês</td></tr><tr><td>Curva de aprendizado</td><td>Baixa</td><td>Alta</td></tr></tbody></table></div>
+<h2>EKS — Tipos de Worker Nodes</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Gerenciamento</th><th>Flexibilidade</th></tr></thead><tbody><tr><td>Managed Node Groups</td><td>AWS (lifecycle EC2 gerenciado)</td><td>AMI, tipos, tamanho escolhidos por você</td></tr><tr><td>Self-managed Nodes</td><td>Você (launch template, userdata)</td><td>Total</td></tr><tr><td>Fargate Profiles</td><td>AWS (serverless)</td><td>Zero node management (por pod)</td></tr></tbody></table></div>
+<h2>ECR — Configurações Importantes</h2>
+<div class="table-wrap"><table><thead><tr><th>Feature</th><th>Descrição</th></tr></thead><tbody><tr><td>Lifecycle Policy</td><td>Automatiza deleção de imagens por contagem ou idade</td></tr><tr><td>Image Scanning</td><td>Basic (Clair, OS CVEs) ou Enhanced (Inspector, OS + linguagens)</td></tr><tr><td>Replication</td><td>Cross-region e/ou cross-account (para DR, distribuição global)</td></tr><tr><td>Immutable Tags</td><td>Previne sobrescrita de tags existentes (ex: <code>latest</code> imutável)</td></tr><tr><td>Pull Through Cache</td><td>Proxy cache de registries públicos (DockerHub, ECR Public)</td></tr></tbody></table></div>
+<h2>Fargate CPU/RAM Combinations</h2>
+<div class="table-wrap"><table><thead><tr><th>vCPU</th><th>RAM (GB)</th></tr></thead><tbody><tr><td>0.25</td><td>0.5, 1, 2</td></tr><tr><td>0.5</td><td>1 a 4</td></tr><tr><td>1</td><td>2 a 8</td></tr><tr><td>2</td><td>4 a 16</td></tr><tr><td>4</td><td>8 a 30</td></tr><tr><td>8</td><td>16 a 60</td></tr><tr><td>16</td><td>32 a 120</td></tr></tbody></table></div>
+<h2>Container Services Comparison</h2>
+<div class="table-wrap"><table><thead><tr><th>Serviço</th><th>Gerenciamento</th><th>Kubernetes?</th><th>Melhor para</th></tr></thead><tbody><tr><td>ECS + EC2</td><td>Médio (EC2 nodes)</td><td>Não</td><td>Controle + AWS native</td></tr><tr><td>ECS + Fargate</td><td>Baixo (serverless)</td><td>Não</td><td>Simplicidade sem infra</td></tr><tr><td>EKS + Node Groups</td><td>Médio</td><td><strong>Sim</strong></td><td>K8s gerenciado</td></tr><tr><td>EKS + Fargate</td><td>Baixo</td><td><strong>Sim</strong></td><td>K8s + serverless</td></tr><tr><td>App Runner</td><td>Zero</td><td>Não</td><td>Deploy ultra-rápido</td></tr><tr><td>Elastic Beanstalk</td><td>Baixo-médio</td><td>Não</td><td>Apps web tradicionais</td></tr></tbody></table></div>
+<h2>Dicas Rápidas de Prova</h2>
+<ul><li><strong>Task Role</strong> = o que a app faz; <strong>Execution Role</strong> = o que o ECS faz para lançar a task</li><li><strong>awsvpc</strong> = única opção no Fargate; dá ENI + IP dedicado + SG próprio por task</li><li><strong>ECS custos</strong>: cluster EC2 gratuito, Fargate cobra por vCPU-hora e GB-hora</li><li><strong>EKS custos</strong>: $0,10/hora pelo control plane (independente de nodes/pods)</li><li><strong>IRSA (IAM Roles for Service Accounts)</strong>: EKS equivalent do ECS Task Role — role por pod via OIDC</li><li><strong>Managed Node Groups</strong>: AWS gerencia EC2 (rolling update, drain) mas você escolhe tipo/AMI</li><li><strong>Fargate Profile no EKS</strong>: define quais pods (namespace/label) vão para Fargate</li><li>Dynamic port mapping (ECS EC2 bridge mode): ALB target type = &quot;instance&quot;; com awsvpc = target type &quot;ip&quot;</li><li>Para segredos em tasks: referenciar Secrets Manager/SSM na Task Definition (Execution Role com permissão)</li><li><strong>ECR + VPC Endpoint</strong>: instâncias em subnet privada fazem pull de imagens ECR sem NAT/internet</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./070-16-containers-ecs-eks-fargate-casos-de-uso.html">Aula anterior</a>
+      <a href="./072-16-containers-ecs-eks-fargate-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

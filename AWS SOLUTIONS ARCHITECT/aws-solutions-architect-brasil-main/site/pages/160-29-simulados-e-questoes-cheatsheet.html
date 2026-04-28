@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Simulados e Questões (Módulo 29) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#160-29-simulados-e-questoes-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 29 - Simulados e Questoes - 8 min - 29-Simulados-e-Questoes/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 29 - Simulados e Questoes" loading="lazy">
+      <figcaption>Simulado e treino de decisao sob tempo: leia, elimine, escolha e revise.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Simulados e Questões (Módulo 29)</h1>
+<h2>Estrutura do Exame SAA-C03</h2>
+<div class="table-wrap"><table><thead><tr><th>Domínio</th><th>Peso</th><th>Tópicos-Chave</th></tr></thead><tbody><tr><td><strong>1 — Design de Arquiteturas Seguras</strong></td><td>30%</td><td>IAM, KMS, SCPs, VPC, WAF, Shield, Cognito</td></tr><tr><td><strong>2 — Design de Arquiteturas Resilientes</strong></td><td>26%</td><td>Multi-AZ, Multi-Region, Auto Scaling, DR, SQS, SNS</td></tr><tr><td><strong>3 — Design de Arquiteturas de Alto Desempenho</strong></td><td>24%</td><td>ElastiCache, CloudFront, Kinesis, RDS Read Replicas, DynamoDB</td></tr><tr><td><strong>4 — Design de Arquiteturas Otimizadas em Custo</strong></td><td>20%</td><td>Savings Plans, Reserved, Spot, S3 tiers, Trusted Advisor</td></tr></tbody></table></div>
+<ul><li><strong>Questões:</strong> 65 (50 marcadas + 15 não marcadas / experimentais)</li><li><strong>Duração:</strong> 130 minutos (~2 min/questão)</li><li><strong>Aprovação:</strong> 720/1000 (escala 100–1000)</li><li><strong>Formato:</strong> múltipla escolha (1 resposta) + múltipla resposta (2–3 respostas)</li><li><strong>Idioma disponível:</strong> Inglês, Japonês, Coreano, Português simplificado, etc.</li></ul>
+<hr>
+<h2>Estratégia de Tempo</h2>
+<div class="table-wrap"><table><thead><tr><th>Fase</th><th>Tempo</th><th>Ação</th></tr></thead><tbody><tr><td><strong>1ª passagem</strong></td><td>~70 min</td><td>Responder questões que sabe. Marcar dúvidas.</td></tr><tr><td><strong>2ª passagem</strong></td><td>~40 min</td><td>Revisar marcadas. Eliminar e escolher.</td></tr><tr><td><strong>Buffer</strong></td><td>~20 min</td><td>Questões difíceis / revisão final</td></tr><tr><td><strong>Total</strong></td><td>130 min</td><td></td></tr></tbody></table></div>
+<blockquote><p><strong>Regra:</strong> Nunca deixar questão em branco. Adivinhação inteligente é melhor que zero.</p></blockquote>
+<hr>
+<h2>Matriz de Decisão de Serviços</h2>
+<h3>Computação</h3>
+<div class="table-wrap"><table><thead><tr><th>Critério</th><th>Lambda</th><th>ECS/Fargate</th><th>EC2</th></tr></thead><tbody><tr><td>Duração máxima</td><td>15 min</td><td>ilimitado</td><td>ilimitado</td></tr><tr><td>Gerenciamento SO</td><td>zero</td><td>zero</td><td>você</td></tr><tr><td>Cold start</td><td>sim</td><td>sim (menor)</td><td>não</td></tr><tr><td>Estado local</td><td>não</td><td>sim (efêmero)</td><td>sim</td></tr><tr><td>Custo base</td><td>por req</td><td>por vCPU/mem/h</td><td>por h</td></tr><tr><td>Quando usar</td><td>event-driven, curto</td><td>containers, long-running</td><td>controle total, licenças</td></tr></tbody></table></div>
+<h3>Banco de Dados</h3>
+<div class="table-wrap"><table><thead><tr><th>Critério</th><th>DynamoDB</th><th>RDS / Aurora</th><th>ElastiCache</th></tr></thead><tbody><tr><td>Modelo</td><td>NoSQL (KV/Doc)</td><td>SQL relacional</td><td>In-memory</td></tr><tr><td>Escalabilidade</td><td>horizontal automática</td><td>vertical + read replicas</td><td>em cluster</td></tr><tr><td>Latência</td><td>single-digit ms</td><td>ms–s</td><td>sub-ms</td></tr><tr><td>Transações</td><td>sim (limited)</td><td>ACID completo</td><td>não</td></tr><tr><td>Quando usar</td><td>escala massiva, KV</td><td>dados relacionais</td><td>cache L1, sessão</td></tr></tbody></table></div>
+<h3>Armazenamento de Objetos (S3)</h3>
+<div class="table-wrap"><table><thead><tr><th>Classe</th><th>Acesso</th><th>Custo relativo</th><th>Minimum Storage</th></tr></thead><tbody><tr><td>Standard</td><td>Frequente</td><td>Alto</td><td>—</td></tr><tr><td>Intelligent-Tiering</td><td>Variável (auto-move)</td><td>Médio + fee monitoramento</td><td>—</td></tr><tr><td>Standard-IA</td><td>Infrequente</td><td>Médio-baixo</td><td>30 dias</td></tr><tr><td>One Zone-IA</td><td>Infrequente, 1 AZ</td><td>Baixo</td><td>30 dias</td></tr><tr><td>Glacier Instant</td><td>Arquivo, acesso rápido</td><td>Muito baixo</td><td>90 dias</td></tr><tr><td>Glacier Flexible</td><td>Arquivo, 1–5h retrieval</td><td>Ultra baixo</td><td>90 dias</td></tr><tr><td>Glacier Deep Archive</td><td>Arquivo longo prazo, 12h</td><td>Mínimo</td><td>180 dias</td></tr></tbody></table></div>
+<hr>
+<h2>Valores Numéricos Críticos para Memorizar</h2>
+<div class="table-wrap"><table><thead><tr><th>Serviço</th><th>Valor</th><th>O que é</th></tr></thead><tbody><tr><td><strong>Lambda</strong></td><td>15 min</td><td>Timeout máximo</td></tr><tr><td><strong>Lambda</strong></td><td>10 GB</td><td>Memória máxima</td></tr><tr><td><strong>Lambda</strong></td><td>512 MB → 10 GB</td><td>/tmp storage</td></tr><tr><td><strong>SQS Standard</strong></td><td>14 dias</td><td>Retenção máxima</td></tr><tr><td><strong>SQS FIFO</strong></td><td>300/s (3.000 com batching)</td><td>Throughput máximo</td></tr><tr><td><strong>SQS</strong></td><td>256 KB</td><td>Tamanho máximo mensagem</td></tr><tr><td><strong>SNS</strong></td><td>256 KB</td><td>Tamanho máximo mensagem</td></tr><tr><td><strong>S3</strong></td><td>11 noves (99.999999999%)</td><td>Durabilidade</td></tr><tr><td><strong>S3</strong></td><td>5 TB</td><td>Tamanho máximo objeto</td></tr><tr><td><strong>S3 Multipart</strong></td><td>&gt; 100 MB recomendado</td><td>Quando usar multipart upload</td></tr><tr><td><strong>DynamoDB</strong></td><td>400 KB</td><td>Tamanho máximo item</td></tr><tr><td><strong>DynamoDB</strong></td><td>single-digit ms</td><td>Latência típica</td></tr><tr><td><strong>Kinesis KDS</strong></td><td>1 MB/s ou 1.000 rec/s</td><td>Por shard (ingestion)</td></tr><tr><td><strong>Kinesis KDS</strong></td><td>2 MB/s</td><td>Por shard (leitura)</td></tr><tr><td><strong>Kinesis KDS</strong></td><td>7 dias</td><td>Retenção padrão (max 365)</td></tr><tr><td><strong>API Gateway</strong></td><td>29 segundos</td><td>Timeout máximo integração</td></tr><tr><td><strong>CloudFront</strong></td><td>1 ano</td><td>TTL máximo</td></tr><tr><td><strong>RDS</strong></td><td>35 dias</td><td>Backup automático máximo</td></tr><tr><td><strong>Aurora</strong></td><td>6 cópias em 3 AZs</td><td>Replicação storage</td></tr><tr><td><strong>EBS GP3</strong></td><td>16.000 IOPS</td><td>Máximo</td></tr><tr><td><strong>EBS io2</strong></td><td>64.000 IOPS</td><td>Máximo (io2 Block Express: 256K)</td></tr><tr><td><strong>EFS</strong></td><td>Ilimitado (elástico)</td><td>Capacidade</td></tr><tr><td><strong>VPC</strong></td><td>/16</td><td>Maior CIDR permitido</td></tr><tr><td><strong>VPC</strong></td><td>/28</td><td>Menor CIDR permitido</td></tr><tr><td><strong>Subnets reservadas</strong></td><td>5 IPs</td><td>AWS reserva primeiros 4 + último</td></tr><tr><td><strong>IAM</strong></td><td>5.000 usuários</td><td>Limite padrão por conta</td></tr><tr><td><strong>CloudTrail</strong></td><td>90 dias</td><td>Retenção padrão (Event History)</td></tr></tbody></table></div>
+<hr>
+<h2>Estratégias de Eliminação</h2>
+<h3>Dicas para Eliminar Respostas Erradas</h3>
+<ol><li><strong>Palavras-gatilho negativas:</strong></li></ol>
+<ul><li>&quot;manualmente&quot; → quase sempre errado (AWS = automação)</li><li>&quot;requer downtime&quot; → geralmente errado para HA</li><li>&quot;compartilhar credenciais root&quot; → sempre errado</li></ul>
+<ol><li><strong>Palavras que apontam resposta correta:</strong></li></ol>
+<ul><li>&quot;menor mudança operacional&quot; → serviço gerenciado</li><li>&quot;menor custo&quot; → checar Spot, Reserved, serverless, S3-IA</li><li>&quot;maior disponibilidade&quot; → Multi-AZ, Auto Scaling</li><li>&quot;mínimo de código&quot; → serviço managed/fully-managed</li></ul>
+<ol><li><strong>Armadilhas comuns:</strong></li></ol>
+<ul><li><strong>Multi-AZ vs Read Replica:</strong> Multi-AZ = disponibilidade/failover, Read Replica = performance/leitura</li><li><strong>SQS vs SNS:</strong> SQS = fila (1 consumidor por msg default), SNS = pub/sub (N consumidores)</li><li><strong>S3 Standard-IA vs Glacier:</strong> IA = acesso esporádico mas rápido, Glacier = arquivo</li><li><strong>Security Group vs NACL:</strong> SG = stateful (retorno automático), NACL = stateless (regra explícita)</li></ul>
+<hr>
+<h2>Padrões de Identificação Rápida de Serviço</h2>
+<div class="table-wrap"><table><thead><tr><th>Palavra-chave</th><th>Serviço Provável</th></tr></thead><tbody><tr><td>&quot;sem servidor&quot; / &quot;serverless&quot;</td><td>Lambda, Fargate, Aurora Serverless, DynamoDB</td></tr><tr><td>&quot;event-driven&quot;</td><td>Lambda + EventBridge / SQS / SNS</td></tr><tr><td>&quot;streaming em tempo real&quot;</td><td>Kinesis Data Streams</td></tr><tr><td>&quot;transformação/entrega streaming&quot;</td><td>Kinesis Data Firehose</td></tr><tr><td>&quot;fila desacoplada&quot;</td><td>SQS</td></tr><tr><td>&quot;pub/sub&quot; / &quot;broadcast&quot;</td><td>SNS</td></tr><tr><td>&quot;workflow / orquestração&quot;</td><td>Step Functions</td></tr><tr><td>&quot;CDN / conteúdo estático&quot;</td><td>CloudFront</td></tr><tr><td>&quot;DNS / roteamento global&quot;</td><td>Route 53</td></tr><tr><td>&quot;balanceamento de carga HTTP/HTTPS&quot;</td><td>ALB</td></tr><tr><td>&quot;balanceamento TCP/UDP extrema performance&quot;</td><td>NLB</td></tr><tr><td>&quot;autenticação usuários&quot;</td><td>Cognito</td></tr><tr><td>&quot;permissões entre contas&quot;</td><td>IAM Roles + STS</td></tr><tr><td>&quot;secrets / senhas rotacionáveis&quot;</td><td>Secrets Manager</td></tr><tr><td>&quot;parâmetros de configuração&quot;</td><td>SSM Parameter Store</td></tr><tr><td>&quot;criptografia de chaves gerenciadas&quot;</td><td>KMS</td></tr><tr><td>&quot;proteção DDoS layer 7&quot;</td><td>WAF + Shield</td></tr><tr><td>&quot;análise logs SQL&quot;</td><td>Athena</td></tr><tr><td>&quot;ETL big data&quot;</td><td>Glue</td></tr><tr><td>&quot;data warehouse&quot;</td><td>Redshift</td></tr><tr><td>&quot;ML pré-treinado (NLP/visão)&quot;</td><td>Rekognition / Comprehend / Textract</td></tr><tr><td>&quot;ML treinamento customizado&quot;</td><td>SageMaker</td></tr></tbody></table></div>
+<hr>
+<h2>Políticas de Roteamento Route 53</h2>
+<div class="table-wrap"><table><thead><tr><th>Política</th><th>Quando Usar</th><th>Pergunta-Chave</th></tr></thead><tbody><tr><td><strong>Simple</strong></td><td>1 recurso, sem lógica</td><td>Básico</td></tr><tr><td><strong>Weighted</strong></td><td>A/B testing, deploy gradual</td><td>&quot;% do tráfego&quot;</td></tr><tr><td><strong>Latency</strong></td><td>Menor latência por região</td><td>&quot;melhor performance global&quot;</td></tr><tr><td><strong>Failover</strong></td><td>DR ativo-passivo</td><td>&quot;failover automático&quot;</td></tr><tr><td><strong>Geolocation</strong></td><td>Conteúdo por país/continente</td><td>&quot;leis locais / localização&quot;</td></tr><tr><td><strong>Geoproximity</strong></td><td>Desviar tráfego por bias</td><td>&quot;ajuste fino de roteamento&quot;</td></tr><tr><td><strong>Multivalue Answer</strong></td><td>Health check + múltiplos IPs</td><td>&quot;disponibilidade simples multi-IP&quot;</td></tr></tbody></table></div>
+<hr>
+<h2>Dicas de Prova</h2>
+<div class="table-wrap"><table><thead><tr><th>Pista na Questão</th><th>Resposta Esperada</th></tr></thead><tbody><tr><td>&quot;resposta imediata, 65 questões, 130 min&quot;</td><td>~2 min por questão</td></tr><tr><td>&quot;aprovação mínima SAA-C03&quot;</td><td>720/1000</td></tr><tr><td>&quot;maior peso do exame&quot;</td><td>Domínio 1 — Arquiteturas Seguras (30%)</td></tr><tr><td>&quot;Multi-AZ RDS — qual benefício?&quot;</td><td>Failover automático (HA), não performance</td></tr><tr><td>&quot;Read Replica RDS — qual benefício?&quot;</td><td>Escalar leituras (não failover)</td></tr><tr><td>&quot;S3 durabilidade?&quot;</td><td>11 noves (99.999999999%)</td></tr><tr><td>&quot;Lambda timeout máximo?&quot;</td><td>15 minutos</td></tr><tr><td>&quot;SQS retenção máxima?&quot;</td><td>14 dias</td></tr><tr><td>&quot;questão pede mínimo custo + acesso raro a arquivos&quot;</td><td>S3 Glacier Deep Archive</td></tr><tr><td>&quot;questão pede mínimo custo + acesso imprevisível&quot;</td><td>S3 Intelligent-Tiering</td></tr><tr><td>&quot;VPC subnets: quantos IPs AWS reserva?&quot;</td><td>5 (primeiros 4 + último)</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./159-29-simulados-e-questoes-casos-de-uso.html">Aula anterior</a>
+      <a href="./161-29-simulados-e-questoes-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

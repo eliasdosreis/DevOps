@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#002-modulo-1-fundamentos-01-pod-simples">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 01 - fundamentos - 2 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 01 - fundamentos" loading="lazy">
+      <figcaption>Fundamentos: pods, namespaces e services para formar a base operacional.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 01-pod-simples.yaml
+# O QUE É UM POD?
+# Imagine uma caixa de papelão onde você coloca seu brinquedo.
+# O Pod é essa caixa. Dentro dela fica seu aplicativo (container).
+# O Kubernetes cuida dessas caixas para você!
+# ============================================================
+
+apiVersion: v1          # Versão da API do Kubernetes que usamos
+                        # Para Pods, sempre usamos &quot;v1&quot;
+
+kind: Pod               # Tipo do recurso. Aqui é um &quot;Pod&quot;
+                        # Outros tipos: Deployment, Service, etc.
+
+metadata:               # Informações SOBRE o pod (não o conteúdo)
+  name: meu-primeiro-pod  # Nome único do pod no cluster
+                           # Pense no nome da sua casinha
+
+  labels:               # Etiquetas para identificar o pod
+                        # Como etiquetas numa caixa de sapato
+    app: nginx          # Label &quot;app&quot; com valor &quot;nginx&quot;
+    ambiente: estudo    # Label &quot;ambiente&quot; com valor &quot;estudo&quot;
+    modulo: &quot;um&quot;        # Label &quot;modulo&quot; com valor &quot;um&quot;
+                        # Labels são pares chave: valor
+
+spec:                   # Especificação - O QUE tem dentro do pod
+  containers:           # Lista de containers dentro do pod
+                        # Um pod pode ter 1 ou mais containers
+
+    - name: container-nginx   # Nome do container dentro do pod
+      image: nginx:1.25       # Imagem Docker que vamos usar
+                              # nginx é um servidor web famoso
+                              # :1.25 é a versão (tag)
+
+      ports:                  # Portas que o container usa
+        - containerPort: 80   # Porta 80 = porta padrão do HTTP
+                              # É por onde o nginx responde
+
+# ============================================================
+# COMO USAR:
+#   kubectl apply -f 01-pod-simples.yaml
+#   kubectl get pods
+#   kubectl get pods -o wide   (mostra mais detalhes)
+#   kubectl describe pod meu-primeiro-pod
+#   kubectl logs meu-primeiro-pod
+#   kubectl delete pod meu-primeiro-pod
+#
+# PERGUNTA DE ENTREVISTA SENIOR:
+#   &quot;Qual a diferença entre Pod e Container?&quot;
+#   RESPOSTA: Container é a aplicação em si (processo).
+#   Pod é o ENVELOPE do Kubernetes que envolve 1+ containers,
+#   compartilhando rede e armazenamento entre eles.
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./001-guia-entrevista-senior.html">Aula anterior</a>
+      <a href="./003-modulo-1-fundamentos-02-pod-com-limites.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#020-modulo-3-avancado-06-statefulset">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 03 - avancado - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 03 - avancado" loading="lazy">
+      <figcaption>Avancado: ingress, HPA, storage, RBAC, NetworkPolicy e stateful workloads.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 06-statefulset.yaml
+# STATEFULSET - Para apps que t�m identidade pr�pria
+#
+# Deployment cria pods AN�NIMOS e INTERCAMBI�VEIS.
+# StatefulSet cria pods com IDENTIDADE FIXA e ORDEM.
+#
+# Analogia:
+# Deployment = Soldados gen�ricos (qualquer um serve)
+# StatefulSet = Membros de uma banda (cada um tem papel �nico)
+#   - pod-0 = guitarrista (prim�rio/master)
+#   - pod-1 = baixista   (r�plica)
+#   - pod-2 = baterista  (r�plica)
+#
+# QUANDO USAR STATEFULSET?
+# - Bancos de dados (MySQL, PostgreSQL, MongoDB)
+# - Sistemas de cache com estado (Redis com persistence)
+# - Message brokers (Kafka, RabbitMQ)
+# - Qualquer app que precise de identidade de rede est�vel
+# ============================================================
+
+apiVersion: apps/v1
+kind: StatefulSet               # Tipo: StatefulSet
+
+metadata:
+  name: banco-mysql
+  labels:
+    app: mysql
+
+spec:
+  serviceName: &quot;mysql-headless&quot; # OBRIGAT�RIO! Nome do Headless Service
+                                # Usado para DNS est�vel dos pods
+
+  replicas: 3                   # 3 inst�ncias do MySQL
+
+  selector:
+    matchLabels:
+      app: mysql
+
+  # -------------------------------------------------------
+  # DIFEREN�A CHAVE: Pods t�m nomes FIXOS e ORDENADOS
+  # banco-mysql-0  (sempre o primeiro a iniciar = MASTER)
+  # banco-mysql-1  (segundo)
+  # banco-mysql-2  (terceiro)
+  # -------------------------------------------------------
+
+  template:
+    metadata:
+      labels:
+        app: mysql
+
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: &quot;senha-root&quot;     # Use Secret em produ��o!
+
+          ports:
+            - containerPort: 3306     # Porta padr�o do MySQL
+
+          volumeMounts:
+            - name: dados-mysql       # Nome do volume (do VCT abaixo)
+              mountPath: /var/lib/mysql  # Onde o MySQL guarda dados
+
+  # -------------------------------------------------------
+  # volumeClaimTemplates - EXCLUSIVO do StatefulSet!
+  # Cria 1 PVC SEPARADO por pod automaticamente.
+  # banco-mysql-0 -&gt; pvc dados-mysql-banco-mysql-0
+  # banco-mysql-1 -&gt; pvc dados-mysql-banco-mysql-1
+  # banco-mysql-2 -&gt; pvc dados-mysql-banco-mysql-2
+  # -------------------------------------------------------
+  volumeClaimTemplates:
+    - metadata:
+        name: dados-mysql           # Prefixo do nome do PVC
+      spec:
+        accessModes: [&quot;ReadWriteOnce&quot;]
+        resources:
+          requests:
+            storage: 10Gi           # 10GB por pod
+
+---
+# HEADLESS SERVICE - Obrigat�rio para StatefulSet
+# Headless = ClusterIP: None
+# Permite acesso direto por DNS para cada pod:
+# banco-mysql-0.mysql-headless.default.svc.cluster.local
+# banco-mysql-1.mysql-headless.default.svc.cluster.local
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: mysql-headless            # Nome referenciado no serviceName
+
+spec:
+  clusterIP: None                 # NONE = Headless Service!
+                                  # N�o cria IP virtual, resolve
+                                  # diretamente para IP do pod
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+
+# ============================================================
+# ENTREVISTA S�NIOR DIF�CIL:
+# &quot;Qual a diferen�a entre Deployment e StatefulSet?&quot;
+#
+# DEPLOYMENT:
+# - Pods intercambi�veis (pod-xyz123, pod-abc456)
+# - Sem ordem de inicializa��o garantida
+# - Compartilham o mesmo PVC (ou nenhum)
+# - Para apps STATELESS (APIs, frontends)
+#
+# STATEFULSET:
+# - Pods com identidade fixa (app-0, app-1, app-2)
+# - Inicia em ORDEM (0, depois 1, depois 2)
+# - Cada pod tem seu PR�PRIO PVC
+# - DNS est�vel: pod-0.service.namespace.svc.cluster.local
+# - Para apps STATEFUL (bancos, brokers)
+#
+# &quot;O que acontece quando voc� deleta um pod de StatefulSet?&quot;
+# RESPOSTA: O K8s recria com o MESMO nome e MESMO PVC.
+# banco-mysql-1 morre -&gt; nasce banco-mysql-1 com os mesmos dados!
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./019-modulo-3-avancado-05-networkpolicy.html">Aula anterior</a>
+      <a href="./021-modulo-3-avancado-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

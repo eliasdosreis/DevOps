@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Módulo 15 — Migração e Transferência de Dados - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#109-21-migracao-e-transferencia-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 21 - Migracao e Transferencia - 6 min - 21-Migracao-e-Transferencia/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 21 - Migracao e Transferencia" loading="lazy">
+      <figcaption>Migracao boa equilibra janela, volume, risco, custo e mudanca na aplicacao.</figcaption>
+    </figure>
+    <h1>Módulo 15 — Migração e Transferência de Dados</h1>
+<h2>As 7 Estratégias de Migração (7 Rs)</h2>
+<div class="table-wrap"><table><thead><tr><th>Estratégia</th><th>Nome</th><th>Descrição</th><th>Esforço</th></tr></thead><tbody><tr><td><strong>Retire</strong></td><td>Aposentar</td><td>Descontinua aplicação: não tem valor de negócio</td><td>Nenhum</td></tr><tr><td><strong>Retain</strong></td><td>Reter</td><td>Mantém on-prem por agora (compliance, dívida técnica, revisitar depois)</td><td>Nenhum</td></tr><tr><td><strong>Rehost</strong></td><td>Lift &amp; Shift</td><td>Move para EC2 sem mudanças (ex: MGN)</td><td>Baixo</td></tr><tr><td><strong>Relocate</strong></td><td>Relocar</td><td>Move para AWS sem mudanças (VMware Cloud on AWS, Kubernetes)</td><td>Baixo</td></tr><tr><td><strong>Replatform</strong></td><td>Lift &amp; Reshape</td><td>Pequenas otimizações sem refatoração do core (ex: mover para RDS em vez de Oracle em EC2)</td><td>Médio</td></tr><tr><td><strong>Repurchase</strong></td><td>Substituir</td><td>Migra para SaaS (ex: CRM → Salesforce, email → Microsoft 365)</td><td>Médio</td></tr><tr><td><strong>Refactor / Re-architect</strong></td><td>Refatorar</td><td>Reescreve aproveitando cloud-native (ex: monolito → microserviços + Lambda + containers)</td><td>Alto</td></tr></tbody></table></div>
+<hr>
+<h2>AWS Migration Hub</h2>
+<p>Painel central de rastreamento de migração:</p>
+<ul><li>Visualiza progresso de todos os servidores sendo migrados</li><li>Integra com <strong>Application Discovery Service</strong>, <strong>MGN</strong>, <strong>DMS</strong></li><li><strong>Migration Hub Orchestrator</strong>: coordena e automatiza sequências de migração</li></ul>
+<hr>
+<h2>AWS Application Discovery Service</h2>
+<p>Coleta dados do ambiente on-prem para planejamento de migração:</p>
+<div class="table-wrap"><table><thead><tr><th>Modo</th><th>Como funciona</th></tr></thead><tbody><tr><td><strong>Agentless Discovery</strong> (Connector)</td><td>VM appliance no VMware vCenter; descobre VMs, CPU, memória, storage sem instalar agente</td></tr><tr><td><strong>Agent-based Discovery</strong></td><td>Instala ADS Agent em cada servidor; coleta dados mais detalhados (running processes, conexões de rede)</td></tr></tbody></table></div>
+<p>Dados exportados para Migration Hub ou S3 para análise com Athena.</p>
+<hr>
+<h2>AWS Application Migration Service (MGN/SMS)</h2>
+<p><strong>AWS MGN</strong> (substituto do SMS - Server Migration Service):</p>
+<ul><li><strong>Rehost (lift-and-shift)</strong> automatizado para EC2</li><li>Instala replication agent no servidor fonte → replica blocos de disco continuamente para AWS</li><li><strong>Cutover</strong>: testando em staging → janela de manutenção → cutover final</li></ul>
+<pre><code class="language-">On-prem Server
+  │
+  ├── MGN Replication Agent instalado
+  │     └── Replication contínua → S3/EBS na AWS
+  │
+  ├── Launch Template (tipo de instância, VPC, SG)
+  │
+  └── Test → Cutover → EC2 em produção
+           └── RTO/RPO muito baixo (minutos)</code></pre>
+<hr>
+<h2>AWS Database Migration Service (DMS)</h2>
+<p>Migração de bancos de dados:</p>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Origens/Destinos</th><th>SCT</th></tr></thead><tbody><tr><td><strong>Homogênea</strong></td><td>Oracle→Oracle, MySQL→RDS MySQL, PostgreSQL→Aurora</td><td>Não necessário</td></tr><tr><td><strong>Heterogênea</strong></td><td>Oracle→Aurora, SQL Server→PostgreSQL</td><td><strong>SCT obrigatório</strong></td></tr></tbody></table></div>
+<p><strong>Schema Conversion Tool (SCT)</strong>: converte schema + stored procedures para o dialeto do banco destino</p>
+<p><strong>CDC (Change Data Capture)</strong>: replica mudanças contínuas após migração inicial (suporta replicação em curso com zero downtime)</p>
+<p><strong>DMS Replication Instance</strong>: EC2 que executa o trabalho de replicação; precisa ter conectividade com source e target</p>
+<p><strong>Sources suportadas</strong>: Oracle, SQL Server, MySQL, PostgreSQL, MongoDB, SAP, IBM DB2, S3 <strong>Targets suportados</strong>: todos acima + DynamoDB, Redshift, Kafka, OpenSearch, DocumentDB</p>
+<hr>
+<h2>AWS Snow Family</h2>
+<p>Transferência física de dados (edge computing e migração massiva):</p>
+<div class="table-wrap"><table><thead><tr><th>Produto</th><th>Capacidade</th><th>Edge Computing</th><th>Uso Típico</th></tr></thead><tbody><tr><td><strong>Snowcone</strong></td><td>8-14 TB</td><td>Sim (2 vCPU, 4 GB)</td><td>Ambientes físicos pequenos, IoT</td></tr><tr><td><strong>Snowball Edge Storage Optimized</strong></td><td>80 TB HDD + 1 TB SSD</td><td>Sim (40 vCPU, 80 GB)</td><td>Migração de dados em larga escala</td></tr><tr><td><strong>Snowball Edge Compute Optimized</strong></td><td>42 TB + 28 TB SSD</td><td>Sim (52 vCPU, 208 GB, GPU opcional)</td><td>Análise local, ML na borda</td></tr><tr><td><strong>Snowmobile</strong></td><td><strong>100 PB</strong> (exabyte-scale)</td><td>Não</td><td>Migração de datacenter inteiro</td></tr></tbody></table></div>
+<p><strong>Regra prática</strong>: se o upload levaria mais de 1 semana via internet → usar Snow Family</p>
+<p>Processo:</p>
+<ol><li>AWS envia o dispositivo</li><li>Você carrega dados localmente</li><li>Envia de volta para AWS</li><li>AWS carrega dados para S3</li></ol>
+<p>Para <strong>Snowball após S3</strong>: lifecycle policy para Glacier se necessário.</p>
+<hr>
+<h2>AWS DataSync</h2>
+<p>Transferência AUTOMATIZADA e agendada de dados:</p>
+<div class="table-wrap"><table><thead><tr><th>De → Para</th><th>Protocolo</th><th>Velocidade</th></tr></thead><tbody><tr><td>On-prem → S3/EFS/FSx</td><td>NFS, SMB</td><td>Até 10 Gbps por agente</td></tr><tr><td>S3 → S3 (cross-region/account)</td><td>S3 API</td><td>Alta</td></tr><tr><td>EFS → EFS</td><td>NFS</td><td>Alta</td></tr></tbody></table></div>
+<ul><li><strong>Instalação</strong>: DataSync Agent (VM appliance) no on-prem; conecta via Direct Connect/VPN ou internet</li><li><strong>Preserva metadados</strong>: timestamps, permissões Unix</li><li><strong>Verificação de integridade</strong>: verifica checksums nos dois lados</li><li><strong>Scheduled</strong>: cria tarefas com agendamento (incremental após primeira full transfer)</li></ul>
+<p><strong>DataSync vs Storage Gateway vs Snow Family:</strong></p>
+<pre><code class="language-">DataSync: transferência agendada/automatizada (migration + sync)
+Storage Gateway: acesso híbrido contínuo (não é uma ferramenta de migração)
+Snow Family: quando a rede é insuficiente ou muito lenta</code></pre>
+<hr>
+<h2>AWS Transfer Family</h2>
+<p>Protocolos de transferência gerenciados para S3 e EFS:</p>
+<div class="table-wrap"><table><thead><tr><th>Protocolo</th><th>Porta</th></tr></thead><tbody><tr><td>SFTP (SSH FTP)</td><td>22</td></tr><tr><td>FTPS (FTP over TLS)</td><td>990</td></tr><tr><td>FTP (não criptografado)</td><td>21</td></tr><tr><td>AS2 (Applicability Statement 2)</td><td>8080/HTTPS</td></tr></tbody></table></div>
+<ul><li>Mantém endpoints existentes (não precisa mudar clientes)</li><li>Auth via IAM, Cognito, custom Lambda (para LDAP/AD existente)</li><li>Ideal para: parceiros B2B que usam SFTP; migrações de servidores SFTP legados para S3</li></ul>
+<hr>
+<h2>Outros Serviços de Migração</h2>
+<div class="table-wrap"><table><thead><tr><th>Serviço</th><th>Função</th></tr></thead><tbody><tr><td><strong>AWS Mainframe Modernization</strong></td><td>Migra e moderniza mainframes IBM/Micro Focus para AWS</td></tr><tr><td><strong>CloudEndure Disaster Recovery</strong></td><td>Continuous replication para DR (substituído pelo MGN para migração)</td></tr><tr><td><strong>Migration Hub Refactor Spaces</strong></td><td>Migração incremental de monolito para microserviços</td></tr></tbody></table></div>
+<hr>
+<h2>Dicas de Prova</h2>
+<ul><li><strong>7 Rs</strong>: identificar a estratégia correta por cenário é pergunta frequente</li><li>&quot;Sem mudança, mova para EC2&quot; = Rehost (MGN)</li><li>&quot;MySQL em EC2 → RDS&quot; = Replatform</li><li>&quot;Sem valor, desligar&quot; = Retire</li><li><strong>DMS</strong>: para migração de BD; SCT = conversão de schema heterogênea</li><li><strong>DataSync</strong> vs <strong>Snow Family</strong>: DataSync = rede disponível + automação; Snow = sem rede boa</li><li><strong>Snowmobile</strong> = apenas para <strong>exabyte</strong> scale (&gt;100 PB); Snowball Edge = 80 TB por dispositivo</li><li>Transfer Family: clientes <strong>não precisam mudar nada</strong> → AWS recebe transferências e armazena em S3/EFS</li><li><strong>MGN</strong> inclui <strong>continuous replication</strong> → RTO muito baixo no momento do cutover</li><li>Application Discovery Service: agentless (VMware VMs via connector) vs agent-based (qualquer OS, mais detalhado)</li><li>DMS com CDC = <strong>zero-downtime migration</strong>: replica ongoing mudanças enquanto testando</li><li>DataSync preserva metadados (timestamps, permissões); Snow Family não necessariamente</li><li><strong>SCT</strong> (Schema Conversion Tool) é separado do DMS — ferramenta desktop para converter DDL e procedimentos</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./108-21-migracao-e-transferencia-questoes.html">Aula anterior</a>
+      <a href="./110-22-recuperacao-de-desastres-e-continuidade-casos-de-uso.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

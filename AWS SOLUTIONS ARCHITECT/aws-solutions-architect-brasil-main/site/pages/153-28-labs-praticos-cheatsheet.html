@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Labs Práticos (Módulo 28) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#153-28-labs-praticos-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 28 - Labs Praticos - 7 min - 28-Labs-Praticos/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 28 - Labs Praticos" loading="lazy">
+      <figcaption>Labs end-to-end geram evidencia para portifolio, entrevista e troubleshooting.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Labs Práticos (Módulo 28)</h1>
+<h2>Comandos AWS CLI — Referência Rápida</h2>
+<h3>Lambda</h3>
+<pre><code class="language-bash"># Criar função
+aws lambda create-function \
+  --function-name minha-funcao \
+  --runtime python3.12 \
+  --role arn:aws:iam::ACCOUNT:role/lambda-role \
+  --handler app.lambda_handler \
+  --zip-file fileb://function.zip
+
+# Invocar (síncrono)
+aws lambda invoke --function-name minha-funcao output.json
+
+# Invocar (assíncrono)
+aws lambda invoke --function-name minha-funcao \
+  --invocation-type Event output.json
+
+# Ver logs recentes
+aws logs tail /aws/lambda/minha-funcao --follow</code></pre>
+<h3>S3</h3>
+<pre><code class="language-bash"># Criar bucket
+aws s3api create-bucket --bucket meu-bucket --region us-east-1
+
+# Upload
+aws s3 cp arquivo.txt s3://meu-bucket/
+
+# Sync diretório
+aws s3 sync ./local/ s3://meu-bucket/prefixo/
+
+# Ativar versionamento
+aws s3api put-bucket-versioning \
+  --bucket meu-bucket \
+  --versioning-configuration Status=Enabled
+
+# Block public access
+aws s3api put-public-access-block \
+  --bucket meu-bucket \
+  --public-access-block-configuration &quot;BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true&quot;</code></pre>
+<h3>EC2 / Auto Scaling</h3>
+<pre><code class="language-bash"># Listar instâncias em execução
+aws ec2 describe-instances \
+  --filters &quot;Name=instance-state-name,Values=running&quot; \
+  --query &quot;Reservations[*].Instances[*].[InstanceId,InstanceType,State.Name]&quot; \
+  --output table
+
+# Criar Auto Scaling Group
+aws autoscaling create-auto-scaling-group \
+  --auto-scaling-group-name meu-asg \
+  --min-size 1 --max-size 5 --desired-capacity 2 \
+  --launch-template LaunchTemplateId=lt-xxx,Version=&#39;$Latest&#39; \
+  --vpc-zone-identifier &quot;subnet-aaa,subnet-bbb&quot;</code></pre>
+<h3>CloudWatch</h3>
+<pre><code class="language-bash"># Criar alarme CPU &gt; 80%
+aws cloudwatch put-metric-alarm \
+  --alarm-name &quot;CPU-Alto&quot; \
+  --metric-name CPUUtilization \
+  --namespace AWS/EC2 \
+  --statistic Average \
+  --period 300 \
+  --threshold 80 \
+  --comparison-operator GreaterThanThreshold \
+  --dimensions Name=AutoScalingGroupName,Value=meu-asg \
+  --evaluation-periods 2 \
+  --alarm-actions arn:aws:sns:us-east-1:ACCOUNT:alertas
+
+# Publicar métrica customizada
+aws cloudwatch put-metric-data \
+  --namespace &quot;MinhaApp/Performance&quot; \
+  --metric-name &quot;PedidosPorSegundo&quot; \
+  --value 42 --unit Count</code></pre>
+<h3>DynamoDB</h3>
+<pre><code class="language-bash"># Criar tabela
+aws dynamodb create-table \
+  --table-name Pedidos \
+  --attribute-definitions AttributeName=pedidoId,AttributeType=S \
+  --key-schema AttributeName=pedidoId,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST
+
+# Inserir item
+aws dynamodb put-item \
+  --table-name Pedidos \
+  --item &#39;{&quot;pedidoId&quot;: {&quot;S&quot;: &quot;001&quot;}, &quot;status&quot;: {&quot;S&quot;: &quot;pendente&quot;}}&#39;</code></pre>
+<hr>
+<h2>Terraform — Recursos Comuns</h2>
+<h3>Estrutura de Projeto</h3>
+<pre><code class="language-">projeto/
+  main.tf          # recursos principais
+  variables.tf     # declaração de variáveis
+  outputs.tf       # outputs
+  terraform.tfvars # valores das variáveis
+  versions.tf      # required_providers</code></pre>
+<h3>Bloco de Versões (padrão)</h3>
+<pre><code class="language-hcl">terraform {
+  required_version = &quot;&gt;= 1.5&quot;
+  required_providers {
+    aws = {
+      source  = &quot;hashicorp/aws&quot;
+      version = &quot;~&gt; 5.0&quot;
+    }
+  }
+}
+
+provider &quot;aws&quot; {
+  region = var.aws_region
+}</code></pre>
+<h3>Recursos Mais Cobrados no Exame</h3>
+<div class="table-wrap"><table><thead><tr><th>Recurso Terraform</th><th>Serviço AWS</th></tr></thead><tbody><tr><td><code>aws_vpc</code> + <code>aws_subnet</code></td><td>VPC / Subnets</td></tr><tr><td><code>aws_security_group</code></td><td>Security Groups</td></tr><tr><td><code>aws_instance</code></td><td>EC2</td></tr><tr><td><code>aws_lambda_function</code></td><td>Lambda</td></tr><tr><td><code>aws_s3_bucket</code> + <code>aws_s3_bucket_versioning</code></td><td>S3</td></tr><tr><td><code>aws_dynamodb_table</code></td><td>DynamoDB</td></tr><tr><td><code>aws_db_instance</code></td><td>RDS</td></tr><tr><td><code>aws_elasticache_cluster</code></td><td>ElastiCache</td></tr><tr><td><code>aws_ecs_cluster</code> + <code>aws_ecs_service</code></td><td>ECS</td></tr><tr><td><code>aws_iam_role</code> + <code>aws_iam_role_policy_attachment</code></td><td>IAM</td></tr><tr><td><code>aws_cloudwatch_metric_alarm</code></td><td>CloudWatch</td></tr></tbody></table></div>
+<hr>
+<h2>Terraform — Comandos Essenciais</h2>
+<div class="table-wrap"><table><thead><tr><th>Comando</th><th>O que faz</th></tr></thead><tbody><tr><td><code>terraform init</code></td><td>Inicializa providers, baixa plugins</td></tr><tr><td><code>terraform validate</code></td><td>Valida sintaxe HCL</td></tr><tr><td><code>terraform plan</code></td><td>Preview de mudanças sem aplicar</td></tr><tr><td><code>terraform plan -out=tfplan</code></td><td>Salva plano para aplicar depois</td></tr><tr><td><code>terraform apply</code></td><td>Aplica mudanças (pede confirmação)</td></tr><tr><td><code>terraform apply -auto-approve</code></td><td>Aplica sem confirmação</td></tr><tr><td><code>terraform apply tfplan</code></td><td>Aplica plano salvo</td></tr><tr><td><code>terraform destroy</code></td><td>Destrói toda infraestrutura</td></tr><tr><td><code>terraform state list</code></td><td>Lista recursos no state</td></tr><tr><td><code>terraform state show aws_instance.web</code></td><td>Detalhes de recurso específico</td></tr><tr><td><code>terraform output</code></td><td>Exibe outputs definidos</td></tr><tr><td><code>terraform fmt</code></td><td>Formata arquivos HCL</td></tr><tr><td><code>terraform graph</code></td><td>Gera grafo de dependências</td></tr></tbody></table></div>
+<hr>
+<h2>SAM — Comandos Essenciais</h2>
+<pre><code class="language-bash"># Inicializar projeto SAM
+sam init
+
+# Build local
+sam build
+
+# Testar localmente
+sam local invoke FunctionName
+sam local start-api  # API GW local na porta 3000
+
+# Deploy (guiado)
+sam deploy --guided
+
+# Deploy com parâmetros salvos
+sam deploy
+
+# Ver logs
+sam logs -n FunctionName --stack-name minha-stack --tail
+
+# Deletar stack
+sam delete --stack-name minha-stack</code></pre>
+<hr>
+<h2>Debug — Checklist por Problema</h2>
+<h3>Lambda não consegue acessar RDS</h3>
+<pre><code class="language-">1. Lambda e RDS na mesma VPC? (Lambda precisa de VpcConfig)
+2. Security Group da Lambda permite saída para porta 5432/3306?
+3. Security Group do RDS permite entrada do SG da Lambda?
+4. Lambda tem subnets privadas (não públicas)?
+5. Subnets privadas têm NAT Gateway para internet (se precisar)?
+6. IAM Role da Lambda tem permissão básica (AWSLambdaVPCAccessExecutionRole)?
+7. Timeout da Lambda é suficiente (conexão DB pode demorar)?</code></pre>
+<h3>S3 retornando 403 Forbidden</h3>
+<pre><code class="language-">1. Bucket Policy está bloqueando? (verificar aws s3api get-bucket-policy)
+2. Block Public Access ativo e ACL pública tentando ser usada?
+3. IAM Policy do usuário/role tem s3:GetObject?
+4. Objeto existe? (aws s3 ls s3://bucket/chave)
+5. Bucket em outra região que o cliente espera?
+6. KMS key: usuário tem permissão de decrypt na chave?
+7. VPC Endpoint policy bloqueando? (se acesso via VPC Gateway Endpoint)</code></pre>
+<h3>ECS Task não inicia (STOPPED)</h3>
+<pre><code class="language-">1. Ver stoppedReason: aws ecs describe-tasks --cluster X --tasks Y
+2. Motivos comuns:
+   - CannotPullContainerError: ECR privado sem IAM ou VPC endpoint
+   - OutOfMemory: memória insuficiente definida na task definition
+   - ResourceInitializationError: exec role faltando
+3. CloudWatch Logs: /ecs/&lt;task-family&gt; — ver erros da aplicação
+4. Task Role tem permissões necessárias (ex: s3:GetObject)?
+5. Security Group do ECS permite saída para RDS/serviços externos?</code></pre>
+<hr>
+<h2>Ordem de Limpeza no Terraform (<code>terraform destroy</code>)</h2>
+<p>Dependências que podem causar erro se apagadas na ordem errada:</p>
+<pre><code class="language-">1. ECS Services (antes do Cluster)
+2. ALB / Target Groups (antes das subnets/SGs)
+3. RDS / ElastiCache (antes da subnet group e SGs)
+4. Lambda (pode ter ENIs em VPC)
+5. NAT Gateway (antes do EIP pode ser liberado)
+6. Subnets (antes da VPC)
+7. VPC (por último — tudo dentro dela deve ser removido antes)</code></pre>
+<blockquote><p>Geralmente <code>terraform destroy</code> resolve em ordem por dependências. Problemas ocorrem com recursos criados fora do Terraform.</p></blockquote>
+<hr>
+<h2>IAM — Simulate Policy (debug de permissões)</h2>
+<pre><code class="language-bash"># Simular se ação é permitida
+aws iam simulate-principal-policy \
+  --policy-source-arn arn:aws:iam::ACCOUNT:role/minha-role \
+  --action-names s3:PutObject \
+  --resource-arns arn:aws:s3:::meu-bucket/*
+  
+# Resultado esperado: &quot;EvalDecision&quot;: &quot;allowed&quot;</code></pre>
+<hr>
+<h2>Estimativa de Custo — Lab Típico</h2>
+<div class="table-wrap"><table><thead><tr><th>Recurso</th><th>Custo Estimado (lab 2h)</th></tr></thead><tbody><tr><td>EC2 t3.micro</td><td>~$0.01</td></tr><tr><td>NAT Gateway</td><td>~$0.09/h + $0.045/GB</td></tr><tr><td>RDS db.t3.micro Multi-AZ</td><td>~$0.06/h</td></tr><tr><td>Lambda (1M req)</td><td>Free Tier</td></tr><tr><td>S3 (&lt; 5GB)</td><td>Free Tier</td></tr><tr><td>ECS Fargate (0.25vCPU/0.5GB)</td><td>~$0.01/h</td></tr></tbody></table></div>
+<blockquote><p><strong>Dica:</strong> Sempre destruir recursos ao final. NAT Gateway é cobrado por hora mesmo sem tráfego.</p></blockquote>
+<hr>
+<h2>Dicas de Prova</h2>
+<div class="table-wrap"><table><thead><tr><th>Pista na Questão</th><th>Resposta Esperada</th></tr></thead><tbody><tr><td>&quot;testar Lambda localmente antes de deploy&quot;</td><td>SAM local invoke / sam local start-api</td></tr><tr><td>&quot;infraestrutura como código, reproductível&quot;</td><td>Terraform ou CloudFormation</td></tr><tr><td>&quot;Lambda precisa de RDS em VPC privada&quot;</td><td>Lambda VpcConfig + SG do RDS liberado</td></tr><tr><td>&quot;visualizar mudanças antes de aplicar&quot;</td><td>terraform plan</td></tr><tr><td>&quot;Lambda não acessa internet em VPC&quot;</td><td>Falta NAT Gateway na subnet privada</td></tr><tr><td>&quot;armazenar segredos para Lambda acessar&quot;</td><td>Secrets Manager (não variáveis de ambiente)</td></tr><tr><td>&quot;deploy serverless com YAML simplificado&quot;</td><td>SAM (template.yaml)</td></tr><tr><td>&quot;estado de infra compartilhado entre equipes&quot;</td><td>Terraform state em S3 + DynamoDB lock</td></tr><tr><td>&quot;debug erro 403 S3&quot;</td><td>Checar bucket policy + Block Public Access + IAM</td></tr><tr><td>&quot;ECS task para logo após iniciar&quot;</td><td>Ver stoppedReason + CloudWatch Logs /ecs/</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./152-28-labs-praticos-casos-de-uso.html">Aula anterior</a>
+      <a href="./154-28-labs-praticos-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

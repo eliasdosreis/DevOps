@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Módulo 26 — AWS Well-Architected Framework - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#144-26-well-architected-framework-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 26 - Well Architected Framework - 7 min - 26-Well-Architected-Framework/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 26 - Well Architected Framework" loading="lazy">
+      <figcaption>Well-Architected organiza decisoes por pilares para melhorar sistemas reais.</figcaption>
+    </figure>
+    <h1>Módulo 26 — AWS Well-Architected Framework</h1>
+<h2>Os 6 Pilares</h2>
+<pre><code class="language-">1. Operational Excellence    → Operar e melhorar sistemas continuamente
+2. Security                  → Proteger dados, sistemas e ativos
+3. Reliability               → Recuperar de falhas, atender demanda
+4. Performance Efficiency    → Usar recursos computacionais eficientemente
+5. Cost Optimization         → Evitar custos desnecessários
+6. Sustainability            → Minimizar impacto ambiental</code></pre>
+<hr>
+<h2>1. Excelência Operacional (Operational Excellence)</h2>
+<p><strong>Objetivo</strong>: Executar e monitorar sistemas para entregar valor e melhorar continuamente.</p>
+<h3>Princípios de Design</h3>
+<ul><li><strong>Realizar operações como código</strong> (IaC: CloudFormation, CDK, Terraform)</li><li><strong>Fazer mudanças frequentes, pequenas e reversíveis</strong> (deploy granular, feature flags)</li><li><strong>Refinar procedimentos operacionais frequentemente</strong> (runbooks, playbooks atualizados)</li><li><strong>Antecipar falhas</strong> (game days, chaos engineering)</li><li><strong>Aprender com todas as falhas operacionais</strong> (post-mortems blameless)</li></ul>
+<h3>Serviços Chave</h3>
+<ul><li>AWS CloudFormation, AWS CDK (IaC)</li><li>AWS Config (conformidade de configuração)</li><li>AWS CloudTrail (auditoria)</li><li>Amazon CloudWatch (monitoramento)</li><li>AWS Systems Manager (operações centralizadas)</li><li>AWS X-Ray (observabilidade)</li></ul>
+<hr>
+<h2>2. Segurança (Security)</h2>
+<p><strong>Objetivo</strong>: Proteger informações, sistemas e ativos ao mesmo tempo em que entrega valor.</p>
+<h3>Princípios de Design</h3>
+<ul><li><strong>Implementar uma base de identidade sólida</strong> (MFA, least privilege, IAM roles)</li><li><strong>Habilitar rastreabilidade</strong> (CloudTrail, Config, logging de acesso)</li><li><strong>Aplicar segurança em todas as camadas</strong> (VPC, SG, NACL, WAF, CDN)</li><li><strong>Automatizar boas práticas de segurança</strong> (Security Hub, GuardDuty, Macie)</li><li><strong>Proteger dados em trânsito e em repouso</strong> (TLS, KMS)</li><li><strong>Manter as pessoas longe dos dados</strong> (acesso programático, no human touch)</li><li><strong>Preparar para eventos de segurança</strong> (runbooks de resposta a incidentes, Security Hub)</li></ul>
+<h3>Serviços Chave</h3>
+<ul><li><strong>Identity</strong>: IAM, AWS SSO/IAM Identity Center, Organizations, SCPs</li><li><strong>Detection</strong>: GuardDuty, Macie, SecurityHub, Inspector, Config</li><li><strong>Infrastructure Security</strong>: VPC, SG, WAF, Shield, Network Firewall, Firewall Manager</li><li><strong>Data Protection</strong>: KMS, CloudHSM, ACM, Secrets Manager</li><li><strong>Incident Response</strong>: CloudTrail, AWS IR Playbooks</li></ul>
+<hr>
+<h2>3. Confiabilidade (Reliability)</h2>
+<p><strong>Objetivo</strong>: Recuperar de interrupções de infraestrutura ou serviço e escalar para atender demanda.</p>
+<h3>Princípios de Design</h3>
+<ul><li><strong>Recuperar automaticamente de falhas</strong> (Auto Scaling, Health Checks, CloudWatch Alarms)</li><li><strong>Testar procedimentos de recuperação</strong> (Game Days, DR exercises)</li><li><strong>Escalar horizontalmente</strong> para aumentar disponibilidade (muitas instâncias pequenas)</li><li><strong>Parar de adivinhar capacidade</strong> (Auto Scaling + CloudWatch)</li><li><strong>Gerenciar mudanças por automação</strong> (CloudFormation, CodePipeline)</li></ul>
+<h3>Metas de Disponibilidade vs Arquitetura</h3>
+<div class="table-wrap"><table><thead><tr><th>Disponibilidade</th><th>Downtime/ano</th><th>Arquitetura Mínima</th></tr></thead><tbody><tr><td>99%</td><td>~3,65 dias</td><td>Single AZ backup + restore</td></tr><tr><td>99,9%</td><td>~8,7 horas</td><td>Multi-AZ, warm standby</td></tr><tr><td>99,99%</td><td>~52 minutos</td><td>Multi-AZ + Multi-Region active-active ou active-passive</td></tr><tr><td>99,999%</td><td>~5 minutos</td><td>Multi-Region active-active</td></tr></tbody></table></div>
+<h3>RTO e RPO</h3>
+<ul><li><strong>RPO</strong> (Recovery Point Objective): quanto de dados posso perder? → frequência de backup</li><li><strong>RTO</strong> (Recovery Time Objective): quanto tempo posso ficar offline? → estratégia de DR</li></ul>
+<h3>Estratégias de DR</h3>
+<pre><code class="language-">Custo        Estratégia              RTO/RPO
+Menor ──────── Backup &amp; Restore ─────── Horas/Horas
+       │        Pilot Light ────────── 10-15 min / Min
+       │        Warm Standby ─────────  Min / Segundos
+Maior ────────  Multi-site Active-Active  Segundos / Zero</code></pre>
+<hr>
+<h2>4. Eficiência de Performance (Performance Efficiency)</h2>
+<p><strong>Objetivo</strong>: Usar recursos computacionais eficientemente para atender requisitos do sistema.</p>
+<h3>Princípios de Design</h3>
+<ul><li><strong>Democratizar tecnologias avançadas</strong> (usar serviços gerenciados em vez de gerenciar infra)</li><li><strong>Ser global em minutos</strong> (CloudFront, Global Accelerator, multi-region)<br></li><li><strong>Usar arquitetura without servers</strong> (Lambda, Fargate, DynamoDB)</li><li><strong>Experimentar com mais frequência</strong> (A/B testing, blue/green)</li><li><strong>Usar a tecnologia certa para cada tarea</strong> (não usar solução genérica)</li></ul>
+<h3>Tipos de Recursos</h3>
+<ul><li><strong>Compute</strong>: EC2 (tipos certos), Lambda (serverless), Fargate, Graviton2/3 (ARM, melhor custo/performance)</li><li><strong>Storage</strong>: EBS gp3 (IOPS independente), S3 (S3 Intelligent-Tiering para acesso variável)</li><li><strong>Database</strong>: RDS (relacional), DynamoDB (NoSQL chave-valor), ElastiCache (cache), Aurora (MySQL/PostgreSQL gerenciado)</li><li><strong>Network</strong>: CloudFront (CDN), Global Accelerator, VPC Endpoints, placement groups</li></ul>
+<hr>
+<h2>5. Otimização de Custos (Cost Optimization)</h2>
+<p><strong>Objetivo</strong>: Evitar custos desnecessários.</p>
+<h3>Princípios de Design</h3>
+<ul><li><strong>Implementar Cloud Financial Management</strong> (tagging, budgets, Cost Explorer)</li><li><strong>Adotar um modelo de consumo</strong> (pague pelo que usa; desligar ambientes não-prod)</li><li><strong>Medir eficiência global</strong> (custo por unidade de trabalho)</li><li><strong>Parar de gastar em trabalho indiferenciado</strong> (usar serviços gerenciados)</li><li><strong>Analisar e atribuir despesas</strong> (cost allocation tags, AWS Cost Allocation Tags)</li></ul>
+<h3>Modelos de Compra EC2</h3>
+<div class="table-wrap"><table><thead><tr><th>Modelo</th><th>Desconto</th><th>Compromisso</th></tr></thead><tbody><tr><td>On-Demand</td><td>0% (base)</td><td>Nenhum</td></tr><tr><td>Reserved (1 ano)</td><td>~40%</td><td>1 ano</td></tr><tr><td>Reserved (3 anos)</td><td>~60%</td><td>3 anos</td></tr><tr><td>Savings Plans Compute</td><td>até 66%</td><td>1 ou 3 anos ($$/hora)</td></tr><tr><td>Savings Plans EC2</td><td>até 72%</td><td>1 ou 3 anos (família/região)</td></tr><tr><td>Spot</td><td>até 90%</td><td>Interruptível</td></tr></tbody></table></div>
+<p><strong>Ferramentas de Custo:</strong></p>
+<ul><li><strong>AWS Cost Explorer</strong>: análise e previsão de gastos</li><li><strong>AWS Budgets</strong>: alertas quando gastar além do threshold</li><li><strong>Cost Allocation Tags</strong>: rastreia custos por projeto/time/ambiente</li><li><strong>Compute Optimizer</strong>: recomenda tipo de instância ideal (rightsizing)</li><li><strong>Trusted Advisor</strong>: identificar recursos subutilizados</li></ul>
+<hr>
+<h2>6. Sustentabilidade (Sustainability)</h2>
+<p><strong>Objetivo</strong>: Minimizar o impacto ambiental das cargas de trabalho na nuvem.</p>
+<h3>Princípios de Design</h3>
+<ul><li><strong>Entender seu impacto</strong> (Customer Carbon Footprint Tool)</li><li><strong>Estabelecer metas de sustentabilidade</strong> (redução de emissão de CO2)</li><li><strong>Maximizar utilização</strong> (right-sizing, evitar recursos ociosos)</li><li><strong>Antecipar e adotar hardware mais eficiente</strong> (Graviton3, instâncias de última geração)</li><li><strong>Usar serviços gerenciados</strong> (compartilham infraestrutura com outros clientes)</li><li><strong>Reduzir o impacto downstream</strong> (compressão, caching, menos transferências)</li></ul>
+<hr>
+<h2>AWS Well-Architected Tool (WAT)</h2>
+<p>Ferramenta gratuita para revisar workloads contra os 6 pilares:</p>
+<ol><li>Define o workload (tecnologias, ambiente)</li><li>Responde perguntas sobre cada pilar</li><li>WAT gera relatório de riscos (High/Medium Risk Items)</li><li>Cria Improvement Plan</li><li>Rastreia resolução de riscos ao longo do tempo</li></ol>
+<p><strong>AWS Well-Architected Partner Program</strong>: parceiros certificados que conduzem revisões formais</p>
+<hr>
+<h2>Dicas de Prova</h2>
+<ul><li>Perguntas WAF são frequentes no SAA-C03 — memorize os 6 pilares e princípios chave</li><li><strong>Reliability ≠ Availability</strong>: Reliability = capacidade de se recuperar de falhas; Availability = % uptime</li><li><strong>Pilot Light</strong>: componentes críticos mínimos sempre rodando na AWS (banco de dados replicado); outros suportados em AMIs prontas</li><li><strong>Warm Standby</strong>: versão menor escalonável rodando na AWS; após DR, escala para capacidade full</li><li>Multi-site Active-Active: custo mais alto, mas RTO/RPO próximo de zero</li><li>WAT não cobra por uso; parceiros Well-Architected podem cobrar pelo serviço de consultoria</li><li>Sustainability: Graviton3, Serverless (Lambda/Fargate) e serviços gerenciados são padrões sustentáveis</li><li>Para Cost Optimization: Compute Optimizer = rightsizing; Cost Explorer = análise no tempo; Budgets = alertas proativos</li><li>Security &quot;shift left&quot;: aplicar segurança no início do ciclo de desenvolvimento, não apenas antes do deploy</li><li>&quot;Least privilege&quot; é um princípio de segurança: cada IAM entity tem apenas as permissões mínimas necessárias</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./143-26-well-architected-framework-questoes.html">Aula anterior</a>
+      <a href="./145-27-casos-de-uso-reais-casos-de-uso.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#028-modulo-4-projeto-final-06-frontend-deployment">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - projeto final - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - projeto final" loading="lazy">
+      <figcaption>Projeto final consolida manifestos de producao em uma arquitetura completa.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 06-frontend-deployment.yaml
+# PROJETO FINAL - Frontend (React/Next.js servido via Nginx)
+#
+# O frontend é um app STATELESS (sem estado).
+# Não guarda dados: cada request é independente.
+# Por isso usamos Deployment (não StatefulSet).
+#
+# Padrão de produção: Nginx serve os arquivos estáticos
+# e faz proxy das requisições de API.
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: frontend
+  namespace: ecommerce
+
+  annotations:
+    kubernetes.io/change-cause: &quot;Frontend v1.0.0 - versao inicial&quot;
+
+  labels:
+    app: frontend
+    componente: web
+    versao: &quot;1.0.0&quot;
+
+spec:
+  replicas: 2                    # 2 réplicas para HA
+                                 # Frontend é leve, 2 são suficientes
+
+  selector:
+    matchLabels:
+      app: frontend
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0          # Zero downtime sempre!
+
+  template:
+    metadata:
+      labels:
+        app: frontend
+        componente: web
+        versao: &quot;1.0.0&quot;
+
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101           # UID do usuário nginx
+        runAsGroup: 101
+
+      terminationGracePeriodSeconds: 15  # Frontend pode ser mais rápido
+
+      # Espalha pods em nós diferentes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: frontend
+                topologyKey: kubernetes.io/hostname
+
+      containers:
+        - name: frontend
+          image: nginx:1.25-alpine     # Nginx serve o build do React/Next
+
+          ports:
+            - containerPort: 80
+              name: http
+
+          # Configuração do nginx montada do ConfigMap
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d   # Onde fica a config
+              readOnly: true                 # Config é somente leitura
+
+            - name: tmp
+              mountPath: /tmp              # nginx precisa de /tmp
+
+            - name: nginx-cache
+              mountPath: /var/cache/nginx  # Cache do nginx
+
+            - name: nginx-run
+              mountPath: /var/run          # PID file do nginx
+
+          resources:
+            requests:
+              memory: &quot;64Mi&quot;     # Frontend nginx é leve
+              cpu: &quot;50m&quot;
+            limits:
+              memory: &quot;128Mi&quot;
+              cpu: &quot;200m&quot;
+
+          livenessProbe:
+            httpGet:
+              path: /health      # Endpoint de health do nginx
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true   # Nginx config via volume
+            capabilities:
+              drop: [&quot;ALL&quot;]
+              add: [&quot;NET_BIND_SERVICE&quot;]    # Permite escutar na porta 80
+
+      volumes:
+        # Config do nginx vem do ConfigMap
+        - name: nginx-config
+          configMap:
+            name: config-api
+            items:
+              - key: nginx.conf          # Chave no ConfigMap
+                path: default.conf       # Nome do arquivo montado
+
+        # Volumes temporários para nginx funcionar com readOnly
+        - name: tmp
+          emptyDir: {}
+
+        - name: nginx-cache
+          emptyDir: {}
+
+        - name: nginx-run
+          emptyDir: {}
+
+# ============================================================
+# POR QUE emptyDir para cache e run?
+#
+# Com readOnlyRootFilesystem: true, o nginx não consegue
+# escrever em /tmp, /var/cache/nginx, /var/run.
+# Mas ele PRECISA dessas pastas para funcionar.
+# emptyDir cria volumes temporários writeable para essas pastas.
+# Cada pod tem seu próprio emptyDir (não compartilhado).
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./027-modulo-4-projeto-final-05-api-deployment.html">Aula anterior</a>
+      <a href="./029-modulo-4-projeto-final-07-services.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

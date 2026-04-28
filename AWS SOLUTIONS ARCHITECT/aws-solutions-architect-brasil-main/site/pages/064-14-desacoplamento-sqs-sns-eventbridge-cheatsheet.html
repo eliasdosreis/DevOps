@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Módulo 09: Desacoplamento (SQS, SNS, EventBridge) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#064-14-desacoplamento-sqs-sns-eventbridge-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 14 - Desacoplamento SQS SNS EventBridge - 4 min - 14-Desacoplamento-SQS-SNS-EventBridge/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 14 - Desacoplamento SQS SNS EventBridge" loading="lazy">
+      <figcaption>Desacoplamento deixa produtores e consumidores respirarem em ritmos diferentes.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Módulo 09: Desacoplamento (SQS, SNS, EventBridge)</h1>
+<h2>SQS Standard vs FIFO</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>Standard Queue</th><th>FIFO Queue</th></tr></thead><tbody><tr><td>Ordering</td><td>Best-effort (pode reordenar)</td><td>Exato (First-In-First-Out)</td></tr><tr><td>Entrega</td><td>At-least-once (pode duplicar)</td><td>Exactly-once (com deduplication ID)</td></tr><tr><td>Throughput</td><td>Quase ilimitado</td><td>300 TPS (3.000 com batching)</td></tr><tr><td>Deduplication</td><td>Não</td><td>Sim (5 min janela)</td></tr><tr><td>Message Groups</td><td>Não</td><td>Sim (paralelismo dentro do FIFO)</td></tr><tr><td>Custo</td><td>Menor</td><td>Maior</td></tr></tbody></table></div>
+<h2>SQS — Parâmetros Críticos</h2>
+<div class="table-wrap"><table><thead><tr><th>Parâmetro</th><th>Padrão</th><th>Máximo</th><th>Descrição</th></tr></thead><tbody><tr><td>VisibilityTimeout</td><td>30s</td><td>12h</td><td>Tempo invisível após leitura</td></tr><tr><td>Message Retention</td><td>4 dias</td><td>14 dias</td><td>Tempo na fila antes de expirar</td></tr><tr><td>Max Message Size</td><td>256 KB</td><td>256 KB</td><td>Payload máximo (S3 para maiores)</td></tr><tr><td>Long Polling waitTime</td><td>0 (short)</td><td>20s</td><td>Tempo de espera por mensagens</td></tr><tr><td>Delay Queue</td><td>0</td><td>15 min</td><td>Delay antes de ficar visível</td></tr><tr><td>Dead Letter Queue maxReceiveCount</td><td>-</td><td>Configurável</td><td>Tentativas antes de ir para DLQ</td></tr></tbody></table></div>
+<h2>SNS — Destinations por Tipo</h2>
+<div class="table-wrap"><table><thead><tr><th>Destination</th><th>Standard Topic</th><th>FIFO Topic</th></tr></thead><tbody><tr><td>SQS</td><td>Sim</td><td>Apenas SQS FIFO</td></tr><tr><td>Lambda</td><td>Sim</td><td>Não</td></tr><tr><td>HTTP/HTTPS</td><td>Sim</td><td>Não</td></tr><tr><td>Email</td><td>Sim</td><td>Não</td></tr><tr><td>SMS</td><td>Sim</td><td>Não</td></tr><tr><td>Firehose</td><td>Sim</td><td>Não</td></tr><tr><td>SQS FIFO</td><td>Não</td><td>Sim</td></tr></tbody></table></div>
+<h2>Kinesis Data Streams vs Firehose</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>Kinesis Data Streams</th><th>Kinesis Firehose</th></tr></thead><tbody><tr><td>Gerenciamento</td><td>Manual (shards, consumers)</td><td>Totalmente gerenciado</td></tr><tr><td>Latência</td><td>~200ms (real-time)</td><td>Near real-time (60s ou 1 MB buffer mín.)</td></tr><tr><td>Consumidores</td><td>Múltiplos (KCL, Lambda, etc.)</td><td>Destinos fixos</td></tr><tr><td>Replay</td><td>Sim (1-365 dias retenção)</td><td>Não</td></tr><tr><td>Destinos</td><td>Consumidores customizados</td><td>S3, Redshift, OpenSearch, Splunk, HTTP</td></tr><tr><td>Shards</td><td>Manual ou Auto Scaling</td><td>Auto-scaling gerenciado</td></tr><tr><td>Transformação</td><td>Não (processado pelo consumer)</td><td>Lambda opcional antes do destino</td></tr></tbody></table></div>
+<h2>SQS vs SNS vs EventBridge vs Kinesis</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>SQS</th><th>SNS</th><th>EventBridge</th><th>Kinesis</th></tr></thead><tbody><tr><td>Modelo</td><td>Pull (consumer faz polling)</td><td>Push (entrega para subscribers)</td><td>Push (rules → targets)</td><td>Pull + Push (EFO)</td></tr><tr><td>Pattern</td><td>Task queue</td><td>Pub/Sub fan-out</td><td>Event routing</td><td>Data streaming</td></tr><tr><td>Retenção</td><td>1 min - 14 dias</td><td>Sem retenção</td><td>Archive (opcional)</td><td>1-365 dias</td></tr><tr><td>Replay</td><td>Não (DLQ para falhas)</td><td>Não</td><td>Sim (Archive + Replay)</td><td>Sim</td></tr><tr><td>Ordenação</td><td>FIFO opcional</td><td>FIFO opcional</td><td>Não garantida</td><td>Por shard</td></tr><tr><td>Melhor para</td><td>Workers assíncronos</td><td>Fan-out 1:N</td><td>Disparar ações em eventos</td><td>Analytics de stream</td></tr></tbody></table></div>
+<h2>Padrão Fan-Out com SNS → SQS</h2>
+<pre><code class="language-">Producer
+  └── SNS Topic (order.events)
+        ├── SQS Queue → Consumer A (estoque)     [FilterPolicy: {eventType: [order.created]}]
+        ├── SQS Queue → Consumer B (faturamento) [FilterPolicy: {eventType: [order.created, order.completed]}]
+        └── Lambda → Consumer C (auditoria)      [Sem filtro - recebe todos]</code></pre>
+<h2>EventBridge Event Pattern (exemplo)</h2>
+<pre><code class="language-json">{
+  &quot;source&quot;: [&quot;aws.rds&quot;],
+  &quot;detail-type&quot;: [&quot;RDS DB Instance Event&quot;],
+  &quot;detail&quot;: {
+    &quot;EventID&quot;: [&quot;RDS-EVENT-0006&quot;],
+    &quot;SourceType&quot;: [&quot;DB_INSTANCE&quot;]
+  }
+}</code></pre>
+<h2>Dicas Rápidas de Prova</h2>
+<ul><li>SQS FIFO: NOME da fila deve terminar em <code>.fifo</code></li><li>SQS DLQ: deve ser mesmo tipo (Standard DLQ para Standard; FIFO DLQ para FIFO)</li><li><strong>Fan-out clássico</strong>: SNS → múltiplas SQS Queues (não múltiplas SNS → um SQS)</li><li>Kinesis Shard = 1 MB/s entrada, 2 MB/s saída (shared) ou por consumer com Enhanced Fan-Out</li><li><strong>Amazon MQ = lift-and-shift</strong> de brokers com AMQP/MQTT/STOMP; não escala infinitamente como SQS</li><li>EventBridge Partner Bus: SaaS (Salesforce, Datadog) → eventos direto no EventBridge sem código de polling</li><li>SQS Max Receive Count + DLQ = poison pill isolation (standard anti-pattern para mensagens problemáticas)</li><li>Kinesis Firehose: transforma com Lambda; carrega para S3/Redshift/OpenSearch; near-real-time (buffer)</li><li>Para evento em tempo real com múltiplos consumers independentes: Kinesis Data Streams &gt; SQS</li><li>EventBridge Pipe = source → (optional filter + enrich) → target sem Lambda de roteamento</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./063-14-desacoplamento-sqs-sns-eventbridge-casos-de-uso.html">Aula anterior</a>
+      <a href="./065-14-desacoplamento-sqs-sns-eventbridge-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

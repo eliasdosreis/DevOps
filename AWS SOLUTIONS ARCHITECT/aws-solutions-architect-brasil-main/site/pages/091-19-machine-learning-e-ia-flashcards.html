@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flashcards — Módulo 13: Machine Learning e IA - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#091-19-machine-learning-e-ia-flashcards">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 19 - Machine Learning e IA - 8 min - 19-Machine-Learning-e-IA/flashcards.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 19 - Machine Learning e IA" loading="lazy">
+      <figcaption>IA no Associate costuma ser reconhecer o servico gerenciado certo para o caso.</figcaption>
+    </figure>
+    <h1>Flashcards — Módulo 13: Machine Learning e IA</h1>
+<blockquote><p><strong>Formato:</strong> P = Pergunta | R = Resposta<br><strong>Total:</strong> 25 flashcards</p></blockquote>
+<hr>
+<p><strong>P:</strong> Quais são as 3 camadas do framework AWS AI/ML?<br><strong>R:</strong> <strong>(1) AI Services (topo):</strong> APIs prontas sem ML knowledge — Rekognition, Comprehend, Polly, Transcribe, Translate, Lex, Textract, Kendra, Bedrock. <strong>(2) ML Services (meio):</strong> SageMaker (build-train-deploy personalizado). <strong>(3) Infrastructure (base):</strong> EC2 GPU, Trainium, Inferentia para training/inference em escala.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon Bedrock e o que diferencia do SageMaker?<br><strong>R:</strong> <strong>Bedrock:</strong> acesso a Foundation Models (LLMs) de terceiros via API (Anthropic Claude, Amazon Titan, Meta Llama, Mistral, Cohere, Stability AI) sem treinar modelo. <strong>SageMaker:</strong> plataforma para treinar, tunar e deployar modelos ML próprios. Bedrock = usar modelos prontos; SageMaker = construir modelos customizados.</p>
+<hr>
+<p><strong>P:</strong> O que é RAG no contexto do Amazon Bedrock?<br><strong>R:</strong> Retrieval Augmented Generation: técnica que conecta LLMs a uma base de conhecimento externa. Fluxo: usuário pergunta → sistema busca contexto relevante na base → envia contexto + pergunta para o LLM → LLM gera resposta fundamentada nos dados atuais. Bedrock Knowledge Bases implementa RAG com Amazon OpenSearch Serverless como vector store.</p>
+<hr>
+<p><strong>P:</strong> Para qual caso de uso usar Amazon Rekognition?<br><strong>R:</strong> <strong>Análise de imagens e vídeos:</strong> detecção de objetos/cenas/texto, reconhecimento facial (comparação, pesquisa em coleção), detecção de conteúdo inapropriado (moderation), análise de PPE (EPI), detecção de celebridades, análise de vídeo em streaming ou batch. Não requer ML knowledge.</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre Amazon Transcribe e Amazon Polly?<br><strong>R:</strong> <strong>Transcribe:</strong> Speech-to-Text (STT) — converte áudio em texto. Features: diarização (identificar quem fala), vocabulário customizado, redação de PII, identificação de idioma automática. <strong>Polly:</strong> Text-to-Speech (TTS) — converte texto em áudio. Features: vozes neurais (NTTS), SSML para controle de pronúncia, lexicons customizados.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon Comprehend e quais são suas principais análises?<br><strong>R:</strong> NLP service para análise de texto sem código ML. Análises: <strong>Entities</strong> (pessoas, organizações, locais), <strong>Key Phrases</strong> (expressões-chave), <strong>Sentiment</strong> (positivo/negativo/neutro/misto), <strong>Language Detection</strong>, <strong>PII Detection/Redaction</strong>, <strong>Topic Modeling</strong> (agrupar documentos por temas latentes). Comprehend Medical: versão especializada para textos clínicos.</p>
+<hr>
+<p><strong>P:</strong> O que é o Amazon Lex v2 e para que serve?<br><strong>R:</strong> Serviço gerenciado para criar <strong>chatbots e assistentes virtuais</strong> de voz e texto. Usa ASR (Automatic Speech Recognition) + NLU (Natural Language Understanding). Intents = ações; Slots = parâmetros a coletar. Base da Alexa. Use case: IVR (URA), bots de atendimento, assistentes de help desk. Nenhum ML knowledge necessário.</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre Amazon Kendra e Amazon OpenSearch?<br><strong>R:</strong> <strong>Kendra:</strong> search inteligente para documentos corporativos usando ML e NLP. Entende linguagem natural, busca semântica, responde perguntas diretamente. Input: PDFs, Word, SharePoint, Salesforce, S3. <strong>OpenSearch:</strong> search e analytics técnico (logs, métricas, e-commerce search, full-text search). Kendra = inteligente para humanos; OpenSearch = técnico/full-text.</p>
+<hr>
+<p><strong>P:</strong> Para qual cenário usar Amazon SageMaker Ground Truth?<br><strong>R:</strong> <strong>Labeling de dados</strong> para treino de modelos ML. Fluxo: humans (crowdworkers via Amazon Mechanical Turk ou força de trabalho privada) anotam/rotulam imagens, textos, vídeos. Ativo Learning: modelos parcialmente treinados rotulam automaticamente dados de alta confiança, reduzindo custo de labeling humano em até 70%.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon Textract e como difere de um OCR simples?<br><strong>R:</strong> <strong>Textract:</strong> extrai texto + <strong>estrutura</strong> de documentos escaneados. Vai além de OCR: detecta Tables (extrai cabeçalhos e células), Forms (extrai campo:valor de formulários), Queries (responde perguntas específicas sobre o documento). Suporta PDFs multi-página, IDs (passaportes, carteiras de habilitação), documentos médicos.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon Fraud Detector?<br><strong>R:</strong> Serviço gerenciado de detecção de fraudes usando ML. Modelos pré-treinados em dados de fraude AWS + dados históricos do cliente. Detection events: new account registrations, online payments, guest checkout. Retorna um fraud score. Sem necessidade de expertise em ML.</p>
+<hr>
+<p><strong>P:</strong> Quais são as etapas do SageMaker ML pipeline?<br><strong>R:</strong> <strong>(1) Data prep:</strong> SageMaker Data Wrangler / Processing Jobs. <strong>(2) Training:</strong> Training Jobs (instâncias EC2). <strong>(3) Tuning:</strong> Hyperparameter Optimization (HPO). <strong>(4) Evaluation:</strong> Experiments. <strong>(5) Registry:</strong> Model Registry. <strong>(6) Deploy:</strong> SageMaker Endpoints (online) / Batch Transform (offline). <strong>(7) Monitor:</strong> Model Monitor.</p>
+<hr>
+<p><strong>P:</strong> O que é o Amazon SageMaker Feature Store?<br><strong>R:</strong> Repositório centralizado de features (variáveis de input) para modelos ML. Permite: compartilhar features entre equipes e modelos, reutilizar features computadas, consistência entre training e inference (mesmo cálculo). <strong>Online Store:</strong> baixa latência para inference em real-time. <strong>Offline Store:</strong> histórico via S3 para training.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon Forecast e qual problema resolve?<br><strong>R:</strong> Serviço gerenciado de <strong>previsão de séries temporais</strong> usando DeepAR+ (algoritmo proprietário Amazon). Input: dados históricos de séries temporais (vendas, demanda, tráfego) + metadados (promoções, feriados). Output: previsões futuras com intervalos de confiança. Casos: planejamento de demanda, supply chain, capacity planning.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon Personalize e para qual tipo de recomendação serve?<br><strong>R:</strong> Serviço gerenciado de <strong>recomendações personalizadas</strong> (mesmo que usa em Amazon.com/Prime Video). Input: dados de interação usuário-item (clicks, purchases, plays), metadados de itens/usuários. Output: recomendações em tempo real by userId. Use cases: &quot;outros usuários também compraram&quot;, &quot;continuar assistindo&quot;, &quot;produtos recomendados&quot;.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon Lookout for Metrics?<br><strong>R:</strong> Detecção automática de <strong>anomalias em série temporal</strong> usando ML. Input: métricas de negócio (revenue, DAUs, conversion rate) de S3, RDS, Redshift, Salesforce, etc. Detecta desvios significativos automaticamente. Envia alertas via SNS. Sem ML knowledge necessário. Diferente de CloudWatch Anomaly Detection (métricas técnicas de infraestrutura).</p>
+<hr>
+<p><strong>P:</strong> O que é o Amazon SageMaker Jumpstart?<br><strong>R:</strong> Hub de modelos pré-treinados e soluções ML prontas para deploy em um clique. Contém: Foundation Models (Llama, Mistral, Falcon), modelos de visão (ResNet, EfficientNet), NLP (BERT, RoBERTa), soluções industriais (demand forecast, fraud). Acelera início de projetos ML sem partir do zero.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon Bedrock Guardrails?<br><strong>R:</strong> Controles de segurança para aplicações com Foundation Models. Funcionalidades: filtros de conteúdo (violence, hate speech, sexual), topic denial (bloquear tópicos proibidos — ex: concorrência), PII redaction, word filters. Aplicados automaticamente no input do usuário E na resposta do modelo.</p>
+<hr>
+<p><strong>P:</strong> Para qual cenário usar Amazon Translate com Custom Terminology?<br><strong>R:</strong> Quando há termos específicos da empresa/produto que não devem ser traduzidos automaticamente (nomes de produto, gírias corporativas, siglas). Custom Terminology: CSV com par origem→destino. Ex: &quot;Amazon Aurora&quot; → &quot;Amazon Aurora&quot; (não traduzir), &quot;order&quot; → &quot;pedido&quot; (tradução específica). Mantém consistência terminológica em traduções.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon SageMaker Canvas?<br><strong>R:</strong> Interface <strong>no-code</strong> para ML. Profissionais de negócio sem experiência em programação podem treinar modelos de ML (classificação, regressão, previsão de séries temporais, análise de imagens) via interface visual. Input: uploads de CSV, S3. Usa AutoML sob o capô. Compartilha modelos com cientistas de dados no SageMaker Studio.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon Rekognition Content Moderation?<br><strong>R:</strong> API que detecta conteúdo inapropriado ou adulto em imagens e vídeos. Retorna labels hierárquicos com confidence score (ex: &quot;Explicit Nudity&quot; &gt; &quot;Nudity&quot;, confidence: 99.5%). Casos: plataformas UGC (User Generated Content), redes sociais, marketplaces. Empresas definem threshold de confidence para moderação automática.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon Transcribe Call Analytics?<br><strong>R:</strong> Versão especializada do Transcribe para análise de ligações de call center. Além de transcrição: detecta o <strong>sentimento</strong> de cada turno de conversa (cliente vs. agente), identifica categorias personalizadas (reclamação, cancelamento), extrai entidades (números de conta, datas), mede tempo de silêncio e interrupções.</p>
+<hr>
+<p><strong>P:</strong> Quando usar Amazon Comprehend Medical?<br><strong>R:</strong> Extrai entidades médicas de texto clínico: <strong>diagnósticos</strong> (ICD-10 codes), <strong>medicamentos</strong> (dosagem, frequência, via de administração), <strong>procedimentos médicos</strong>, <strong>anatomia</strong>, <strong>sinais vitais</strong>. Detecta relacionamentos (medicamento → dosagem). HIPAA eligible. Casos: NLP de prontuários eletrônicos, codificação médica, pesquisa clínica.</p>
+<hr>
+<p><strong>P:</strong> O que é Amazon Polly Neural Text-to-Speech (NTTS)?<br><strong>R:</strong> Vozes sintéticas de altíssima qualidade usando deep learning — praticamente indistinguíveis de voz humana. Mais natural que vozes padrão (concatenation synthesis). Suporta <strong>SSML</strong> (Speech Synthesis Markup Language) para controlar pausas, ênfase, pronúncia. Casos: IVR, audiobooks, acessibilidade, e-learning.</p>
+<hr>
+<p><strong>P:</strong> O que é o modelo de responsabilidade no Amazon Bedrock (Security)?<br><strong>R:</strong> <strong>AWS responsável por:</strong> infraestrutura, modelo base, dados de training do FM. <strong>Cliente responsável por:</strong> dados enviados ao modelo (prompts/contexto), dados de fine-tuning, aplicação e respostas geradas. Os prompts e respostas <strong>não são usados para treinar modelos</strong> da AWS (dados privados do cliente). Bedrock é HIPAA/SOC/ISO elegível.</p>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./090-19-machine-learning-e-ia-cheatsheet.html">Aula anterior</a>
+      <a href="./092-19-machine-learning-e-ia-lab.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

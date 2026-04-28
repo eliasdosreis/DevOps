@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#013-modulo-2-intermediario-06-probes">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 02 - intermediario - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 02 - intermediario" loading="lazy">
+      <figcaption>Intermediario: replicas, deployments, rollout, probes, ConfigMap e Secret.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 06-probes.yaml
+# HEALTH CHECKS - Liveness, Readiness e Startup Probes
+#
+# Imagine um hospital com 3 tipos de verificação:
+#
+# LIVENESS PROBE = &quot;O paciente está vivo?&quot;
+#   Se não: mata e recria o container
+#   Use para detectar deadlocks, travamentos, estados inválidos
+#
+# READINESS PROBE = &quot;O paciente está pronto para atender?&quot;
+#   Se não: remove do Service (não recebe tráfego)
+#   Use para detectar se o app terminou de inicializar
+#
+# STARTUP PROBE = &quot;O paciente está acordando do coma?&quot;
+#   Dá tempo extra para apps LENTOS iniciarem
+#   Desativa Liveness/Readiness até o app iniciar
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: app-com-probes
+  labels:
+    app: com-probes
+
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: com-probes
+
+  template:
+    metadata:
+      labels:
+        app: com-probes
+
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.25
+          ports:
+            - containerPort: 80
+
+          # -----------------------------------------------
+          # STARTUP PROBE - Verifica se o app INICIOU
+          # -----------------------------------------------
+          startupProbe:
+            httpGet:
+              path: /         # Faz GET nesta URL
+              port: 80        # Nesta porta
+
+            failureThreshold: 30  # Máximo de falhas = 30
+            periodSeconds: 10     # Tenta a cada 10 segundos
+            # Total de tempo: 30 * 10 = 300s (5 min para iniciar)
+            # Durante esse tempo, Liveness não é verificado!
+
+          # -----------------------------------------------
+          # LIVENESS PROBE - &quot;O app está vivo?&quot;
+          # -----------------------------------------------
+          livenessProbe:
+            httpGet:
+              path: /healthz    # Endpoint de saúde (boas práticas!)
+              port: 80
+
+            initialDelaySeconds: 10  # Espera 10s antes de começar
+            periodSeconds: 15        # Verifica a cada 15 segundos
+            timeoutSeconds: 5        # Timeout de 5s para responder
+            failureThreshold: 3      # Após 3 falhas: RESTART do container
+            successThreshold: 1      # 1 sucesso = está vivo
+
+          # -----------------------------------------------
+          # READINESS PROBE - &quot;O app está pronto?&quot;
+          # -----------------------------------------------
+          readinessProbe:
+            httpGet:
+              path: /ready      # Endpoint diferente do liveness!
+              port: 80
+
+            initialDelaySeconds: 5   # Espera 5s antes de checar
+            periodSeconds: 10        # Verifica a cada 10 segundos
+            timeoutSeconds: 3        # Timeout de 3s
+            failureThreshold: 3      # Após 3 falhas: REMOVE do Service
+            successThreshold: 2      # 2 sucessos para voltar ao Service
+
+          # -----------------------------------------------
+          # Também pode usar TCP ou comando de shell:
+          # -----------------------------------------------
+          # livenessProbe:
+          #   tcpSocket:
+          #     port: 8080      # Verifica se a porta está aberta
+
+          # livenessProbe:
+          #   exec:
+          #     command:        # Executa um comando
+          #       - cat
+          #       - /tmp/healthy   # Se arquivo existe = saudável
+
+# ============================================================
+# DIFERENÇA CRUCIAL (ENTREVISTA GARANTIDA):
+#
+# Liveness falha  --&gt; Container REINICIA
+# Readiness falha --&gt; Container REMOVE do Service (mas não reinicia)
+#                     Continua rodando, só para de receber tráfego
+#
+# EXEMPLO PRÁTICO:
+# App de pagamento processando uma transação importante.
+# Readiness falha: não recebe NOVOS pagamentos.
+# Liveness OK: não reinicia (não perde a transação atual).
+#
+# BOAS PRÁTICAS:
+# - /healthz  --&gt; liveness (simples, só diz &quot;estou vivo&quot;)
+# - /ready    --&gt; readiness (verifica dependências: DB, cache)
+# - Não faça liveness checar banco de dados!
+#   Se o banco cair, todos os containers reiniciam (caos!)
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./012-modulo-2-intermediario-05-secret.html">Aula anterior</a>
+      <a href="./014-modulo-2-intermediario-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

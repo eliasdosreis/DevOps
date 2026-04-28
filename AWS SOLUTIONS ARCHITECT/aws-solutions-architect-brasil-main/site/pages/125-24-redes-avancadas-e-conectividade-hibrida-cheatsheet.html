@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet - Redes Avancadas e Conectividade Hibrida - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#125-24-redes-avancadas-e-conectividade-hibrida-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 24 - Redes Avancadas e Conectividade Hibrida - 2 min - 24-Redes-Avancadas-e-Conectividade-Hibrida/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 24 - Redes Avancadas e Conectividade Hibrida" loading="lazy">
+      <figcaption>Conectividade hibrida conecta data center, VPCs e servicos com isolamento e escala.</figcaption>
+    </figure>
+    <h1>Cheatsheet - Redes Avancadas e Conectividade Hibrida</h1>
+<h2>Escolha rapida</h2>
+<div class="table-wrap"><table><thead><tr><th>Cenario</th><th>Solucao recomendada</th></tr></thead><tbody><tr><td>2 VPCs com troca simples de trafego</td><td>VPC Peering</td></tr><tr><td>dezenas de VPCs e contas</td><td>Transit Gateway</td></tr><tr><td>publicar servico interno para varias contas</td><td>PrivateLink</td></tr><tr><td>conectar filial rapidamente</td><td>Site-to-Site VPN</td></tr><tr><td>throughput alto e latencia previsivel</td><td>Direct Connect</td></tr></tbody></table></div>
+<h2>Regras importantes</h2>
+<ul><li>VPC Peering: sem transitive routing</li><li>TGW: roteamento central com route tables separadas</li><li>PrivateLink: conecta consumidor ao endpoint de servico privado</li><li>DX: usar link redundante e VPN como contingencia</li><li>Resolver inbound/outbound endpoints: DNS hibrido</li></ul>
+<h2>Armadilhas de prova</h2>
+<ul><li>usar peering em malha grande (nao escala)</li><li>esquecer overlapping CIDR (bloqueia peering/TGW)</li><li>assumir que Security Group filtra trafego de internet de subnet publica sem rota correta</li><li>confundir NACL stateful (na verdade e stateless)</li></ul>
+<h2>Frases gatilho</h2>
+<ul><li>&quot;multiple VPCs across accounts&quot; =&gt; Transit Gateway</li><li>&quot;privately access service&quot; =&gt; PrivateLink</li><li>&quot;consistent network performance&quot; =&gt; Direct Connect</li><li>&quot;encrypted connection over internet&quot; =&gt; VPN</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./124-24-redes-avancadas-e-conectividade-hibrida-casos-de-uso.html">Aula anterior</a>
+      <a href="./126-24-redes-avancadas-e-conectividade-hibrida-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

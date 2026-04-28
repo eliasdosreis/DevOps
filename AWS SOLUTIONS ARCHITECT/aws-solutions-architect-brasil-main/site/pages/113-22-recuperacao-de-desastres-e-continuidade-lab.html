@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab - DR Multi-Region Basico - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#113-22-recuperacao-de-desastres-e-continuidade-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 22 - Recuperacao de Desastres e Continuidade - 1 min - 22-Recuperacao-de-Desastres-e-Continuidade/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 22 - Recuperacao de Desastres e Continuidade" loading="lazy">
+      <figcaption>DR e continuidade comecam por RTO/RPO antes de escolher multi-AZ ou multi-region.</figcaption>
+    </figure>
+    <h1>Lab - DR Multi-Region Basico</h1>
+<h2>Objetivo</h2>
+<p>Implementar um failover simples com Route 53 e replicacao de dados em S3.</p>
+<h2>Passos</h2>
+<ol><li>Crie dois buckets S3 em regioes diferentes.</li><li>Habilite versioning em ambos.</li><li>Configure CRR do bucket primario para o secundario.</li><li>Publique uma pagina estatica em duas regioes (S3 static website ou EC2 minima).</li><li>Configure Route 53 Failover Record:</li></ol>
+<ul><li>Primary apontando para workload principal</li><li>Secondary apontando para workload secundaria</li></ul>
+<ol><li>Crie Health Check para o endpoint primario.</li><li>Simule falha (interromper endpoint primario) e valide failover.</li><li>Documente RTO observado.</li></ol>
+<h2>Validacao</h2>
+<ul><li>Objetos replicam para segunda regiao</li><li>DNS muda para endpoint secundario apos falha</li><li>Aplicacao volta ao primario apos recuperacao</li></ul>
+<h2>Limpeza</h2>
+<ul><li>remover records/health checks Route 53</li><li>excluir recursos e buckets para evitar custo</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./112-22-recuperacao-de-desastres-e-continuidade-flashcards.html">Aula anterior</a>
+      <a href="./114-22-recuperacao-de-desastres-e-continuidade-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

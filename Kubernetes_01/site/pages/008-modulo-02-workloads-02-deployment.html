@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#008-modulo-02-workloads-02-deployment">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 02 - workloads - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 02 - workloads" loading="lazy">
+      <figcaption>Workloads controlam replicas, atualizacoes, jobs e execucao programada.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um Deployment, o tipo de Workload MAIS POPULAR de todo 
+# o Kubernetes. Permite atualiza��es em massa (Rollout) sem downtime.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Lembra que o ReplicaSet era o Feitor da F�brica, garantindo a escala?
+# O **Deployment** � o C.E.O da f�brica. Ele controla v�rios *ReplicaSets*.
+# Se o C.E.O decide mudar as camisas dos funcion�rios (imagem do pod) de Azul pra Vermelha, 
+# se mandasse pro Feitor, ele n�o saberia trocar ninguem, s� se o funcion�rio pedir as contas.
+# O Deployment cria um ReplicaSet NOVO p/ as camisas vermelhas, transfere 
+# 1 funcion�rio de cada vez do RS Azul para o RS Vermelho, sem que 
+# os clientes da loja fiquem sem atendimento (Zero Downtime / Rolling Updates).
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# O Deployment fornece atualiza��es declarativas (*Rolling Updates*/Rollbacks) para 
+# ReplicaSets e Pods. Voc� descreve o &quot;estado desejado&quot; no Deployment, e ele 
+# altera a taxa de cria��o de um novo RS versus a delega��o/estrangulamento do RS antigo 
+# a uma taxa controlada.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment            # O Objeto Rei dos workloads stateless do K8s
+metadata:
+  name: api-loja
+  namespace: meu-primeiro-projeto
+  labels:
+    app: api                # Label p/ o pr�prio Deployment (boa pr�tica)
+spec:
+  replicas: 3               # Total de Pods que minha aplica��o ter�
+  selector:                 # Filtro para adotar os Pods gerados por ele (igual no RS)
+    matchLabels:
+      app: api-loja
+      
+  # Estrat�gia de Atualiza��o: A diferen�a Master do Deployment!
+  strategy:
+    type: RollingUpdate     # Significa: &quot;N�o mate todos de vez quando atualizar!&quot;
+    rollingUpdate:
+      maxSurge: 1           # O qu�o acima do limite desejado (3) ele pode passar durante o rollout? (Max 4 simult�neos)
+      maxUnavailable: 0     # O m�nimo garantido que tem que sobrar online? (Sempre os 3 aqui)
+      
+  template:                 # A Receita dos Pods 
+    metadata:
+      labels:               
+        app: api-loja       # DEVE Bater com o spec.selector de cima.
+    spec:
+      containers:
+        - name: loja-container
+          image: nginx:1.24  # Aten��o: Come�aremos com a 1.24
+          ports:
+            - containerPort: 80
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Subir a api:
+#    kubectl apply -f 02-deployment.yaml
+#
+# 2. Efeito Cascata M�gico: Veja o k8s criando tudo (Deployment &gt; RS &gt; Pods):
+#    kubectl get deployments,rs,pods -n meu-primeiro-projeto
+#
+# 3. Altere o n�mero da imagem no c�digo acima de `nginx:1.24` para `nginx:1.25`, 
+# e rode um apply novamente:
+#    kubectl apply -f 02-deployment.yaml
+#
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# Tente rodar o comando abaixo para &quot;assistir&quot; o hist�rico (Rollout log):
+#    kubectl rollout status deployment api-loja -n meu-primeiro-projeto
+# 
+# P�NICO! Atualizou p/ uma imagem errada e o app quebrou? Use ROlLLBACK f�cil:
+#    kubectl rollout undo deployment api-loja -n meu-primeiro-projeto
+# Isso desfaz as quebras e volta p/ o ReplicaSet anterior.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# N�o confunda stateless com bancos de dados. Deployments s�o feitos para
+# matar Pods Aleat�rios a qualquer momento de forma distribu�da (apenas &quot;stateless&quot;). 
+# Se voc� colocar seu Banco de Dados (Postgres ou MongoDB) em um Deployment, e ocorrer 
+# um RollingUpdate, ele tentar� dar &quot;kill&quot; aleat�rio para recri�-los, possivelmente 
+# corrompendo blocos de consist�ncia na concorr�ncia do disco porque ele n�o se importa
+# com a ORDEM. Deployments amam processamento/web. N�o perdem carinho por dados. 
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se eu alterar a label do pod no &#39;template&#39; de um Deployment e aplicar via 
+# kubectl, o que acontece?&quot;
+# Resposta Esperada: &quot;O apply falhar� imediatamente. Selector de Deployments s�o 
+# IMUT�VEIS ap�s sua primeira cria��o para evitar que um Deployment perca a 
+# refer�ncia aos Pods �rf�os que ele acabou de criar. Se precisar mudar Labels
+# prim�rias de seletores, voc� deve deletar e recriar o Deployment.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./007-modulo-02-workloads-01-replicaset.html">Aula anterior</a>
+      <a href="./009-modulo-02-workloads-03-daemonset.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

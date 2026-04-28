@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#003-modulo-01-fundamentos-01-namespace">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 01 - fundamentos - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 01 - fundamentos" loading="lazy">
+      <figcaption>Fundamentos: namespaces, pods, labels e annotations para organizar o cluster.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um Namespace, que no Kubernetes serve para isolar e 
+# organizar os seus recursos logicamente.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Pense no Cluster Kubernetes como um Grande Pr�dio Comercial.
+# Se todas as 500 empresas ficassem misturadas em um grande sal�o sem paredes, 
+# seria um caos. Nomes de pessoas e mesas seriam repetidos.
+# Um Namespace � como construir uma sala, colocar uma porta e batizar de &quot;Empresa A&quot;. 
+# L� dentro, eles podem ter o &quot;Servidor X&quot;. Na &quot;Empresa B&quot;, pode haver um &quot;Servidor X&quot; tbm.
+# O Kubernetes isola as coisas logicas.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# Namespace fornece um escopo para Names. Nomes de recursos precisam ser �nicos dentro
+# de um namespace, mas n�o atrav�s de m�ltiplos namespaces.
+# Namespaces n�o garantem isolamento de rede ou processamento por padr�o! � puramente l�gico.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1               # Vers�o da API principal do K8s
+kind: Namespace              # O tipo de recurso que estamos criando
+metadata:                    # Informa��es que v�o identificar esse Namespace
+  name: meu-primeiro-projeto # Nome que ele receber�. Deve ser �nico no Cluster inteiro.
+  labels:                    # Opcional - Etiquetas de &quot;categoriza��o&quot;
+    ambiente: estudos        # Exemplo: um label dizendo que � um namespace de estudos
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplicar o arquivo no cluster:
+#    kubectl apply -f 01-namespace.yaml
+#
+# 2. Listar os namespaces existentes (ele vai mostrar o default, kube-system etc):
+#    kubectl get namespaces
+#     (ou a abrevia��o: kubectl get ns)
+#
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# Se quisermos ver tudo que tem &quot;dentro&quot; dessa sala agora (vazio):
+#    kubectl get all -n meu-primeiro-projeto
+#
+# Erro Comum: &quot;Error from server (AlreadyExists)&quot;
+# Se voc� der um &quot;kubectl create&quot; num namespace que j� existe, ele n�o deixa.
+# O &quot;kubectl apply&quot; � declarativo; se j� existe, ele n�o reclama, s� diz &quot;unchanged&quot;.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# Um Dev Junior cria tudo no Namespace &quot;default&quot;. Se o cluster estragar, ningu�m
+# sabe de qual time � aquele banco de dados.
+# O modo S�nior �: Cada produto de software ou equipe corporativa ganha seu Namespace.
+# Al�m disso, usamos as &quot;ResourceQuotas&quot; amarradas ao Namespace para dizer: 
+# &quot;A equipe Financeira (Namespace-Financeiro) s� pode gastar no m�ximo 10 CPUs do Cluster&quot;. 
+# Ou NetworkPolicies dizendo que um Namespace n�o pode falar na rede do outro.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se eu tiver um Pod chamado &#39;web&#39; no namespace &#39;dev&#39;, posso criar outro 
+# Pod chamado &#39;web&#39; no namespace &#39;prod&#39;?&quot;
+# Resposta Esperada: &quot;Sim, completamente poss�vel. Os namespaces delimitam o 
+# escopo dos nomes, permitindo ambientes separados rodarem as mesmas aplica��es lado a lado&quot;.</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./002-modulo-00-preparacao-02-instalacao-e-primeiro-cluster.html">Aula anterior</a>
+      <a href="./004-modulo-01-fundamentos-02-pod.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

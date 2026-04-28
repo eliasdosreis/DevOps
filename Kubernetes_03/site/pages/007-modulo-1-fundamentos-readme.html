@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>📗 Módulo 1 - Fundamentos - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#007-modulo-1-fundamentos-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 01 - fundamentos - 2 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 01 - fundamentos" loading="lazy">
+      <figcaption>Fundamentos: pods, namespaces e services para formar a base operacional.</figcaption>
+    </figure>
+    <h1>📗 Módulo 1 - Fundamentos</h1>
+<h2>🧠 O que você vai aprender</h2>
+<p>Pense no Kubernetes como uma <strong>cidade inteligente</strong>.</p>
+<ul><li><strong>Pod</strong> = Uma casinha onde mora seu app</li><li><strong>Service</strong> = O endereço da casinha (para as pessoas acharem)</li><li><strong>Namespace</strong> = O bairro onde ficam as casinhas</li><li><strong>ReplicaSet</strong> = Um construtor que faz N casinhas iguais</li><li><strong>Labels</strong> = Etiquetas nas casinhas para organizar</li></ul>
+<hr>
+<h2>📁 Arquivos deste módulo</h2>
+<pre><code class="language-">01-pod-simples.yaml          --&gt; Cria 1 pod básico
+02-pod-com-limites.yaml      --&gt; Pod com controle de memória/CPU
+03-namespace.yaml            --&gt; Cria um bairro (namespace)
+04-service-clusterip.yaml    --&gt; Endereço interno do pod
+05-service-nodeport.yaml     --&gt; Expõe o pod para fora</code></pre>
+<hr>
+<h2>🚀 Como usar cada arquivo</h2>
+<pre><code class="language-bash"># Aplicar um arquivo
+kubectl apply -f 01-pod-simples.yaml
+
+# Ver o que foi criado
+kubectl get pods
+
+# Ver detalhes completos
+kubectl describe pod meu-primeiro-pod
+
+# Deletar
+kubectl delete -f 01-pod-simples.yaml</code></pre>
+<hr>
+<h2>🎯 Checklist do Módulo 1</h2>
+<ul><li>[ ] Criar e deletar um Pod</li><li>[ ] Entender o que é um Namespace</li><li>[ ] Explicar a diferença entre ClusterIP e NodePort</li><li>[ ] Saber o que são Labels e para que servem</li><li>[ ] Conseguir fazer <code>kubectl describe</code> e entender a saída</li></ul>
+    <nav class="page-nav">
+      <a href="./006-modulo-1-fundamentos-05-service-nodeport.html">Aula anterior</a>
+      <a href="./008-modulo-2-intermediario-01-replicaset.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

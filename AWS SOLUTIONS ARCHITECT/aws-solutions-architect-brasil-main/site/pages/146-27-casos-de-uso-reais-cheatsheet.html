@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Casos de Uso Reais (Módulo 27) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#146-27-casos-de-uso-reais-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 27 - Casos de Uso Reais - 7 min - 27-Casos-de-Uso-Reais/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 27 - Casos de Uso Reais" loading="lazy">
+      <figcaption>Casos reais treinam trade-offs: seguro, resiliente, rapido, barato e operavel.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Casos de Uso Reais (Módulo 27)</h1>
+<h2>Padrões de Arquitetura Fundamentais</h2>
+<div class="table-wrap"><table><thead><tr><th>Padrão</th><th>Problema Resolvido</th><th>Serviços AWS Chave</th><th>Pista de Prova</th></tr></thead><tbody><tr><td><strong>Fan-Out</strong></td><td>1 evento → múltiplos processadores</td><td>SNS → SQS (N filas)</td><td>&quot;processar em paralelo por múltiplos sistemas&quot;</td></tr><tr><td><strong>CQRS</strong></td><td>Leitura e escrita com modelos distintos</td><td>DynamoDB + ElastiCache / Aurora + Athena</td><td>&quot;otimizar leitura sem impactar escrita&quot;</td></tr><tr><td><strong>Event Sourcing</strong></td><td>Histórico imutável de estado</td><td>Kinesis / DynamoDB Streams</td><td>&quot;audit trail completo / replay de eventos&quot;</td></tr><tr><td><strong>Strangler Fig</strong></td><td>Migração incremental de monolito</td><td>ALB + Target Groups / API GW</td><td>&quot;migrar sem downtime, rota por rota&quot;</td></tr><tr><td><strong>Cache-Aside</strong></td><td>Reduzir latência de leitura</td><td>ElastiCache (Redis/Memcached)</td><td>&quot;cache miss → DB, cache hit → rápido&quot;</td></tr><tr><td><strong>Saga</strong></td><td>Transação distribuída (rollback)</td><td>Step Functions + SQS + Lambda</td><td>&quot;coordenar transações entre microsserviços&quot;</td></tr><tr><td><strong>Bulkhead</strong></td><td>Isolar falhas entre componentes</td><td>SQS separadas por prioridade/tenant</td><td>&quot;falha em um não afeta outro&quot;</td></tr><tr><td><strong>Circuit Breaker</strong></td><td>Evitar cascata de falhas</td><td>Lambda + DLQ + CloudWatch Alarm</td><td>&quot;parar chamadas quando downstream falha&quot;</td></tr></tbody></table></div>
+<hr>
+<h2>Quando Usar Cada Tipo de Integração</h2>
+<div class="table-wrap"><table><thead><tr><th>Integração</th><th>Quando Usar</th><th>Serviço</th><th>Latência</th></tr></thead><tbody><tr><td><strong>Síncrona</strong></td><td>Resposta imediata necessária</td><td>API GW → Lambda, ALB</td><td>&lt; 30s</td></tr><tr><td><strong>Assíncrona simples</strong></td><td>Desacoplamento, tolerância a falhas</td><td>SQS → Lambda</td><td>segundos-minutos</td></tr><tr><td><strong>Fan-out</strong></td><td>1 evento → N consumidores</td><td>SNS → múltiplas SQS</td><td>segundos</td></tr><tr><td><strong>Streaming</strong></td><td>Volume alto, tempo real</td><td>Kinesis Data Streams</td><td>ms-segundos</td></tr><tr><td><strong>Agendada</strong></td><td>Tarefas periódicas</td><td>EventBridge Scheduler → Lambda</td><td>horário</td></tr><tr><td><strong>Workflow</strong></td><td>Orquestração multi-step com retry</td><td>Step Functions</td><td>ms-horas</td></tr><tr><td><strong>Pub/Sub global</strong></td><td>Múltiplas regiões, múltiplos protocolos</td><td>SNS cross-region</td><td>segundos</td></tr></tbody></table></div>
+<hr>
+<h2>Multi-Região: Active-Active vs Active-Passive</h2>
+<div class="table-wrap"><table><thead><tr><th>Critério</th><th>Active-Active</th><th>Active-Passive</th></tr></thead><tbody><tr><td><strong>Objetivo</strong></td><td>Sem perda de disponibilidade</td><td>Menor custo de standby</td></tr><tr><td><strong>RPO</strong></td><td>~0</td><td>Minutos (depende replicação)</td></tr><tr><td><strong>RTO</strong></td><td>~0 (failover automático)</td><td>1–10 min</td></tr><tr><td><strong>Custo</strong></td><td>2x (infraestrutura dupla)</td><td>~1.2x (standby menor)</td></tr><tr><td><strong>Complexidade</strong></td><td>Alta (conflito de dados)</td><td>Baixa</td></tr><tr><td><strong>Route 53 policy</strong></td><td>Latency / Geolocation</td><td>Failover</td></tr><tr><td><strong>Banco</strong></td><td>Aurora Global (writer em ambas)</td><td>Aurora Global (1 writer)</td></tr><tr><td><strong>Caso de uso</strong></td><td>Global SaaS, finanças 24/7</td><td>DR corporativo, backup regional</td></tr></tbody></table></div>
+<hr>
+<h2>Arquiteturas por Vertical</h2>
+<h3>E-commerce de Alta Disponibilidade</h3>
+<pre><code class="language-">Cliente → CloudFront → ALB (Multi-AZ)
+                          ├── EC2 Auto Scaling (app)
+                          └── ElastiCache (carrinho)
+                               └── Aurora Multi-AZ (pedidos)
+                                    └── DynamoDB (catálogo/inventário)
+SNS → SQS → Lambda (notificações)
+EventBridge → Lambda (processamento async pós-pedido)</code></pre>
+<h3>Pipeline de IoT</h3>
+<pre><code class="language-">Dispositivos → IoT Core (MQTT)
+                   ├── IoT Rules → Kinesis Data Streams → Lambda (real-time)
+                   ├── IoT Rules → S3 (raw data) → Glue → Athena (batch)
+                   └── IoT Rules → DynamoDB (estado atual dispositivo)
+CloudWatch → SNS (alertas threshold)</code></pre>
+<h3>Plataforma de Streaming de Vídeo</h3>
+<pre><code class="language-">Upload → S3 → Lambda → MediaConvert (transcoding)
+                             └── S3 (múltiplas resoluções)
+                                  └── CloudFront (CDN global)
+DynamoDB (metadados vídeo)
+Cognito (autenticação usuários)</code></pre>
+<h3>Data Lake Moderno</h3>
+<pre><code class="language-">Dados → S3 (raw zone) → Glue ETL → S3 (processed zone)
+                                         └── Athena (query ad hoc)
+                                         └── Redshift Spectrum (BI)
+Lake Formation (controle acesso por tabela/coluna)
+Glue Data Catalog (metadados centralizados)</code></pre>
+<hr>
+<h2>Multi-Tenant SaaS no AWS</h2>
+<div class="table-wrap"><table><thead><tr><th>Estratégia</th><th>Isolamento</th><th>Custo</th><th>Quando Usar</th></tr></thead><tbody><tr><td><strong>Silo</strong> (por tenant)</td><td>Máximo (stack dedicada)</td><td>Alto</td><td>Compliance, grandes contratos</td></tr><tr><td><strong>Pool</strong> (compartilhado)</td><td>Lógico (tag/ID)</td><td>Baixo</td><td>Muitos tenants pequenos</td></tr><tr><td><strong>Híbrido</strong></td><td>Médio (tier-based)</td><td>Médio</td><td>Mix de clientes premium/free</td></tr><tr><td></td><td></td><td></td><td></td></tr><tr><td><strong>DynamoDB</strong></td><td>Partition key = tenantId</td><td>Baixo</td><td>Dados com padrão uniform</td></tr><tr><td><strong>RDS</strong></td><td>Schema por tenant</td><td>Médio</td><td>SQL, tenants médios</td></tr><tr><td><strong>Aurora</strong></td><td>Database por tenant</td><td>Alto</td><td>Grandes clientes enterprise</td></tr></tbody></table></div>
+<hr>
+<h2>Padrões de Segurança por Cenário</h2>
+<div class="table-wrap"><table><thead><tr><th>Cenário</th><th>Padrão Correto</th><th>Serviços</th></tr></thead><tbody><tr><td>API pública com auth</td><td>JWT/OAuth2</td><td>Cognito User Pool + API GW</td></tr><tr><td>API B2B (empresa-empresa)</td><td>mTLS / API Key</td><td>API GW + ACM</td></tr><tr><td>Acesso cross-account</td><td>IAM Role + AssumeRole</td><td>STS</td></tr><tr><td>Segredo em Lambda</td><td>Secrets Manager (não env var)</td><td>Secrets Manager + IAM</td></tr><tr><td>Criptografia dados S3</td><td>SSE-KMS (CMK)</td><td>KMS + S3</td></tr><tr><td>Proteção DDoS layer 7</td><td>WAF + Shield Advanced</td><td>WAF + CloudFront</td></tr><tr><td>Auditoria quem fez o quê</td><td>CloudTrail + Athena query</td><td>CloudTrail + S3 + Athena</td></tr></tbody></table></div>
+<hr>
+<h2>HIPAA / Compliance — Padrões de Exame</h2>
+<div class="table-wrap"><table><thead><tr><th>Requisito</th><th>Solução AWS</th></tr></thead><tbody><tr><td>Dados PHI em repouso</td><td>KMS CMK (customer-managed)</td></tr><tr><td>Dados PHI em trânsito</td><td>TLS 1.2+ (ACM)</td></tr><tr><td>Logs imutáveis</td><td>CloudTrail + S3 Object Lock (WORM)</td></tr><tr><td>Acesso mínimo necessário</td><td>IAM granular + SCPs</td></tr><tr><td>BAA (Business Associate Agreement)</td><td>Assinar com AWS para serviços elegíveis</td></tr><tr><td>Isolamento rede</td><td>VPC + Security Groups + NACLs</td></tr></tbody></table></div>
+<hr>
+<h2>Dead Letter Queue (DLQ) — Padrão de Tolerância a Falhas</h2>
+<pre><code class="language-">SQS → Lambda (processa)
+   ↓ maxReceiveCount excedido
+  DLQ (SQS separada) → CloudWatch Alarm → SNS → Email/PagerDuty
+                               ↓
+                         Análise manual / Lambda de análise</code></pre>
+<ul><li><strong>maxReceiveCount:</strong> 3–5 tentativas antes de mover para DLQ</li><li><strong>DLQ de SQS:</strong> outra fila SQS</li><li><strong>DLQ de Lambda async:</strong> SQS ou SNS</li><li><strong>Exame:</strong> se a questão fala em &quot;reprocessar mensagens falhas&quot; → DLQ</li></ul>
+<hr>
+<h2>Dicas de Prova</h2>
+<div class="table-wrap"><table><thead><tr><th>Pista na Questão</th><th>Resposta Esperada</th></tr></thead><tbody><tr><td>&quot;processar em paralelo por múltiplos consumidores&quot;</td><td>SNS → múltiplas SQS (fan-out)</td></tr><tr><td>&quot;desacoplar produtor de consumidor&quot;</td><td>SQS (FIFO se ordem importa)</td></tr><tr><td>&quot;orquestrar sequência de passos com retry/compensação&quot;</td><td>Step Functions</td></tr><tr><td>&quot;migração incremental sem derrubar sistema legado&quot;</td><td>Strangler Fig (ALB rules)</td></tr><tr><td>&quot;histórico completo de mudanças / replay&quot;</td><td>Event Sourcing (Kinesis/DynamoDB Streams)</td></tr><tr><td>&quot;reduzir latência leitura de DB&quot;</td><td>ElastiCache (Cache-Aside)</td></tr><tr><td>&quot;isolar falha de um serviço upstream&quot;</td><td>SQS + DLQ + Circuit Breaker</td></tr><tr><td>&quot;RTO ≈ 0, RPO ≈ 0, global&quot;</td><td>Active-Active + Aurora Global + Route 53 Latency</td></tr><tr><td>&quot;dados de telemetria IoT em tempo real&quot;</td><td>IoT Core → Kinesis → Lambda</td></tr><tr><td>&quot;múltiplos tenants, custo baixo&quot;</td><td>Pool strategy (shared infra, tenantId partition key)</td></tr><tr><td>&quot;notificar vários sistemas após evento de pedido&quot;</td><td>SNS tópico com múltiplas assinaturas</td></tr><tr><td>&quot;transação entre microsserviços com rollback&quot;</td><td>Saga Pattern (Step Functions)</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./145-27-casos-de-uso-reais-casos-de-uso.html">Aula anterior</a>
+      <a href="./147-27-casos-de-uso-reais-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Módulo 07 — VPC e Redes - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#046-08-vpc-e-redes-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 08 - VPC e Redes - 8 min - 08-VPC-e-Redes/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1520869562399-e772f042f422?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 08 - VPC e Redes" loading="lazy">
+      <figcaption>VPC e a planta da cidade: subnets, rotas, portas e caminhos privados.</figcaption>
+    </figure>
+    <h1>Módulo 07 — VPC e Redes</h1>
+<h2>Objetivo</h2>
+<p>Neste módulo, você vai aprender a desenhar redes VPC seguras, resilientes e escaláveis, escolhendo conectividade, segmentação, roteamento e acesso privado corretos para cenários cobrados no exame.</p>
+<h2>Serviços AWS principais</h2>
+<ul><li>Amazon VPC</li><li>AWS Transit Gateway</li><li>AWS Direct Connect</li><li>AWS Site-to-Site VPN</li><li>AWS PrivateLink (Interface Endpoints)</li></ul>
+<h2>Arquitetura e trade-offs</h2>
+<h2>Fundamentos da VPC</h2>
+<p>Uma VPC (Virtual Private Cloud) é uma rede virtual isolada logicamente dentro da AWS. Cada conta recebe uma <strong>Default VPC</strong> por região.</p>
+<h3>Componentes Principais</h3>
+<pre><code class="language-">VPC (10.0.0.0/16)
+├── Subnet Pública (10.0.1.0/24) — AZ-a
+│     ├── Internet Gateway → rota 0.0.0.0/0
+│     └── Instâncias com IP público
+├── Subnet Privada (10.0.2.0/24) — AZ-a
+│     ├── NAT Gateway (saída para internet, sem entrada)
+│     └── Instâncias sem IP público
+├── Subnet Privada (10.0.3.0/24) — AZ-b
+│     └── (redundância multi-AZ)
+├── Route Tables (uma por subnet ou compartilhada)
+├── Network ACLs (stateless, nível de subnet)
+├── Security Groups (stateful, nível de instância/ENI)
+├── DHCP Options Set
+├── Elastic IPs
+└── ENIs (Elastic Network Interfaces)</code></pre>
+<h3>CIDRs</h3>
+<ul><li><strong>Primário</strong>: atribuído na criação (não pode ser alterado), ex: <code>10.0.0.0/16</code></li><li><strong>Secundário</strong>: até 5 blocos adicionais podem ser adicionados</li><li>Tamanho de subnet: <code>/28</code> (mínimo) a <code>/16</code> (máximo)</li><li>AWS <strong>reserva 5 IPs</strong> por subnet (.0 rede, .1 VPC router, .2 DNS, .3 reservado, .255 broadcast)</li></ul>
+<hr>
+<h2>Security Groups vs Network ACLs</h2>
+<div class="table-wrap"><table><thead><tr><th>Característica</th><th>Security Group</th><th>Network ACL</th></tr></thead><tbody><tr><td>Nível</td><td>Instância / ENI</td><td>Subnet</td></tr><tr><td>Estado</td><td><strong>Stateful</strong> (resposta automática)</td><td><strong>Stateless</strong> (regras de entrada e saída independentes)</td></tr><tr><td>Regras</td><td>Apenas ALLOW</td><td>ALLOW e DENY</td></tr><tr><td>Avaliação</td><td>Todas as regras avaliadas</td><td>Regras em ordem de número (1, 100, 200...) — primeira que corresponde</td></tr><tr><td>Padrão novo</td><td>Nega tudo, precisa de regras</td><td>Allow All inbound/outbound</td></tr><tr><td>Referência</td><td>Pode referenciar outro SG</td><td>Apenas CIDR</td></tr></tbody></table></div>
+<p><strong>Ordem de avaliação de tráfego de entrada:</strong></p>
+<ol><li>NACL (subnet level) → 2. Security Group (instance level)</li></ol>
+<hr>
+<h2>NAT Gateway vs NAT Instance</h2>
+<div class="table-wrap"><table><thead><tr><th>Característica</th><th>NAT Gateway</th><th>NAT Instance (legado)</th></tr></thead><tbody><tr><td>Gerenciado</td><td>AWS gerencia</td><td>Você gerencia (EC2)</td></tr><tr><td>Escala</td><td>Automática (até 100 Gbps)</td><td>Manual (tipo de instância)</td></tr><tr><td>Disponibilidade</td><td>Altamente disponível por AZ</td><td>Ponto único de falha</td></tr><tr><td>Custo</td><td>Por hora + por GB processado</td><td>Por hora EC2 + EIP</td></tr><tr><td>Source/Dest Check</td><td>Automático</td><td>Deve desabilitar manualmente</td></tr><tr><td>Security Groups</td><td>Não (usa NACL da subnet)</td><td>Sim (SG na instância)</td></tr></tbody></table></div>
+<p><strong>Importante:</strong> NAT Gateway é zonal — para HA real, <strong>uma NAT GW por AZ</strong> com route table por AZ apontando para a NAT GW local.</p>
+<hr>
+<h2>VPC Peering</h2>
+<p>Conexão de rede privada entre duas VPCs (mesma ou diferentes regiões/contas).</p>
+<ul><li>Tráfego usa rede privada AWS (não pela internet)</li><li><strong>Não transitive</strong>: VPC A ↔ VPC B e VPC B ↔ VPC C <strong>não</strong> implica VPC A ↔ VPC C</li><li>CIDRs não podem sobrepor</li><li>Requer atualização de route tables em ambas as VPCs</li><li>Suporta cross-account e cross-region</li></ul>
+<pre><code class="language-">VPC A ←──── peering ────→ VPC B
+VPC B ←──── peering ────→ VPC C
+VPC A ←────────────────── VPC C  ← PRECISA de peering separado</code></pre>
+<hr>
+<h2>Transit Gateway (TGW)</h2>
+<p>Hub central que permite conectar múltiplas VPCs e redes on-premises:</p>
+<pre><code class="language-">VPC A ──┐
+VPC B ──┤
+VPC C ──┼──→ Transit Gateway ←──→ VPN / Direct Connect
+VPC D ──┤
+VPC E ──┘</code></pre>
+<ul><li><strong>Transitive</strong> por padrão (A ↔ TGW ↔ C = A ↔ C, diferente do peering)</li><li><strong>Route Tables</strong> do TGW controlam qual VPC pode comunicar com qual</li><li>Suporta <strong>multicast</strong> (único serviço AWS a suportar)</li><li>TGW Resource Sharing via AWS RAM (compartilhar entre contas da Org)</li><li><strong>TGW Peering</strong>: conecta TGWs de diferentes regiões</li><li>Ideal para hub-and-spoke com dezenas/centenas de VPCs</li></ul>
+<hr>
+<h2>VPC Endpoints</h2>
+<p>Permitem acesso privado a serviços AWS <strong>sem sair da VPC</strong> (sem IGW, NAT, VPN, DX):</p>
+<h3>Gateway Endpoints</h3>
+<ul><li>Gratuitos</li><li>Apenas para <strong>S3 e DynamoDB</strong></li><li>Adicionados como entrada na route table (prefixo do serviço → endpoint ID)</li><li>Não podem ser extendidos para on-premises ou VPC peering</li></ul>
+<h3>Interface Endpoints (PrivateLink)</h3>
+<ul><li>ENI com IP privado na VPC</li><li>Cobrado por hora + por GB processado</li><li>Suporta <strong>a maioria dos serviços AWS</strong> e serviços de terceiros</li><li>Acesso via DNS privado (Endpoint-specific DNS names ou Private DNS habilitado)</li><li>Podem ser acessados de on-premises via VPN/DX ✅</li></ul>
+<hr>
+<h2>AWS Direct Connect (DX)</h2>
+<p>Conexão de rede dedicada entre on-premises e AWS:</p>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Velocidade</th><th>SLA</th><th>Provisionamento</th></tr></thead><tbody><tr><td>Dedicated Connection</td><td>1, 10, 100 Gbps</td><td>AWS SLA</td><td>Diretamente com AWS, semanas</td></tr><tr><td>Hosted Connection</td><td>50 Mbps – 10 Gbps</td><td>Parceiro</td><td>Através de parceiro, mais flexível</td></tr></tbody></table></div>
+<h3>Virtual Interfaces (VIFs)</h3>
+<ul><li><strong>Public VIF</strong>: acessa endpoints públicos da AWS (S3, DynamoDB, API do KMS)</li><li><strong>Private VIF</strong>: acessa IPs privados da VPC</li><li><strong>Transit VIF</strong>: acessa Transit Gateway (para múltiplas VPCs via DX)</li></ul>
+<h3>Direct Connect Gateway</h3>
+<ul><li>Conecta um DX connection a múltiplas VPCs em <strong>diferentes regiões</strong> (mesma conta)</li><li>Número de Private VIFs reduzido (1 conexão → múltiplas regiões/VPCs)</li></ul>
+<h3>High Availability com DX</h3>
+<ul><li><strong>Backup DX</strong>: dois circuitos em diferentes pontos de presença</li><li><strong>DX + VPN como backup</strong>: Site-to-Site VPN como failover (menor custo, maior latência)</li><li><strong>LAG (Link Aggregation Group)</strong>: múltiplos circuitos físicos agregados como um lógico</li></ul>
+<hr>
+<h2>Site-to-Site VPN</h2>
+<p>Conexão encriptada (IPSec) entre on-premises e VPC:</p>
+<ul><li><strong>Virtual Private Gateway (VGW)</strong>: termina a VPN na VPC</li><li><strong>Customer Gateway (CGW)</strong>: dispositivo físico/software on-premises</li><li>VPN passa pela internet pública (latência variável, encriptado)</li><li>Throughput: até ~1,25 Gbps (limitado pelo VGW)</li><li><strong>Accelerated Site-to-Site VPN</strong>: usa Global Accelerator para reduzir latência (sai da internet na PoP mais próxima)</li></ul>
+<hr>
+<h2>VPC Flow Logs</h2>
+<ul><li>Captura metadados de tráfego IP (não o payload) em VPCs, subnets ou ENIs</li><li>Destinos: <strong>CloudWatch Logs</strong> ou <strong>S3</strong></li><li>Inclui: IP origem/destino, porta, protocolo, bytes, pacotes, ação (ACCEPT/REJECT), ID da ENI</li><li>Não captura: DNS queries, DHCP, metadata (169.254.x.x), AWS link-local</li><li>Latência: ~10–15 min após captura (near-real-time)</li></ul>
+<hr>
+<h2>IPv6 na VPC</h2>
+<ul><li>Bloco <code>/56</code> atribuído à VPC (AWS escolhe, não há ranges privados IPv6)</li><li>Subnets recebem <code>/64</code></li><li><strong>Todos os endereços IPv6 são públicos</strong> (não há NAT para IPv6)</li><li><strong>Egress-Only Internet Gateway</strong>: permite saída IPv6 sem receber tráfego de entrada (equivalente ao NAT GW para IPv6)</li></ul>
+<hr>
+<h2>Elastic Network Interface (ENI)</h2>
+<p>Interface de rede virtual que pode ser:</p>
+<ul><li>Movida entre instâncias (para failover mantendo IP privado e security groups)</li><li>Múltiplas ENIs por instância (multi-homed: ex: mgmt network + app network)</li><li>Cada ENI pode ter múltiplos IPs privados e um Elastic IP</li></ul>
+<hr>
+<h2>Armadilhas comuns na prova</h2>
+<ul><li><strong>Security Group = stateful</strong> — não precisa de regra de retorno; <strong>NACL = stateless</strong> — precisa de regra de entrada E saída</li><li><strong>VPC Peering não é transitivo</strong> — cada par precisa de peering próprio; para muitas VPCs, use TGW</li><li><strong>NAT Gateway por AZ</strong> para HA — se todas as subnets privadas usarem uma NAT GW em uma AZ, há single point of failure</li><li><strong>Gateway Endpoint</strong> (S3, DynamoDB) = gratuito; <strong>Interface Endpoint</strong> = cobrado por hora</li><li><strong>Direct Connect + VPN</strong> = dual layer of redundancy (DX primário + VPN fallback)</li><li>Interface Endpoints acessíveis de on-prem via DX/VPN; Gateway Endpoints não</li><li><strong>TGW</strong> suporta transitividade — recomendado quando você tem muitas VPCs (&gt;5) para conectar</li><li><strong>Egress-only IGW</strong> = NAT para IPv6 (apenas saída, sem entrada pública)</li><li><strong>VPC Flow Logs</strong> não captura conteúdo dos pacotes — apenas metadados (IP, porta, ação)</li><li>Flow Logs com REJECT = SG ou NACL bloqueou; Flow Logs com ACCEPT mas problema de conectividade = problema na aplicação ou SO</li></ul>
+<h2>Lab hands-on</h2>
+<p>Para prática guiada de rede, utilize <a href="./047-09-vpc-e-redes-labs-lab.html">09-VPC-e-Redes-Labs/lab.md</a>. Notas de custo: prefira janelas curtas de teste para NAT Gateway e endpoints, valide rotas com poucos recursos e faça teardown completo ao encerrar.</p>
+<h2>Questões práticas</h2>
+<ul><li><a href="./045-08-vpc-e-redes-questoes.html">questoes.md</a></li></ul>
+<h2>Revisão rápida / cheatsheet</h2>
+<ul><li><a href="./043-08-vpc-e-redes-cheatsheet.html">cheatsheet.md</a></li><li><a href="./044-08-vpc-e-redes-flashcards.html">flashcards.md</a></li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./045-08-vpc-e-redes-questoes.html">Aula anterior</a>
+      <a href="./047-09-vpc-e-redes-labs-lab.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flashcards — IAM e Segurança - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#014-02-iam-e-seguranca-flashcards">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 02 - IAM e Seguranca - 6 min - 02-IAM-e-Seguranca/flashcards.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 02 - IAM e Seguranca" loading="lazy">
+      <figcaption>Seguranca com identidade forte: quem pode fazer o que, em qual recurso e sob qual condicao.</figcaption>
+    </figure>
+    <h1>Flashcards — IAM e Segurança</h1>
+<blockquote><p>Revise um cartão de cada vez. Tente responder antes de revelar a resposta.</p></blockquote>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre IAM User e IAM Role?<br><strong>R:</strong> User tem credenciais permanentes (senha + access key). Role fornece credenciais temporárias via STS, assumida por serviços AWS, outros accounts ou identidades federadas. Nunca tem senha nem access key própria.</p>
+<hr>
+<p><strong>P:</strong> O que é Permission Boundary e para que serve?<br><strong>R:</strong> É uma política IAM gerenciada que define o máximo de permissões que um usuário ou role pode ter — mesmo que a identity policy conceda mais. Usado para delegar criação de roles sem escalada de privilégios.</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre AWS-managed policy, Customer-managed policy e Inline policy?<br><strong>R:</strong> AWS-managed: mantida pela AWS, reutilizável, não editável. Customer-managed: você cria e controla, reutilizável em múltiplas identidades. Inline: embarcada na identidade, 1:1, deletada junto com ela — evitar exceto para permissões exclusivas.</p>
+<hr>
+<p><strong>P:</strong> Em avaliação de políticas IAM, o que vem primeiro: SCP, Permission Boundary ou identity policy?<br><strong>R:</strong> Explicit Deny (qualquer fonte) → SCP bloqueia? → Permission Boundary bloqueia? → Identity policy ou resource policy permite? Para acesso cross-account: ambas identity E resource policy devem permitir.</p>
+<hr>
+<p><strong>P:</strong> O que faz a condição <code>aws:PrincipalOrgID</code>?<br><strong>R:</strong> Restringe acesso a um recurso apenas a principals que pertencem a uma AWS Organization específica. Útil em bucket policies para garantir que só contas da empresa acessem o bucket, sem listar cada account ID.</p>
+<hr>
+<p><strong>P:</strong> O que é uma SCP e quem ela afeta?<br><strong>R:</strong> Service Control Policy — guardrail de permissões máximas em AWS Organizations. Aplica-se a todas as contas-membro e OUs, mas NUNCA à management account. Um explicit allow na SCP não concede permissão por si só — a identity policy ainda precisa permitir.</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre <code>aws:SourceVpc</code> e <code>aws:SourceVpce</code>?<br><strong>R:</strong> <code>aws:SourceVpc</code> restringe ao VPC ID. <code>aws:SourceVpce</code> restringe ao VPC Endpoint ID específico. Use <code>aws:SourceVpce</code> quando quiser garantir que só acesso via um endpoint específico seja permitido.</p>
+<hr>
+<p><strong>P:</strong> Para que serve IAM Identity Center (antes AWS SSO)?<br><strong>R:</strong> Login único centralizado para múltiplas contas AWS e aplicações SaaS. Permite criar permission sets (conjunto de políticas) e atribuir a usuários/grupos por conta. Integra com AD, Okta e outros identity providers via SAML 2.0/SCIM.</p>
+<hr>
+<p><strong>P:</strong> Quais são os três tipos de CMK do KMS?<br><strong>R:</strong> 1) AWS-owned: gerenciada pela AWS, sem visibilidade para o cliente, sem custo adicional (ex: S3 SSE com aws/s3). 2) AWS-managed CMK: criada pelo serviço no seu account (aws/ebs), visível, rotação anual automática, não pode editar key policy. 3) Customer-managed CMK: você cria, paga por mês, edita key policy, define rotação, pode desabilitar.</p>
+<hr>
+<p><strong>P:</strong> O que é envelope encryption?<br><strong>R:</strong> Padrão em que: (1) KMS gera um Data Key (plaintext + encrypted com o CMK); (2) o cliente usa o plaintext data key para encriptar os dados; (3) descarta o plaintext key e armazena a encrypted data key junto aos dados; (4) para decriptar, envia a encrypted data key ao KMS e usa o plaintext key retornado.</p>
+<hr>
+<p><strong>P:</strong> Qual é o propósito da KMS key policy?<br><strong>R:</strong> Define quem pode gerenciar e usar a CMK. É obrigatória — toda CMK precisa de uma key policy. A policy inclui root account como administrador (garante recuperação), key administrators e key users. Resource-based policy, portanto permite cross-account sem role assumption.</p>
+<hr>
+<p><strong>P:</strong> O que são KMS Grants e quando usar?<br><strong>R:</strong> Grants concedem permissão temporária e programática para usar uma CMK sem alterar a key policy. São criados via <code>CreateGrant</code> e o token do grant é passado em chamadas de API (<code>kms:decrypt --grant-tokens</code>). Usados por serviços AWS internamente (ex: EBS quando cria snapshot de volume encriptado).</p>
+<hr>
+<p><strong>P:</strong> O que são KMS Multi-Region Keys?<br><strong>R:</strong> Chaves que possuem o mesmo material de chave replicado em múltiplas regiões. Permitem encriptar em us-east-1 e decriptar em eu-west-1 sem re-encriptar. Key ARNs são diferentes mas material é o mesmo. Útil para DR cross-region com dados encriptados.</p>
+<hr>
+<p><strong>P:</strong> Qual é a principal diferença entre Secrets Manager e Parameter Store?<br><strong>R:</strong> Secrets Manager: rotação automática nativa (integra com RDS, Redshift, DocumentDB), cobra por secret por mês. Parameter Store: sem rotação nativa, Standard gratuito (max 4KB), SecureString usa KMS. Secrets Manager é preferível para credentials com rotação; Parameter Store para configs de aplicação.</p>
+<hr>
+<p><strong>P:</strong> O que é ACM e quais são suas limitações?<br><strong>R:</strong> AWS Certificate Manager gerencia certificados SSL/TLS. Certificados públicos são gratuitos e renovados automaticamente. Só podem ser usados com serviços AWS integrados (ALB, CloudFront, API Gateway) — não podem ser exportados. Para CloudFront, o certificado deve estar em us-east-1.</p>
+<hr>
+<p><strong>P:</strong> O que é ACM Private CA?<br><strong>R:</strong> Certificate Authority privada gerenciada pela AWS. Emite certificados privados para serviços internos (mTLS, microservices). Tem custo mensal pela CA + por certificado. Certificados emitidos SÃO exportáveis, ao contrário dos públicos do ACM.</p>
+<hr>
+<p><strong>P:</strong> Como funciona cross-account role assumption?<br><strong>R:</strong> Conta A cria uma role com trust policy permitindo conta B assumir (sts:AssumeRole). Conta B cria uma policy permitindo sts:AssumeRole no ARN da role da conta A. O usuário na conta B chama AssumeRole, recebe credenciais temporárias da conta A.</p>
+<hr>
+<p><strong>P:</strong> Qual condição IAM requer MFA numa chamada de API?<br><strong>R:</strong> <code>&quot;Condition&quot;: {&quot;Bool&quot;: {&quot;aws:MultiFactorAuthPresent&quot;: &quot;true&quot;}}</code> — garante que a operação só ocorre quando o principal autenticou com MFA. Útil para proteger ações sensíveis como deletar S3 objects ou desativar CMK.</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre identity-based policy e resource-based policy de acesso cross-account?<br><strong>R:</strong> Com resource-based policy (ex: S3 bucket policy, KMS key policy) que explicitly allows o principal de outra conta: acesso direto sem role assumption. Com identity-based policy apenas: precisa assumir role. Resource-based policies permitem cross-account sem hop de role — considerado mais direto para serviços que suportam.</p>
+<hr>
+<p><strong>P:</strong> O que é Parameter Store SecureString e quais são suas opções de chave KMS?<br><strong>R:</strong> SecureString encripta o valor usando KMS. Pode usar a aws/ssm CMK (sem custo de CMK, mas sem controle de key policy) ou uma customer-managed CMK (controle total, auditoria, pode revogar acesso). Para uso cross-account, customer-managed CMK é obrigatório.</p>
+<hr>
+<p><strong>P:</strong> O que significa <code>&quot;Effect&quot;: &quot;Deny&quot;</code> em uma política IAM vs SCP?<br><strong>R:</strong> Em ambos os casos, explicit Deny sobrepõe qualquer Allow em qualquer outra política. Em IAM: se qualquer política aplicável tem Deny para a ação, a chamada é negada. Em SCP: Deny bloqueia toda a conta/OU, mesmo que identity policies permitam.</p>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./013-02-iam-e-seguranca-cheatsheet.html">Aula anterior</a>
+      <a href="./015-02-iam-e-seguranca-lab.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

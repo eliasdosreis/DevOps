@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#016-modulo-3-avancado-02-hpa">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 03 - avancado - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 03 - avancado" loading="lazy">
+      <figcaption>Avancado: ingress, HPA, storage, RBAC, NetworkPolicy e stateful workloads.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 02-hpa.yaml
+# HPA - Horizontal Pod Autoscaler
+#
+# Imagine uma lanchonete:
+# - Hora do almo�o: fila enorme -&gt; contratar mais atendentes
+# - 15h da tarde: vazio -&gt; dispensar atendentes
+#
+# HPA faz exatamente isso com pods!
+# Monitora m�tricas (CPU, mem�ria, custom) e:
+# - Aumenta pods quando a carga sobe (scale out)
+# - Diminui pods quando a carga cai (scale in)
+#
+# PR�-REQUISITO: Metrics Server instalado
+# Minikube: minikube addons enable metrics-server
+# ============================================================
+
+# Primeiro: o Deployment que o HPA vai gerenciar
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: app-para-escalar
+  labels:
+    app: escalavel
+
+spec:
+  replicas: 2               # HPA vai sobrescrever este valor!
+  selector:
+    matchLabels:
+      app: escalavel
+
+  template:
+    metadata:
+      labels:
+        app: escalavel
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.25
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: &quot;100m&quot;       # OBRIGAT�RIO para HPA por CPU!
+              memory: &quot;64Mi&quot;    # HPA precisa saber o baseline
+            limits:
+              cpu: &quot;300m&quot;
+              memory: &quot;128Mi&quot;
+
+---
+# ---------------------------------------------------------------
+# O HPA
+# ---------------------------------------------------------------
+
+apiVersion: autoscaling/v2          # Use v2 para m�tricas avan�adas
+kind: HorizontalPodAutoscaler
+
+metadata:
+  name: hpa-app-escalavel
+
+spec:
+  scaleTargetRef:                   # QUEM o HPA vai controlar?
+    apiVersion: apps/v1
+    kind: Deployment
+    name: app-para-escalar          # Nome do Deployment acima
+
+  minReplicas: 2                    # M�NIMO de pods (nunca abaixo!)
+  maxReplicas: 10                   # M�XIMO de pods (nunca acima!)
+
+  metrics:                          # QUAIS m�tricas usar?
+
+    # M�TRICA 1: CPU
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization         # Porcentagem de uso
+          averageUtilization: 70    # Se m�dia &gt; 70%: escala!
+                                    # Se m�dia &lt; 70%: reduz!
+
+    # M�TRICA 2: Mem�ria
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: AverageValue        # Valor m�dio absoluto
+          averageValue: 100Mi       # Se m�dia &gt; 100Mi: escala!
+
+  # -------------------------------------------------------
+  # COMPORTAMENTO DE ESCALA (avan�ado)
+  # -------------------------------------------------------
+  behavior:
+    scaleUp:                        # Como escalar PARA CIMA
+      stabilizationWindowSeconds: 60  # Aguarda 60s antes de escalar
+                                      # Evita escalar por pico moment�neo
+      policies:
+        - type: Pods
+          value: 2                  # Adiciona m�ximo 2 pods por vez
+          periodSeconds: 60         # A cada 60 segundos
+
+    scaleDown:                      # Como reduzir pods
+      stabilizationWindowSeconds: 300  # Aguarda 5 min antes de reduzir
+                                       # Evita ficar subindo e descendo
+      policies:
+        - type: Pods
+          value: 1                  # Remove m�ximo 1 pod por vez
+          periodSeconds: 120        # A cada 2 minutos
+
+# ============================================================
+# COMO TESTAR O HPA:
+#
+# 1. Aplicar: kubectl apply -f 02-hpa.yaml
+# 2. Ver status: kubectl get hpa
+# 3. Gerar carga (em outro terminal):
+#    kubectl run -it --rm load-generator \
+#      --image=busybox -- /bin/sh
+#    # Dentro do container:
+#    while true; do wget -q -O- http://app-para-escalar; done
+# 4. Observar escala: watch kubectl get pods
+#
+# ENTREVISTA S�NIOR:
+# &quot;HPA vs VPA vs KEDA - quando usar cada um?&quot;
+# RESPOSTA:
+# HPA: Escala HORIZONTAL (mais pods). Bom para stateless.
+# VPA: Escala VERTICAL (mais CPU/RAM por pod). Bom para DBs.
+# KEDA: Escala por m�tricas CUSTOMIZADAS (filas, eventos).
+#       Ex: escala baseado em tamanho da fila SQS/Kafka.
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./015-modulo-3-avancado-01-ingress.html">Aula anterior</a>
+      <a href="./017-modulo-3-avancado-03-pv-pvc.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

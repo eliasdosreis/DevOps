@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questões — Computação EC2 - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#026-04-computacao-ec2-questoes">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - Computacao EC2 - 12 min - 04-Computacao-EC2/questoes.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - Computacao EC2" loading="lazy">
+      <figcaption>Compute e escolha de motor: instancia, container, funcao ou servico gerenciado.</figcaption>
+    </figure>
+    <h1>Questões — Computação EC2</h1>
+<h2>Questão 1</h2>
+<p><strong>Domínio:</strong> Design High-Performing Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Uma empresa precisa executar um job de machine learning com cálculos matriciais intensivos de GPU. Qual família de instância EC2 é mais adequada?</p>
+<ul><li>A) M5 — General Purpose</li><li>B) R6g — Memory Optimized</li><li>C) P4de — Accelerated Computing</li><li>D) T3 — Burstable</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: C</strong></p>
+<p>Instâncias P são aceleradas com GPUs NVIDIA, desenvolvidas para treinamento de machine learning e HPC. As outras famílias não têm GPU. M5 é balanced CPU/RAM sem GPU. R6g é Memory Optimized para in-memory databases. T3 é burstable para cargas leves intermitentes.</p>
+<p><strong>Conceito-chave:</strong> família P (GPU) para ML/HPC</p></details>
+<h2>Questão 2</h2>
+<p><strong>Domínio:</strong> Design Cost-Optimized Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Uma equipe de análise roda processamento de dados em lotes de 6 horas diárias, com falhas toleráveis e capacidade de recomeçar do checkpoint. Qual modelo de compra oferece o maior desconto?</p>
+<ul><li>A) On-Demand</li><li>B) Reserved Instance Standard 1 ano</li><li>C) Spot Instances</li><li>D) Dedicated Host</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: C</strong></p>
+<p>Spot Instances oferecem até 90% de desconto para cargas tolerantes a interrupção. O workload de batch com checkpoint satisfaz exatamente esse perfil: pode ser interrompido e retomado. Reserved e Dedicated Host são para workloads contínuos ou de compliance. On-Demand é mais caro sem compromisso.</p>
+<p><strong>Conceito-chave:</strong> Spot Instances para batch tolerante a interrupção</p></details>
+<h2>Questão 3</h2>
+<p><strong>Domínio:</strong> Design Cost-Optimized Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Uma empresa usa um banco de dados ERP que roda 24/7 sem interrupções há dois anos e precisa ficar ativo pelos próximos 3 anos. Qual modelo de compra oferece o maior desconto com a menor possibilidade de mudança de tipo de instância?</p>
+<ul><li>A) Spot Instances</li><li>B) On-Demand</li><li>C) Reserved Instance Standard 3 anos All Upfront</li><li>D) Savings Plans Compute 1 ano</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: C</strong></p>
+<p>Standard Reserved Instance 3 anos All Upfront oferece o maior desconto possível (~72%). O workload é estável e previsível, sem necessidade de flexibilidade de tipo. All Upfront maximiza o desconto em relação a Partial ou No Upfront. Savings Plans seria adequado se a empresa quisesse flexibilidade de tipo/região, mas tem desconto ligeiramente menor.</p>
+<p><strong>Conceito-chave:</strong> Standard RI 3 anos All Upfront para workload estável de longo prazo</p></details>
+<h2>Questão 4</h2>
+<p><strong>Domínio:</strong> Design Secure Applications and Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Uma EC2 rodando uma API precisa buscar o ID da instância, a região e o ARN da role associada. De onde pode obter essas informações de forma segura sem acessar serviços externos?</p>
+<ul><li>A) User Data</li><li>B) Parameter Store</li><li>C) Instance Metadata Service (IMDSv2)</li><li>D) Secrets Manager</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: C</strong></p>
+<p>O IMDS disponibiliza informações da instância em 169.254.169.254. Com IMDSv2 (session-oriented), obtém-se token primeiro e usa-o nos requests seguintes. Inclui instance-id, region, ami-id, IAM role credentials e muito mais. User Data apenas executa script na inicialização. Parameter Store e Secrets Manager armazenam dados externos, não metadados da instância.</p>
+<p><strong>Conceito-chave:</strong> IMDSv2 para self-discovery da instância</p></details>
+<h2>Questão 5</h2>
+<p><strong>Domínio:</strong> Design High-Performing Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Uma aplicação HPC distribui cálculos entre nós que precisam de latência de rede sub-milissegundo e throughput de 100 Gbps entre si. Qual configuração EC2 otimiza isso?</p>
+<ul><li>A) Spread Placement Group em múltiplas AZs</li><li>B) Partition Placement Group na mesma AZ</li><li>C) Cluster Placement Group na mesma AZ com instâncias Enhanced Networking</li><li>D) Instâncias em AZs diferentes sem placement group</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: C</strong></p>
+<p>Cluster Placement Group coloca instâncias fisicamente próximas, minimizando latência e maximizando banda entre elas (até 10 Gbps com instâncias Enhanced Networking / EFA). Deve estar na mesma AZ. Spread PG maximiza disponibilidade mas dispersa fisicamente, deteriorando a latência entre nós. Partition PG diferencia racks mas não minimiza latência intra-grupo. AZs diferentes introduzem latência de rede regional.</p>
+<p><strong>Conceito-chave:</strong> Cluster Placement Group para HPC de baixa latência</p></details>
+<h2>Questão 6</h2>
+<p><strong>Domínio:</strong> Design Resilient Architectures<br><strong>Dificuldade:</strong> Fácil</p>
+<p>Uma aplicação crítica usa EC2 com um banco de dados em memória. A equipe precisa garantir que se a instância for substituída, o banco de dados volte com o estado anterior rapidamente em vez de recarregar tudo do zero. Qual recurso EC2 resolve isso?</p>
+<ul><li>A) Instance Store</li><li>B) Hibernation</li><li>C) EC2 Auto Recovery</li><li>D) Elastic IP</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: B</strong></p>
+<p>Hibernation salva o conteúdo da RAM no volume EBS root, permitindo que a instância retome com o estado exato. O banco em memória estaria no mesmo ponto ao sair da hibernação. Instance Store perde dados ao parar. Auto Recovery substitui a instância em novo hardware, mas não preserva estado de memória. Elastic IP é sobre IP fixo.</p>
+<p><strong>Conceito-chave:</strong> Hibernation salva RAM no EBS para retomada de estado</p></details>
+<h2>Questão 7</h2>
+<p><strong>Domínio:</strong> Design High-Performing Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Um sistema de streaming de vídeo precisa de volumes EBS com 40.000 IOPS consistentes, baixíssima latência e 99,999% de durabilidade para armazenar chunks de vídeo durante processamento. Qual tipo de EBS deve ser usado?</p>
+<ul><li>A) gp3</li><li>B) st1</li><li>C) io2 Block Express</li><li>D) sc1</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: C</strong></p>
+<p>io2 Block Express oferece até 256.000 IOPS com durabilidade de 99,999% e latência sub-milissegundo consistente. Para 40.000 IOPS, gp3 chega apenas a 16.000. st1 e sc1 são HDD com IOPS baixíssimo, inadequados para streaming de alta performance.</p>
+<p><strong>Conceito-chave:</strong> io2 Block Express para IOPS altíssimo e durabilidade máxima</p></details>
+<h2>Questão 8</h2>
+<p><strong>Domínio:</strong> Design Cost-Optimized Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Uma empresa usa instâncias T3 para hospedar microserviços de monitoramento que recentemente passaram a fazer cálculos intensivos contínuos. Os clientes reclamam de lentidão. Qual é a causa mais provável?</p>
+<ul><li>A) A instância T3 está sem Elastic IP</li><li>B) Os créditos de CPU burstable foram esgotados e a instância opera no baseline</li><li>C) O volume EBS está cheio</li><li>D) A instance metadata está desabilitada</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: B</strong></p>
+<p>Instâncias T3 acumulam créditos de CPU quando abaixo do baseline e os consomem em bursts. Workloads continuamente intensivos esgotam os créditos e a performance cai ao baseline, que pode ser muito baixo (ex.: t3.micro tem baseline de 10% de vCPU). A solução é migrar para uma família sem burst (M, C) ou habilitar T3 Unlimited com custo adicional.</p>
+<p><strong>Conceito-chave:</strong> créditos de burst T3 esgotados em workload contínuo</p></details>
+<h2>Questão 9</h2>
+<p><strong>Domínio:</strong> Design Resilient Architectures<br><strong>Dificuldade:</strong> Difícil</p>
+<p>Uma empresa precisa implantar um banco de dados Cassandra em 18 instâncias EC2, organizadas de forma que falhas de rack afetem a menor quantidade de nós possível, mas o Cassandra possa usar informações de partição para replicação inteligente. Qual placement group deve ser usado?</p>
+<ul><li>A) Cluster Placement Group</li><li>B) Spread Placement Group</li><li>C) Partition Placement Group</li><li>D) Sem placement group, usando múltipas AZs</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: C</strong></p>
+<p>Partition Placement Group foi desenhado exatamente para sistemas como Cassandra, HDFS e Kafka. Cada partição representa um rack distinto. O Cassandra pode usar a partição como zona de disponibilidade virtual para replicação awareness. Com 18 instâncias em 6 partições (3 por partição), uma falha de rack afeta apenas 3 nós. Spread limita a 7 instâncias/AZ. Cluster é inadequado para Cassandra por concentrar hardware.</p>
+<p><strong>Conceito-chave:</strong> Partition PG para databases distribuídas com awareness de rack</p></details>
+<h2>Questão 10</h2>
+<p><strong>Domínio:</strong> Design Secure Applications and Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Uma empresa precisa que instâncias EC2 em produção possam ser acessadas para troubleshooting sem abrir a porta 22 ao mundo e sem bastion host. Qual solução elimina o vetor de ataque de SSH exposto?</p>
+<ul><li>A) Abrir a porta 22 no security group apenas para o IP do administrador</li><li>B) Usar AWS Systems Manager Session Manager para acesso sem porta 22</li><li>C) Configurar VPN site-to-site para o laptop do administrador</li><li>D) Criar EC2 Key Pair e compartilhar entre os admins</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: B</strong></p>
+<p>Session Manager permite acesso ao shell da instância via console AWS ou CLI sem abrir nenhuma porta de entrada no security group, sem key pairs e com auditoria automática no CloudTrail e session logging no S3/CloudWatch. A alternativa A ainda expõe a porta 22. A alternativa C resolv parcialmente, mas não elimina o SSH. A alternativa D compartilha key pair, péssima prática.</p>
+<p><strong>Conceito-chave:</strong> Session Manager para acesso sem porta aberta</p></details>
+<h2>Questão 11</h2>
+<p><strong>Domínio:</strong> Design Cost-Optimized Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Uma startup usa múltiplos tipos de EC2 e também Lambda e Fargate. Ela quer um único plano de desconto flexível que cubra todos esses computados. Qual é a melhor opção?</p>
+<ul><li>A) Reserved Instances Standard para cada tipo de instância individualmente</li><li>B) Compute Savings Plans cobrindo EC2, Lambda e Fargate</li><li>C) EC2 Savings Plans restritos à família e região</li><li>D) Dedicated Hosts com RI 3 anos</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: B</strong></p>
+<p>Compute Savings Plans é o mais flexível: aplica desconto a qualquer tipo EC2, família, região, SO, Lambda (acima de 0,5 GB) e Fargate, sem compromisso de tipo específico. EC2 Savings Plans tem desconto ligeiramente maior, mas é restrito à família e região. Reserved Instances exigem especificação por tipo. Dedicated Hosts têm finalidade diferente.</p>
+<p><strong>Conceito-chave:</strong> Compute Savings Plans para cobertura multi-serviço flexível</p></details>
+<h2>Questão 12</h2>
+<p><strong>Domínio:</strong> Design High-Performing Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Um banco de dados MySQL gerenciado por conta própria em EC2 precisa de volume EBS com alto throughput sequencial para escritas de log binário. Qual tipo de EBS oferece o melhor custo-benefício para esse padrão de acesso?</p>
+<ul><li>A) io2 Block Express</li><li>B) gp3 com IOPS extras</li><li>C) st1 — HDD Throughput Optimized</li><li>D) sc1 — Cold HDD</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: C</strong></p>
+<p>st1 é otimizado para acesso sequencial de grandes blocos com throughput de até 500 MBps e é muito mais barato que SSD para esse uso. Logs binários são escritas sequenciais grandes — perfil ideal para st1. io2 seria desperdício para log sequencial. sc1 é ainda mais lento e para cold data. gp3 é SSD de uso geral, bom mas mais caro e com throughput menor para sequencial massivo.</p>
+<p><strong>Conceito-chave:</strong> st1 para I/O sequencial de alto throughput com custo baixo</p></details>
+<h2>Questão 13</h2>
+<p><strong>Domínio:</strong> Design Resilient Architectures<br><strong>Dificuldade:</strong> Fácil</p>
+<p>Uma empresa quer copiar uma AMI que usa customer-managed KMS CMK para outra região. Qual pré-requisito é obrigatório?</p>
+<ul><li>A) A AMI deve ser pública antes da cópia</li><li>B) A conta destino deve ter acesso à CMK original ou uma CMK equivalente deve ser usada na cópia</li><li>C) A AMI precisa ser desencriptada antes da cópia</li><li>D) Não é possível copiar AMIs criptografadas entre regiões</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: B</strong></p>
+<p>Ao copiar uma AMI criptografada entre regiões, é necessário especificar uma CMK na região destino. Os snapshots EBS da AMI são re-encriptados com a chave da região destino. A conta solicitante precisa ter permissão tanto na CMK de origem (para descriptografar) quanto na CMK de destino (para re-encriptar). Não é possível copiar sem acesso às chaves, mas a alternativa D está errada pois a cópia é possível com as cmKs corretas.</p>
+<p><strong>Conceito-chave:</strong> CMK de destino necessária ao copiar AMI criptografada cross-region</p></details>
+<h2>Questão 14</h2>
+<p><strong>Domínio:</strong> Design Cost-Optimized Architectures<br><strong>Dificuldade:</strong> Difícil</p>
+<p>Uma empresa tem 100 instâncias On-Demand e quer reduzir custo. O padrão de uso mostra carga constante de 60 instâncias ao longo do dia com picos de 40 adicionais nos horários comerciais. Qual estratégia de compra equilibra melhor custo e disponibilidade?</p>
+<ul><li>A) 100 instâncias Spot</li><li>B) 60 Reserved Instances para a base + 40 On-Demand ou Spot para os picos</li><li>C) 100 Reserved Instances Standard 3 anos</li><li>D) Savings Plans Compute cobrindo apenas 20% do compromisso</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: B</strong></p>
+<p>A arquitetura ideal é cobrir a base consistente com RI ou Savings Plans (maior desconto) e usar On-Demand ou Spot para a capacidade variável. 100 Spot seria arriscado para carga crítica de base. 100 RI cobrindo 40 instâncias que às vezes ficam ociosas desperdiça o compromisso. Savings Plans com 20% de compromisso deixa 80% da base no On-Demand.</p>
+<p><strong>Conceito-chave:</strong> base estável com RI + burst com On-Demand/Spot</p></details>
+<h2>Questão 15</h2>
+<p><strong>Domínio:</strong> Design Resilient Architectures<br><strong>Dificuldade:</strong> Médio</p>
+<p>Um ambiente de produção usa uma instância EC2 como servidor de aplicação. Após um stop/start, o IP público da instância mudou e conexões existentes falharam. Qual é a solução mais direta para garantir IP público permanente?</p>
+<ul><li>A) Habilitar Enhanced Networking</li><li>B) Associar uma Elastic IP à instância</li><li>C) Criar uma nova AMI com IP fixo embutido</li><li>D) Migrar para instância com Instance Store</li></ul>
+<details><summary>✅ Resposta e Explicação</summary><p><strong>Resposta correta: B</strong></p>
+<p>Elastic IP é um IP público estático que permanece associado à conta mesmo após stop/start ou falha da instância. Pode ser rapidamente remapeado para uma instância substituta em caso de falha. Enhanced Networking é sobre performance de rede. AMI não define IP. Instance Store não tem relação com IP.</p>
+<p><strong>Conceito-chave:</strong> Elastic IP para IP público permanente na EC2</p></details>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./025-04-computacao-ec2-links.html">Aula anterior</a>
+      <a href="./027-04-computacao-ec2-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

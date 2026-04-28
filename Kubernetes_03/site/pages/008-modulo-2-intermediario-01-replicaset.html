@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#008-modulo-2-intermediario-01-replicaset">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 02 - intermediario - 2 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 02 - intermediario" loading="lazy">
+      <figcaption>Intermediario: replicas, deployments, rollout, probes, ConfigMap e Secret.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 01-replicaset.yaml
+# O QUE É UM REPLICASET?
+#
+# Imagine uma pizzaria:
+# Você precisa de 3 entregadores de bicicleta sempre.
+# Se um cai doente, o gerente contrata outro AUTOMATICAMENTE.
+# O ReplicaSet é esse gerente!
+#
+# ReplicaSet garante que SEMPRE terá N cópias do seu pod rodando.
+# Se um pod morrer, ele cria outro. Se tiver a mais, mata um.
+#
+# NOTA: Na prática, não criamos ReplicaSet diretamente.
+# Usamos Deployment (que cria ReplicaSet automaticamente).
+# Mas entender ReplicaSet é ESSENCIAL para entrevistas!
+# ============================================================
+
+apiVersion: apps/v1         # ReplicaSet usa &quot;apps/v1&quot; (não &quot;v1&quot;)
+kind: ReplicaSet            # Tipo: ReplicaSet
+
+metadata:
+  name: replicaset-nginx    # Nome do ReplicaSet
+  labels:
+    app: nginx
+    modulo: dois
+
+spec:
+  replicas: 3               # NÚMERO DE PODS que queremos sempre ativos
+                            # Mude para 5 e aplique: vai criar 2 a mais!
+                            # Mude para 1 e aplique: vai matar 2!
+
+  selector:                 # Como o ReplicaSet ENCONTRA seus pods?
+    matchLabels:            # Procura pods com ESTES labels
+      app: nginx            # Deve bater com o template abaixo!
+
+  template:                 # MODELO para criar novos pods
+                            # É como uma &quot;receita&quot; de pod
+    metadata:
+      labels:
+        app: nginx          # DEVE bater com o selector acima!
+                            # Se não bater: ERRO!
+
+    spec:                   # Spec do pod (igual ao Pod normal)
+      containers:
+        - name: nginx
+          image: nginx:1.25
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: &quot;64Mi&quot;
+              cpu: &quot;100m&quot;
+            limits:
+              memory: &quot;128Mi&quot;
+              cpu: &quot;200m&quot;
+
+# ============================================================
+# EXPERIMENTOS PARA APRENDER:
+#
+# 1. Criar o ReplicaSet:
+#    kubectl apply -f 01-replicaset.yaml
+#
+# 2. Ver os 3 pods criados:
+#    kubectl get pods -l app=nginx
+#
+# 3. DELETAR um pod manualmente e ver o RS criar outro:
+#    kubectl delete pod &lt;nome-do-pod&gt;
+#    kubectl get pods    # Rapidinho tem 3 de novo!
+#
+# 4. Escalar na hora:
+#    kubectl scale replicaset replicaset-nginx --replicas=5
+#
+# PERGUNTA DE ENTREVISTA:
+# &quot;Qual a diferença entre ReplicaSet e Deployment?&quot;
+# RESPOSTA: ReplicaSet garante N réplicas. Deployment gerencia
+# ReplicaSets e adiciona: rollout, rollback, e histórico.
+# Use Deployment em produção, não ReplicaSet direto.
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./007-modulo-1-fundamentos-readme.html">Aula anterior</a>
+      <a href="./009-modulo-2-intermediario-02-deployment.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

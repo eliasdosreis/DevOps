@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#014-modulo-03-rede-02-pod-com-service">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 03 - rede - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1520869562399-e772f042f422?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 03 - rede" loading="lazy">
+      <figcaption>Rede no Kubernetes conecta pods, services, NodePort e Ingress.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Ponto onde finalmente mesclamos os conhecimentos separados!
+# Criamos o Pod e o Service no mesmo arquivo YAML unidos, 
+# demonstrando a conectividade em tempo real.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Agora montamos a Lanchonete completa do zero: 
+# 1. Contratamos os 2 chapeiros com crach� (Deployment com 2 r�plicas e label &#39;app: lanche&#39;).
+# 2. Na porta da lanchonete afixamos a &quot;Placa de Atendimento&quot; (Service) dizendo 
+# aos motoboys do ifood &quot;Chegou um pedido? Pode largar aqui e vou chamar 
+# quem tiver com o crach� &#39;app: lanche&#39; pra preparar&quot;
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# O YAML aceita concatena��o de objetos (Separados f�sica e visualmente por `---`).
+# Aplicando via `kubectl apply`, isso se submete na Ordem do arquivo, ou de forma at�mica se validado,
+# compondo uma aplica��o de Tier completo (Ex: O Service e seu respectivo Deployment
+# nascendo de uma vez).
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-frontend          # O nome da placa de DNS interna (&quot;Ramal do Ifood&quot;)
+  namespace: meu-primeiro-projeto
+spec:
+  selector:                   # O &quot;Im�&quot; m�gico 
+    camada: frontend          # Todos os Pods que tenham adesivo &#39;camada: frontend&#39; ser�o adotados
+  ports:
+    - port: 80                # Porta que bate no service
+      targetPort: 80          # Porta para despachar p/ o container de fato NGINX
+      
+---                           # Separa��o bruta no YAML: Abaixo � a arquitetura de outro Objeto
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: servidores-frontend
+  namespace: meu-primeiro-projeto
+spec:
+  replicas: 2                 # Queremos 2 &quot;chapeiros&quot; vivos
+  selector:
+    matchLabels:
+      camada: frontend        # Label imut�vel do feitor do Deployment
+  template:
+    metadata:
+      labels:                 # Adesivo OBRIGAT�RIO (aqui foi colado na camisa do oper�rio real)
+        camada: frontend      
+    spec:
+      containers:
+        - name: website
+          image: nginx:1.25-alpine  # Cont�iner simples pra testar acesso HTTP
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Declarar tudo pro cluster goela abaixo:
+#    kubectl apply -f 02-pod-com-service.yaml
+#
+# 2. Para ver as coisas unidas logicamente:
+#    kubectl get deploy,pods,svc -n meu-primeiro-projeto
+#
+# 3. (OPCIONAL/M�GICA) Acesse o pod com um cont�iner tempor�rio (hackzinho)
+#    para dar &quot;curl&quot; l� de dentro do cluster na placa de PABX que criamos!
+#    `kubectl run teste -i --tty --image=curlimages/curl -- sh`
+#    -- (Dentro do shell maroto): `curl http://api-frontend.meu-primeiro-projeto` !!
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# Um erro absurdamente comum: As pessoas digitam ports trocadas entre &#39;Port&#39; e &#39;TargetPort&#39;.
+# TargetPort � quase sempre 8080/3000/80 (A porta literal do seu Java/Nodejs rodando cru).
+# A Port pura (apenas &quot;port&quot;) � a beleza, ou seja: N�o importa se o NodeJS
+# rodar na porta 3333, o Service usa &quot;port: 80&quot; para ningu�m de fora ter que digitar ddp port, 
+# s� chamando http limpo e o K8s faz o NAT din�mico.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# Ao aplicarmos um manifesto longo como este em esteiras CI, se o K8s recusar a sintaxe  
+# do Deployment ali na linha 38, o Service na linha 8 vai ser criado de qualquer jeito?
+# Depende das valida��es Admission Controllers (Schema Validation), mas geralmente,
+# o Kubectl tenta interpretar sequencialmente se n�o houver dry-run. 
+# Empresas S�niors abandonam &quot;---&quot; de arquivos longos em pastas manuais pelo uso 
+# da ferramenta &#39;Helm&#39; que valida as templates e garante a transa��o em blocos.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;E se a minha &#39;api-frontend&#39; subir, e meu banco de dados demorar 2 minutos 
+# para processar o Start-Up. O meu Load Balancer (Service) vai ficar 
+# despachando usu�rios da rede pro nada durante os 2 minutos quebrando a tela dos meus clientes?&quot;
+# Resposta Esperada: &quot;Aqui entram as famosas &#39;Readiness Probes&#39;. O Service 
+# � cego para saber se o App por dentro iniciou lendo do HD. O Service injetar� 
+# o Pod no seu Endpoints P�BLICO apenas quando a condi��o de Readiness do Pod 
+# emitir status = TRUE.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./013-modulo-03-rede-01-service-clusterip.html">Aula anterior</a>
+      <a href="./015-modulo-03-rede-03-service-nodeport.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

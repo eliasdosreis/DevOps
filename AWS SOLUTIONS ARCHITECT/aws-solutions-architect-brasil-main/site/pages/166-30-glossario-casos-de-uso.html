@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Casos de Uso Reais — Glossário na Prática (Módulo 20) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#166-30-glossario-casos-de-uso">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 30 - Glossario - 5 min - 30-Glossario/casos-de-uso.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1456324504439-367cee3b3c32?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 30 - Glossario" loading="lazy">
+      <figcaption>Glossario e mapa mental reduzem confusoes entre servicos parecidos.</figcaption>
+    </figure>
+    <h1>Casos de Uso Reais — Glossário na Prática (Módulo 20)</h1>
+<h2>Caso 1 — Quando &quot;RTO&quot; e &quot;RPO&quot; Determinam a Arquitetura</h2>
+<p><strong>Contexto:</strong> Questão de exame define RTO e RPO como restrições. Candidato precisa saber qual estratégia de DR escolher baseado nesses valores.</p>
+<p><strong>Cenários de Aplicação:</strong></p>
+<pre><code class="language-">CENÁRIO A: RPO = 0, RTO &lt; 30s
+(nenhuma perda de dados, recuperação quase instantânea)
+→ Arquitetura: Active-Active Multi-Região
+→ Aurora Global Database (sync lag &lt; 1s ≈ RPO≈0)  
+→ Route 53 Latency Routing (failover automático ≈ 60s) 
+→ Custo: $$$$
+
+CENÁRIO B: RPO ≤ 15min, RTO ≤ 1h
+→ Arquitetura: Warm Standby
+→ Aurora Global Database (read replica standby pronta)
+→ Auto Scaling: min = 1, max = 20 (scale when needed)
+→ Custo: $$$
+
+CENÁRIO C: RPO ≤ 1h, RTO ≤ 4h  
+→ Arquitetura: Pilot Light
+→ RDS backup automático (snapshots) + restore rápido
+→ EC2 AMIs prontas, inicia quando necessário
+→ Custo: $$
+
+CENÁRIO D: RPO ≤ 24h, RTO pode ser dias
+→ Arquitetura: Backup &amp; Restore
+→ S3 + Glacier para backups
+→ Scripts de restore manuais
+→ Custo: $
+
+MNEMÔNICO:
+RPO = &quot;quanto de dados posso PERDER?&quot; (olha para o passado)
+RTO = &quot;quanto tempo posso ficar PARADO?&quot; (olha para o futuro)</code></pre>
+<hr>
+<h2>Caso 2 — Distinguindo &quot;Durabilidade&quot; de &quot;Disponibilidade&quot;</h2>
+<p><strong>Contexto:</strong> Questão confunde os dois termos intencionalmente.</p>
+<p><strong>Diferença na Prática:</strong></p>
+<pre><code class="language-">CENÁRIO: S3 Standard
+Durabilidade: 99.999999999% (11 noves)
+  → Probabilidade de PERDER um objeto: 0.000000001% por ano
+  → Em 10 milhões de objetos, espera-se perder &lt; 1 objeto em 10.000 anos
+  → &quot;Meus dados sempre existirão?&quot;
+
+Disponibilidade: 99.99% 
+  → Downtime permitido: ~52 min/ano
+  → &quot;Consigo acessar meus dados agora?&quot;
+
+ANALOGIA:
+Cofre do banco: DURABILIDADE alta (dinheiro não some)
+                DISPONIBILIDADE: pode ficar fechado no feriado
+
+QUESTÃO ARMADILHA:
+&quot;Qual classe S3 oferece menor durabilidade?&quot;
+→ S3 One Zone-IA: 99.999999999% (mesma durabilidade!)
+  Diferença: apenas 1 AZ → DISPONIBILIDADE menor se AZ falha
+  Durabilidade não muda (dados replicados em 1 AZ)
+
+GABARITO: &quot;One Zone-IA tem menor DISPONIBILIDADE (não durabilidade)&quot;</code></pre>
+<hr>
+<h2>Caso 3 — Aplicando &quot;Princípio do Menor Privilégio&quot; em IAM</h2>
+<p><strong>Contexto:</strong> Questão pede política IAM mínima para um caso específico.</p>
+<p><strong>Cenário:</strong> Lambda precisa ler de 1 tabela DynamoDB específica e gravar logs no CloudWatch.</p>
+<p><strong>Análise de Políticas:</strong></p>
+<pre><code class="language-">ERRADO — Permissão excessiva:
+{
+  &quot;Effect&quot;: &quot;Allow&quot;,
+  &quot;Action&quot;: &quot;dynamodb:*&quot;,
+  &quot;Resource&quot;: &quot;*&quot;
+}
+→ DynamoDB:* = full access a QUALQUER tabela
+→ Violação do Princípio do Menor Privilégio
+
+ERRADO — Mais específico mas ainda amplo:
+{
+  &quot;Effect&quot;: &quot;Allow&quot;,
+  &quot;Action&quot;: [&quot;dynamodb:GetItem&quot;, &quot;dynamodb:Scan&quot;, &quot;dynamodb:Query&quot;],
+  &quot;Resource&quot;: &quot;*&quot;  // ← ainda &quot;*&quot;
+}
+→ Permite leitura de TODAS as tabelas
+
+CORRETO — Mínimo necessário:
+{
+  &quot;Effect&quot;: &quot;Allow&quot;,
+  &quot;Action&quot;: [&quot;dynamodb:GetItem&quot;, &quot;dynamodb:Query&quot;],
+  &quot;Resource&quot;: &quot;arn:aws:dynamodb:us-east-1:123456789:table/MinhaTabela&quot;
+}
+
+Para CloudWatch Logs (criado automaticamente pelo Lambda se role tiver):
+{
+  &quot;Effect&quot;: &quot;Allow&quot;,
+  &quot;Action&quot;: [
+    &quot;logs:CreateLogGroup&quot;,
+    &quot;logs:CreateLogStream&quot;,
+    &quot;logs:PutLogEvents&quot;
+  ],
+  &quot;Resource&quot;: &quot;arn:aws:logs:us-east-1:123456789:log-group:/aws/lambda/MinhaFuncao:*&quot;
+}
+
+NOTA: AWSLambdaBasicExecutionRole já inclui logs básicos — pode usar managed policy
+      Para DynamoDB: sempre especificar ARN da tabela específica</code></pre>
+<hr>
+<h2>Caso 4 — CIDR e Subnets VPC na Prática</h2>
+<p><strong>Contexto:</strong> Questões de VPC frequentemente pedem calcular IPs disponíveis ou identificar conflitos de CIDR.</p>
+<p><strong>Exercícios:</strong></p>
+<pre><code class="language-">EXERCÍCIO 1: Quantos IPs utilizáveis em uma /24?
+IPv4 /24 = 256 endereços totais
+AWS reserva 5 (rede, GW, DNS+2, broadcast)
+256 - 5 = 251 IPs utilizáveis
+
+EXERCÍCIO 2: Subnets para HA em 2 AZs com VPC 10.0.0.0/16:
+VPC: 10.0.0.0/16 (65.536 endereços)
+Plano de subnets:
+  Public AZ-a:  10.0.1.0/24 (251 usáveis)
+  Public AZ-b:  10.0.2.0/24 (251 usáveis)
+  Private AZ-a: 10.0.10.0/24 (251 usáveis)
+  Private AZ-b: 10.0.11.0/24 (251 usáveis)
+  DB AZ-a:      10.0.20.0/24 (251 usáveis)
+  DB AZ-b:      10.0.21.0/24 (251 usáveis)
+
+EXERCÍCIO 3: VPC Peering — conflito de CIDR:
+VPC A: 10.0.0.0/16
+VPC B: 10.0.0.0/24  ← CONFLITO! /24 está dentro do /16
+→ VPC Peering NÃO funciona com CIDRs sobrepostos
+Solução: usar CIDRs distintos (ex: VPC B: 172.16.0.0/16)
+
+ARMADILHA DE EXAME:
+/28 = menor subnet permitida na AWS
+/28 = 16 endereços totais, 16 - 5 = 11 utilizáveis</code></pre>
+<hr>
+<h2>Caso 5 — Shared Responsibility Model em Cenários Reais</h2>
+<p><strong>Contexto:</strong> Questão identifica quem é responsável por problemas de segurança.</p>
+<p><strong>Cenários e Responsabilidades:</strong></p>
+<pre><code class="language-">CENÁRIO 1: EC2 com Windows Server foi infectado por ransomware
+  Responsabilidade do CLIENTE:
+  ✓ Patches do Windows Server (cliente)
+  ✓ Antivírus instalado no SO (cliente)
+  ✓ Security Group configurado corretamente (cliente)
+  Responsabilidade da AWS:
+  ✓ Hypervisor isolado (AWS)
+  ✓ Hardware físico (AWS)
+  → CLIENTE é responsável pela infecção do SO
+
+CENÁRIO 2: Falha física de disco no servidor que hospeda EC2
+  → AWS é responsável (hardware físico)
+  → AWS substitui hardware, EC2 migra automaticamente (Live Migration)
+  → Dados em EBS são preservados (replicados dentro da AZ)
+
+CENÁRIO 3: Bucket S3 com dados públicos acidentalmente
+  → CLIENTE configurou permissão incorreta
+  → AWS ofereceu ferramentas (Block Public Access, Macie, Config)
+  → Cliente optou por não usar → responsabilidade do CLIENTE
+
+CENÁRIO 4: RDS MySQL com SO não atualizado
+  → AWS gerencia SO do RDS → AWS é responsável por patches do SO
+  → Cliente gerencia: dados, usuários do banco, configurações
+
+CENÁRIO 5: Lambda com código vulnerável a SQL Injection
+  → CLIENTE escreveu o código → CLIENTE é responsável
+  → AWS fornece a plataforma de execução (segura)
+  → Segurança do CÓDIGO = responsabilidade do desenvolvedor
+
+REGRA MNEMÔNICA:
+AWS = &quot;of the cloud&quot; (hardware, rede física, hypervisor, SO managed services)
+Cliente = &quot;in the cloud&quot; (SO EC2, código, dados, config IAM, rede virtual)</code></pre>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./165-29-simulados-e-questoes-readme.html">Aula anterior</a>
+      <a href="./167-30-glossario-cheatsheet.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

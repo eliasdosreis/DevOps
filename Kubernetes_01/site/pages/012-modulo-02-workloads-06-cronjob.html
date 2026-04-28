@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#012-modulo-02-workloads-06-cronjob">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 02 - workloads - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 02 - workloads" loading="lazy">
+      <figcaption>Workloads controlam replicas, atualizacoes, jobs e execucao programada.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um CronJob (Agendador), uma evolu��o da rotina
+# de &quot;Job&quot; para que seja rodada em hor�rios e dias pr�-definidos.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Se o &quot;Job&quot; (que aprendemos acima) foi o Trabalhador que puxou cimento pra sua obra
+# hoje ap�s de voc� ligar para ele, o &quot;CronJob&quot; seria o contrato mensal via &quot;Despertador&quot;.
+# Voc� agenda no rel�gio: &quot;Toda Ter�a Feira �s 03:00 da madrugada o despertador toca, 
+# ele chama o mesmo Trabalhador, ele carrega o cimento e vai embora dormir&quot;.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# O CronJob cria inst�ncias de objetos literais &quot;Jobs&quot; em rotinas baseadas 
+# em agendamentos de tempo, escritas estritamente baseadas no formato Cron (* * * * *). 
+# Isso abstrai a dor e manuten��o de ter que criar inst�ncias Linux crontab pesadas.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: batch/v1          
+kind: CronJob
+metadata:
+  name: backup-de-banco-noturno
+  namespace: meu-primeiro-projeto
+spec:
+  # A String Sagrada do Cron - MINUTOS|HORAS|DIA_MES|MES|DIA_DA_SEMANA
+  # No exemplo abaixo: &quot;Todo Minuto Redondo Divis�vel (Ex: 10:01, 10:02, 10:03...)&quot; 
+  schedule: &quot;* * * * *&quot;       # (Pus 1 minuto de teste apenas para nosso treino real)
+
+  # Boas Pr�ticas Avan�adas:
+  # Quantos &quot;lixos&quot; das execu��es que j� DERAM SUCESSO eu guardo pra ver o log? (Padr�o 3)
+  successfulJobsHistoryLimit: 3
+  # Quantos &quot;lixos&quot; de execu��o se explodiram e falharam devemos deixar la salvos?
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid   # NUNCA deixe jobs de backup subirem por cima corrompendo p DB! &quot;Forbid&quot; cancela o horario caso o de tr�s da roda n�o tiver terminado.
+  
+  jobTemplate:                # O miolo do Job que voc� tem a partir daqui (Repare bem): 
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: sys-backup-bash
+              image: busybox:1.28  # Imagem muito leve, com terminal apenas
+              command:
+                - /bin/sh
+                - -c
+                - &quot;date; echo Backup Diario executado com perfeicao! Baixando 400gb.&quot;
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Ligar o Despertador no K8s:
+#    kubectl apply -f 06-cronjob.yaml
+#
+# 2. Ver o &quot;Rel�gio de ponto&quot; no display geral:
+#    kubectl get cronjobs -n meu-primeiro-projeto
+#    (Repare nas colunas LAST SCHEDULE e ACTIVE).
+#
+# 3. Fique olhando o K8s durante 60 a 120segundos... Voc� ver�:
+#    kubectl get jobs --watch -n meu-primeiro-projeto
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# O Cronjob em si N�O � um container. O Cronjob cria o &quot;Job&quot;, o Job cria o &quot;Pod&quot;,
+# o Pod cont�m o Container Log. � uma cadeia!
+# Se voc� der `kubectl get pods`, ver� l�: 
+#   `backup-de-banco-noturno-28312019-v4m2k    0/1     Completed` 
+# Esses n�meros s�o o timestamp injetado para voc� nunca perder hist�rico de quando foi.
+# Pegaremos o log pelo proprio pod de sempre: `kubectl logs backup-de-banco-noturno-&lt;suaref&gt;`
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# Em Sistemas Legados on-premise, Administradores socavam crontabs direto no S.O 
+# Ubuntu (usando root). E se aquela VM queimasse de madrugada sem backup do CRON? A 
+# empresa inteira parava gerando dano catastrofal sem ngm saber porqu� parou.
+# Subindo seu fluxo para Kubernetes os agendamentos tem Alta Disponibilidade. Se um 
+# Worker Node incendiar, a engine do K8s roda os CronJobs nas outras VMs online na exata 
+# sincronia. E todo agendamento est� em formato GitOps via YAML, versionado imut�vel!
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Voc� criou um CronJob para rodar meia-noite limpando Cache `(0 0 * * *)`. 
+# Mas voc� verifica no dia seguinte e os arquivos bateram log �s 21hs (!). Por qu�?&quot;
+# Resposta Esperada: &quot;O Kube-controller-manager avalia a tabela do &#39;schedule&#39; 
+# usando quase sempre UTC estrito (GMT+0)! Se voc� est� no Brasil UTC-3 e n�o ajustou, 
+# o rel�gio mestre disparou na perspectiva do fuso mundial. A partir da vers�o 1.25+, 
+# j� � poss�vel passarmos explicitamente o metadado `timeZone: &quot;America/Sao_Paulo&quot;` na spec do CJ!&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./011-modulo-02-workloads-05-job.html">Aula anterior</a>
+      <a href="./013-modulo-03-rede-01-service-clusterip.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

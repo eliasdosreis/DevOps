@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Módulo 05 — Amazon S3 e Armazenamento - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#039-06-amazon-s3-e-armazenamento-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 06 - Amazon S3 e Armazenamento - 6 min - 06-Amazon-S3-e-Armazenamento/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 06 - Amazon S3 e Armazenamento" loading="lazy">
+      <figcaption>Armazenamento certo para cada dado: frequente, raro, arquivado, replicado ou versionado.</figcaption>
+    </figure>
+    <h1>Módulo 05 — Amazon S3 e Armazenamento</h1>
+<h2>Objetivo</h2>
+<p>Neste módulo, você vai dominar decisões de arquitetura de armazenamento na AWS, escolhendo serviços e classes de armazenamento com base em custo, latência, durabilidade, segurança e requisitos de recuperação para cenários de prova e de produção.</p>
+<h2>Serviços AWS principais</h2>
+<ul><li>Amazon S3</li><li>Amazon EFS</li><li>Amazon FSx</li><li>AWS Storage Gateway</li><li>AWS DataSync</li></ul>
+<h2>Arquitetura e trade-offs</h2>
+<h2>Classes de Armazenamento do S3</h2>
+<p>O Amazon S3 oferece um espectro de classes que equilibram custo, durabilidade e latência de acesso:</p>
+<div class="table-wrap"><table><thead><tr><th>Classe</th><th>Disponibilidade</th><th>AZs</th><th>Latência</th><th>Mínimo de armazenamento</th><th>Caso de uso</th></tr></thead><tbody><tr><td>S3 Standard</td><td>99,99%</td><td>≥3</td><td>ms</td><td>Nenhum</td><td>Dados acessados frequentemente</td></tr><tr><td>S3 Intelligent-Tiering</td><td>99,9%</td><td>≥3</td><td>ms</td><td>30 dias</td><td>Padrão de acesso imprevisível</td></tr><tr><td>S3 Standard-IA</td><td>99,9%</td><td>≥3</td><td>ms</td><td>30 dias</td><td>Backups, DR acessados mensalmente</td></tr><tr><td>S3 One Zone-IA</td><td>99,5%</td><td>1</td><td>ms</td><td>30 dias</td><td>Dados reproduzíveis, thumbnails</td></tr><tr><td>S3 Glacier Instant Retrieval</td><td>99,9%</td><td>≥3</td><td>ms</td><td>90 dias</td><td>Arquivos acessados 1x/trimestre</td></tr><tr><td>S3 Glacier Flexible Retrieval</td><td>99,99%</td><td>≥3</td><td>minutos–horas</td><td>90 dias</td><td>Arquivos que podem esperar horas</td></tr><tr><td>S3 Glacier Deep Archive</td><td>99,99%</td><td>≥3</td><td>12–48h</td><td>180 dias</td><td>Conformidade, retenção de 7-10 anos</td></tr></tbody></table></div>
+<blockquote><p><strong>Durabilidade:</strong> Todas as classes têm 11 noves (99,999999999%) exceto One Zone-IA (99,5% disponibilidade, mesma durabilidade mas em 1 AZ).</p></blockquote>
+<h3>S3 Intelligent-Tiering</h3>
+<p>Move objetos automaticamente entre tiers com base no acesso:</p>
+<ul><li><strong>Frequent Access</strong> (padrão) → <strong>Infrequent Access</strong> (30 dias sem acesso) → <strong>Archive Instant</strong> (90 dias) → <strong>Archive Access</strong> (90–730 dias, opcional) → <strong>Deep Archive Access</strong> (180–730 dias, opcional)<br></li><li>Cobra taxa de monitoramento por objeto (não há taxa por recuperação no Frequent/Infrequent)</li></ul>
+<hr>
+<h2>Lifecycle Policies</h2>
+<p>Regras que automaticamente transitam objetos entre classes ou os deletam:</p>
+<pre><code class="language-">Objeto criado (Standard)
+    ↓ 30 dias → Standard-IA
+    ↓ 90 dias → Glacier Instant Retrieval
+    ↓ 180 dias → Glacier Deep Archive
+    ↓ 365 dias → DELETE (expiração)</code></pre>
+<p>Pontos importantes:</p>
+<ul><li>Transição mínima entre Standard e Standard-IA/One Zone-IA: <strong>30 dias</strong></li><li>Lifecycle pode se aplicar a versões não-correntes (com versioning habilitado)</li><li><strong>Lifecycle não aplica a objetos &lt; 128 KB</strong> (custo-efetivo não compensa para Glacier)</li><li>Pode filtrar por prefixo, tags ou tamanho de objeto</li></ul>
+<hr>
+<h2>Versionamento e Replicação</h2>
+<h3>Versioning</h3>
+<ul><li>Habilitado no nível do bucket — não pode ser desabilitado após ativado (apenas suspenso)</li><li>Cada versão do objeto tem um <code>VersionId</code> único</li><li><code>DELETE</code> em objeto versionado cria um <strong>delete marker</strong> — objeto não é deletado fisicamente</li><li>Para deletar permanentemente: deve especificar o <code>VersionId</code></li></ul>
+<h3>Replicação</h3>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Descrição</th></tr></thead><tbody><tr><td><strong>CRR</strong> (Cross-Region Replication)</td><td>Origem e destino em regiões diferentes. DR, conformidade, latência diminuída para leituras</td></tr><tr><td><strong>SRR</strong> (Same-Region Replication)</td><td>Mesma região. Agregação de logs, produção → staging, conformidade</td></tr></tbody></table></div>
+<p>Requisitos:</p>
+<ul><li>Versioning <strong>habilitado</strong> em ambos os buckets (origem e destino)</li><li>IAM Role com permissão de <code>s3:ReplicateObject</code> no destino</li><li>Replicação é <strong>prospectiva</strong> — objetos anteriores à ativação não são replicados (use S3 Batch para objetos existentes)</li><li>S3 Replication Time Control (RTC): garante 99,99% dos objetos replicados em 15 minutos (SLA pago)</li></ul>
+<hr>
+<h2>Segurança no S3</h2>
+<h3>Controle de Acesso</h3>
+<ul><li><strong>Bucket Policy</strong> (resource-based): JSON, permite acesso cross-account, condições (IP, VPC endpoint, MFA, etc.)</li><li><strong>ACLs</strong> (legado): nível de objeto ou bucket. AWS recomenda desabilitar ACLs e usar somente bucket policies</li><li><strong>Access Points</strong>: simplifam políticas para múltiplos aplicativos em um bucket — cada access point tem sua própria política</li></ul>
+<h3>Pre-signed URLs</h3>
+<ul><li>URLs temporárias com credenciais embutidas do gerador</li><li>Pode ser para GET ou PUT</li><li>Expiração configurável (máx 7 dias para SDK, 12h para <code>aws s3 presign</code>)</li><li>Usa as permissões de quem gerou a URL no momento do acesso</li></ul>
+<h3>CORS</h3>
+<p>Cross-Origin Resource Sharing — necessário quando uma aplicação web em <code>domain-a.com</code> faz requisição ao bucket <code>domain-b.s3.amazonaws.com</code>. Configurado via regras CORS no bucket (AllowedOrigins, AllowedMethods, AllowedHeaders).</p>
+<h3>Block Public Access</h3>
+<ul><li><strong>4 configurações</strong> que bloqueiam: novas ACLs, qualquer ACL, novas bucket policies com acesso público, qualquer política</li><li>Habilitado por padrão em novos buckets</li><li>Pode ser configurado no nível de account (AWS Organizations)</li></ul>
+<hr>
+<h2>Encriptação no S3</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Gerenciamento da Chave</th><th>Onde a encriptação ocorre</th></tr></thead><tbody><tr><td><strong>SSE-S3</strong></td><td>AWS (AES-256, chave por objeto)</td><td>Server-side (padrão, sem custo adicional)</td></tr><tr><td><strong>SSE-KMS</strong></td><td>Você (CMK ou aws/s3)</td><td>Server-side, auditado pelo CloudTrail, custo de KMS API</td></tr><tr><td><strong>SSE-C</strong></td><td>Você (chave enviada na requisição)</td><td>Server-side, AWS encripta mas não armazena a chave</td></tr><tr><td><strong>CSE</strong></td><td>Você (encripta antes de enviar)</td><td>Client-side, S3 armazena ciphertext</td></tr></tbody></table></div>
+<p>A partir de 2023, SSE-S3 é o padrão para novos buckets (a menos que configurado de outra forma).</p>
+<p><strong>Bucket Key (SSE-KMS):</strong> Reduz chamadas à API do KMS em até 99% usando uma chave derivada por bucket, em vez de chamar o KMS para cada objeto. Habilitado por padrão em novos buckets com SSE-KMS.</p>
+<hr>
+<h2>Performance do S3</h2>
+<ul><li><strong>Prefixos</strong>: S3 escala para <strong>3.500 PUTs/s e 5.500 GETs/s por prefixo</strong>. Distribuir objetos em múltiplos prefixos (ex: hash do nome) maximiza throughput</li><li><strong>Multipart Upload</strong>: recomendado para objetos &gt; 100 MB, <strong>obrigatório</strong> &gt; 5 GB. Paraleliza uploads em partes</li><li><strong>S3 Transfer Acceleration</strong>: usa CloudFront Edge Locations para aceleração de upload global via rede backbone da AWS</li><li><strong>S3 Byte-Range Fetches</strong>: paraleliza downloads dividindo o objeto em ranges (semelhante ao multipart mas para leitura)</li></ul>
+<hr>
+<h2>S3 Object Lock (WORM)</h2>
+<p>Impede que objetos sejam deletados ou sobrescritos por um período definido ou indefinidamente:</p>
+<div class="table-wrap"><table><thead><tr><th>Modo</th><th>Comportamento</th></tr></thead><tbody><tr><td><strong>Governance</strong></td><td>Apenas usuários com <code>s3:BypassGovernanceRetention</code> podem sobrescrever ou deletar</td></tr><tr><td><strong>Compliance</strong></td><td><strong>Ninguém</strong> (incluindo root) pode deletar ou modificar enquanto ativa, nem alterar o modo</td></tr></tbody></table></div>
+<ul><li><strong>Legal Hold</strong>: WORM sem data de expiração, ativado/desativado por quem tem <code>s3:PutObjectLegalHold</code></li><li>Requer versioning habilitado</li><li>Ideal para conformidade regulatória (SEC Rule 17a-4, FINRA, CFTC)</li></ul>
+<hr>
+<h2>S3 Event Notifications</h2>
+<p>Dispara notificações em operações de objeto (<code>s3:ObjectCreated:<em></code>, <code>s3:ObjectRemoved:</em></code>, etc.):</p>
+<ul><li><strong>Destinos</strong>: SNS topic, SQS queue, Lambda function, <strong>EventBridge</strong></li><li>Para eventos via EventBridge: todas as operações S3 ficam disponíveis com filtros avançados e múltiplos destinos</li></ul>
+<hr>
+<h2>Amazon S3 Select e Glacier Select</h2>
+<ul><li><strong>S3 Select</strong>: executa queries SQL simples (<code>SELECT * FROM S3Object WHERE...</code>) diretamente no S3, filtrando dados antes de transferi-los — reduz custo e latência</li><li><strong>Suporta</strong>: CSV, JSON, Parquet (comprimidos com GZIP/BZIP2)</li></ul>
+<hr>
+<h2>Outros Serviços de Armazenamento</h2>
+<h3>Amazon EFS (Elastic File System)</h3>
+<ul><li><strong>Sistema de arquivos NFS</strong> gerenciado, compatível com Linux (NFS v4.1)</li><li><strong>Multi-AZ</strong> por padrão (Standard) ou Single-AZ para EC2 na mesma AZ (custo menor)</li><li>Classes: Standard e Standard-IA (igual ao S3, lifecycle move entre eles)</li><li><strong>Performance modes</strong>: General Purpose (padrão, baixa latência) e Max I/O (alta concorrência)</li><li><strong>Throughput modes</strong>: Bursting (escala com armazenamento), Provisioned (fixo), Elastic (recomendado — auto-adjusts)</li><li>Cobrado por GB armazenado (mais caro que EBS, mas compartilhado entre instâncias)</li></ul>
+<h3>Amazon FSx</h3>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Para</th><th>Protocolo</th><th>Destaques</th></tr></thead><tbody><tr><td>FSx for Windows File Server</td><td>Apps Windows / AD</td><td>SMB</td><td>AD nativo, DFS Namespaces, NTFS</td></tr><tr><td>FSx for Lustre</td><td>HPC, ML, Media</td><td>POSIX</td><td>Sub-ms latência, integra com S3, scratch vs persistent</td></tr><tr><td>FSx for NetApp ONTAP</td><td>Migração on-prem</td><td>NFS/SMB/iSCSI</td><td>Deduplicação, capacidade multi-protocolo</td></tr><tr><td>FSx for OpenZFS</td><td>Migração de ZFS</td><td>NFS</td><td>Snapshots, clone, compressão</td></tr></tbody></table></div>
+<h3>AWS Storage Gateway</h3>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Protocolo</th><th>Caso de uso</th></tr></thead><tbody><tr><td>File Gateway</td><td>NFS/SMB</td><td>Extensão on-prem para S3 (arquivos viram objetos)</td></tr><tr><td>Volume Gateway (Cached)</td><td>iSCSI</td><td>Dados primários no S3, cache local; backups como EBS snapshots</td></tr><tr><td>Volume Gateway (Stored)</td><td>iSCSI</td><td>Dados primários on-prem, backup async no S3</td></tr><tr><td>Tape Gateway</td><td>iSCSI VTL</td><td>Substitui fita física, backup vai para S3/Glacier</td></tr></tbody></table></div>
+<h3>AWS DataSync</h3>
+<ul><li>Transferência de dados <strong>incremental</strong> e agendada entre on-prem e AWS (S3, EFS, FSx)</li><li>Agente instalado on-prem, compressão e encriptação em trânsito</li><li>Até <strong>10 Gbps</strong> de throughput, verifica integridade de dados</li></ul>
+<hr>
+<h2>Armadilhas comuns na prova</h2>
+<ul><li><strong>S3 Standard por padrão</strong> — sempre resposta segura quando sem requisitos de custo</li><li><strong>One Zone-IA</strong> apenas para dados <strong>reproduzíveis</strong> (thumbnails, transcodificados) — não usar para backup crítico</li><li><strong>Glacier Instant</strong> = acesso em ms; <strong>Glacier Flexible</strong> = minutos/horas; <strong>Deep Archive</strong> = 12–48h</li><li><strong>Object Lock Compliance</strong> = ninguém deleta, nem root — FINRA, SEC compliance</li><li><strong>Pre-signed URL</strong> usa permissões de quem gerou — se a role for revogada, a URL para de funcionar</li><li><strong>SSE-KMS com Bucket Key</strong> reduz chamadas KMS em ~99% — melhor custo</li><li><strong>CRR requer versioning em ambos os buckets</strong></li><li>FSx for Lustre: integra com S3 como data repository — HPC lê/escreve direto no Lustre, sincroniza com S3</li><li>EFS: cobrado por uso real; EBS: cobrado por capacidade provisionada</li></ul>
+<h2>Lab hands-on</h2>
+<p>Para prática guiada, utilize o laboratório de S3 avançado em <a href="./040-07-s3-avancado-labs-lab.html">07-S3-Avancado-Labs/lab.md</a>. Notas de custo: priorize arquivos pequenos para testes de lifecycle/replicação, use poucos objetos por etapa e remova buckets, versões e replication rules ao final.</p>
+<h2>Questões práticas</h2>
+<ul><li><a href="./038-06-amazon-s3-e-armazenamento-questoes.html">questoes.md</a></li></ul>
+<h2>Revisão rápida / cheatsheet</h2>
+<ul><li><a href="./036-06-amazon-s3-e-armazenamento-cheatsheet.html">cheatsheet.md</a></li><li><a href="./037-06-amazon-s3-e-armazenamento-flashcards.html">flashcards.md</a></li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./038-06-amazon-s3-e-armazenamento-questoes.html">Aula anterior</a>
+      <a href="./040-07-s3-avancado-labs-lab.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

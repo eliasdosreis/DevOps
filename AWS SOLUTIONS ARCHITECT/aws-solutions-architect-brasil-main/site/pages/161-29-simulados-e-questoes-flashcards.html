@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flashcards — Módulo 29: Simulados e Questões - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#161-29-simulados-e-questoes-flashcards">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 29 - Simulados e Questoes - 4 min - 29-Simulados-e-Questoes/flashcards.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 29 - Simulados e Questoes" loading="lazy">
+      <figcaption>Simulado e treino de decisao sob tempo: leia, elimine, escolha e revise.</figcaption>
+    </figure>
+    <h1>Flashcards — Módulo 29: Simulados e Questões</h1>
+<blockquote><p><strong>Formato:</strong> P = Pergunta | R = Resposta<br><strong>Total:</strong> 25 flashcards — estratégia de prova e revisão de padrões</p></blockquote>
+<hr>
+<p><strong>P:</strong> Quais são os 4 domínios do SAA-C03 e seus pesos?<br><strong>R:</strong> <strong>(1) Design Resilient Architectures: 26%</strong> — HA, DR, decoupling. <strong>(2) Design High-Performing Architectures: 24%</strong> — scaling, caching, databases. <strong>(3) Design Secure Applications and Architectures: 30%</strong> — IAM, encryption, network security. <strong>(4) Design Cost-Optimized Architectures: 20%</strong> — EC2 pricing, storage tiers, serverless. Segurança é o maior domínio.</p>
+<hr>
+<p><strong>P:</strong> Como identificar no exame quando usar Lambda vs ECS vs EC2?<br><strong>R:</strong> <strong>Lambda:</strong> stateless, &lt;15 min, responde a eventos, escala automática. <strong>ECS/Fargate:</strong> containerizado, &gt;15 min possível, microservices, precisa de Docker. <strong>EC2:</strong> controle total de OS, software específico (licença, GPU), carga contínua, SSH access, compliance OS-level. Pistas: &quot;sem gerenciar servidores&quot; → Lambda/Fargate; &quot;lift-and-shift&quot; → EC2.</p>
+<hr>
+<p><strong>P:</strong> Como identificar quando usar RDS vs DynamoDB no exame?<br><strong>R:</strong> <strong>RDS:</strong> dados relacionais, ACID transactions, SQL complexo com JOINs, schema fixo, aplicação existente que usa SQL. <strong>DynamoDB:</strong> alta escala (milhões de req/s), schema flexível, latência de milissegundos, serverless, key-value/document model, evitar JOINs. Pista no exame: &quot;relational&quot; → RDS; &quot;milisseconds at any scale&quot; / &quot;key-value&quot; → DynamoDB.</p>
+<hr>
+<p><strong>P:</strong> Quando usar SQS vs SNS vs EventBridge no exame?<br><strong>R:</strong> <strong>SQS:</strong> fila ponto-a-ponto, decoupling, processamento assíncrono durável, controle de throughput. <strong>SNS:</strong> publicar para múltiplos subscribers simultaneamente (fan-out), notificações push (email, SMS, Lambda). <strong>EventBridge:</strong> roteamento baseado em event patterns, integração com SaaS, scheduler, audit trail de events. SQS+SNS = fan-out com buffering.</p>
+<hr>
+<p><strong>P:</strong> Qual é a pista no texto da questão que indica usar ElastiCache?<br><strong>R:</strong> Palavras-chave: &quot;slow database queries&quot;, &quot;repetidas queries iguais&quot;, &quot;session data&quot;, &quot;leaderboard&quot;, &quot;real-time&quot;, &quot;sub-millisecond latency&quot;, &quot;hot data&quot;. Redis: quando precisa de data structures (sets, sorted sets para leaderboards), pub/sub, persistência opcional. Memcached: cache simples multi-threaded, sem persistência necessária.</p>
+<hr>
+<p><strong>P:</strong> Quando usar Route 53 Failover vs Latency vs Weighted Routing?<br><strong>R:</strong> <strong>Failover:</strong> active/passive DR — tráfego vai para primary, failover automático para secondary se health check falha. <strong>Latency:</strong> rota usuários para a região de menor latência (performance global). <strong>Weighted:</strong> A/B testing, distribuição gradual de tráfego (canary). <strong>Geolocation:</strong> compliance — usuários da EU vai apenas para região EU. <strong>Multi-Value:</strong> múltiplos registros saudáveis retornados (não é load balancer real).</p>
+<hr>
+<p><strong>P:</strong> Como interpretar &quot;custo mais baixo&quot; com armazenamento S3 no exame?<br><strong>R:</strong> Pensar no padrão de acesso: <strong>Standard</strong> = frequente (qualquer frequência). <strong>Standard-IA</strong> = acesso infrequente mas retrieval rápido quando necessário. <strong>Glacier Instant</strong> = acesso ocasional (milissegundos). <strong>Glacier Flexible</strong> = acesso raro (&lt;1/mês), 1-12h retrieval. <strong>Deep Archive</strong> = &lt; acesso anual, 12-48h retrieval. Lower cost to store, higher cost to retrieve.</p>
+<hr>
+<p><strong>P:</strong> O que fazer quando a questão pede &quot;mais seguro&quot; para acesso a S3?<br><strong>R:</strong> Hierarquia de segurança S3: (1) <strong>Block Public Access</strong> (nível de conta/bucket). (2) <strong>Bucket Policy</strong> com Deny ou Allow granular. (3) <strong>IAM Policy</strong> para usuários/roles. (4) <strong>Pre-signed URLs</strong> para acesso temporário. (5) <strong>OAC</strong> (Origin Access Control) para CloudFront. (6) <strong>Object Lock</strong> para WORM. Para &quot;mais seguro&quot;: Block Public Access + OAC para CloudFront, sem ACLs.</p>
+<hr>
+<p><strong>P:</strong> Por que VPC Peering não é sempre a melhor solução para conectar VPCs?<br><strong>R:</strong> <strong>Limitações do VPC Peering:</strong> (1) Não transitive — A↔B e B↔C não implica A↔C (precisa peering A↔C também). (2) CIDR ranges não podem sobrepor. (3) Para N VPCs: N*(N-1)/2 peerings (escala mal). <strong>Alternativa para hub-and-spoke:</strong> AWS Transit Gateway — conecta dezenas/centenas de VPCs e VPNs via hub central. Exame testa: muitas VPCs = Transit Gateway; poucas VPCs = peering.</p>
+<hr>
+<p><strong>P:</strong> Como identificar quando usar CloudFront vs ALB no exame?<br><strong>R:</strong> <strong>CloudFront:</strong> conteúdo global (assets, API global), cache de conteúdo estático/dinâmico, proteção DDoS (Shield Standard grátis), S3 origin, Lambda@Edge. <strong>ALB:</strong> load balancing regional dentro de uma VPC, routing por path/host, target groups (EC2, Lambda, IP), WebSockets, integração com WAF regional. Pista: &quot;global&quot; + &quot;cache&quot; → CloudFront; &quot;regional&quot; + &quot;routing&quot; → ALB.</p>
+<hr>
+<p><strong>P:</strong> Quando um SG (Security Group) é mais adequado que NACL?<br><strong>R:</strong> <strong>SG é melhor quando:</strong> controle no nível de instância, stateful (retorno automático), aceita referência de outros SGs (ex: &quot;permitir do SG do ALB&quot;). <strong>NACL é melhor quando:</strong> precisa de regras DENY explícitas (ex: bloquear IP específico), segurança no nível de subnet, compliance que exige ACL. Exame: &quot;bloquear IP malicioso&quot; → NACL Deny rule (SG não tem Deny).</p>
+<hr>
+<p><strong>P:</strong> O que significa &quot;decoupled&quot; em arquitetura no contexto do exame?<br><strong>R:</strong> Componentes que operam independentemente sem chamadas síncronas diretas. Se um componente falha ou fica lento, não cascadeia para outros. Implementação: <strong>SQS</strong> (buffering assíncrono), <strong>SNS</strong> (pub/sub), <strong>EventBridge</strong> (event-driven). Pista no exame: &quot;tightly coupled&quot; → solução com SQS/SNS para decoupling. &quot;Escalável independentemente&quot; → decoupled.</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre KMS CMK e KMS AWS Managed Key?<br><strong>R:</strong> <strong>AWS Managed Key</strong> (ex: <code>aws/s3</code>): rotação anual automática, cada serviço tem a sua, sem custo adicional, sem controle de policy. <strong>Customer Managed Key (CMK):</strong> você controla a key policy, auditável no CloudTrail, pode desabilitar, custo (~$1/mês), rotação configurável. Exame: &quot;audit key usage&quot; ou &quot;controlar quem usa a chave&quot; → CMK. Simples encryption sem controle → AWS Managed Key.</p>
+<hr>
+<p><strong>P:</strong> Quando usar SSM Secrets Manager vs SSM Parameter Store?<br><strong>R:</strong> <strong>Secrets Manager:</strong> rotação automática nativa (Lambda, RDS, Redshift, DocumentDB), versionamento, integração direta com RDS. Mais caro (~$0.40/secret/mês). <strong>Parameter Store Standard:</strong> gratuito, sem rotação automática nativa, simples configuração (não-secret). <strong>Parameter Store Advanced:</strong> suporta Parameter Policies (TTL, alertas). Se a questão menciona &quot;automatic rotation&quot; → Secrets Manager.</p>
+<hr>
+<p><strong>P:</strong> O que identificar primeiro ao ler uma questão do exame?<br><strong>R:</strong> Sequência de leitura: <strong>(1)</strong> Última frase — geralmente especifica o requisito real (&quot;qual é a solução mais custo-efetiva?&quot;). <strong>(2)</strong> Restrições explícitas — &quot;sem gerenciar servidores&quot;, &quot;menor mudança de código&quot;, &quot;RPO &lt; 1 hora&quot;. <strong>(3)</strong> Contexto — tipo de dado, volume, frequência de acesso. <strong>(4)</strong> Eliminação — qual opção viola DIRETAMENTE um requisito?</p>
+<hr>
+<p><strong>P:</strong> Como o exame testa conhecimento de Multi-AZ vs Multi-Region?<br><strong>R:</strong> <strong>Multi-AZ:</strong> proteção contra falha de AZ (disponibilidade), mesma região, latência low, failover automático (RDS Multi-AZ, ALB, Aurora). <strong>Multi-Region:</strong> proteção contra falha de região (DR), latência mais alta, geralmente latency routing ou failover com Route 53. Exame: &quot;datacenter failure&quot; → Multi-AZ. &quot;region failure&quot; / &quot;disaster recovery&quot; → Multi-Region.</p>
+<hr>
+<p><strong>P:</strong> Qual é a diferença entre Active-Active e Active-Passive multi-region?<br><strong>R:</strong> <strong>Active-Active:</strong> ambas regiões recebem tráfego simultaneamente (Route 53 Latency/Weighted). Sem downtime em failover. Aurora Global Database (escrita em primária, leitura em qualquer). <strong>Active-Passive:</strong> só a região primária recebe tráfego. Failover manual ou automático para secundária se primária falha (Route 53 Failover). Active-Active = menor RTO, maior custo.</p>
+<hr>
+<p><strong>P:</strong> Qual pista leva a escolher Aurora em vez de RDS MySQL?<br><strong>R:</strong> Pistas para Aurora: &quot;leitura de alta performance&quot; (Read Replicas até 15, vs 5 do RDS), &quot;escala automática&quot; (Aurora Serverless), &quot;failover &lt;30s&quot; (Aurora retém dados em cluster volume distribuído, vs Multi-AZ ~1-2 min), &quot;multi-region&quot; (Aurora Global Database), &quot;zero-downtime patching&quot;. Custo: Aurora ~20% mais caro que RDS MySQL, mas equivalente com mais features.</p>
+<hr>
+<p><strong>P:</strong> Como reconhecer um problema de cold start Lambda no exame?<br><strong>R:</strong> Pistas: &quot;latência inconsistente&quot;, &quot;primeira request lenta&quot;, &quot;picos esporádicos de latência&quot;, &quot;Java + Lambda&quot;. Solução no exame: <strong>Provisioned Concurrency</strong> (elimina cold start, instâncias pré-aquecidas) ou <strong>SnapStart</strong> (Java 11+). NOT a solução: aumentar memória (reduz duration mas não elimina cold start), Arm64/Graviton (melhor custo/perf mas não resolve cold start).</p>
+<hr>
+<p><strong>P:</strong> Quais são as condições IAM mais testadas no exame?<br><strong>R:</strong> <strong>aws:RequestedRegion</strong> — restringe a região. <strong>aws:PrincipalTag</strong> — baseado em tag do usuário/role. <strong>s3:prefix</strong> — prefix do S3. <strong>aws:SourceVpc/VPCe</strong> — restringe acesso a recursos dentro de VPC/VPC Endpoint. <strong>aws:MultiFactorAuthPresent</strong> — exige MFA. <strong>StringLike/StringEquals</strong> — comparação com wildcards. Exame testa: &quot;apenas da VPC&quot; → <code>aws:SourceVpc</code> condition.</p>
+<hr>
+<p><strong>P:</strong> O que é uma SCP (Service Control Policy) e quando usar?<br><strong>R:</strong> Política no AWS Organizations que define <strong>limite máximo de permissões</strong> para contas membro — mesmo que uma conta tenha IAM Admin, SCP pode bloquear ações (ex: proibir ações fora de us-east-1). SCP não concede permissões — apenas restringe. Casos: conformidade multi-conta (proibir regiões não aprovadas, proibir deletar CloudTrail). SCP + account IAM = effective permissions.</p>
+<hr>
+<p><strong>P:</strong> Como eliminar opções wrongas em questões de segurança do exame?<br><strong>R:</strong> Elimine automaticamente: (1) <strong>Access Keys hardcoded</strong> em código. (2) <strong>Credenciais em variáveis de ambiente</strong> quando IAM Roles são possíveis. (3) Portas <strong>0.0.0.0/0 abertas</strong> desnecessariamente. (4) S3 <strong>Public Read ACL</strong> quando há alternativa. (5) Dados sensíveis em <strong>texto plano</strong> (plaintext). AWS security principle: assume role &gt; access keys; least privilege; encrypt by default.</p>
+<hr>
+<p><strong>P:</strong> O que o exame testa sobre EBS vs EFS vs S3?<br><strong>R:</strong> <strong>EBS:</strong> block storage montado em uma EC2, single-AZ (exceto io2 Multi-Attach), alta IOPS, banco de dados, OS. <strong>EFS:</strong> file system NFS compartilhado entre múltiplas EC2, multi-AZ, escalável automaticamente. <strong>S3:</strong> object storage, acesso via HTTP API, não montável como filesystem (EFS/EBS são), praticamente ilimitado, ideal para dados não-estruturados, backup, data lake.</p>
+<hr>
+<p><strong>P:</strong> Quando usar AWS Batch vs Lambda para processamento em lote?<br><strong>R:</strong> <strong>Lambda:</strong> jobs curtos (&lt;15 min), event-driven, pequenos. <strong>AWS Batch:</strong> jobs longos (horas/dias), computação pesada (HPC, ML training, rendering), precisa de GPU, grande volume de jobs paralelos. Gerencia: provisiona EC2/Fargate dynamicamente, fila de jobs, prioridades. Ideal para cargas que excedem limites do Lambda.</p>
+<hr>
+<p><strong>P:</strong> Como o exame testa o princípio de least privilege?<br><strong>R:</strong> Cenários: <strong>(1)</strong> EC2 precisa ler apenas um bucket S3 → IAM Role com <code>s3:GetObject</code> naquele bucket específico (não <code>s3:*</code> ou AdministratorAccess). <strong>(2)</strong> Lambda precisa escrever no DynamoDB → <code>dynamodb:PutItem</code> na tabela específica (não full access). <strong>(3)</strong> Cross-account: trust policy + permission policy combinados. Sempre: <strong>mínimo necessário para o mínimo de tempo necessário</strong>.</p>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./160-29-simulados-e-questoes-cheatsheet.html">Aula anterior</a>
+      <a href="./162-29-simulados-e-questoes-lab.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

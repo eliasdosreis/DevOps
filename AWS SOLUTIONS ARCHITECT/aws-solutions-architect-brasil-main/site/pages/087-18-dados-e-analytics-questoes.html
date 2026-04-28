@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questões — Módulo 12: Dados e Analytics - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#087-18-dados-e-analytics-questoes">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 18 - Dados e Analytics - 9 min - 18-Dados-e-Analytics/questoes.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 18 - Dados e Analytics" loading="lazy">
+      <figcaption>Analytics e fluxo: coletar, transformar, consultar e entregar insight.</figcaption>
+    </figure>
+    <h1>Questões — Módulo 12: Dados e Analytics</h1>
+<blockquote><p><strong>Domínio SAA-C03</strong>: Design de Arquiteturas de Alta Performance<br><strong>Dificuldade</strong>: Média</p></blockquote>
+<hr>
+<p><strong>1.</strong> Uma empresa tem dados brutos em S3 em formato JSON (10 TB). Analistas fazem queries frequentes apenas em 3 das 50 colunas disponíveis. Qual mudança teria o maior impacto no custo e performance das queries Athena?</p>
+<ul><li>A) Mover os dados para o Redshift</li><li>B) Converter os arquivos JSON para formato Parquet e particionar por data</li><li>C) Usar S3 Intelligent-Tiering para reduzir custo de storage</li><li>D) Habilitar S3 Transfer Acceleration</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Parquet é colunar: Athena lê apenas as 3 colunas necessárias (vs todas as 50 em JSON). Particionamento evita full table scan. Combinados: redução de custo e tempo de query de 80-95%. Menor custo por TB escaneado + queries muito mais rápidas.</p></details>
+<hr>
+<p><strong>2.</strong> Um time de Data Science precisa fazer ETL sobre 100 GB de dados diários no S3, transformando JSONs em Parquet e aplicando limpeza de dados. Qual serviço AWS é mais adequado para isso sem gerenciar servidores?</p>
+<ul><li>A) AWS Glue (ETL jobs serverless com Spark gerenciado)</li><li>B) Amazon EMR com cluster permanente</li><li>C) Lambda para processamento arquivo a arquivo</li><li>D) AWS Batch com containers</li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — Glue ETL jobs: Spark serverless, escala automaticamente, paga por DPU-hora apenas enquanto o job roda. EMR requer gerenciamento de cluster. Lambda tem limite de 15 minutos e 10 GB de memória (insuficiente para 100 GB de dados). Glue é o padrão para ETL serverless na AWS.</p></details>
+<hr>
+<p><strong>3.</strong> Uma equipe de analytics quer criar um catálogo centralizado dos datasets armazenados em S3, tornando-os pesquisáveis via Athena sem configurar manualmente cada tabela. Qual serviço resolver isso automaticamente?</p>
+<ul><li>A) Amazon Macie</li><li>B) AWS Glue Crawlers + Glue Data Catalog</li><li>C) AWS Lake Formation</li><li>D) Amazon OpenSearch</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Glue Crawlers: varrem o S3, inferem schemas automaticamente e criam/atualizam tabelas no Glue Data Catalog. Athena usa o Glue Data Catalog como metastore. In minutos, todos os datasets S3 ficam consultáveis via Athena.</p></details>
+<hr>
+<p><strong>4.</strong> Uma empresa opera um cluster Kafka on-premises e quer migrar para AWS sem reescrever produtores e consumidores. Qual serviço AWS usar?</p>
+<ul><li>A) Amazon Kinesis Data Streams</li><li>B) Amazon SQS FIFO</li><li>C) Amazon MSK (Managed Streaming for Apache Kafka)</li><li>D) Amazon EventBridge</li></ul>
+<details><summary>Resposta</summary><p><strong>C</strong> — MSK é Kafka gerenciado: compatível com APIs Kafka nativas. Produtores e consumidores existentes continuam funcionando sem modificações. Kinesis tem APIs próprias (incompatível com Kafka).</p></details>
+<hr>
+<p><strong>5.</strong> Uma empresa tem um cluster Redshift e as queries de analistas estão degradando a performance de outros usuários. Qual feature do Redshift resolve isso com o mínimo de configuração?</p>
+<ul><li>A) Aumentar o tamanho do cluster para ra3.16xlarge</li><li>B) Habilitar Concurrency Scaling para adicionar automaticamente capacidade durante picos de queries</li><li>C) Migrar para Redshift Serverless</li><li>D) Criar read replicas do Redshift</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Concurrency Scaling: quando múltiplos usuários submetem queries simultâneas e a fila aumenta, o Redshift automaticamente provisiona clusters adicionais para processar queries extras. Os primeiros 60 minutos por dia de scaling são gratuitos. Não há read replicas no Redshift (diferente do RDS).</p></details>
+<hr>
+<p><strong>6.</strong> Um arquiteto precisa criar um pipeline que entregue eventos de clickstream de uma web app para S3 em formato Parquet para análise posterior com Athena. Qual é a arquitetura mais simples?</p>
+<ul><li>A) Kinesis Data Streams → Lambda → S3 (convertendo para Parquet na Lambda)</li><li>B) Kinesis Data Firehose com transformação de format para Parquet (via Glue Data Catalog) → S3</li><li>C) API Gateway → Lambda → Glue Job → S3</li><li>D) MSK → Glue Streaming → S3</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Kinesis Firehose suporta conversão de formato nativa para Parquet/ORC usando o Glue Data Catalog (define o schema). Configuração sem código, auto-escala, compressão automática e entrega para S3 com bufferização. Solução mais simples e gerenciada.</p></details>
+<hr>
+<p><strong>7.</strong> Uma empresa precisa que analistas de negócio construam dashboards interativos sobre dados em S3 sem mover dados para outro sistema. Qual é a melhor solução?</p>
+<ul><li>A) Redshift + QuickSight</li><li>B) Athena + QuickSight (com SPICE para dashboards interativos)</li><li>C) OpenSearch + Kibana</li><li>D) EMR + Jupyter Notebooks</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Athena consulta S3 diretamente (sem mover dados); QuickSight conecta ao Athena e pode importar os resultados para o SPICE (cache in-memory) para dashboards ultra-rápidos. Sem infraestrutura para gerenciar. Redshift (A) precisaria mover os dados.</p></details>
+<hr>
+<p><strong>8.</strong> Uma empresa tem um Elasticsearch cluster self-managed rodando em EC2 para log analytics. Querem migrar para um serviço gerenciado mantendo as APIs e dashboards Kibana existentes. Qual serviço usar?</p>
+<ul><li>A) Amazon Kinesis Data Analytics</li><li>B) Amazon OpenSearch Service (com suporte a OpenSearch Dashboards/Kibana)</li><li>C) Amazon Athena</li><li>D) AWS Glue</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Amazon OpenSearch Service é o sucessor gerenciado do Elasticsearch Service. Compatível com APIs Elasticsearch e Kibana (via OpenSearch Dashboards). Migração de clusters Elasticsearch auto-gerenciados para OpenSearch Service é suportada.</p></details>
+<hr>
+<p><strong>9.</strong> Uma equipe de dados precisa controlar quais usuários podem acessar quais tabelas e colunas no data lake (S3 + Glue Catalog). Qual serviço implementa permissões a nível de coluna?</p>
+<ul><li>A) S3 Bucket Policies</li><li>B) Glue Data Catalog com IAM policies</li><li>C) AWS Lake Formation com column-level security</li><li>D) Amazon Macie</li></ul>
+<details><summary>Resposta</summary><p><strong>C</strong> — Lake Formation: gerencia permissões de data lake com granularidade de banco/tabela/coluna/row (Cell-Level Security). Integra com Athena, Redshift Spectrum e EMR. S3 Bucket Policies e IAM policies não operam no nível de colunas de uma tabela.</p></details>
+<hr>
+<p><strong>10.</strong> Uma empresa armazena dados históricos em S3 mas precisa executar queries SQL ad-hoc sobre esses dados combinados com dados &quot;quentes&quot; em um cluster Redshift. Qual feature do Redshift usar?</p>
+<ul><li>A) Redshift Data Sharing</li><li>B) Redshift Spectrum para query dados S3 como tabelas externas</li><li>C) Migrar todos os dados históricos para Redshift</li><li>D) Usar Athena para todos os dados e abandonar o Redshift</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Redshift Spectrum: cria external tables no Redshift apontando para dados S3 (via Glue Catalog). Queries que referenciam external tables são distribuídas para thousands de nodes Spectrum no S3 — sem mover dados. Combina dados quentes (Redshift) e frios (S3) em um único SQL.</p></details>
+<hr>
+<p><strong>11.</strong> Um time de ML precisa armazenar features calculadas para uso tanto em treinamento (batch) quanto em inferência em tempo real (online) sem inconsistências. Qual serviço AWS oferece isso?</p>
+<ul><li>A) S3 para armazenar CSVs de features</li><li>B) SageMaker Feature Store com offline store (S3) e online store (baixa latência)</li><li>C) DynamoDB para features online e S3 para features offline separados</li><li>D) ElastiCache Redis para todas as features</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — SageMaker Feature Store: mantém offline store (S3, para treino) e online store (baixa latência, para inferência em tempo real) sincronizados. Garante consistência: a mesma feature definition é usada em treino e produção, evitando training/serving skew.</p></details>
+<hr>
+<p><strong>12.</strong> Uma empresa processa grandes volumes de dados com Apache Spark no EMR. Para reduzir custos, querem usar Spot Instances para os nós de processamento. Qual tipo de node deve usar Spot?</p>
+<ul><li>A) Master node</li><li>B) Core nodes</li><li>C) Task nodes</li><li>D) B e C</li></ul>
+<details><summary>Resposta</summary><p><strong>C</strong> — Task nodes são ideais para Spot: processam dados mas não armazenam dados HDFS. Se forem interrompidos, o job pode redistribuir o trabalho. Core nodes armazenam dados HDFS — se forem perdidos (Spot interruption), dados são perdidos. Master node = nunca Spot (coordena o cluster inteiro).</p></details>
+<hr>
+<p><strong>13.</strong> Uma empresa quer consultar dados de um banco de dados DynamoDB e de um bucket S3 em uma única query SQL usando Athena. Qual feature usar?</p>
+<ul><li>A) DynamoDB Streams exportados para S3 antes das queries</li><li>B) Athena Federated Query com Lambda Data Source Connector para DynamoDB</li><li>C) Glue ETL para mover dados DynamoDB para S3 antes das queries</li><li>D) AWS Glue DataBrew para unificar as fontes</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Athena Federated Query: usa Lambda connectors para consultar fontes não-S3 (DynamoDB, RDS, Redshift, CloudWatch, etc.) diretamente no SQL. O conector DynamoDB traduz consultas Athena para DynamoDB API. Queries entre S3 e DynamoDB em um único SQL.</p></details>
+<hr>
+<p><strong>14.</strong> O time de analytics precisa detectar anomalias em métricas de vendas em tempo real (ex: queda súbita de conversão). Qual combinação de serviços implementa isso?</p>
+<ul><li>A) Kinesis Data Streams → Kinesis Data Analytics (Apache Flink) → SNS para alertas</li><li>B) S3 + Athena com queries agendadas por Lambda → SNS</li><li>C) CloudWatch Metrics com Anomaly Detection → CloudWatch Alarm → SNS</li><li>D) A e C são válidas dependendo da fonte de dados</li></ul>
+<details><summary>Resposta</summary><p><strong>D</strong> — Kinesis Analytics (A): para dados já em streaming (clickstream, apps). CloudWatch Anomaly Detection (C): para métricas de aplicações e infraestrutura. A escolha depende da fonte: se os dados de vendas vêm de uma stream, use Kinesis Analytics. Se são métricas do sistema, use CloudWatch.</p></details>
+<hr>
+<p><strong>15.</strong> Uma empresa precisa migrar seu data warehouse Oracle on-prem para Amazon Redshift. O schema Oracle usa stored procedures e tem estrutura de tabelas diferente do Redshift. Qual é o processo correto?</p>
+<ul><li>A) DMS direto do Oracle para Redshift (suportado nativamente)</li><li>B) SCT (Schema Conversion Tool) para converter schema + procedures, depois DMS para migrar dados</li><li>C) Export CSV do Oracle → S3 → Redshift COPY command</li><li>D) EMR para transformar os dados antes de carregar no Redshift</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Migração heterogênea Oracle → Redshift: SCT primeiro para converter DDL, stored procedures e código proprietário Oracle para SQL compatível com Redshift (identifica também o que não pode ser convertido automaticamente). Depois DMS para mover os dados (com suporte a full load e CDC para zero-downtime).</p></details>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./086-18-dados-e-analytics-links.html">Aula anterior</a>
+      <a href="./088-18-dados-e-analytics-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

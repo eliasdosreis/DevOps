@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#017-modulo-3-avancado-03-pv-pvc">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 03 - avancado - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 03 - avancado" loading="lazy">
+      <figcaption>Avancado: ingress, HPA, storage, RBAC, NetworkPolicy e stateful workloads.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 03-pv-pvc.yaml
+# STORAGE PERSISTENTE - PV, PVC e StorageClass
+#
+# Problema: Pods são TEMPORÁRIOS!
+# Se um pod morre, todos os dados dentro dele SOMEM.
+# Para um banco de dados, isso seria um desastre!
+#
+# Analogia com um pen drive:
+# - PersistentVolume (PV)  = O pen drive físico
+#   (criado pelo admin do cluster, ou automaticamente)
+# - PersistentVolumeClaim (PVC) = Pegar o pen drive emprestado
+#   (criado pelo desenvolvedor, &quot;quero um pen drive de 5GB&quot;)
+# - StorageClass = Fabricante do pen drive
+#   (como o storage é provisionado: AWS EBS, NFS, etc.)
+#
+# O PVC conecta automaticamente a um PV disponível!
+# ============================================================
+
+# PARTE 1: StorageClass (o fabricante/tipo de storage)
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+
+metadata:
+  name: storage-padrao
+  annotations:
+    storageclass.kubernetes.io/is-default-class: &quot;true&quot;
+    # Esta é a classe de armazenamento padrão
+
+provisioner: docker.io/hostpath    # Para Minikube local
+# Em produção usaria:
+# - kubernetes.io/aws-ebs     (AWS)
+# - kubernetes.io/gce-pd      (GCP)
+# - disk.csi.azure.com        (Azure)
+
+reclaimPolicy: Retain              # O que fazer com o PV quando
+                                   # o PVC é deletado?
+                                   # Retain: MANTÉM os dados!
+                                   # Delete: APAGA os dados!
+                                   # Recycle: Limpa e disponibiliza
+
+volumeBindingMode: Immediate       # Quando criar o PV?
+                                   # Immediate: agora
+                                   # WaitForFirstConsumer: só quando
+                                   # um pod usar o PVC
+
+---
+# PARTE 2: PersistentVolume (o disco em si)
+# Em produção com dynamic provisioning, o PV é criado
+# automaticamente! Só cria manual em casos específicos.
+
+apiVersion: v1
+kind: PersistentVolume
+
+metadata:
+  name: pv-banco-dados              # Nome do volume físico
+  labels:
+    tipo: ssd
+
+spec:
+  storageClassName: storage-padrao  # Qual StorageClass usa
+  capacity:
+    storage: 10Gi                   # Tamanho: 10 Gigabytes
+
+  accessModes:
+    - ReadWriteOnce                 # RWO: Só 1 nó escreve por vez
+    # ReadOnlyMany  (ROX): Vários nós leem simultaneamente
+    # ReadWriteMany (RWX): Vários nós leem E escrevem (NFS, etc)
+
+  hostPath:                         # Para desenvolvimento local
+    path: /data/banco-dados         # Pasta no servidor/nó
+
+---
+# PARTE 3: PersistentVolumeClaim (pedido de storage)
+# O desenvolvedor cria isso. Não sabe onde fica o disco!
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: pvc-banco-dados             # Nome do &quot;pedido&quot;
+
+spec:
+  storageClassName: storage-padrao  # Que tipo de storage quero
+  accessModes:
+    - ReadWriteOnce                 # Mesmo mode do PV
+
+  resources:
+    requests:
+      storage: 5Gi                  # Quanto espaço preciso?
+                                    # K8s acha um PV compatível!
+
+---
+# PARTE 4: Pod USANDO o PVC
+
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: pod-com-storage
+  labels:
+    app: banco
+
+spec:
+  containers:
+    - name: banco
+      image: postgres:15            # Banco de dados PostgreSQL
+
+      env:
+        - name: POSTGRES_PASSWORD   # Senha do postgres
+          value: &quot;senha-insegura&quot;   # Em prod: use Secret!
+
+      volumeMounts:                 # Onde montar o volume no container
+        - name: dados-banco         # Nome do volume (definido abaixo)
+          mountPath: /var/lib/postgresql/data  # Caminho no container
+
+  volumes:                          # Definição dos volumes do pod
+    - name: dados-banco             # Nome referenciado no volumeMount
+      persistentVolumeClaim:
+        claimName: pvc-banco-dados  # Qual PVC usar
+
+# ============================================================
+# ENTREVISTA SÊNIOR:
+# &quot;O que acontece com os dados do PVC quando o pod morre?&quot;
+# RESPOSTA: OS DADOS SOBREVIVEM! O PVC persiste mesmo que
+# o pod seja deletado e recriado. O novo pod monta o mesmo
+# PVC e encontra os dados intactos.
+#
+# &quot;O que é dynamic provisioning?&quot;
+# RESPOSTA: Quando você cria um PVC, o cluster cria o PV
+# AUTOMATICAMENTE usando o StorageClass. Não precisa criar
+# PV manualmente. É o modo preferido em produção.
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./016-modulo-3-avancado-02-hpa.html">Aula anterior</a>
+      <a href="./018-modulo-3-avancado-04-rbac.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

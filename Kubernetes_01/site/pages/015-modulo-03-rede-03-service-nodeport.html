@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#015-modulo-03-rede-03-service-nodeport">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 03 - rede - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1520869562399-e772f042f422?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 03 - rede" loading="lazy">
+      <figcaption>Rede no Kubernetes conecta pods, services, NodePort e Ingress.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um Service NodePort, a forma rudimentar do K8s de escancarar o app
+# para fora da &quot;bolha&quot; segura do cluster e ser alcan�ado externamente  
+# por qualquer dispositivo na mesma rede corporativa usando o IP do seu PC/VM f�sica.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Lembra da Empresa e o &quot;PABX/Ramal&quot; interno (ClusterIP)?
+# Para quem estar fora do pr�dio conseguir ligar, a empresa precisa comprar na 
+# Anatel uma PORTA &quot;P�blica&quot; na central de rua, digamos o n�mero `30999`. 
+# Quando voc�, da sua casa, liga pro 30999, do lado de fora do pr�dio 
+# f�sico do hospital, a Telefonista o transfere pro &quot;PABX Interno&quot; que criamos antes.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# Expor &quot;ExternalTraffic&quot;. O Service do tipo NodePort aloca estaticamente ou automaticamente 
+# uma porta TCP/UDP alta em absolutamente t-o-d-o-s os n�s &quot;Worker&quot; f�sicos do cluster, na 
+# range can�nica de `30000-32767`. Isso permite que roteadores On-Premise 
+# encaminhem tr�fego TCP bruto aos n�s do K8s batendo diretamente na aplica��o.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: acesso-rua-frontend
+  namespace: meu-primeiro-projeto
+spec:
+  type: NodePort                # Altera��o fundamental: Sai o ClusterIP, e entra o NodePort!
+  selector:
+    camada: frontend            # Reaproveitamos o Deployment (os Atendentes) do arquivo &#39;02&#39;
+  ports:
+    - port: 80
+      targetPort: 80
+      
+      # NodePort � onde ele arromba o IPTables do host host da VM externa (Seu Windows Host/Linux Server):
+      nodePort: 31000           # For�amos a porta exata (se omitir ela ser� sorteada no range da &gt; 30000 aleatoria)
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Certifique-se que voc� aplicou o arquivo 02 anterior. Em seguida, aplique:
+#    kubectl apply -f 03-service-nodeport.yaml
+#
+# 2. Verifique o mapeamento das portas no painel:
+#    kubectl get service acesso-rua-frontend -n meu-primeiro-projeto
+#    (Veja o `PORT(S)` mostrando `80:31000/TCP`. Entra na 31000 de fora, e cai na 80 do Service!
+#
+# 3. Teste o acesso da RUA do seu PC real!
+#    Abra seu Firefox e entre: http://localhost:31000/    ou    (IP_DA_MAQUINAVIRTUAL_/PC):31000/
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# M�gica do Kind: o Kind roda no docker de uma forma que esconde portas no NAT. 
+# Quando se cria um cluster `kind` voc� as vezes precisa mapear a porta `extraPortMappings` 
+# no momento q subir o cluster na config se quiser acessar nodeports de forma limpa,
+# sen�o precisa ver as configs do container do Docker `docker ps` pra acessar.
+# (Por�m o conceito de produ��o On-Premises � irretoc�vel, acessa pela LAN livremente).
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# &quot;Elias, se eu acesso direto IP-DO-N�:31000 e ele me joga no aplicativo, pra 
+# que eu precisaria de Ingress Controllers e Nginx com nomes .com .br?&quot;
+# Resposta Cl�ssica: Seguran�a e SSL. Se o NodePort abre uma porta aleat�ria, 
+# imagine o cliente corporativo tentando acessar `meubanco.com.br:31923`. N�o tem
+# como colocar &quot;https://&quot; (TLS) no NodePort de forma escal�vel e nativa para sites. 
+# Al�m de onerar o Firewall da rede local de liberar centenas de milhares de portas no SecurityGroup 
+# acima de 30000 de todos os n�s aleat�rios. Sempre preferimos &quot;Ingress&quot; batendo forte em servi�os L7 SSL.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se eu tiver 10 Worker Nodes, e o seu Deployment rodar os 3 Pods &quot;camada: frontend&quot; APENAS 
+# nos N�s (Workers) N� 1, 2 e 3 (por falta de mem�ria nos outros 7). Como o NodePort atuar� em todos os n�s?&quot;
+# Resposta Esperada: &quot;O Kube-Proxy vai mapear a porta 31000 nos 10(!) n�s igualmente. 
+# Se uma chamada for entregue por algum motivo no Node N� 9, ele aceita e far� um 
+# SNAT (Source Nat / Hairpinning), roteando pelo Backbone CNI (Calico, Weave) l� 
+# para o N� 1 que cont�m o Pod vivo do App. Isso incorre em Hop &quot;Network Hop Overhead&quot; de 
+# performance gigante entre hosts, que resolvemos avan�ada-mente usando `externalTrafficPolicy: Local`.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./014-modulo-03-rede-02-pod-com-service.html">Aula anterior</a>
+      <a href="./016-modulo-03-rede-04-ingress.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

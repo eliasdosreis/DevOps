@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#031-modulo-07-rbac-03-rolebinding">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #b45309">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 07 - rbac - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 07 - rbac" loading="lazy">
+      <figcaption>RBAC define identidade, permissao e escopo para operar com seguranca.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria a Liga��o M�gica (O Binding). A pe�a do quebra-cabe�a
+# que veste o Crach� do Rob� (Aula 1) e o cola no Papel de Regras
+# do Mural (Aula 2), dando a real autoriza��o de acesso ao vivente.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Lembra da historinha?
+# 1. Eu havia imprimido o Seu Crach� pl�stico (ServiceAccount) vazio = Aula 1. 
+# 2. O RH havia colocado no Mural da parede as Regras (Role) que dizem &quot;Pode listar Pods&quot; = Aula 2.
+#
+# AGORA NA AULA 3 � O ATO FINAL DE EFETIVAR CONTRATO (Binding!):
+# O RoleBinding entra no RH e cola o S�mbolo oficial da regra de &#39;Ler Pods&#39; NO SEU CRACH�.
+# Sem O RoleBinding vinculando os dois... O SA fica pelado. E A Rule no quadro n�o aplica em ningu�m!
+# Voc� � Ningu�m de crach� sem o Binding. Todo acesso do K8s � por Bindings.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# O `RoleBinding` concede ativamente as permiss�es declarativas definidas na  
+# Role a um Sujeito alvo referenciado (Subject). 
+# Esse alvo pode ser User F�sico, Um AD &quot;Group&quot; Humano, ou o Crach� Rob�tico de 
+# um app (O &quot;ServiceAccount&quot;).
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding                     # BINDING: A Corrente de amarra��o 
+metadata:
+  name: linca-o-poder                 # Nome do documento de amarra��o
+  namespace: meu-primeiro-projeto 
+  
+# PARTE A)  QUEM VAI VESTIR A ROUPA / PODER?
+subjects:
+- kind: ServiceAccount                # Tipo: &quot;� um Crach� de App&quot; 
+  name: cracha-do-meu-microservico    # Nome EXATO do arquivo &quot;01&quot; (O Crach� impresso)
+  namespace: meu-primeiro-projeto     # Em qual sala do RH esse sujeito mora
+
+# PARTE B) QUAL ROUPA MAGICA (REGRA) ELE VAI VESTIR NAS COSTAS?
+roleRef:
+  kind: Role                          # Tipo: &quot;Quero ligar num Mural de Role Local&quot;
+  name: regra-de-poder-ler-pods       # Nome EXATO do Mural do arquivo &quot;02&quot;
+  apiGroup: rbac.authorization.k8s.io # O Core API da engine validadora do control plane
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Antes de mais nada, tenha certeza de aplicar as aulas `01 e 02` anteriores caso n�o haja feito.
+#    Feito? Lance a marreta de contrato &quot;Bindando&quot; as duas no mundo K8S:
+#    kubectl apply -f 03-rolebinding.yaml
+#
+# 2. Liste as amarra��es do seu Namespace local de projeto:
+#    kubectl get rolebindings -n meu-primeiro-projeto
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# COMO DESCUBRO AGORA QUANTO PODER EU DE FATO TENHO? 
+# Seus dias de Debug de permiss�o ca�ticos acabaram, anote no cora��o e decore:
+# Eu Quero tentar me passar por ESTE CRACHA ABAIXO, pra ver MENTLAMENTE NO TERMINAL 
+# se ele logicasse ele teria o &#39;SIM&#39; ou &#39;NAO&#39; pra de fato listar Pods? 
+# Rode ao vivo a magia do &#39;as&#39; (impersonate):
+#
+# `kubectl get pods --as=system:serviceaccount:meu-primeiro-projeto:cracha-do-meu-microservico`
+#
+# Ele vai printar a lista linda de PODS com Sucesso! 
+# E agora se eu meter o LOUCO tentando me passar por ele pra DELETAR?
+# `kubectl auth can-i delete pods --as=system:serviceaccount:meu-primeiro-projeto:cracha-do-meu-microservico`
+# A RESPOSTA MAGISTRAL LOGO ABAIXO DA SAIDA  DO CLI: &quot;no&quot;.
+# (Perfei��o absoluta de RBAC Segura do livro de regras!)
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# O RoleBinding do K8s � imut�vel no tocante � *Qual Roupa (`roleRef`)* ele veste num Sujeito..
+# Se um Junior entrar no YAML ai em cima `03-rolebinding.yaml`, alterar a linha 24 pra outro nome
+# (`name: REGRA_PODEROSA_NOVA_DE_ADMIN`) e aplicar um &quot;kubectl apply -f&quot; por cima disso...  
+# O kubernetes emite um ERRO FATAL &quot;Invalid... Invalid value: roleRef is immutable&quot;. 
+# Regra Senior de Seguran�a: Um atestado de uni�o RBAC, depois de lacrado o carimbo,
+# n�o pode simplesmente trocar de Livro de Regras por Hot-Reload. Evita sequestros de YAML
+# obscuros e &quot;Privilege Escalations&quot;. Tem quer dar delete e recreate manual com auditoria de log.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se n�s temos uma Role local em &quot;Dev&quot; apontada em um Rolebinding ali�s na sala de &quot;Dev&quot;.
+# Pra economizar arquivo Yamls soltos, n�s podemos botar O SUBJECT (Quem vai vestir) sendo  
+# um ServiceAccount do NAMESPACE da *`PRODUCAO`*? Daria Binding cruzado?&quot; 
+# Resposta Esperada: &quot;Sim, sem d�vidas. Esse � incrivelmente o truque mestre de CI/CD.
+# N�s podemos ter o Jenkins rodando na Producao (Possui seu crach� Jenkins-SA) e na aba &#39;Subjects&#39; 
+# do arquivo Rolebinding da sala de Desenvolvmento DEV, apontar dizendo: &quot;Hey, quando
+# a conta de &#39;Prdoucao/Jenkins-SA&#39; se logar.. ela vira LIDER nesta sala&quot;. E o Jenkins 
+# da Produ��o magicamente ganha autoridade pra agir no vizinho dele!&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./030-modulo-07-rbac-02-role.html">Aula anterior</a>
+      <a href="./032-modulo-07-rbac-04-clusterrole.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

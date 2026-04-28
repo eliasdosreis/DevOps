@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Prático — Machine Learning: Comprehend + Rekognition + Textract (Módulo 13) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#092-19-machine-learning-e-ia-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 19 - Machine Learning e IA - 6 min - 19-Machine-Learning-e-IA/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 19 - Machine Learning e IA" loading="lazy">
+      <figcaption>IA no Associate costuma ser reconhecer o servico gerenciado certo para o caso.</figcaption>
+    </figure>
+    <h1>Lab Prático — Machine Learning: Comprehend + Rekognition + Textract (Módulo 13)</h1>
+<blockquote><p><strong>Região:</strong> us-east-1 | <strong>Custo estimado:</strong> &lt; $1.00 (Free Tier inclui 5K unidades/mês Comprehend, 5K imagens Rekognition)<br><strong>Pré-requisitos:</strong> AWS CLI configurado, Python 3.12, boto3</p></blockquote>
+<hr>
+<h2>Objetivo</h2>
+<p>Explorar os três principais serviços de IA &quot;pré-treinada&quot; da AWS — sem treinar modelos, só consumindo APIs.</p>
+<hr>
+<h2>Parte 1 — Comprehend: Análise de Texto</h2>
+<pre><code class="language-python">#!/usr/bin/env python3
+# comprehend_demo.py
+
+import boto3
+import json
+
+client = boto3.client(&#39;comprehend&#39;, region_name=&#39;us-east-1&#39;)
+
+textos = [
+    &quot;O produto chegou rápido e a qualidade é excelente! Recomendo muito.&quot;,
+    &quot;Péssimo atendimento, demorou 30 dias para entregar e veio quebrado.&quot;,
+    &quot;Entrega normal, produto conforme descrito. Nada de especial.&quot;,
+    &quot;O CPF do cliente é 123.456.789-00 e o email é joao@exemplo.com.br&quot;,
+    &quot;A Amazon Web Services lançou novos serviços de inteligência artificial em São Paulo.&quot;,
+]
+
+print(&quot;=&quot; * 60)
+print(&quot;ANÁLISE DE SENTIMENTO&quot;)
+print(&quot;=&quot; * 60)
+
+for texto in textos[:3]:
+    response = client.detect_sentiment(
+        Text=texto,
+        LanguageCode=&#39;pt&#39;
+    )
+    sentiment = response[&#39;Sentiment&#39;]
+    scores = response[&#39;SentimentScore&#39;]
+    print(f&quot;\nTexto: {texto[:50]}...&quot;)
+    print(f&quot;Sentimento: {sentiment}&quot;)
+    print(f&quot;Confiança: POSITIVE={scores[&#39;Positive&#39;]:.2%}, NEGATIVE={scores[&#39;Negative&#39;]:.2%}&quot;)
+
+print(&quot;\n&quot; + &quot;=&quot; * 60)
+print(&quot;DETECÇÃO DE PII (Dados Pessoais)&quot;)
+print(&quot;=&quot; * 60)
+
+response = client.detect_pii_entities(
+    Text=textos[3],
+    LanguageCode=&#39;pt&#39;
+)
+
+print(f&quot;\nTexto: {textos[3]}&quot;)
+print(&quot;Entidades PII encontradas:&quot;)
+for entity in response[&#39;Entities&#39;]:
+    inicio = entity[&#39;BeginOffset&#39;]
+    fim = entity[&#39;EndOffset&#39;]
+    valor = textos[3][inicio:fim]
+    print(f&quot;  Tipo: {entity[&#39;Type&#39;]} | Valor detectado: {valor} | Score: {entity[&#39;Score&#39;]:.2%}&quot;)
+
+print(&quot;\n&quot; + &quot;=&quot; * 60)
+print(&quot;EXTRAÇÃO DE ENTIDADES&quot;)
+print(&quot;=&quot; * 60)
+
+response = client.detect_entities(
+    Text=textos[4],
+    LanguageCode=&#39;pt&#39;
+)
+
+print(f&quot;\nTexto: {textos[4]}&quot;)
+print(&quot;Entidades encontradas:&quot;)
+for entity in response[&#39;Entities&#39;]:
+    print(f&quot;  {entity[&#39;Type&#39;]}: {entity[&#39;Text&#39;]} (score: {entity[&#39;Score&#39;]:.2%})&quot;)
+
+print(&quot;\n&quot; + &quot;=&quot; * 60)
+print(&quot;DETECÇÃO DE IDIOMA&quot;)
+print(&quot;=&quot; * 60)
+
+textos_idioma = [
+    &quot;This is an English sentence about cloud computing.&quot;,
+    &quot;Esta frase está em português sobre computação em nuvem.&quot;,
+    &quot;Este es un texto en español sobre servicios en la nube.&quot;,
+]
+
+for texto in textos_idioma:
+    response = client.detect_dominant_language(Text=texto)
+    lang = response[&#39;Languages&#39;][0]
+    print(f&quot;  &#39;{texto[:40]}...&#39; → {lang[&#39;LanguageCode&#39;]} ({lang[&#39;Score&#39;]:.2%})&quot;)</code></pre>
+<pre><code class="language-bash"># Executar
+python3 comprehend_demo.py</code></pre>
+<hr>
+<h2>Parte 2 — Rekognition: Análise de Imagens</h2>
+<pre><code class="language-python">#!/usr/bin/env python3
+# rekognition_demo.py
+
+import boto3
+import urllib.request
+import json
+
+client = boto3.client(&#39;rekognition&#39;, region_name=&#39;us-east-1&#39;)
+s3 = boto3.client(&#39;s3&#39;, region_name=&#39;us-east-1&#39;)
+
+# Usar imagem pública via URL (Rekognition pode receber bytes diretamente)
+# Para o lab, vamos criar uma imagem de teste via S3
+
+import boto3, os
+
+ACCOUNT_ID = boto3.client(&#39;sts&#39;).get_caller_identity()[&#39;Account&#39;]
+BUCKET = f&quot;lab-rekognition-{ACCOUNT_ID}&quot;
+
+# Criar bucket temporário
+s3_resource = boto3.resource(&#39;s3&#39;, region_name=&#39;us-east-1&#39;)
+try:
+    s3_resource.create_bucket(Bucket=BUCKET)
+except Exception as e:
+    print(f&quot;Bucket já existe ou erro: {e}&quot;)
+
+# Download de imagem pública de teste (foto de pessoas em paisagem)
+test_image_url = &quot;https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Cute_dog.jpg/320px-Cute_dog.jpg&quot;
+urllib.request.urlretrieve(test_image_url, &quot;/tmp/test_image.jpg&quot;)
+
+# Upload para S3
+s3.upload_file(&quot;/tmp/test_image.jpg&quot;, BUCKET, &quot;test_image.jpg&quot;)
+
+print(&quot;=&quot; * 60)
+print(&quot;DETECÇÃO DE LABELS (objetos/cenas)&quot;)
+print(&quot;=&quot; * 60)
+
+response = client.detect_labels(
+    Image={&#39;S3Object&#39;: {&#39;Bucket&#39;: BUCKET, &#39;Name&#39;: &#39;test_image.jpg&#39;}},
+    MaxLabels=10,
+    MinConfidence=80.0
+)
+
+for label in response[&#39;Labels&#39;]:
+    print(f&quot;  {label[&#39;Name&#39;]:30} Confiança: {label[&#39;Confidence&#39;]:.1f}%&quot;)
+
+print(&quot;\n&quot; + &quot;=&quot; * 60)
+print(&quot;MODERAÇÃO DE CONTEÚDO&quot;)
+print(&quot;=&quot; * 60)
+
+response = client.detect_moderation_labels(
+    Image={&#39;S3Object&#39;: {&#39;Bucket&#39;: BUCKET, &#39;Name&#39;: &#39;test_image.jpg&#39;}},
+    MinConfidence=50.0
+)
+
+if response[&#39;ModerationLabels&#39;]:
+    for label in response[&#39;ModerationLabels&#39;]:
+        print(f&quot;  ALERTA: {label[&#39;Name&#39;]} (Pai: {label[&#39;ParentName&#39;]}) — {label[&#39;Confidence&#39;]:.1f}%&quot;)
+else:
+    print(&quot;  Nenhum conteúdo impróprio detectado ✓&quot;)
+
+print(&quot;\n&quot; + &quot;=&quot; * 60)
+print(&quot;COMPARAÇÃO DE FACES (simulação com mesma imagem)&quot;)
+print(&quot;=&quot; * 60)
+
+# Simular com mesma imagem (mesma face)
+response = client.compare_faces(
+    SourceImage={&#39;S3Object&#39;: {&#39;Bucket&#39;: BUCKET, &#39;Name&#39;: &#39;test_image.jpg&#39;}},
+    TargetImage={&#39;S3Object&#39;: {&#39;Bucket&#39;: BUCKET, &#39;Name&#39;: &#39;test_image.jpg&#39;}},
+    SimilarityThreshold=80
+)
+
+print(f&quot;  Faces encontradas na fonte: {len(response.get(&#39;SourceImageFace&#39;, {})) &gt; 0}&quot;)
+print(f&quot;  Comparações: {len(response.get(&#39;FaceMatches&#39;, []))} matches encontrados&quot;)
+
+# Limpeza S3
+s3.delete_object(Bucket=BUCKET, Key=&#39;test_image.jpg&#39;)
+s3.delete_bucket(Bucket=BUCKET)
+print(&quot;\nBucket de teste removido.&quot;)</code></pre>
+<pre><code class="language-bash">python3 rekognition_demo.py</code></pre>
+<hr>
+<h2>Parte 3 — Textract: Extração de Documentos</h2>
+<pre><code class="language-python">#!/usr/bin/env python3
+# textract_demo.py
+
+import boto3
+import json
+
+client = boto3.client(&#39;textract&#39;, region_name=&#39;us-east-1&#39;)
+
+# Criar um documento PDF simples para Textract analisar
+# (Textract aceita PNG/JPEG/PDF/TIFF)
+# Para o lab, criamos uma imagem PNG com texto
+
+from PIL import Image, ImageDraw, ImageFont
+import io
+
+# Criar imagem com texto simulando formulário
+img = Image.new(&#39;RGB&#39;, (600, 400), color=&#39;white&#39;)
+draw = ImageDraw.Draw(img)
+
+draw.text((50, 30), &quot;FORMULÁRIO DE CADASTRO&quot;, fill=&#39;black&#39;)
+draw.text((50, 80), &quot;Nome: João Silva Santos&quot;, fill=&#39;black&#39;)
+draw.text((50, 120), &quot;CPF: 000.000.000-00&quot;, fill=&#39;black&#39;)
+draw.text((50, 160), &quot;Data de Nascimento: 15/06/1985&quot;, fill=&#39;black&#39;)
+draw.text((50, 200), &quot;Email: joao.silva@empresa.com.br&quot;, fill=&#39;black&#39;)
+draw.text((50, 240), &quot;Telefone: (11) 99999-0000&quot;, fill=&#39;black&#39;)
+draw.text((50, 300), &quot;Valor Total: R$ 1.500,00&quot;, fill=&#39;black&#39;)
+draw.text((50, 340), &quot;Status: Aprovado&quot;, fill=&#39;black&#39;)
+
+img_bytes = io.BytesIO()
+img.save(img_bytes, format=&#39;PNG&#39;)
+img_bytes.seek(0)
+
+print(&quot;=&quot; * 60)
+print(&quot;EXTRAÇÃO DE TEXTO (DetectDocumentText)&quot;)
+print(&quot;=&quot; * 60)
+
+response = client.detect_document_text(
+    Document={&#39;Bytes&#39;: img_bytes.getvalue()}
+)
+
+print(&quot;Texto extraído linha por linha:&quot;)
+for block in response[&#39;Blocks&#39;]:
+    if block[&#39;BlockType&#39;] == &#39;LINE&#39;:
+        print(f&quot;  [{block[&#39;Confidence&#39;]:.1f}%] {block[&#39;Text&#39;]}&quot;)
+
+print(&quot;\n&quot; + &quot;=&quot; * 60)
+print(&quot;ANÁLISE DE FORMULÁRIO (AnalyzeDocument FORMS)&quot;)
+print(&quot;=&quot; * 60)
+
+img_bytes.seek(0)
+response = client.analyze_document(
+    Document={&#39;Bytes&#39;: img_bytes.getvalue()},
+    FeatureTypes=[&#39;FORMS&#39;]
+)
+
+key_blocks = {}
+value_blocks = {}
+
+for block in response[&#39;Blocks&#39;]:
+    if block[&#39;BlockType&#39;] == &#39;KEY_VALUE_SET&#39;:
+        if &#39;KEY&#39; in block[&#39;EntityTypes&#39;]:
+            key_blocks[block[&#39;Id&#39;]] = block
+        else:
+            value_blocks[block[&#39;Id&#39;]] = block
+
+print(&quot;Pares chave-valor detectados:&quot;)
+for key_id, key_block in key_blocks.items():
+    # Extrair texto da chave
+    key_text = &#39; &#39;.join([
+        w[&#39;Text&#39;] for w in [
+            next((b for b in response[&#39;Blocks&#39;] if b[&#39;Id&#39;] == rel[&#39;Ids&#39;][0]), None)
+            for rel in key_block.get(&#39;Relationships&#39;, []) if rel[&#39;Type&#39;] == &#39;CHILD&#39;
+        ] if w and w.get(&#39;BlockType&#39;) == &#39;WORD&#39;
+    ])
+    
+    # Extrair texto do valor
+    value_text = &#39;&#39;
+    for rel in key_block.get(&#39;Relationships&#39;, []):
+        if rel[&#39;Type&#39;] == &#39;VALUE&#39;:
+            value_block = value_blocks.get(rel[&#39;Ids&#39;][0])
+            if value_block:
+                for vrel in value_block.get(&#39;Relationships&#39;, []):
+                    if vrel[&#39;Type&#39;] == &#39;CHILD&#39;:
+                        for word_id in vrel[&#39;Ids&#39;]:
+                            word = next((b for b in response[&#39;Blocks&#39;] if b[&#39;Id&#39;] == word_id), None)
+                            if word and word[&#39;BlockType&#39;] == &#39;WORD&#39;:
+                                value_text += word[&#39;Text&#39;] + &#39; &#39;
+    
+    if key_text and value_text:
+        print(f&quot;  {key_text.strip()}: {value_text.strip()}&quot;)</code></pre>
+<pre><code class="language-bash"># Instalar dependências
+pip3 install boto3 Pillow
+
+python3 textract_demo.py</code></pre>
+<hr>
+<h2>Parte 4 — Pipeline Completo: Moderação Automática com Lambda</h2>
+<pre><code class="language-bash"># Criar Lambda que modera imagens automaticamente
+cat &gt; moderacao_lambda.py &lt;&lt; &#39;EOF&#39;
+import boto3
+import json
+import os
+
+rekognition = boto3.client(&#39;rekognition&#39;)
+s3 = boto3.client(&#39;s3&#39;)
+
+def lambda_handler(event, context):
+    for record in event[&#39;Records&#39;]:
+        bucket = record[&#39;s3&#39;][&#39;bucket&#39;][&#39;name&#39;]
+        key = record[&#39;s3&#39;][&#39;object&#39;][&#39;key&#39;]
+        
+        response = rekognition.detect_moderation_labels(
+            Image={&#39;S3Object&#39;: {&#39;Bucket&#39;: bucket, &#39;Name&#39;: key}},
+            MinConfidence=75
+        )
+        
+        labels = response[&#39;ModerationLabels&#39;]
+        
+        if labels:
+            print(f&quot;CONTEÚDO IMPRÓPRIO em s3://{bucket}/{key}&quot;)
+            for label in labels:
+                print(f&quot;  - {label[&#39;Name&#39;]}: {label[&#39;Confidence&#39;]:.1f}%&quot;)
+            
+            # Mover para bucket quarentena
+            quarantine_bucket = os.environ.get(&#39;QUARANTINE_BUCKET&#39;, bucket + &#39;-quarantine&#39;)
+            s3.copy_object(
+                Bucket=quarantine_bucket,
+                CopySource={&#39;Bucket&#39;: bucket, &#39;Key&#39;: key},
+                Key=f&quot;quarantine/{key}&quot;
+            )
+            s3.delete_object(Bucket=bucket, Key=key)
+            return {&#39;status&#39;: &#39;blocked&#39;, &#39;labels&#39;: [l[&#39;Name&#39;] for l in labels]}
+        else:
+            print(f&quot;Conteúdo aprovado: s3://{bucket}/{key}&quot;)
+            return {&#39;status&#39;: &#39;approved&#39;}
+EOF
+
+zip moderacao_lambda.zip moderacao_lambda.py
+
+# Deploy via CLI
+aws lambda create-function \
+  --function-name lab-moderacao-imagens \
+  --runtime python3.12 \
+  --role arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):role/lab-lambda-rekognition-role \
+  --handler moderacao_lambda.lambda_handler \
+  --zip-file fileb://moderacao_lambda.zip \
+  --timeout 30</code></pre>
+<hr>
+<h2>Limpeza</h2>
+<pre><code class="language-bash"># Remover Lambda
+aws lambda delete-function --function-name lab-moderacao-imagens
+
+# Remover arquivos locais
+rm -f *.zip *.py /tmp/test_image.jpg</code></pre>
+<hr>
+<h2>O Que Você Aprendeu</h2>
+<ul><li>Comprehend detecta sentimento, PII, entidades e idioma sem treinar modelos</li><li>Rekognition detecta objetos, rostos, celebridades e conteúdo impróprio</li><li>Textract extrai texto e pares chave-valor de formulários (muito além de OCR simples)</li><li>Todos os 3 serviços: pay-per-use, sem provisionamento, integram nativamente com S3</li><li>Free Tier permite experimentar sem custo: Comprehend 5K unidades/mês, Rekognition 5K imagens</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./091-19-machine-learning-e-ia-flashcards.html">Aula anterior</a>
+      <a href="./093-19-machine-learning-e-ia-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

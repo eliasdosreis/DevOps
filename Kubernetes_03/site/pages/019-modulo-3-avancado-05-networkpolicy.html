@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#019-modulo-3-avancado-05-networkpolicy">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 03 - avancado - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 03 - avancado" loading="lazy">
+      <figcaption>Avancado: ingress, HPA, storage, RBAC, NetworkPolicy e stateful workloads.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 05-networkpolicy.yaml
+# NETWORKPOLICY - Firewall entre Pods
+#
+# Por padr�o no Kubernetes, QUALQUER pod pode falar com
+# QUALQUER outro pod. Isso � um problema de seguran�a!
+#
+# NetworkPolicy = Regras de firewall para pods
+#
+# Analogia: Condom�nio com porteiros em cada andar
+# - Por padr�o: qualquer morador acessa qualquer andar
+# - Com NetworkPolicy: porteiro bloqueia quem n�o tem acesso
+#
+# IMPORTANTE: Precisa de um CNI que suporte NetworkPolicy
+# Ex: Calico, Cilium, Weave (Flannel N�O suporta!)
+# Minikube: minikube start --cni=calico
+# ============================================================
+
+# POL�TICA 1: Bloqueia TODO tr�fego de entrada por padr�o
+# (deny all ingress) - Boa pr�tica de seguran�a!
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: deny-all-ingress        # Nome da pol�tica
+  namespace: producao           # Em qual namespace
+
+spec:
+  podSelector: {}               # {} = aplica a TODOS os pods
+                                # do namespace
+
+  policyTypes:
+    - Ingress                   # Controla tr�fego de ENTRADA
+
+  # Sem &quot;ingress:&quot; = nega TUDO
+  # Qualquer tr�fego de entrada � bloqueado!
+
+---
+# POL�TICA 2: Permite que o frontend acesse o backend
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: allow-frontend-to-backend
+  namespace: producao
+
+spec:
+  podSelector:                  # A quem esta regra se aplica?
+    matchLabels:
+      app: backend              # Protege os pods do backend
+
+  policyTypes:
+    - Ingress                   # Controla quem ENTRA no backend
+
+  ingress:                      # Quem PODE entrar?
+    - from:
+        - podSelector:          # S� pods com este label
+            matchLabels:
+              app: frontend     # S� o frontend pode acessar!
+
+      ports:                    # Em quais portas?
+        - protocol: TCP
+          port: 8080            # S� na porta 8080
+
+---
+# POL�TICA 3: Permite acesso do backend ao banco de dados
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: allow-backend-to-db
+  namespace: producao
+
+spec:
+  podSelector:
+    matchLabels:
+      app: banco-dados          # Protege o banco de dados
+
+  policyTypes:
+    - Ingress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: backend      # S� backend acessa o banco
+
+      ports:
+        - protocol: TCP
+          port: 5432            # Porta do PostgreSQL
+
+---
+# POL�TICA 4: Permite tr�fego de um NAMESPACE espec�fico
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+
+metadata:
+  name: allow-monitoring-namespace
+  namespace: producao
+
+spec:
+  podSelector: {}               # Todos os pods de producao
+
+  policyTypes:
+    - Ingress
+
+  ingress:
+    - from:
+        - namespaceSelector:    # De pods em outro namespace
+            matchLabels:
+              nome: monitoramento   # O namespace precisa ter este label!
+
+      ports:
+        - protocol: TCP
+          port: 9090            # Porta do Prometheus
+
+# ============================================================
+# FLUXO DE SEGURAN�A COMPLETO (N�VEL S�NIOR):
+#
+# 1. deny-all-ingress     --&gt; Bloqueia tudo por padr�o
+# 2. allow-frontend-to-backend --&gt; Libera s� o necess�rio
+# 3. allow-backend-to-db  --&gt; DB s� aceita backend
+# 4. allow-monitoring     --&gt; Prometheus acessa todos
+#
+# RESULTADO:
+# Internet -&gt; [Ingress] -&gt; [Frontend] -&gt; [Backend] -&gt; [DB]
+#                                    ?
+#                              [Monitoring]
+#
+# Nenhum pod pode acessar diretamente o banco de dados
+# a n�o ser o backend. Princ�pio de defesa em profundidade!
+#
+# ENTREVISTA S�NIOR:
+# &quot;NetworkPolicy nega tr�fego j� existente?&quot;
+# RESPOSTA: N�o! NetworkPolicy � stateful. Conex�es j�
+# estabelecidas continuam at� fechar naturalmente.
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./018-modulo-3-avancado-04-rbac.html">Aula anterior</a>
+      <a href="./020-modulo-3-avancado-06-statefulset.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

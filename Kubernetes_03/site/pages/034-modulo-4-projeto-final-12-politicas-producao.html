@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#034-modulo-4-projeto-final-12-politicas-producao">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - projeto final - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - projeto final" loading="lazy">
+      <figcaption>Projeto final consolida manifestos de producao em uma arquitetura completa.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 12-politicas-producao.yaml
+# PROJETO FINAL - Políticas de Produção
+#
+# Dois recursos importantes para produção real:
+#
+# 1. PodDisruptionBudget (PDB)
+#    Imagine uma manutenção no prédio do servidor.
+#    O administrador precisa &quot;drenar&quot; um nó (tirar os pods).
+#    Sem PDB: todos os pods podem sair ao mesmo tempo!
+#    Com PDB: pelo menos N pods ficam sempre rodando!
+#
+# 2. ResourceQuota
+#    Limite de recursos por namespace.
+#    Evita que uma equipe &quot;devore&quot; todo o cluster!
+# ============================================================
+
+# -------------------------------------------------------
+# PARTE 1: PodDisruptionBudget para a API
+# -------------------------------------------------------
+apiVersion: policy/v1
+kind: PodDisruptionBudget     # Tipo: PDB
+
+metadata:
+  name: pdb-api               # Nome do PDB
+  namespace: ecommerce
+
+spec:
+  minAvailable: 2             # MÍNIMO de pods disponíveis durante
+                              # manutenção/atualização do nó
+                              # Alternativa: maxUnavailable: 1
+                              # (máximo de pods indisponíveis)
+
+  selector:
+    matchLabels:
+      app: api                # Aplica ao deployment da API
+
+# Cenário: Nó com 3 pods da API precisa ser drenado.
+# Sem PDB: kubectl drain pode remover os 3 ao mesmo tempo.
+# Com PDB (minAvailable:2): remove 1, aguarda novo em outro nó,
+# remove outro, etc. Sempre mantém 2 funcionando!
+
+---
+# -------------------------------------------------------
+# PARTE 2: PodDisruptionBudget para o Frontend
+# -------------------------------------------------------
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+
+metadata:
+  name: pdb-frontend
+  namespace: ecommerce
+
+spec:
+  minAvailable: 1             # Pelo menos 1 frontend sempre rodando
+  selector:
+    matchLabels:
+      app: frontend
+
+---
+# -------------------------------------------------------
+# PARTE 3: ResourceQuota - Limite do Namespace
+# Controla quanto do cluster o namespace &quot;ecommerce&quot; pode usar
+# -------------------------------------------------------
+apiVersion: v1
+kind: ResourceQuota           # Tipo: ResourceQuota
+
+metadata:
+  name: quota-ecommerce       # Nome da quota
+  namespace: ecommerce        # Aplica neste namespace
+
+spec:
+  hard:                       # Limites MÁXIMOS (hard limits)
+
+    # Limites de CPU e Memória
+    requests.cpu: &quot;8&quot;         # Total de CPU requests: 8 cores
+    requests.memory: 16Gi     # Total de memória requests: 16GB
+    limits.cpu: &quot;16&quot;          # Total de CPU limits: 16 cores
+    limits.memory: 32Gi       # Total de memória limits: 32GB
+
+    # Limites de objetos Kubernetes
+    pods: &quot;50&quot;                # Máximo 50 pods no namespace
+    services: &quot;20&quot;            # Máximo 20 services
+    secrets: &quot;30&quot;             # Máximo 30 secrets
+    configmaps: &quot;30&quot;          # Máximo 30 configmaps
+    persistentvolumeclaims: &quot;10&quot;  # Máximo 10 PVCs
+
+    # Limites de LoadBalancer (custoso em cloud!)
+    services.loadbalancers: &quot;2&quot;   # Máximo 2 LBs externos
+    services.nodeports: &quot;5&quot;       # Máximo 5 NodePorts
+
+---
+# -------------------------------------------------------
+# PARTE 4: LimitRange - Padrões por Container
+# Se um container não especificar resources, usa estes!
+# -------------------------------------------------------
+apiVersion: v1
+kind: LimitRange              # Tipo: LimitRange
+
+metadata:
+  name: limites-ecommerce
+  namespace: ecommerce
+
+spec:
+  limits:
+
+    # Padrões para CONTAINERS
+    - type: Container
+      default:                # Se não especificar limits, usa estes
+        cpu: &quot;500m&quot;
+        memory: &quot;256Mi&quot;
+      defaultRequest:         # Se não especificar requests, usa estes
+        cpu: &quot;100m&quot;
+        memory: &quot;64Mi&quot;
+      max:                    # Nenhum container pode ter mais que:
+        cpu: &quot;2&quot;
+        memory: &quot;2Gi&quot;
+      min:                    # Nenhum container pode ter menos que:
+        cpu: &quot;50m&quot;
+        memory: &quot;32Mi&quot;
+
+    # Padrões para PODS
+    - type: Pod
+      max:                    # Um pod inteiro não pode ter mais que:
+        cpu: &quot;4&quot;
+        memory: &quot;4Gi&quot;
+
+# ============================================================
+# POR QUE ISSO É NÍVEL SÊNIOR?
+#
+# PDB garante SLA durante manutenção de infraestrutura.
+# Sem PDB, um `kubectl drain` pode causar downtime total.
+#
+# ResourceQuota evita &quot;noisy neighbor&quot; (um time usando tudo).
+# LimitRange garante que todos os pods tenham resources
+# mesmo quando o desenvolvedor esquece de especificar.
+#
+# ENTREVISTA SÊNIOR:
+# &quot;O que acontece se um pod não tem resources definidos e
+# existe um LimitRange?&quot;
+# RESPOSTA: O LimitRange injeta automaticamente os valores
+# de default e defaultRequest no pod. Isso é feito pelo
+# Admission Controller (LimitRanger) antes de criar o pod.
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./033-modulo-4-projeto-final-11-networkpolicy.html">Aula anterior</a>
+      <a href="./035-modulo-4-projeto-final-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

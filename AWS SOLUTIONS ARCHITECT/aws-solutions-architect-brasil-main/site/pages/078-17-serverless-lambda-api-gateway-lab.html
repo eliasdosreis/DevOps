@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Prático — Serverless: Lambda + API Gateway + DynamoDB (Módulo 11) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#078-17-serverless-lambda-api-gateway-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 17 - Serverless Lambda API Gateway - 5 min - 17-Serverless-Lambda-API-Gateway/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 17 - Serverless Lambda API Gateway" loading="lazy">
+      <figcaption>Serverless troca servidor por eventos, integracao gerenciada e pagamento por uso.</figcaption>
+    </figure>
+    <h1>Lab Prático — Serverless: Lambda + API Gateway + DynamoDB (Módulo 11)</h1>
+<blockquote><p><strong>Região:</strong> us-east-1 | <strong>Custo estimado:</strong> &lt; $0.10 (Free Tier cobre toda a parte Lambda/DynamoDB)<br><strong>Pré-requisitos:</strong> AWS CLI configurado, SAM CLI instalado, Python 3.12</p></blockquote>
+<hr>
+<h2>Objetivo</h2>
+<p>Criar uma API REST serverless completa com autenticação, que permite <strong>criar</strong> e <strong>consultar pedidos</strong> usando Lambda + API Gateway + DynamoDB + Cognito.</p>
+<hr>
+<h2>Parte 1 — Infraestrutura com Terraform</h2>
+<pre><code class="language-hcl"># main.tf
+terraform {
+  required_version = &quot;&gt;= 1.5&quot;
+  required_providers {
+    aws = {
+      source  = &quot;hashicorp/aws&quot;
+      version = &quot;~&gt; 5.0&quot;
+    }
+  }
+}
+
+provider &quot;aws&quot; {
+  region = &quot;us-east-1&quot;
+}
+
+# DynamoDB — tabela de pedidos
+resource &quot;aws_dynamodb_table&quot; &quot;pedidos&quot; {
+  name         = &quot;lab-pedidos&quot;
+  billing_mode = &quot;PAY_PER_REQUEST&quot;
+  hash_key     = &quot;pedidoId&quot;
+
+  attribute {
+    name = &quot;pedidoId&quot;
+    type = &quot;S&quot;
+  }
+
+  ttl {
+    attribute_name = &quot;expiracao&quot;
+    enabled        = true
+  }
+
+  tags = {
+    Environment = &quot;lab&quot;
+    Module      = &quot;11-serverless&quot;
+  }
+}
+
+# IAM Role para Lambda
+resource &quot;aws_iam_role&quot; &quot;lambda_role&quot; {
+  name = &quot;lab-lambda-pedidos-role&quot;
+
+  assume_role_policy = jsonencode({
+    Version = &quot;2012-10-17&quot;
+    Statement = [{
+      Action    = &quot;sts:AssumeRole&quot;
+      Effect    = &quot;Allow&quot;
+      Principal = { Service = &quot;lambda.amazonaws.com&quot; }
+    }]
+  })
+}
+
+resource &quot;aws_iam_role_policy_attachment&quot; &quot;lambda_basic&quot; {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = &quot;arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole&quot;
+}
+
+resource &quot;aws_iam_role_policy&quot; &quot;lambda_dynamo&quot; {
+  name = &quot;lab-lambda-dynamo-policy&quot;
+  role = aws_iam_role.lambda_role.id
+
+  policy = jsonencode({
+    Version = &quot;2012-10-17&quot;
+    Statement = [{
+      Effect = &quot;Allow&quot;
+      Action = [
+        &quot;dynamodb:PutItem&quot;,
+        &quot;dynamodb:GetItem&quot;,
+        &quot;dynamodb:Query&quot;,
+        &quot;dynamodb:Scan&quot;
+      ]
+      Resource = aws_dynamodb_table.pedidos.arn
+    }]
+  })
+}
+
+# Lambda — criar pedido
+resource &quot;aws_lambda_function&quot; &quot;criar_pedido&quot; {
+  function_name = &quot;lab-criar-pedido&quot;
+  role          = aws_iam_role.lambda_role.arn
+  handler       = &quot;criar_pedido.lambda_handler&quot;
+  runtime       = &quot;python3.12&quot;
+  timeout       = 30
+  memory_size   = 256
+  filename      = &quot;lambda_package.zip&quot;
+
+  environment {
+    variables = {
+      TABLE_NAME = aws_dynamodb_table.pedidos.name
+    }
+  }
+}
+
+# Lambda — consultar pedido
+resource &quot;aws_lambda_function&quot; &quot;consultar_pedido&quot; {
+  function_name = &quot;lab-consultar-pedido&quot;
+  role          = aws_iam_role.lambda_role.arn
+  handler       = &quot;consultar_pedido.lambda_handler&quot;
+  runtime       = &quot;python3.12&quot;
+  timeout       = 30
+  memory_size   = 128
+  filename      = &quot;lambda_package.zip&quot;
+
+  environment {
+    variables = {
+      TABLE_NAME = aws_dynamodb_table.pedidos.name
+    }
+  }
+}
+
+# API Gateway
+resource &quot;aws_apigatewayv2_api&quot; &quot;pedidos_api&quot; {
+  name          = &quot;lab-pedidos-api&quot;
+  protocol_type = &quot;HTTP&quot;
+
+  cors_configuration {
+    allow_origins = [&quot;*&quot;]
+    allow_methods = [&quot;GET&quot;, &quot;POST&quot;]
+    allow_headers = [&quot;Content-Type&quot;, &quot;Authorization&quot;]
+  }
+}
+
+resource &quot;aws_apigatewayv2_stage&quot; &quot;default&quot; {
+  api_id      = aws_apigatewayv2_api.pedidos_api.id
+  name        = &quot;$default&quot;
+  auto_deploy = true
+}
+
+# Integrações Lambda ↔ API GW
+resource &quot;aws_apigatewayv2_integration&quot; &quot;criar&quot; {
+  api_id             = aws_apigatewayv2_api.pedidos_api.id
+  integration_type   = &quot;AWS_PROXY&quot;
+  integration_uri    = aws_lambda_function.criar_pedido.invoke_arn
+  integration_method = &quot;POST&quot;
+}
+
+resource &quot;aws_apigatewayv2_integration&quot; &quot;consultar&quot; {
+  api_id             = aws_apigatewayv2_api.pedidos_api.id
+  integration_type   = &quot;AWS_PROXY&quot;
+  integration_uri    = aws_lambda_function.consultar_pedido.invoke_arn
+  integration_method = &quot;POST&quot;
+}
+
+resource &quot;aws_apigatewayv2_route&quot; &quot;criar_route&quot; {
+  api_id    = aws_apigatewayv2_api.pedidos_api.id
+  route_key = &quot;POST /pedidos&quot;
+  target    = &quot;integrations/${aws_apigatewayv2_integration.criar.id}&quot;
+}
+
+resource &quot;aws_apigatewayv2_route&quot; &quot;consultar_route&quot; {
+  api_id    = aws_apigatewayv2_api.pedidos_api.id
+  route_key = &quot;GET /pedidos/{pedidoId}&quot;
+  target    = &quot;integrations/${aws_apigatewayv2_integration.consultar.id}&quot;
+}
+
+# Permissão Lambda para API GW invocar
+resource &quot;aws_lambda_permission&quot; &quot;criar_apigw&quot; {
+  action        = &quot;lambda:InvokeFunction&quot;
+  function_name = aws_lambda_function.criar_pedido.function_name
+  principal     = &quot;apigateway.amazonaws.com&quot;
+  source_arn    = &quot;${aws_apigatewayv2_api.pedidos_api.execution_arn}/*/*&quot;
+}
+
+resource &quot;aws_lambda_permission&quot; &quot;consultar_apigw&quot; {
+  action        = &quot;lambda:InvokeFunction&quot;
+  function_name = aws_lambda_function.consultar_pedido.function_name
+  principal     = &quot;apigateway.amazonaws.com&quot;
+  source_arn    = &quot;${aws_apigatewayv2_api.pedidos_api.execution_arn}/*/*&quot;
+}
+
+output &quot;api_url&quot; {
+  value = aws_apigatewayv2_api.pedidos_api.api_endpoint
+}</code></pre>
+<hr>
+<h2>Parte 2 — Código Lambda</h2>
+<pre><code class="language-python"># criar_pedido.py
+import json
+import boto3
+import uuid
+import os
+from datetime import datetime, timezone, timedelta
+
+dynamodb = boto3.resource(&#39;dynamodb&#39;)
+table = dynamodb.Table(os.environ[&#39;TABLE_NAME&#39;])
+
+def lambda_handler(event, context):
+    body = json.loads(event.get(&#39;body&#39;, &#39;{}&#39;))
+    
+    if not body.get(&#39;produto&#39;) or not body.get(&#39;quantidade&#39;):
+        return {
+            &#39;statusCode&#39;: 400,
+            &#39;body&#39;: json.dumps({&#39;erro&#39;: &#39;produto e quantidade são obrigatórios&#39;})
+        }
+    
+    pedido_id = str(uuid.uuid4())
+    expiracao = int((datetime.now(timezone.utc) + timedelta(days=30)).timestamp())
+    
+    item = {
+        &#39;pedidoId&#39;: pedido_id,
+        &#39;produto&#39;: body[&#39;produto&#39;],
+        &#39;quantidade&#39;: int(body[&#39;quantidade&#39;]),
+        &#39;status&#39;: &#39;pendente&#39;,
+        &#39;criadoEm&#39;: datetime.now(timezone.utc).isoformat(),
+        &#39;expiracao&#39;: expiracao
+    }
+    
+    table.put_item(Item=item)
+    
+    return {
+        &#39;statusCode&#39;: 201,
+        &#39;headers&#39;: {&#39;Content-Type&#39;: &#39;application/json&#39;},
+        &#39;body&#39;: json.dumps({&#39;pedidoId&#39;: pedido_id, &#39;status&#39;: &#39;pendente&#39;})
+    }</code></pre>
+<pre><code class="language-python"># consultar_pedido.py
+import json
+import boto3
+import os
+
+dynamodb = boto3.resource(&#39;dynamodb&#39;)
+table = dynamodb.Table(os.environ[&#39;TABLE_NAME&#39;])
+
+def lambda_handler(event, context):
+    pedido_id = event[&#39;pathParameters&#39;][&#39;pedidoId&#39;]
+    
+    response = table.get_item(Key={&#39;pedidoId&#39;: pedido_id})
+    
+    if &#39;Item&#39; not in response:
+        return {
+            &#39;statusCode&#39;: 404,
+            &#39;body&#39;: json.dumps({&#39;erro&#39;: &#39;pedido não encontrado&#39;})
+        }
+    
+    return {
+        &#39;statusCode&#39;: 200,
+        &#39;headers&#39;: {&#39;Content-Type&#39;: &#39;application/json&#39;},
+        &#39;body&#39;: json.dumps(response[&#39;Item&#39;], default=str)
+    }</code></pre>
+<hr>
+<h2>Parte 3 — Deploy e Teste</h2>
+<pre><code class="language-bash"># 1. Empacotar Lambda
+zip -j lambda_package.zip criar_pedido.py consultar_pedido.py
+
+# 2. Deploy infraestrutura
+terraform init
+terraform plan
+terraform apply -auto-approve
+
+# 3. Capturar URL da API
+API_URL=$(terraform output -raw api_url)
+
+# 4. Criar pedido
+curl -X POST &quot;${API_URL}/pedidos&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{&quot;produto&quot;: &quot;Notebook&quot;, &quot;quantidade&quot;: 2}&#39;
+
+# Esperado: {&quot;pedidoId&quot;: &quot;uuid-xxx&quot;, &quot;status&quot;: &quot;pendente&quot;}
+
+# 5. Consultar pedido
+PEDIDO_ID=&quot;uuid-do-passo-anterior&quot;
+curl &quot;${API_URL}/pedidos/${PEDIDO_ID}&quot;
+
+# 6. Verificar logs
+aws logs tail /aws/lambda/lab-criar-pedido --since 5m
+
+# 7. Verificar DynamoDB
+aws dynamodb scan --table-name lab-pedidos \
+  --query &#39;Items[*].[pedidoId.S, produto.S, status.S]&#39; \
+  --output table</code></pre>
+<hr>
+<h2>Parte 4 — Teste de Concorrência e Escalonamento</h2>
+<pre><code class="language-bash"># Enviar 100 pedidos simultâneos (requer &#39;ab&#39; ou wrk)
+# Com curl em loop:
+for i in $(seq 1 20); do
+  curl -s -X POST &quot;${API_URL}/pedidos&quot; \
+    -H &quot;Content-Type: application/json&quot; \
+    -d &quot;{\&quot;produto\&quot;: \&quot;Item-${i}\&quot;, \&quot;quantidade\&quot;: ${i}}&quot; &amp;
+done
+wait
+
+# Ver métricas de concorrência Lambda no CloudWatch
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Lambda \
+  --metric-name ConcurrentExecutions \
+  --dimensions Name=FunctionName,Value=lab-criar-pedido \
+  --start-time $(date -u -d &#39;5 minutes ago&#39; +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 60 \
+  --statistics Maximum</code></pre>
+<hr>
+<h2>Limpeza</h2>
+<pre><code class="language-bash"># Destruir TODOS os recursos (evita custos)
+terraform destroy -auto-approve
+
+# Verificar que DynamoDB foi removido
+aws dynamodb list-tables --query &#39;TableNames[?contains(@, `lab`)]&#39;
+
+# Verificar que Lambdas foram removidas
+aws lambda list-functions --query &#39;Functions[?contains(FunctionName, `lab`)].FunctionName&#39;</code></pre>
+<hr>
+<h2>O Que Você Aprendeu</h2>
+<ul><li>Lambda executa código sem servidor, cobrando apenas por invocação</li><li>API Gateway HTTP API é mais barato e simples que REST API para Lambda</li><li>DynamoDB PAY_PER_REQUEST: sem capacidade provisionada, paga por requisição</li><li>IAM Role de Lambda precisa ser explicitamente autorizada (princípio menor privilégio)</li><li>TTL no DynamoDB expira itens automaticamente (gratuito, sem cobrança extra)</li><li><code>terraform destroy</code> remove tudo — sempre fazer ao final do lab</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./077-17-serverless-lambda-api-gateway-flashcards.html">Aula anterior</a>
+      <a href="./079-17-serverless-lambda-api-gateway-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#015-modulo-3-avancado-01-ingress">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 03 - avancado - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 03 - avancado" loading="lazy">
+      <figcaption>Avancado: ingress, HPA, storage, RBAC, NetworkPolicy e stateful workloads.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 01-ingress.yaml
+# O QUE É INGRESS?
+#
+# Imagine um grande shopping com uma recepção central:
+# - Visitante chega: &quot;Quero ir à loja de roupas&quot;
+# - Recepção: &quot;Vá pelo corredor A, porta 3&quot;
+#
+# Ingress é essa recepção! Recebe requisições HTTP/HTTPS
+# e direciona para o Service correto baseado em:
+# - Domínio: api.empresa.com -&gt; Service A
+# - Caminho: /api -&gt; Service A, /web -&gt; Service B
+#
+# Sem Ingress: precisa de 1 LoadBalancer por Service (caro!)
+# Com Ingress: 1 LoadBalancer para TUDO (econômico!)
+#
+# PRÉ-REQUISITO: Ingress Controller instalado
+# Minikube: minikube addons enable ingress
+# ============================================================
+
+# ------- Primeiro: os Services que o Ingress vai apontar -------
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-frontend        # Service do frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-api             # Service da API
+spec:
+  selector:
+    app: api
+  ports:
+    - port: 8080
+      targetPort: 8080
+
+---
+# ---------------------------------------------------------------
+# AGORA O INGRESS
+# ---------------------------------------------------------------
+
+apiVersion: networking.k8s.io/v1    # API do Ingress
+kind: Ingress                        # Tipo: Ingress
+
+metadata:
+  name: ingress-principal
+
+  annotations:                       # Configurações do Ingress Controller
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    # Remove o prefixo do path antes de enviar ao service
+    # Ex: /api/users -&gt; /users no container
+
+    nginx.ingress.kubernetes.io/ssl-redirect: &quot;true&quot;
+    # Força redirect HTTP -&gt; HTTPS
+
+spec:
+  ingressClassName: nginx           # Qual Ingress Controller usar
+                                    # Depende do que está instalado
+
+  # -------------------------------------------------------
+  # TLS - HTTPS (opcional mas recomendado em produção)
+  # -------------------------------------------------------
+  tls:
+    - hosts:
+        - meusite.com               # Domínio com HTTPS
+        - api.meusite.com
+      secretName: tls-certificado   # Secret com cert e chave SSL
+
+  # -------------------------------------------------------
+  # REGRAS DE ROTEAMENTO
+  # -------------------------------------------------------
+  rules:
+
+    # Regra 1: tráfego para meusite.com
+    - host: meusite.com             # Domínio (deve apontar para o cluster)
+      http:
+        paths:
+          - path: /                 # Qualquer caminho /
+            pathType: Prefix        # Prefix = começa com /
+            backend:
+              service:
+                name: service-frontend    # Vai para este service
+                port:
+                  number: 80
+
+    # Regra 2: tráfego para api.meusite.com
+    - host: api.meusite.com         # Subdomínio diferente
+      http:
+        paths:
+          - path: /v1               # Versão 1 da API
+            pathType: Prefix
+            backend:
+              service:
+                name: service-api
+                port:
+                  number: 8080
+
+          - path: /health           # Health check da API
+            pathType: Exact         # Exact = caminho exato
+            backend:
+              service:
+                name: service-api
+                port:
+                  number: 8080
+
+# ============================================================
+# TIPOS DE pathType:
+#
+# Exact   --&gt; Caminho exato. /api != /api/
+# Prefix  --&gt; Começa com. /api também pega /api/users
+# ImplementationSpecific --&gt; Depende do controller
+#
+# ENTREVISTA SÊNIOR:
+# &quot;Qual a diferença entre Ingress e Service tipo LoadBalancer?&quot;
+# RESPOSTA: LoadBalancer cria 1 IP externo por Service (caro).
+# Ingress usa 1 LoadBalancer para rotear múltiplos Services
+# baseado em host/path. Muito mais econômico em produção.
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./014-modulo-2-intermediario-readme.html">Aula anterior</a>
+      <a href="./016-modulo-3-avancado-02-hpa.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

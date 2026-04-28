@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flashcards — Módulo 27: Casos de Uso Reais - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#147-27-casos-de-uso-reais-flashcards">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 27 - Casos de Uso Reais - 9 min - 27-Casos-de-Uso-Reais/flashcards.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 27 - Casos de Uso Reais" loading="lazy">
+      <figcaption>Casos reais treinam trade-offs: seguro, resiliente, rapido, barato e operavel.</figcaption>
+    </figure>
+    <h1>Flashcards — Módulo 27: Casos de Uso Reais</h1>
+<blockquote><p><strong>Formato:</strong> P = Pergunta | R = Resposta<br><strong>Total:</strong> 25 flashcards</p></blockquote>
+<hr>
+<p><strong>P:</strong> O que é o padrão &quot;Strangler Fig&quot; e como implementar na AWS?<br><strong>R:</strong> Padrão de migração gradual de monólito para microsserviços. Novas funcionalidades são construídas como microsserviços; funcionalidades antigas são migradas incrementalmente. Na AWS: usar API Gateway ou Application Load Balancer para rotear tráfego — <code>/nova-feature</code> → Lambda/ECS, <code>/legado/*</code> → monólito EC2. Gradual sem big-bang rewrite.</p>
+<hr>
+<p><strong>P:</strong> Como arquitetar uma aplicação de e-commerce altamente disponível na AWS?<br><strong>R:</strong> Frontend: CloudFront + S3 (SPA). Backend: ALB + ECS/EC2 em 2+ AZs com Auto Scaling. Banco: RDS Aurora Multi-AZ (escrita) + Read Replicas (leitura). Cache: ElastiCache (sessões, produtos populares). Carrinho/estoque: DynamoDB (alta escala). Pagamentos: SQS (exactly-once via deduplicationId). imagens: S3 + CloudFront.</p>
+<hr>
+<p><strong>P:</strong> Qual é o padrão fan-out e quando usar na AWS?<br><strong>R:</strong> Fan-out: um evento dispara múltiplos consumidores em paralelo. Implementação: SNS Topic → múltiplas SQS Queues (ou Lambda). Cada subscriber processa independentemente. Use quando: um evento precisa acionar múltiplas ações (order_placed → SQS_email + SQS_fulfillment + SQS_analytics + SQS_audit). Desacopla publisher de múltiplos consumers.</p>
+<hr>
+<p><strong>P:</strong> Como implementar exactly-once processing em pagamentos na AWS?<br><strong>R:</strong> SQS FIFO Queue com <strong>MessageDeduplicationId</strong> (hash do transactionId). Se a mesma transação é enviada duas vezes com o mesmo DeduplicationId dentro da janela de 5 minutos, apenas uma é entregue. No processamento: verificação idempotente no banco (check se transactionId já foi processado antes de debitar).</p>
+<hr>
+<p><strong>P:</strong> Qual arquitetura para um pipeline de IoT com 100.000 dispositivos?<br><strong>R:</strong> Dispositivos → IoT Core (MQTT) → Rules Engine → múltiplos destinos: Kinesis Data Streams (streaming analytics), DynamoDB (últimas leituras), S3 (via Kinesis Firehose, dados históricos). Para alertas em tempo real: Lambda Consumer no KDS. Para análises históricas: Athena no S3. Visualização: QuickSight ou Grafana.</p>
+<hr>
+<p><strong>P:</strong> Como usar o padrão CQRS (Command Query Responsibility Segregation) na AWS?<br><strong>R:</strong> Separar escrita e leitura em modelos/stores diferentes. Write path (Command): API Gateway → Lambda → DynamoDB (source of truth). Read path (Query): dados desnormalizados em ElastiCache ou OpenSearch para leitura rápida. Sincronização: DynamoDB Streams → Lambda → atualiza read model. Write otimizado para consistência; read otimizado para performance.</p>
+<hr>
+<p><strong>P:</strong> Como arquitetar um Data Lake serverless na AWS?<br><strong>R:</strong> Ingestão: Kinesis Firehose (streaming) + DataSync (batch). Storage: S3 com particionamento por data. Catalog: Glue Crawler → Glue Data Catalog. Transform: Glue ETL Jobs (raw → curated → analytics zones). Query: Athena (SQL). Segurança: Lake Formation (FGA por coluna/row). Visualização: QuickSight. Orquestração: Step Functions ou MWAA.</p>
+<hr>
+<p><strong>P:</strong> O que é Event Sourcing e como implementar na AWS?<br><strong>R:</strong> Em vez de salvar state atual, salvar todos os eventos que levaram ao estado: <code>order_created</code>, <code>payment_processed</code>, <code>shipped</code>. State atual é rebuilt replaying events. AWS: DynamoDB Streams ou Kinesis como event log. EventBridge para publicar eventos. Vantagem: auditoria completa, temporal queries (estado em qualquer ponto no tempo), debugging.</p>
+<hr>
+<p><strong>P:</strong> Como implementar autenticação com Cognito em uma SPA + S3?<br><strong>R:</strong> (1) Cognito User Pool para autenticação (username/password, OAuth social). (2) Cognito Identity Pool para trocar token do User Pool por credenciais AWS temporárias (IAM Role assumida). (3) Frontend usa credenciais temporárias para chamar API Gateway (autenticado via Cognito Authorizer) ou acessar S3 diretamente. Sem backend de autenticação para gerenciar.</p>
+<hr>
+<p><strong>P:</strong> Qual arquitetura para uma plataforma de streaming de vídeo (Netflix-like)?<br><strong>R:</strong> Upload: S3 + pre-signed URL. Transcodagem: S3 Event → SQS → EC2/ECS com MediaConvert ou Elemental. CDN: CloudFront com origens S3 (vídeo processado). DRM: CloudFront Signed URLs ou Signed Cookies. Metadados: DynamoDB ou Aurora. Recomendações: SageMaker Personalize. Analytics: Kinesis → Redshift/Athena.</p>
+<hr>
+<p><strong>P:</strong> Como implementar multi-tenant com isolamento por tenant na AWS?<br><strong>R:</strong> Estratégias: <strong>(1) Silo model:</strong> conta AWS por tenant (máximo isolamento, custo administrativo alto). <strong>(2) VPC por tenant:</strong> compartilha conta, VPCs separadas. <strong>(3) S3 prefixes:</strong> <code>s3://bucket/tenant-id/data/</code> com IAM conditions <code>Condition: {&quot;StringLike&quot;: {&quot;s3:prefix&quot;: &quot;${aws:PrincipalTag/TenantId}/*&quot;}}</code>. <strong>(4) DynamoDB partition key</strong> = tenantId. Escolha depende do requisito de isolamento.</p>
+<hr>
+<p><strong>P:</strong> Qual é o padrão de arquitetura serverless típico do exame SAA-C03?<br><strong>R:</strong> API GW → Lambda → DynamoDB (CRUD simples). Variações: + S3 pré-signed URLs para upload direto. + Cognito para auth. + SQS para desacoplar Lambda de processamento pesado. + EventBridge para agendamento. + Step Functions para workflows multi-step. + Lambda@Edge para personalização no CDN. + RDS Proxy para Lambda que conecta a RDS (connection pooling).</p>
+<hr>
+<p><strong>P:</strong> Como detectar fraudes em tempo real com ML na AWS?<br><strong>R:</strong> Transactions → API GW → Lambda → Amazon Fraud Detector (ou SageMaker endpoint) → resultado em &lt;100ms. Para transações históricas: Kinesis Data Streams → Lambda (chama FM endpoint). Armazenar decisões: DynamoDB. Re-treinar modelos periodicamente: Kinesis → S3 → SageMaker Training Job → atualizar endpoint. Audit trail: CloudTrail + DynamoDB.</p>
+<hr>
+<p><strong>P:</strong> O que é o padrão &quot;Cache-Aside&quot; e como implementar com ElastiCache?<br><strong>R:</strong> Aplicação gerencia o cache manualmente. Read: check ElastiCache → hit: retornar dado. Miss: buscar no RDS → salvar no ElastiCache → retornar. Write: atualizar RDS → <strong>invalidar</strong> cache (delete da key). Contrário de Write-Through (cache sempre atualizado na escrita). Cache-Aside: lazy loading, menos memória usada, eventualmente consistente.</p>
+<hr>
+<p><strong>P:</strong> Como implementar Blue/Green Deployment com zero downtime na AWS?<br><strong>R:</strong> Opção 1: <strong>ELB + ASG</strong> — criar novo Target Group (green) com nova versão, shift tráfego no ALB Listener Rule gradualmente. Opção 2: <strong>CodeDeploy Blue/Green</strong> — automatiza processo + rollback automático. Opção 3: <strong>Lambda aliases + weighted routing</strong> (10% v2 → 100% v2). Opção 4: <strong>Elastic Beanstalk</strong> — swap de environment URLs. Rollback: redirecionar tráfego de volta.</p>
+<hr>
+<p><strong>P:</strong> Como arquitetar search de produtos em e-commerce com alta performance?<br><strong>R:</strong> DynamoDB como source of truth → DynamoDB Streams → Lambda → OpenSearch Service (indexação). Front-end búsca no OpenSearch (full-text, filtros, autocomplete, facets). Benefício: OpenSearch retorna em &lt;10ms para queries complexas. DynamoDB não suporta full-text search nativamente. Dados mapeados com campos analisados (tokenizados) no OpenSearch.</p>
+<hr>
+<p><strong>P:</strong> Qual são as principais patterns de integração entre serviços AWS?<br><strong>R:</strong> <strong>(1) Sync:</strong> API Gateway → Lambda (cliente espera). <strong>(2) Async:</strong> API GW → Lambda → SQS → outro Lambda (fire-and-forget). <strong>(3) Fan-out:</strong> SNS → múltiplas SQS. <strong>(4) Streaming:</strong> KDS → Lambda/KDA. <strong>(5) Schedule:</strong> EventBridge Scheduler → Lambda. <strong>(6) Workflow:</strong> Step Functions → múltiplos serviços orquestrados. Cada pattern pra um caso de uso.</p>
+<hr>
+<p><strong>P:</strong> Como garantir conformidade HIPAA em arquitetura AWS?<br><strong>R:</strong> (1) Usar serviços HIPAA-eligible (EC2, RDS, S3, Lambda, etc. — ver BAA). (2) Assinar Business Associate Agreement (BAA) com AWS. (3) Criptografia: KMS CMKs, encryption at rest e in transit. (4) Audit logging: CloudTrail + CloudWatch Logs. (5) Access control: IAM com princípio de least-privilege. (6) Network: VPC privada + VPN/DX para acesso. (7) Data backup com criptografia.</p>
+<hr>
+<p><strong>P:</strong> Como implementar DLQ (Dead Letter Queue) em uma arquitetura serverless?<br><strong>R:</strong> Invocação <strong>assíncrona</strong> (SNS, S3 Events): DLQ configurada diretamente na função Lambda (SNS retries 2x, Lambda retries 2x). Mensagens falhadas vão para SQS DLQ. <strong>Event Source Mapping</strong> (SQS): DLQ é configurada no SQS (não no Lambda). SQS tentará por maxReceiveCount, então move para SQS DLQ. Preferred: usar Lambda Destinations para invocações assíncronas (mais flexível).</p>
+<hr>
+<p><strong>P:</strong> Qual arquitetura para aplicação backend com baixo RTO (&lt;5 min) e RPO (&lt;1 min) multi-região?<br><strong>R:</strong> Active-Active: Route 53 com health checks + Latency/Failover Routing. API stateless em ambas regiões (ECS/Lambda). Banco: Aurora Global Database (replicação &lt;1s, failover automático em ~1 min). Cache: ElastiCache Global Datastore (réplica cross-region). S3 CRR para assets. Sessões: DynamoDB Global Tables. CloudFront com origens em múltiplas regiões.</p>
+<hr>
+<p><strong>P:</strong> O que é o padrão Saga e quando usar na AWS?<br><strong>R:</strong> Gerenciar transações distribuídas em microsserviços. Cada serviço faz uma transação local e publica um evento. Se fase seguinte falhar: compensating transactions desfazem passos anteriores. AWS: Step Functions (orquestração — sabe o estado global) ou Coreografia via SNS/EventBridge (cada serviço reage a eventos). Use quando: precisa de consistência eventual em transações multi-serviço.</p>
+<hr>
+<p><strong>P:</strong> Como usar SSM Parameter Store para configuração de aplicações?<br><strong>R:</strong> Hierarquia de parâmetros: <code>/app/prod/database/password</code> (SecureString com KMS). Lambda/ECS busca parâmetros na inicialização via SDK. Vantagens sobre env vars: (1) versionamento; (2) secretos criptografados; (3) auditável (CloudTrail); (4) mudança sem redeploy (Lambda pode ler no cold start). Para rotação automática: Secrets Manager.</p>
+<hr>
+<p><strong>P:</strong> Como implementar processamento de imagem serverless na AWS?<br><strong>R:</strong> Upload: pre-signed S3 URL (direto do browser para S3, sem passar pelo backend). Upload trigger: S3 Event → Lambda. Lambda processa: Pillow/Sharp → resize/thumbnail → salva resultado em S3. CDN: CloudFront distribui imagens processadas. Para processamento pesado: S3 Event → SQS → Lambda (throttled) ou EC2 Spot via ASG. Metadados: DynamoDB.</p>
+<hr>
+<p><strong>P:</strong> Qual é a arquitetura típica para sistema de notificações em tempo real?<br><strong>R:</strong> Backend → EventBridge (ou SNS) → múltiplos canais: (1) Email: SES. (2) SMS: SNS → SMS. (3) Push notifications: SNS → GCM/APNs. (4) In-app real-time: API GW WebSocket API + Lambda + DynamoDB (connection tracking). (5) Slack: Lambda → Slack API. Fan-out pattern para múltiplos canais simultâneos sem acoplar o backend.</p>
+<hr>
+<p><strong>P:</strong> Como o exame testa conhecimento de arquiteturas multi-camada (3-tier)?<br><strong>R:</strong> <strong>Presentation:</strong> CloudFront + S3 (SPA) ou ALB. <strong>Application:</strong> EC2 ASG ou ECS em subnets privadas (sem acesso direto à internet). <strong>Data:</strong> RDS em subnet de dados privada (aceita conexão apenas do SG da camada application). O exame testa: fluxo de SGs correto, que bancos ficam em subnets privadas, que ALB fica em subnet pública, que EC2 de aplicação não precisa de IP público.</p>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./146-27-casos-de-uso-reais-cheatsheet.html">Aula anterior</a>
+      <a href="./148-27-casos-de-uso-reais-lab.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>23 AWS Organizations, Governanca e Custos - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#123-23-aws-organizations-governanca-e-custos-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #b45309">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 23 - AWS Organizations Governanca e Custos - 2 min - 23-AWS-Organizations-Governanca-e-Custos/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 23 - AWS Organizations Governanca e Custos" loading="lazy">
+      <figcaption>Governanca multi-conta combina limites, visibilidade, padroes e FinOps.</figcaption>
+    </figure>
+    <h1>23 AWS Organizations, Governanca e Custos</h1>
+<h2>Objetivos do modulo</h2>
+<ul><li>desenhar ambientes multi-account com seguranca e governanca central</li><li>aplicar SCPs, tagging e controle de acesso por Organizational Unit</li><li>dominar servicos de custo no contexto de arquitetura: Budgets, Cost Explorer, CUR, Savings Plans e RI</li><li>responder cenarios do SAA-C03 que pedem reducao de custo com menor overhead operacional</li></ul>
+<h2>Conceitos fundamentais</h2>
+<p>No SAA-C03, governanca e custo aparecem junto com seguranca e operacao. A ideia central e estruturar contas para reduzir risco, melhorar visibilidade financeira e aplicar guardrails sem travar o time.</p>
+<h2>Arquitetura multi-account recomendada</h2>
+<ul><li>Management account apenas para governanca e billing</li><li>OUs separadas por ambiente e criticidade (Sandbox, Dev, Prod, Security)</li><li>Contas dedicadas para logs e seguranca</li><li>Acesso humano central por IAM Identity Center</li></ul>
+<h2>Servicos e praticas chave</h2>
+<ul><li>AWS Organizations: hierarquia de contas e consolidated billing</li><li>SCP: define teto de permissoes por OU/conta</li><li>AWS Control Tower: baseline multi-account com guardrails</li><li>AWS Budgets: alertas proativos por limite de gasto ou uso</li><li>Cost Explorer: analise de tendencia e recomendacoes</li><li>Cost and Usage Report (CUR): base detalhada para chargeback/showback</li><li>Savings Plans e Reserved Instances: compromisso para reduzir custo de compute</li><li>Cost Allocation Tags: rastrear custo por time/produto/ambiente</li></ul>
+<h2>Dicas de exame</h2>
+<ul><li>SCP nao concede permissoes; apenas restringe.</li><li>&quot;Least operational overhead&quot; em multi-account aponta para Control Tower e Identity Center.</li><li>Para visibilidade granular de custo em escala, CUR + Athena e alternativa recorrente.</li><li>Para workloads estaveis, RI/Savings Plans costuma ser resposta de otimizacao.</li><li>Spot e melhor para cargas tolerantes a interrupcao.</li></ul>
+<h2>Anti-padroes</h2>
+<ul><li>usar conta unica para tudo</li><li>usar root user no dia a dia</li><li>sem padrao de tags obrigatorias</li><li>sem limites/alertas de custo por ambiente</li><li>sem segregacao de contas de log e seguranca</li></ul>
+<h2>Links relacionados</h2>
+<ul><li><a href="./118-23-aws-organizations-governanca-e-custos-cheatsheet.html">Cheatsheet</a></li><li><a href="./117-23-aws-organizations-governanca-e-custos-casos-de-uso.html">Casos de uso</a></li><li><a href="./122-23-aws-organizations-governanca-e-custos-questoes.html">Questoes</a></li><li><a href="./119-23-aws-organizations-governanca-e-custos-flashcards.html">Flashcards</a></li><li><a href="./120-23-aws-organizations-governanca-e-custos-lab.html">Lab</a></li><li><a href="./121-23-aws-organizations-governanca-e-custos-links.html">Links oficiais</a></li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./122-23-aws-organizations-governanca-e-custos-questoes.html">Aula anterior</a>
+      <a href="./124-24-redes-avancadas-e-conectividade-hibrida-casos-de-uso.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

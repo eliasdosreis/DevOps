@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#034-modulo-08-projeto-final-02-database">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 08 - projeto final - 2 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 08 - projeto final" loading="lazy">
+      <figcaption>Projeto final junta banco, backend, frontend e rede em uma entrega completa.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# BLOCO DE DADOS (DATABASE TIER)
+# Engloba: Secret + PVC + Deployment + Service
+# ============================================================
+
+# 1. Cofre das senhas do Banco (Base64)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: segredos-da-livraria-bd
+  namespace: meu-primeiro-projeto
+data:
+  # Lembre, o Base64 de root é &#39;cm9vdA==&#39;
+  mysql-root-senha: cm9vdA== 
+  mysql-usuario: YWRtaW5fbGl2cm9z          # admin_livros
+  mysql-senha: YWRtaW5fc2VuaGFfMTIz        # admin_senha_123
+---
+
+# 2. O Contrato do HD na Rua (Persistent Volume Claim)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: disco-pvc-mysql-livraria          # &quot;Quero um HD pra Livraria&quot;
+  namespace: meu-primeiro-projeto
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi                        # Apenas 2 Gigabytes de bloco
+
+---
+
+# 3. O Cofre Virtual Trancado de Acesso (Service PABX)
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-mysql-banco                  # O NOME DO CORE-DNS INAMOVÍVEL (O Backend usará ISSO)
+  namespace: meu-primeiro-projeto
+spec:
+  type: ClusterIP                        # REDE CORTADA DO MUNDO EXTERNO. ISOLADA.
+  selector:
+    camada: database
+  ports:
+    - port: 3306                         # A porta padrão onde os clientes JDBC batem
+
+---
+
+# 4. O Sistema em si rodando (Deployment)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-mysql-livraria
+  namespace: meu-primeiro-projeto
+spec:
+  replicas: 1                            # Nunca suba 2 Replicas do MYSQL Stateless se não houver GaleraCluster config!
+  selector:
+    matchLabels:
+      camada: database
+  template:
+    metadata:
+      labels:
+        camada: database
+    spec:
+      containers:
+        - name: mysql-app
+          image: mysql:8.0
+          
+          # Injeção das senhas pegando la do SECRET blindado (Nível Modulo 04)
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: segredos-da-livraria-bd
+                  key: mysql-root-senha
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: segredos-da-livraria-bd
+                  key: mysql-usuario
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: segredos-da-livraria-bd
+                  key: mysql-senha
+                  
+          ports:
+            - containerPort: 3306
+            
+          # O Plug no fundo da caixa (Nivel Modulo 05)
+          volumeMounts:
+            - name: storage-mysql
+              mountPath: /var/lib/mysql
+              
+      # Amarração do Chassi ao cabo do PVC:
+      volumes:
+        - name: storage-mysql
+          persistentVolumeClaim:
+            claimName: disco-pvc-mysql-livraria</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./033-modulo-08-projeto-final-01-arquitetura.html">Aula anterior</a>
+      <a href="./035-modulo-08-projeto-final-03-backend.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questões — Módulo 11: Serverless Lambda e API Gateway - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#080-17-serverless-lambda-api-gateway-questoes">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 17 - Serverless Lambda API Gateway - 12 min - 17-Serverless-Lambda-API-Gateway/questoes.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 17 - Serverless Lambda API Gateway" loading="lazy">
+      <figcaption>Serverless troca servidor por eventos, integracao gerenciada e pagamento por uso.</figcaption>
+    </figure>
+    <h1>Questões — Módulo 11: Serverless Lambda e API Gateway</h1>
+<blockquote><p><strong>Domínio SAA-C03</strong>: Design de Arquiteturas de Alta Performance | Arquiteturas Seguras<br><strong>Dificuldade</strong>: Média-Alta</p></blockquote>
+<hr>
+<p><strong>1.</strong> Uma função Lambda é invocada por uma API Gateway e precisa acessar um banco de dados RDS em uma subnet privada. A função começa a ter timeouts. Qual é a causa mais provável?</p>
+<ul><li>A) A Lambda não tem permissão IAM para acessar o RDS</li><li>B) A Lambda em VPC não tem rota de saída para a internet, mas o endpoint do RDS requer resolução DNS externa</li><li>C) A Lambda em VPC não pode se conectar ao RDS porque não está na mesma subnet</li><li>D) A Lambda precisa de um Elastic IP para acessar recursos dentro da VPC</li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — Lambda em VPC precisa de permissão no Security Group do RDS para a porta do banco (ex: MySQL 3306). A causa mais provável de timeout é o SG do RDS não permitir tráfego do SG da Lambda. Note: Lambda em VPC pode estar em subnet diferente da RDS desde que o SG permita e exista route entre subnets da mesma VPC.</p></details>
+<hr>
+<p><strong>2.</strong> Uma empresa tem uma função Lambda que consome mensagens de uma fila SQS. A função tem timeout de 30 segundos. As mensagens começam a ser processadas mais de uma vez. Qual configuração da fila deve ser ajustada?</p>
+<ul><li>A) Aumentar o Message Retention Period</li><li>B) Configurar o Visibility Timeout para pelo menos 6x o timeout da Lambda (180 segundos)</li><li>C) Habilitar Long Polling com wait time de 20 segundos</li><li>D) Reduzir o Batch Size para 1</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — O Visibility Timeout da fila SQS deve ser ≥ 6× o timeout da Lambda. Se a Lambda demora 30s para processar, o VT precisa ser ≥ 180s. Se o VT expirar antes da Lambda terminar, a mensagem reaparece na fila e outro worker vai processá-la, causando duplicação.</p></details>
+<hr>
+<p><strong>3.</strong> Uma API Gateway REST tem um backend Lambda que às vezes levanta exceções. A empresa quer retornar HTTP 500 para erros internos e HTTP 400 para erros de validação. Qual configuração permite isso?</p>
+<ul><li>A) Lambda Proxy Integration com retorno customizado no handler</li><li>B) Lambda Custom Integration com Integration Response mapeando regex de erro para status codes</li><li>C) API Gateway Usage Plans com quota de errors</li><li>D) CloudWatch Alarms para detectar erros e invocar Lambda de fallback</li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — Com Lambda Proxy Integration, a Lambda tem controle total sobre o status code de resposta. O handler retorna <code>{ statusCode: 400/500, body: ... }</code> e a API Gateway passa exatamente esse status code. Com Lambda Custom Integration (B), você pode usar regex de error message, mas é mais complexo.</p></details>
+<hr>
+<p><strong>4.</strong> Uma função Lambda precisa processar 1.000 mensagens por segundo de uma fila SQS Standard. Qual configuração maximiza o throughput de processamento?</p>
+<ul><li>A) Aumentar o timeout da Lambda para 15 minutos</li><li>B) Configurar múltiplos event source mappings para a mesma fila</li><li>C) Aumentar o Batch Size (até 10.000) e aumentar a concorrência reservada da Lambda</li><li>D) Migrar para SQS FIFO para maior throughput</li></ul>
+<details><summary>Resposta</summary><p><strong>C</strong> — Maior Batch Size = menos invocações Lambda para o mesmo volume, reduzindo overhead. Aumentar concorrência permite processar múltiplos batches em paralelo. SQS FIFO tem throughput menor (300 TPS sem batching), não mais. Um Event Source Mapping por fila.</p></details>
+<hr>
+<p><strong>5.</strong> A empresa precisa que uma função Lambda mantenha uma conexão a um banco de dados RDS entre invocações para reduzir o overhead de reconexão. Como implementar isso corretamente?</p>
+<ul><li>A) Usar <code>/tmp</code> para armazenar o objeto de conexão</li><li>B) Inicializar a conexão no código de inicialização fora do handler; a conexão persiste no execution environment entre invocações quentes</li><li>C) Usar um Layer para compartilhar a conexão entre funções Lambda</li><li>D) Usar ElastiCache para armazenar a string de conexão</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — O código fora do handler é executado apenas na inicialização do execution environment (cold start) e persiste entre invocações &quot;quentes&quot; dentro do mesmo environment. Inicializar <code>db_connection = get_db_connection()</code> fora do handler = reconexão apenas em cold starts. <code>/tmp</code> é armazenamento de arquivo, não objetos Python.</p></details>
+<hr>
+<p><strong>6.</strong> Uma empresa usa API Gateway + Lambda para sua API. O tráfego aumenta 10x em eventos promocionais e throttling começa a ocorrer. O que fazer para proteger o backend enquanto permite burst razoável?</p>
+<ul><li>A) Habilitar API Gateway Cache com TTL de 5 minutos</li><li>B) Configurar Usage Plans com throttling por API Key e aumentar o limit de concorrência da Lambda</li><li>C) Migrar de REST API para HTTP API (menor custo)</li><li>D) Adicionar SQS entre API Gateway e Lambda para bufferizar requests</li></ul>
+<details><summary>Resposta</summary><p><strong>D</strong> — Para picos extremos: API Gateway → SQS → Lambda processa no ritmo que consegue. Isso elimina throttling pois a API retorna 200 imediatamente e a Lambda consome a fila. Para APIs síncronas (resposta imediata necessária), aumentar concurrência da Lambda e configurar throttling no API GW são as alternativas.</p></details>
+<hr>
+<p><strong>7.</strong> Uma função Lambda processa imagens do S3, mas frequentemente excede o tempo de processamento. A imagem processada deve ser salva de volta no S3. Qual configuração de Lambda é mais adequada?</p>
+<ul><li>A) Aumentar memória para 10 GB e timeout para 15 minutos; usar /tmp para processamento intermediário</li><li>B) Usar Lambda container image (até 10 GB) com biblioteca de processamento</li><li>C) Dividir em duas Lambdas: uma para download, outra para processamento, coordenadas por Step Functions</li><li>D) Usar EC2 Spot para processamento de imagens pesadas</li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — Lambda suporta até 10 GB de memória e 15 minutos de timeout com até 10 GB de <code>/tmp</code>. Para processamento de imagens grandes, aumentar memória (que também aumenta CPU) e usar <code>/tmp</code> para trabalho temporário. Container image (B) resolve o problema de package size, não de timeout.</p></details>
+<hr>
+<p><strong>8.</strong> Um arquiteto precisa criar um endpoint HTTPS que acione uma Lambda toda vez que um arquivo CSV é depositado no S3. Qual é o caminho mais simples?</p>
+<ul><li>A) API Gateway + Lambda + S3 Event Notification</li><li>B) S3 Event Notification diretamente triga a Lambda (sem API Gateway)</li><li>C) EventBridge Rule para evento S3 → Lambda</li><li>D) SQS + S3 Event Notification → Lambda ESM</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — S3 pode invcar Lambda diretamente via S3 Event Notification configurado no bucket (sem custo adicional, sem API GW necessário). É o caminho mais simples. EventBridge (C) funciona mas é mais complexo para este caso simples.</p></details>
+<hr>
+<p><strong>9.</strong> Uma API Gateway REST tem 50 endpoints e processa 100.000 requests por dia. O time quer reduzir o custo. O que analisar?</p>
+<ul><li>A) Migrar todos os endpoints para HTTP API (redução ~71% no custo por request vs REST API)</li><li>B) Habilitar caching em endpoints GET com dados pouco mutáveis</li><li>C) Mover a API para dentro de uma VPC (VPC-only endpoint)</li><li>D) A e B são estratégias complementares válidas</li></ul>
+<details><summary>Resposta</summary><p><strong>D</strong> — HTTP API custa menos por request (e suporta a maioria dos casos); caching reduz backend calls (e custo total). A migração deve avaliar features de REST API necessárias (WAF nativo, request validation, usage plans — não disponíveis no HTTP API).</p></details>
+<hr>
+<p><strong>10.</strong> Uma Lambda Java tem cold starts de 8 segundos causando má experiência para usuários da API. Qual é a solução mais eficiente para eliminar cold starts sem mudar o runtime?</p>
+<ul><li>A) Aumentar a memória da Lambda de 512 MB para 10 GB</li><li>B) Lambda SnapStart — disponível para Java 11+ (snapshots do runtime inicializado)</li><li>C) Adicionar a Lambda em um placement group</li><li>D) Usar Scheduled EventBridge para &quot;pré-aquecer&quot; a Lambda chamando-a a cada minuto</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — SnapStart para Java 11+: AWS tira snapshot do execution environment após a fase de init e o restaura em lugar de inicializar do zero, reduzindo cold start para sub-segundo. &quot;Pré-aquecer&quot; (D) funciona mas é uma gambiarra; Provisioned Concurrency é a alternativa oficial se SnapStart não estiver disponível.</p></details>
+<hr>
+<p><strong>11.</strong> Uma empresa usa Lambda para processar transações financeiras assíncronas. Eles precisam garantir que nenhuma transação seja perdida mesmo se a Lambda falhar. O que configurar?</p>
+<ul><li>A) Aumentar o timeout da Lambda para 15 minutos</li><li>B) Configurar Lambda Destinations com On Failure destination para SQS DLQ</li><li>C) Habilitar Enhanced Monitoring no Lambda</li><li>D) Lambda está configurada com SQS como ESM — o próprio SQS retém mensagens até o maxReceiveCount</li></ul>
+<details><summary>Resposta</summary><p><strong>D</strong> — Com SQS como ESM, mensagens ficam na fila até serem processadas com sucesso ou atingirem o maxReceiveCount. Após maxReceiveCount tentativas, vão para a DLQ. Isso garante que nenhuma mensagem seja perdida. Lambda Destinations (B) é para invocações assíncronas diretas (não ESM).</p></details>
+<hr>
+<p><strong>12.</strong> Uma API Gateway expõe dados sensíveis e a empresa exige que todos os requests sejam autenticados com JWT tokens do seu provedor de identidade existente (não Cognito). Qual configuração usar?</p>
+<ul><li>A) Cognito User Pool Authorizer (precisaria migrar o Identity Provider)</li><li>B) Lambda Authorizer com bearer token — Lambda valida o JWT e retorna política IAM</li><li>C) IAM Authorization com SigV4</li><li>D) API Key com Usage Plan</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Lambda Authorizer com TOKEN type: recebe o JWT no header Authorization, a Lambda valida o token contra o Identity Provider existente (sem migração) e retorna uma IAM policy (Allow/Deny). Cache de até 3600s evita verificação em todo request.</p></details>
+<hr>
+<p><strong>13.</strong> Uma Lambda precisa acessar um segredo do Secrets Manager. Qual é a forma mais segura de conceder essa permissão?</p>
+<ul><li>A) Criar um usuário IAM com acesso ao Secrets Manager e embutir as credenciais no código da Lambda</li><li>B) Adicionar a permissão <code>secretsmanager:GetSecretValue</code> à execution role da Lambda</li><li>C) Armazenar o segredo em uma variável de ambiente da Lambda (criptografada com KMS)</li><li>D) Usar a VPC to access Secrets Manager sem IAM</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — IAM Role (Execution Role) da Lambda: a Lambda assume automaticamente a role durante execução. Adicionar <code>secretsmanager:GetSecretValue</code> na role é o padrão seguro. Nunca usar usuário IAM com credenciais hardcoded (A). Variável de ambiente (C) não é tão dinâmica quanto buscar direto do Secrets Manager.</p></details>
+<hr>
+<p><strong>14.</strong> Uma empresa tem um job batch que deve rodar a cada hora e processar dados do S3. O job demora 5-10 minutos. Qual solução é mais custo-efetiva?</p>
+<ul><li>A) EC2 t3.medium rodando 24/7 com cron</li><li>B) EventBridge Rule (rate: 1 hour) → Lambda com timeout de 15 minutos</li><li>C) ECS Fargate Task acionada por EventBridge</li><li>D) B ou C dependendo da necessidade de CPU/memória acima dos limites da Lambda</li></ul>
+<details><summary>Resposta</summary><p><strong>D</strong> — Se o job cabe em Lambda (≤ 15 min, ≤ 10 GB memória): EventBridge → Lambda é mais simples e barato. Se precisar de mais recursos ou &gt; 15 min: EventBridge → ECS Fargate Task (paga apenas pela duração da task, sem custo idle). Ambos são serverless e cobram apenas pelo tempo de execução.</p></details>
+<hr>
+<p><strong>15.</strong> Uma arquitetura tem: API Gateway → Lambda A → Lambda B (chamada síncrona). Lambda B ocasionalmente falha. Como tornar a arquitetura mais resiliente?</p>
+<ul><li>A) Configurar retry automático no código da Lambda A</li><li>B) Substituir a chamada síncrona Lambda A → B por Lambda A → SQS → Lambda B (async with retry)</li><li>C) Adicionar um CloudWatch Alarm para detectar erros na Lambda B</li><li>D) Configurar Provisioned Concurrency na Lambda B</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Chamadas síncronas Lambda-to-Lambda criam acoplamento: se B falha, A falha. Introduzir SQS desacopla as duas: A publica na fila e retorna; SQS + Lambda B é assíncrono com retry automático (até maxReceiveCount tentativas) e DLQ para falhas permanentes. Isso melhora resilência e escalabilidade.</p></details>
+<hr>
+<h2>Questões de Múltipla Seleção</h2>
+<p><strong>Bônus 1.</strong> Quais das seguintes afirmações sobre Lambda são VERDADEIRAS? (Selecione 2)</p>
+<ul><li>A) Lambda suporta até 15 minutos de timeout e 10 GB de memória</li><li>B) Lambda pode ser configurada com Provisioned Concurrency para eliminar cold starts</li><li>C) Lambda sempre tem cold start nas primeiras 10 invocações</li><li>D) Lambda timeout máximo é 5 minutos para funções em VPC</li></ul>
+<details><summary>Resposta</summary><p><strong>A e B</strong> — Timeout máximo = 15 min e memória máxima = 10 GB. Provisioned Concurrency elimina cold starts mantendo environments pré-aquecidos. Não existe limite de 10 invocações para cold start (C); Lambda em VPC tem o mesmo timeout de 15 min que fora de VPC (D).</p></details>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./079-17-serverless-lambda-api-gateway-links.html">Aula anterior</a>
+      <a href="./081-17-serverless-lambda-api-gateway-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

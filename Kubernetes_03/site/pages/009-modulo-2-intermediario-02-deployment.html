@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#009-modulo-2-intermediario-02-deployment">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 02 - intermediario - 2 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 02 - intermediario" loading="lazy">
+      <figcaption>Intermediario: replicas, deployments, rollout, probes, ConfigMap e Secret.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 02-deployment.yaml
+# O QUE � UM DEPLOYMENT?
+#
+# Deployment � o RECURSO MAIS IMPORTANTE do Kubernetes.
+# Hierarquia: Deployment --&gt; ReplicaSet --&gt; Pods
+#
+# Deployment = Gerente Geral da f�brica
+# - Garante N funcion�rios (pods)
+# - Faz contrata��o gradual quando muda processo (rolling update)
+# - Pode voltar ao processo antigo se der problema (rollback)
+# - Guarda hist�rico das vers�es
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment            # Tipo: Deployment
+
+metadata:
+  name: deployment-app      # Nome do Deployment
+  labels:
+    app: minha-app
+    versao: &quot;v1&quot;
+
+spec:
+  replicas: 3               # Quantos pods queremos
+
+  selector:                 # Qual pods este Deployment gerencia?
+    matchLabels:
+      app: minha-app        # Pods com label app=minha-app
+
+  # -------------------------------------------------------
+  # ESTRAT�GIA DE ATUALIZA��O - MUITO IMPORTANTE!
+  # -------------------------------------------------------
+  strategy:
+    type: RollingUpdate     # Atualiza GRADUALMENTE (padr�o)
+                            # Outra op��o: Recreate (derruba tudo e recria)
+
+    rollingUpdate:
+      maxSurge: 1           # M�ximo de pods EXTRAS durante update
+                            # Ex: 3 r�plicas + 1 extra = 4 pods no pico
+
+      maxUnavailable: 0     # M�ximo de pods INDISPON�VEIS durante update
+                            # 0 = zero downtime! Sempre tem 3 rodando
+
+  template:                 # Template dos pods (igual ao ReplicaSet)
+    metadata:
+      labels:
+        app: minha-app      # DEVE bater com selector!
+        versao: &quot;v1&quot;
+
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.25   # Mude para nginx:1.26 para testar update!
+
+          ports:
+            - containerPort: 80
+
+          resources:
+            requests:
+              memory: &quot;64Mi&quot;
+              cpu: &quot;100m&quot;
+            limits:
+              memory: &quot;128Mi&quot;
+              cpu: &quot;200m&quot;
+
+# ============================================================
+# COMANDOS ESSENCIAIS DE DEPLOYMENT:
+#
+# Criar/Atualizar:
+#   kubectl apply -f 02-deployment.yaml
+#
+# Ver status do rollout:
+#   kubectl rollout status deployment/deployment-app
+#
+# Ver hist�rico de vers�es:
+#   kubectl rollout history deployment/deployment-app
+#
+# ROLLBACK (voltar vers�o anterior):
+#   kubectl rollout undo deployment/deployment-app
+#
+# Rollback para vers�o espec�fica:
+#   kubectl rollout undo deployment/deployment-app --to-revision=2
+#
+# Pausar rollout:
+#   kubectl rollout pause deployment/deployment-app
+#
+# Continuar rollout:
+#   kubectl rollout resume deployment/deployment-app
+#
+# ENTREVISTA S�NIOR:
+# &quot;Explique RollingUpdate vs Recreate&quot;
+# RESPOSTA:
+# RollingUpdate: substitui pods gradualmente. Zero downtime.
+#   Temporariamente tem duas vers�es rodando ao mesmo tempo.
+# Recreate: mata TODOS os pods e recria. Tem downtime.
+#   �til quando duas vers�es N�O podem rodar juntas.
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./008-modulo-2-intermediario-01-replicaset.html">Aula anterior</a>
+      <a href="./010-modulo-2-intermediario-03-deployment-rollout.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

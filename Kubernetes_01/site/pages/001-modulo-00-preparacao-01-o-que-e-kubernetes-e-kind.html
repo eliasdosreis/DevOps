@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#001-modulo-00-preparacao-01-o-que-e-kubernetes-e-kind">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 00 - preparacao - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 00 - preparacao" loading="lazy">
+      <figcaption>Prepare o ambiente local e entenda o papel do Kind antes dos manifestos.</figcaption>
+    </figure>
+    <h1>============================================================</h1>
+<h1>O QUE ESTE ARQUIVO FAZ:</h1>
+<h1>Explica o que é o Kubernetes e o que é o kind, usando </h1>
+<h1>analogias simples e visão sênior de arquitetura.</h1>
+<h1>============================================================</h1>
+<h3>1. ANALOGIA DO DIA A DIA</h3>
+<p>Imagine que você tem uma lanchonete muito movimentada.</p>
+<ul><li>Os <strong>Containers (Docker)</strong> são os seus sanduíches perfeitos e padronizados.</li><li>O <strong>Servidor (Máquina/VM)</strong> é o chapeiro que frita o hambúrguer.</li></ul>
+<p>Se a lanchonete fica cheia, 1 chapeiro não dá conta. Você precisa de 5 chapeiros. Mas quem organiza a escala deles? Quem percebe se um chapeiro ficou doente e chama um substituto? Quem divide os pedidos (tráfego) entre eles?</p>
+<p>O <strong>Kubernetes</strong> é o <em>Gerente da Lanchonete</em>. Ele não frita o hambúrguer, mas ele garante que a lanchonete funcione 24/7, escalando a equipe e substituindo quem falhar.</p>
+<p>E o <strong>kind</strong> (Kubernetes in Docker)? O kind é como se você montasse uma lanchonete de brinquedo dentro de uma caixa de papelão (o Docker) na sua própria casa, para treinar o gerente antes de inaugurar o restaurante de verdade. Ele roda todo o Kubernetes usando apenas containers Docker no seu PC.</p>
+<hr>
+<h3>2. O QUE É (definição técnica Senior)</h3>
+<p>O <strong>Kubernetes (K8s)</strong> é um orquestrador de contêineres open-source que automatiza o deploy, o dimensionamento (scaling) e o gerenciamento de aplicações em contêineres. Ele agrupa contêineres que compõem uma aplicação em unidades lógicas para facilitar o gerenciamento e a descoberta de serviço.</p>
+<p>O <strong>kind</strong> é uma ferramenta para executar clusters locais do Kubernetes usando &quot;nós&quot; em formato de contêineres do Docker. Originalmente criado para testar o próprio código-fonte do Kubernetes, hoje é o padrão ouro na esteira de CI/CD para testes de integração efêmeros.</p>
+<p>A arquitetura do K8s é dividida em 2 grandes blocos:</p>
+<ul><li><strong>Control Plane (O cérebro):</strong> Toma as decisões, gerencia o estado e expõe as APIs.</li><li><strong>Worker Nodes (Os músculos):</strong> Onde suas aplicações (Pods) de fato rodam.</li></ul>
+<hr>
+<h3>6. CONCEITO SENIOR (o &quot;porquê&quot; profundo)</h3>
+<p>Um erro comum de Juniors é achar que o Kubernetes acelera a aplicação. Pelo contrário, o Kubernetes adiciona <em>overhead</em> de rede e abstração. A maior força do K8s não é velocidade, mas <strong>Resiliência e Padronização de Infra</strong>. Você trata servidores como gado (&quot;cattle&quot;) e não como animais de estimação (&quot;pets&quot;). Se um nó morre, o K8s percebe através do <em>Control Loop</em> (que compara o <code>Estado Desejado</code> vs <code>Estado Atual</code>) e recria a aplicação em outro nó saudável.</p>
+<p>O kind brilha porque o ambiente de Dev torna-se assustadoramente idêntico ao de Produção. Antigamente, Devs usavam minikube, que exigia VMs pesadas. O kind subiu o patamar transformando o próprio nó do K8s num container Docker leve, permitindo rodar clusters multi-node no seu notebook.</p>
+<hr>
+<h3>7. PERGUNTA DE ENTREVISTA</h3>
+<p><strong>Pergunta:</strong> &quot;Se o Kubernetes é feito para orquestrar containers, o que exatamente é gerenciado pelo &#39;Control Plane&#39; e o que roda no &#39;Worker Node&#39;?&quot;</p>
+<p><strong>Resposta Esperada:</strong> &quot;O Control Plane gerencia o estado global do cluster. Seus componentes principais incluem o <code>kube-apiserver</code> (porta de entrada para comandos), <code>etcd</code> (banco de dados chave/valor que guarda o estado do cluster), <code>kube-scheduler</code> (decide em qual nó um Pod vai rodar) e <code>kube-controller-manager</code> (mantém o loop de controle de recursos). Já no Worker Node, nós temos o <code>kubelet</code> (agente que garante que os containers estão rodando no nó), o <code>kube-proxy</code> (regras de rede) e o &#39;Container Runtime&#39; (ex: containerd) que executa nossos Pods/aplicações.&quot;</p>
+    <nav class="page-nav">
+      <span></span>
+      <a href="./002-modulo-00-preparacao-02-instalacao-e-primeiro-cluster.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#011-modulo-2-intermediario-04-configmap">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 02 - intermediario - 2 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 02 - intermediario" loading="lazy">
+      <figcaption>Intermediario: replicas, deployments, rollout, probes, ConfigMap e Secret.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 04-configmap.yaml
+# O QUE � UM CONFIGMAP?
+#
+# Imagine as regras da escola:
+# - &quot;Uniforme obrigat�rio&quot;
+# - &quot;Entrada �s 7h30&quot;
+# - &quot;Proibido celular em sala&quot;
+#
+# Essas regras ficam num mural (ConfigMap).
+# Se mudar uma regra, voc� muda S� o mural.
+# N�o precisa mudar toda a estrutura da escola (rebuild da imagem)!
+#
+# ConfigMap = Configura��es SEPARADAS do c�digo
+# ============================================================
+
+apiVersion: v1
+kind: ConfigMap             # Tipo: ConfigMap
+
+metadata:
+  name: config-da-app       # Nome do ConfigMap
+
+data:                       # Aqui ficam as configura��es
+                            # Formato: chave: valor
+
+  # Vari�veis simples de ambiente
+  APP_ENV: &quot;producao&quot;       # Ambiente atual
+  APP_PORT: &quot;8080&quot;          # Porta da aplica��o
+  LOG_LEVEL: &quot;info&quot;         # N�vel de log
+  MAX_CONNECTIONS: &quot;100&quot;    # M�ximo de conex�es
+
+  # Voc� tamb�m pode colocar arquivos inteiros!
+  nginx.conf: |             # | permite texto multilinha
+    server {
+      listen 80;
+      server_name localhost;
+      location / {
+        root /usr/share/nginx/html;
+        index index.html;
+      }
+    }
+
+---
+# ============================================================
+# Pod que USA o ConfigMap
+# ============================================================
+
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: pod-usando-configmap
+  labels:
+    app: usa-config
+
+spec:
+  containers:
+    - name: app
+      image: nginx:1.25
+
+      # JEITO 1: Carregar TODAS as chaves como env vars
+      envFrom:
+        - configMapRef:
+            name: config-da-app   # Nome do ConfigMap acima
+
+      # JEITO 2: Carregar chaves ESPEC�FICAS
+      env:
+        - name: MINHA_ENV         # Nome da vari�vel no container
+          valueFrom:
+            configMapKeyRef:
+              name: config-da-app # De qual ConfigMap
+              key: APP_ENV        # Qual chave espec�fica
+
+      # JEITO 3: Montar como ARQUIVO no container
+      volumeMounts:
+        - name: volume-config     # Nome do volume
+          mountPath: /etc/nginx/conf.d   # Onde montar no container
+
+  volumes:
+    - name: volume-config         # Defini��o do volume
+      configMap:
+        name: config-da-app       # Usa o ConfigMap como volume
+
+# ============================================================
+# DIFEREN�A IMPORTANTE:
+#
+# ConfigMap como ENV VAR:
+#   ? F�cil de usar
+#   ? Se mudar o ConfigMap, precisa REINICIAR o pod
+#
+# ConfigMap como VOLUME (arquivo):
+#   ? Atualiza AUTOMATICAMENTE no container
+#   ? Demora alguns minutos para propagar
+#
+# ENTREVISTA:
+# &quot;ConfigMap � seguro para senhas?&quot;
+# RESPOSTA: N�O! ConfigMap � em texto puro (base64 n�o �).
+# Para senhas e dados sens�veis, use SECRET.
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./010-modulo-2-intermediario-03-deployment-rollout.html">Aula anterior</a>
+      <a href="./012-modulo-2-intermediario-05-secret.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

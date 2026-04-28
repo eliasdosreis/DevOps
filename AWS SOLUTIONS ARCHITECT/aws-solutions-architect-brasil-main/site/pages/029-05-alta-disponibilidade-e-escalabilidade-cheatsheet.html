@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Alta Disponibilidade e Escalabilidade - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#029-05-alta-disponibilidade-e-escalabilidade-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 05 - Alta Disponibilidade e Escalabilidade - 2 min - 05-Alta-Disponibilidade-e-Escalabilidade/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 05 - Alta Disponibilidade e Escalabilidade" loading="lazy">
+      <figcaption>Alta disponibilidade nasce de redundancia, health checks e escala automatica.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Alta Disponibilidade e Escalabilidade</h1>
+<h2>ELB — Comparativo de Tipos</h2>
+<div class="table-wrap"><table><thead><tr><th>Característica</th><th>ALB</th><th>NLB</th><th>GWLB</th><th>CLB</th></tr></thead><tbody><tr><td>Camada OSI</td><td>7 (HTTP)</td><td>4 (TCP/UDP)</td><td>3 (IP)</td><td>4/7 (misto)</td></tr><tr><td>Protocolos</td><td>HTTP, HTTPS, HTTP/2, gRPC, WebSocket</td><td>TCP, UDP, TLS</td><td>IP (GENEVE)</td><td>HTTP, HTTPS, TCP</td></tr><tr><td>IP estático</td><td>❌ (DNS dinâmico)</td><td>✅ (Elastic IP por AZ)</td><td>N/A</td><td>❌</td></tr><tr><td>IP de origem preservado</td><td>❌ (X-Forwarded-For)</td><td>✅ (nativo)</td><td>✅</td><td>❌</td></tr><tr><td>Targets suportados</td><td>EC2, IP, Lambda, ALB</td><td>EC2, IP</td><td>EC2 (appliances)</td><td>EC2</td></tr><tr><td>Latência</td><td>Moderada</td><td>Ultra-baixa (&lt;1ms)</td><td>Moderada</td><td>Moderada</td></tr><tr><td>Roteamento avançado</td><td>Path, Host, Header, Query, Method</td><td>Nenhum</td><td>Nenhum</td><td>Básico</td></tr><tr><td>Weighted target groups</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr><tr><td>PrivateLink backend</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr><tr><td>SSL/TLS offload</td><td>✅</td><td>✅ (TLS listener)</td><td>❌</td><td>✅</td></tr><tr><td>Status</td><td>Atual</td><td>Atual</td><td>Atual</td><td>Legado</td></tr></tbody></table></div>
+<hr>
+<h2>ALB — Regras de Listener</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo de Condição</th><th>Exemplo</th></tr></thead><tbody><tr><td>Path-based</td><td><code>/api/<em></code> → TG-API; <code>/static/</em></code> → TG-Frontend</td></tr><tr><td>Host-based</td><td><code>api.example.com</code> → TG-API; <code>app.example.com</code> → TG-App</td></tr><tr><td>HTTP header</td><td><code>X-Version: v2</code> → TG-V2</td></tr><tr><td>HTTP method</td><td><code>DELETE</code> → TG-Secure</td></tr><tr><td>Query string</td><td><code>?env=staging</code> → TG-Staging</td></tr><tr><td>Source IP</td><td><code>10.0.0.0/8</code> → TG-Internal</td></tr></tbody></table></div>
+<p><strong>Ações possíveis:</strong> Forward (com peso), Redirect (301/302), Fixed Response (200/403/404), Authenticate (Cognito/OIDC)</p>
+<hr>
+<h2>Cross-Zone Load Balancing</h2>
+<div class="table-wrap"><table><thead><tr><th>ELB</th><th>Padrão</th><th>Custo inter-AZ</th></tr></thead><tbody><tr><td>ALB</td><td>✅ Habilitado</td><td>Sem custo</td></tr><tr><td>NLB</td><td>❌ Desabilitado</td><td>Cobrado se habilitado</td></tr><tr><td>GWLB</td><td>❌ Desabilitado</td><td>Cobrado se habilitado</td></tr><tr><td>CLB</td><td>✅ Habilitado (via console)</td><td>Sem custo</td></tr></tbody></table></div>
+<p><strong>Sem cross-zone:</strong> cada nó ELB distribui tráfego apenas para instâncias na SUA AZ (concentração de carga em AZs com mais instâncias).<br><strong>Com cross-zone:</strong> cada nó distribui uniformemente por todas as instâncias em todas as AZs.</p>
+<hr>
+<h2>ASG — Políticas de Scaling</h2>
+<div class="table-wrap"><table><thead><tr><th>Política</th><th>Tipo</th><th>Alarme necessário</th><th>Pro</th><th>Contra</th></tr></thead><tbody><tr><td>Target Tracking</td><td>Reativa</td><td>Criado automaticamente</td><td>Simples, resposta proporcional</td><td>Menos controle granular</td></tr><tr><td>Step Scaling</td><td>Reativa</td><td>Manual (CloudWatch)</td><td>Controle por faixas de métrica</td><td>Mais configuração</td></tr><tr><td>Simple Scaling</td><td>Reativa</td><td>Manual (CloudWatch)</td><td>Simples</td><td>Cooldown inibe reação</td></tr><tr><td>Scheduled Scaling</td><td>Proativa</td><td>Não aplicável</td><td>Antecipa picos previsíveis</td><td>Não adapta a variações inesperadas</td></tr><tr><td>Predictive Scaling</td><td>Proativa</td><td>ML automático</td><td>Pré-provisiona antes do pico</td><td>Requer 14 dias de histórico</td></tr></tbody></table></div>
+<hr>
+<h2>ASG — Conceitos de Tempo</h2>
+<div class="table-wrap"><table><thead><tr><th>Conceito</th><th>Default</th><th>Propósito</th></tr></thead><tbody><tr><td>Cooldown period</td><td>300s</td><td>Após scale-out/in, aguarda estabilizar (Simple Scaling)</td></tr><tr><td>Warmup period</td><td>300s</td><td>Instância nova não conta nas métricas enquanto aquece</td></tr><tr><td>Health check grace period</td><td>300s</td><td>Ignora health checks logo após lançamento</td></tr><tr><td>Lifecycle Hook timeout</td><td>3600s</td><td>Máx tempo em Pending:Wait ou Terminating:Wait</td></tr><tr><td>Connection Draining</td><td>300s</td><td>Drena conexações ELB antes de desregistrar instância</td></tr></tbody></table></div>
+<hr>
+<h2>Lifecycle Hooks — Fluxo</h2>
+<pre><code class="language-">Scale-Out:                              Scale-In:
+Pending                                 InService
+   ↓                                       ↓
+Pending:Wait ← Lifecycle Hook          Terminating:Wait ← Lifecycle Hook
+   ↓                                       ↓
+(Lambda / SNS / SQS / EventBridge)     (Lambda / SNS / SQS / EventBridge)
+   ↓                                       ↓
+CompleteLifecycleAction(CONTINUE)      CompleteLifecycleAction(CONTINUE)
+   ↓                                       ↓
+InService                               Terminating:Proceed → Terminated</code></pre>
+<hr>
+<h2>Termination Policy (Padrão)</h2>
+<pre><code class="language-">1. AZ com mais instâncias (rebalancear)
+2. Instância com Launch Config/Template mais antigo
+3. Instância mais próxima da próxima hora de cobrança
+4. Aleatório (desempate)</code></pre>
+<p>Outras políticas disponíveis: <code>OldestInstance</code>, <code>NewestInstance</code>, <code>OldestLaunchTemplate</code>, <code>ClosestToNextInstanceHour</code>, <code>AllocationStrategy</code> (respeita On-Demand vs Spot target).</p>
+<hr>
+<h2>Launch Template vs Launch Configuration</h2>
+<div class="table-wrap"><table><thead><tr><th>Característica</th><th>Launch Template</th><th>Launch Configuration</th></tr></thead><tbody><tr><td>Estado</td><td>✅ Atual (recomendado)</td><td>⚠️ Legado</td></tr><tr><td>Versionamento</td><td>✅ Sim ($Latest, $Default, versões numeradas)</td><td>❌ Imutável</td></tr><tr><td>Mixed Instance Policy</td><td>✅ Sim</td><td>❌ Não</td></tr><tr><td>Múltiplos tipos de instância</td><td>✅ Sim (overrides)</td><td>❌ Não</td></tr><tr><td>Spot + On-Demand mix</td><td>✅ Sim</td><td>❌ Não</td></tr><tr><td>SSM Parameter Store</td><td>✅ (AMI via parâmetro)</td><td>❌</td></tr><tr><td>T2/T3 Unlimited</td><td>✅ Sim</td><td>❌</td></tr><tr><td>Exigência para ASG novo</td><td>A partir de 2023 AWS incentiva LT</td><td>Suportado mas legado</td></tr></tbody></table></div>
+<hr>
+<h2>Sticky Sessions</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo de cookie</th><th>Gerado por</th><th>Expiração</th><th>Config</th></tr></thead><tbody><tr><td><code>AWSALB</code></td><td>ALB</td><td>1s – 7 dias</td><td>Duration-based no TG</td></tr><tr><td><code>AWSALBAPP</code></td><td>Aplicação</td><td>Conforme app</td><td>Application-based no TG</td></tr></tbody></table></div>
+<blockquote><p>Sticky Sessions podem causar desbalancamento. Usar apenas quando necessário (sessões com estado).</p></blockquote>
+<hr>
+<h2>Dicas de Prova (HA/Escalabilidade)</h2>
+<ul><li><strong>NLB + Elastic IP</strong> → IP estático para whitelist de clientes corporativos</li><li><strong>ALB weighted target groups</strong> → canary release, blue/green, A/B test</li><li><strong>GWLB</strong> → único LB para inserção transparente de appliances (GENEVE protocol)</li><li><strong>Target Tracking</strong> é a política mais simples — cria e gerencia alarmes automaticamente</li><li><strong>Predictive Scaling</strong> precisa de 14 dias de histórico — não funciona em ASG novo</li><li><strong>Lifecycle Hook</strong> é a solução para &quot;executar algo antes de entrar em serviço&quot; ou &quot;antes de terminar&quot;</li><li><strong>ELB health check no ASG</strong> é obrigatório em produção — EC2 health check não detecta falha de aplicação</li><li><strong>Cross-zone no NLB</strong> é cobrado — considerar custo de data transfer inter-AZ</li><li><strong>Connection Draining</strong>: se sessões são curtas, reduza para 30s; se longas (uploads), aumente para 900s+</li><li><strong>PrivateLink</strong> sempre requer <strong>NLB</strong> como backend — não ALB<br></li><li>ALB pode ter targets <strong>Lambda</strong> — excelente para backends serverless por path</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./028-05-alta-disponibilidade-e-escalabilidade-casos-de-uso.html">Aula anterior</a>
+      <a href="./030-05-alta-disponibilidade-e-escalabilidade-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

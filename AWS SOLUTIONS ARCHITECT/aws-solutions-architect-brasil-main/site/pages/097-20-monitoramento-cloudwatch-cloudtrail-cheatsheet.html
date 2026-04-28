@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Módulo 14: Monitoramento, CloudWatch e CloudTrail - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#097-20-monitoramento-cloudwatch-cloudtrail-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 20 - Monitoramento CloudWatch CloudTrail - 5 min - 20-Monitoramento-CloudWatch-CloudTrail/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 20 - Monitoramento CloudWatch CloudTrail" loading="lazy">
+      <figcaption>Observabilidade e auditoria respondem: o que aconteceu, quando, por quem e com qual impacto.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Módulo 14: Monitoramento, CloudWatch e CloudTrail</h1>
+<h2>Visão Geral dos Serviços de Monitoramento</h2>
+<div class="table-wrap"><table><thead><tr><th>Serviço</th><th>Responde</th><th>Melhor Para</th></tr></thead><tbody><tr><td><strong>CloudWatch Metrics</strong></td><td>&quot;Como está a performance?&quot;</td><td>Métricas de recursos e aplicações</td></tr><tr><td><strong>CloudWatch Logs</strong></td><td>&quot;O que aconteceu?&quot;</td><td>Logs de apps, Lambda, VPC Flow</td></tr><tr><td><strong>CloudTrail</strong></td><td>&quot;Quem fez o quê?&quot;</td><td>Auditoria de API calls</td></tr><tr><td><strong>AWS Config</strong></td><td>&quot;Está configurado corretamente?&quot;</td><td>Compliance e configuração</td></tr><tr><td><strong>X-Ray</strong></td><td>&quot;Onde está o gargalo?&quot;</td><td>Tracing distribuído</td></tr><tr><td><strong>GuardDuty</strong></td><td>&quot;Há atividade suspeita?&quot;</td><td>Detecção de ameaças ML</td></tr><tr><td><strong>Security Hub</strong></td><td>&quot;Qual é a postura de segurança?&quot;</td><td>Consolidação de findings</td></tr><tr><td><strong>Trusted Advisor</strong></td><td>&quot;O que melhorar?&quot;</td><td>Recomendações de boas práticas</td></tr></tbody></table></div>
+<hr>
+<h2>CloudWatch — Métricas Importantes por Serviço</h2>
+<div class="table-wrap"><table><thead><tr><th>Serviço</th><th>Métricas Built-in</th><th>Métricas Requerem Agente</th></tr></thead><tbody><tr><td>EC2</td><td>CPUUtilization, NetworkIn/Out, DiskReadOps</td><td><strong>MemoryUtilization</strong>, DiskSpaceUtilization</td></tr><tr><td>ELB</td><td>RequestCount, TargetResponseTime, HTTPCode_5XX</td><td>—</td></tr><tr><td>RDS</td><td>CPUUtilization, FreeStorageSpace, DatabaseConnections</td><td>—</td></tr><tr><td>Lambda</td><td>Invocations, Duration, Errors, Throttles, ConcurrentExecutions</td><td>—</td></tr><tr><td>API GW</td><td>Count, Latency, 4XXError, 5XXError</td><td>—</td></tr><tr><td>SQS</td><td>ApproximateNumberOfMessagesVisible, NumberOfMessagesSent</td><td>—</td></tr><tr><td>DynamoDB</td><td>ConsumedReadCapacityUnits, SystemErrors</td><td>—</td></tr></tbody></table></div>
+<p><strong>Memory e Disk EC2:</strong> apenas via CloudWatch Agent (instalado na instância).</p>
+<hr>
+<h2>CloudWatch Alarms — Estados</h2>
+<div class="table-wrap"><table><thead><tr><th>Estado</th><th>Significado</th></tr></thead><tbody><tr><td><strong>OK</strong></td><td>Métrica dentro do threshold</td></tr><tr><td><strong>ALARM</strong></td><td>Métrica violou o threshold pelo período configurado</td></tr><tr><td><strong>INSUFFICIENT_DATA</strong></td><td>Dados insuficientes para avaliar (início ou sem dados)</td></tr></tbody></table></div>
+<p><strong>Ações de Alarm:</strong> EC2 Action (reboot, stop, terminate, recover), Auto Scaling Action, SNS notification.</p>
+<hr>
+<h2>CloudTrail — Tipos de Eventos</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>O Que Registra</th><th>Habilitado Por Padrão</th><th>Custo Extra</th></tr></thead><tbody><tr><td><strong>Management Events</strong></td><td>Criar/deletar recursos, IAM changes, console login</td><td><strong>Sim</strong></td><td>Não (1 cópia free)</td></tr><tr><td><strong>Data Events</strong></td><td>S3 GetObject/PutObject, Lambda Invoke</td><td><strong>Não</strong></td><td>Sim</td></tr><tr><td><strong>Insights Events</strong></td><td>Atividade anômala de API</td><td><strong>Não</strong></td><td>Sim</td></tr></tbody></table></div>
+<p><strong>Retenção no console:</strong> 90 dias. Para longo prazo: habilitar trail com destino S3 (ilimitado).</p>
+<hr>
+<h2>AWS Config — Rule Types</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Quem Cria</th><th>Exemplos</th></tr></thead><tbody><tr><td><strong>Managed Rules</strong></td><td>AWS (~200 disponíveis)</td><td><code>s3-bucket-public-read-prohibited</code>, <code>ec2-instance-no-public-ip</code>, <code>rds-storage-encrypted</code></td></tr><tr><td><strong>Custom Rules (Lambda)</strong></td><td>Você</td><td>Lógica customizada de compliance</td></tr><tr><td><strong>Proactive Rules</strong></td><td>AWS (novo)</td><td>Avalia antes de criar (CloudFormation hook)</td></tr><tr><td><strong>Detective Rules</strong></td><td>AWS/Custom</td><td>Avalia após criar/mudar</td></tr></tbody></table></div>
+<p><strong>Remediação:</strong> SSM Automation Document executado automaticamente quando NON_COMPLIANT.</p>
+<hr>
+<h2>SSM Parameter Store — Hierarquia e Tipos</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo de Parâmetro</th><th>Criptografia</th><th>Uso</th></tr></thead><tbody><tr><td><strong>String</strong></td><td>Não</td><td>Configurações não-secretas</td></tr><tr><td><strong>StringList</strong></td><td>Não</td><td>Lista de valores (ex: AMI IDs por região)</td></tr><tr><td><strong>SecureString</strong></td><td>KMS</td><td>Secrets, passwords, tokens</td></tr></tbody></table></div>
+<p><strong>Hierarquia:</strong> <code>/app/prod/database/host</code>, <code>/app/prod/database/password</code> — permite política IAM por hierarquia.</p>
+<div class="table-wrap"><table><thead><tr><th>Tier</th><th>Limite</th><th>Custo</th><th>Max Tamanho</th></tr></thead><tbody><tr><td>Standard</td><td>10.000 parâmetros</td><td>Gratuito</td><td>4 KB</td></tr><tr><td>Advanced</td><td>100.000 parâmetros</td><td>$0.05/param/mês</td><td>8 KB</td></tr></tbody></table></div>
+<hr>
+<h2>X-Ray — Conceitos Chave</h2>
+<div class="table-wrap"><table><thead><tr><th>Conceito</th><th>Definição</th></tr></thead><tbody><tr><td><strong>Trace</strong></td><td>Conjunto de segments representando um request end-to-end</td></tr><tr><td><strong>Segment</strong></td><td>Dados de um único serviço/recurso no trace</td></tr><tr><td><strong>Subsegment</strong></td><td>Granularidade dentro de um segment (chamadas de banco, HTTP externo)</td></tr><tr><td><strong>Service Map</strong></td><td>Visualização gráfica de serviços + latências + erros</td></tr><tr><td><strong>Annotations</strong></td><td>Key-value indexados para filtrar traces (ex: <code>UserID</code>, <code>OrderID</code>)</td></tr><tr><td><strong>Metadata</strong></td><td>Key-value não indexados para dados adicionais de debug</td></tr><tr><td><strong>Sampling Rule</strong></td><td>% de requests a tracear; default 5% + 1/s</td></tr></tbody></table></div>
+<p><strong>X-Ray Daemon:</strong> processo leve instalado em EC2/ECS que coleta e envia traces para X-Ray API.</p>
+<hr>
+<h2>CloudWatch vs CloudTrail vs Config — Decisão</h2>
+<pre><code class="language-">Pergunta: &quot;Quem deletou o bucket S3?&quot;
+→ CloudTrail (API call audit: quem + quando + de onde)
+
+Pergunta: &quot;O bucket S3 estava público ontem?&quot;
+→ AWS Config (histórico de configuração do recurso)
+
+Pergunta: &quot;Minha API está lenta?&quot;
+→ CloudWatch (métricas de latência do API GW)
+
+Pergunta: &quot;Onde está o gargalo na minha arquitetura microservices?&quot;
+→ AWS X-Ray (distributed tracing)
+
+Pergunta: &quot;Qual instância está usando mais CPU?&quot;
+→ CloudWatch (Top Contributor via Contributor Insights)
+
+Pergunta: &quot;Há login suspeito de IP incomum?&quot;
+→ GuardDuty (ameaças ML-based)</code></pre>
+<hr>
+<h2>Dicas de Prova — Padrões Comuns</h2>
+<div class="table-wrap"><table><thead><tr><th>Pista no Enunciado</th><th>Resposta Provável</th></tr></thead><tbody><tr><td>&quot;Memória da EC2 no CloudWatch&quot;</td><td>Instalar CloudWatch Agent</td></tr><tr><td>&quot;Log imutável de auditoria CloudTrail&quot;</td><td>S3 Object Lock + Log File Validation</td></tr><tr><td>&quot;Compliance multi-conta centralizado&quot;</td><td>Config Aggregator + Organization</td></tr><tr><td>&quot;Acessar EC2 sem SSH, sem bastion&quot;</td><td>SSM Session Manager</td></tr><tr><td>&quot;Auto-remediar non-compliant Config&quot;</td><td>Config Rule + SSM Automation</td></tr><tr><td>&quot;Latência alta em microsserviços&quot;</td><td>X-Ray + Service Map</td></tr><tr><td>&quot;Alertar quando Lambda tem &gt; 5 erros/min&quot;</td><td>CloudWatch Alarm na métrica Errors</td></tr><tr><td>&quot;Reter logs CloudTrail por 7 anos&quot;</td><td>S3 Lifecycle + Glacier Deep Archive</td></tr><tr><td>&quot;Alertar quando API sem MFA acessa S3 sensível&quot;</td><td>Config Rule ou CloudTrail + EventBridge</td></tr><tr><td>&quot;Detectar EC2 fazendo port scan suspeito&quot;</td><td>GuardDuty</td></tr><tr><td>&quot;Password/access key rotacionada automaticamente&quot;</td><td>Secrets Manager (não Parameter Store)</td></tr><tr><td>&quot;Detectar credenciais AWS expostas no GitHub&quot;</td><td>GuardDuty FindingType: UnauthorizedAccess</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./096-20-monitoramento-cloudwatch-cloudtrail-casos-de-uso.html">Aula anterior</a>
+      <a href="./098-20-monitoramento-cloudwatch-cloudtrail-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

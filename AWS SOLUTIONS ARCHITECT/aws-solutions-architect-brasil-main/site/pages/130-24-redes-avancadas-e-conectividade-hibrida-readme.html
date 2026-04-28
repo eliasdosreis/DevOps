@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>24 Redes Avancadas e Conectividade Hibrida - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#130-24-redes-avancadas-e-conectividade-hibrida-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 24 - Redes Avancadas e Conectividade Hibrida - 2 min - 24-Redes-Avancadas-e-Conectividade-Hibrida/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 24 - Redes Avancadas e Conectividade Hibrida" loading="lazy">
+      <figcaption>Conectividade hibrida conecta data center, VPCs e servicos com isolamento e escala.</figcaption>
+    </figure>
+    <h1>24 Redes Avancadas e Conectividade Hibrida</h1>
+<h2>Objetivos do modulo</h2>
+<ul><li>dominar conectividade entre VPCs, contas e datacenter on-premises</li><li>diferenciar VPC Peering, Transit Gateway, PrivateLink, VPN e Direct Connect</li><li>desenhar redes com resiliencia, seguranca e baixa latencia</li><li>resolver questoes de prova com foco em roteamento, isolamento e custo de transferencia</li></ul>
+<h2>Conceitos fundamentais</h2>
+<p>No SAA-C03, redes avancadas aparecem quando o cenario envolve multiplas VPCs, multiplas contas, conectividade hibrida e servicos privados.</p>
+<h2>Componentes chave</h2>
+<ul><li>VPC Peering: conecta duas VPCs diretamente; nao suporta transitive routing.</li><li>AWS Transit Gateway (TGW): hub-and-spoke para muitas VPCs e VPNs.</li><li>AWS PrivateLink: expor/consumir servico privado sem peering completo.</li><li>Site-to-Site VPN: tunel IPSec pela internet.</li><li>AWS Direct Connect (DX): link dedicado de baixa variabilidade para on-premises.</li><li>Route 53 Resolver endpoints: DNS hibrido entre AWS e on-premises.</li></ul>
+<h2>Quando usar cada um</h2>
+<ul><li>poucas VPCs e topologia simples: VPC Peering</li><li>muitas VPCs/contas com roteamento central: TGW</li><li>publicar servico interno para outras contas com menor superficie: PrivateLink</li><li>conectividade rapida sem circuito dedicado: VPN</li><li>conectividade estavel de alto throughput: Direct Connect (com VPN de backup)</li></ul>
+<h2>Dicas de exame</h2>
+<ul><li>peering nao e transitive; TGW resolve isso.</li><li>se o enunciado pede acesso a servico privado sem abrir CIDR completo, pense em PrivateLink.</li><li>DX costuma aparecer com requisito de latencia mais previsivel e trafego alto.</li><li>para alta disponibilidade hibrida, combine DX + VPN backup.</li><li>Security Group e stateful; NACL e stateless (armadilha recorrente).</li></ul>
+<h2>Links relacionados</h2>
+<ul><li><a href="./125-24-redes-avancadas-e-conectividade-hibrida-cheatsheet.html">Cheatsheet</a></li><li><a href="./124-24-redes-avancadas-e-conectividade-hibrida-casos-de-uso.html">Casos de uso</a></li><li><a href="./129-24-redes-avancadas-e-conectividade-hibrida-questoes.html">Questoes</a></li><li><a href="./126-24-redes-avancadas-e-conectividade-hibrida-flashcards.html">Flashcards</a></li><li><a href="./127-24-redes-avancadas-e-conectividade-hibrida-lab.html">Lab</a></li><li><a href="./128-24-redes-avancadas-e-conectividade-hibrida-links.html">Links oficiais</a></li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./129-24-redes-avancadas-e-conectividade-hibrida-questoes.html">Aula anterior</a>
+      <a href="./131-25-criptografia-kms-e-gestao-de-segredos-casos-de-uso.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

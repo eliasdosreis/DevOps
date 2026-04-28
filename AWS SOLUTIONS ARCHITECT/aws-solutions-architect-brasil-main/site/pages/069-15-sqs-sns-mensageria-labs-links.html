@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Links e Recursos — SQS, SNS e Mensageria (Módulo 10) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#069-15-sqs-sns-mensageria-labs-links">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #b45309">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 15 - SQS SNS Mensageria Labs - 2 min - 15-SQS-SNS-Mensageria-Labs/links.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 15 - SQS SNS Mensageria Labs" loading="lazy">
+      <figcaption>Mensageria em lab mostra retry, DLQ, fanout e buffers contra picos.</figcaption>
+    </figure>
+    <h1>Links e Recursos — SQS, SNS e Mensageria (Módulo 10)</h1>
+<h2>Documentação Oficial AWS</h2>
+<ul><li><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html">Amazon SQS — Documentação Oficial</a></li><li><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/standard-queues.html">SQS — Filas Standard vs FIFO</a></li><li><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html">SQS — Dead-Letter Queues (DLQ)</a></li><li><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html">SQS — Visibility Timeout</a></li><li><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-short-and-long-polling.html">SQS — Long Polling</a></li><li><a href="https://docs.aws.amazon.com/sns/latest/dg/welcome.html">Amazon SNS — Documentação Oficial</a></li><li><a href="https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html">SNS — Filter Policies</a></li><li><a href="https://docs.aws.amazon.com/sns/latest/dg/sns-common-scenarios.html">SNS — Fan-out Pattern</a></li><li><a href="https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-what-is.html">Amazon EventBridge — Documentação</a></li><li><a href="https://docs.aws.amazon.com/amazon-mq/latest/developer-guide/welcome.html">Amazon MQ — Documentação</a></li></ul>
+<h2>FAQs</h2>
+<ul><li><a href="https://aws.amazon.com/sqs/faqs/">Amazon SQS FAQ</a></li><li><a href="https://aws.amazon.com/sns/faqs/">Amazon SNS FAQ</a></li></ul>
+<h2>Whitepapers</h2>
+<ul><li><a href="https://docs.aws.amazon.com/whitepapers/latest/develop-deploy-low-latency-applications/messaging.html">Messaging Patterns on AWS</a></li></ul>
+<h2>Artigos de Blog AWS</h2>
+<ul><li><a href="https://aws.amazon.com/blogs/compute/building-a-messaging-platform-using-sqs-and-sns/">Standard vs FIFO: choosing the right queue</a></li><li><a href="https://aws.amazon.com/blogs/compute/handling-failures-with-sqs-dead-letter-queues/">SQS DLQ best practices</a></li><li><a href="https://aws.amazon.com/blogs/compute/exploring-the-amazon-sns-message-filtering-feature/">SNS to SQS fan-out pattern</a></li></ul>
+<h2>Ferramentas de Estudo</h2>
+<ul><li><a href="https://tutorialsdojo.com/amazon-sqs/">Tutorials Dojo — Amazon SQS Cheat Sheet</a></li><li><a href="https://tutorialsdojo.com/amazon-sns/">Tutorials Dojo — Amazon SNS Cheat Sheet</a></li></ul>
+<h2>Comparativo Serviços de Mensageria</h2>
+<div class="table-wrap"><table><thead><tr><th>Critério</th><th>SQS Standard</th><th>SQS FIFO</th><th>SNS</th><th>EventBridge</th></tr></thead><tbody><tr><td>Ordenação</td><td>Não garantida</td><td>Garantida</td><td>N/A</td><td>N/A</td></tr><tr><td>Throughput</td><td>Ilimitado</td><td>300 msg/s (3000 c/ batching)</td><td>Ilimitado</td><td>10k eventos/s</td></tr><tr><td>Deduplicação</td><td>Não</td><td>Sim (ID)</td><td>Não</td><td>Não</td></tr><tr><td>Entrega</td><td>At-least-once</td><td>Exactly-once</td><td>Push (fans-out)</td><td>Push (targets)</td></tr><tr><td>Consumers</td><td>Pull</td><td>Pull</td><td>Push (subscriptions)</td><td>Push (rules)</td></tr><tr><td>Uso típico</td><td>Desacoplamento</td><td>Pagamentos, pedidos</td><td>Notificações, fan-out</td><td>Eventos de serviços AWS</td></tr><tr><td>Retenção msg</td><td>1 min–14 dias</td><td>1 min–14 dias</td><td>N/A</td><td>N/A</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./068-15-sqs-sns-mensageria-labs-lab.html">Aula anterior</a>
+      <a href="./070-16-containers-ecs-eks-fargate-casos-de-uso.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

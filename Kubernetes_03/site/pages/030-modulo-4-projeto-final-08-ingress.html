@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#030-modulo-4-projeto-final-08-ingress">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - projeto final - 3 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - projeto final" loading="lazy">
+      <figcaption>Projeto final consolida manifestos de producao em uma arquitetura completa.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# ARQUIVO: 08-ingress.yaml
+# PROJETO FINAL - Ingress com TLS e Roteamento
+#
+# Este � o PORTEIRO PRINCIPAL da aplica��o.
+# Todo tr�fego da internet passa por aqui primeiro.
+#
+# Regras:
+# loja.com/        --&gt; Frontend (site da loja)
+# loja.com/api/*   --&gt; API Backend (dados din�micos)
+#
+# TLS (HTTPS) � gerenciado pelo cert-manager (autom�tico!)
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+metadata:
+  name: ingress-ecommerce     # Nome do ingress
+  namespace: ecommerce        # Mesmo namespace da app
+
+  annotations:
+    # --- Configura��es do NGINX Ingress Controller ---
+
+    kubernetes.io/ingress.class: &quot;nginx&quot;
+    # Qual controller usar (pode ser traefik, kong, etc)
+
+    nginx.ingress.kubernetes.io/ssl-redirect: &quot;true&quot;
+    # Redireciona HTTP -&gt; HTTPS automaticamente
+
+    nginx.ingress.kubernetes.io/proxy-body-size: &quot;10m&quot;
+    # Tamanho m�ximo de upload: 10 megabytes
+    # �til para upload de imagens de produtos
+
+    nginx.ingress.kubernetes.io/proxy-read-timeout: &quot;60&quot;
+    # Timeout para resposta do backend: 60 segundos
+
+    nginx.ingress.kubernetes.io/rate-limit: &quot;100&quot;
+    # Limite de requisi��es por segundo por IP
+    # Prote��o b�sica contra DDoS e bots
+
+    nginx.ingress.kubernetes.io/enable-cors: &quot;true&quot;
+    # Habilita CORS para o frontend poder chamar a API
+
+    nginx.ingress.kubernetes.io/cors-allow-origin: &quot;https://loja.com&quot;
+    # S� permite CORS do nosso dom�nio
+
+    # Se usar cert-manager para TLS autom�tico:
+    # cert-manager.io/cluster-issuer: &quot;letsencrypt-prod&quot;
+
+spec:
+  # -------------------------------------------------------
+  # TLS - Certificado HTTPS
+  # -------------------------------------------------------
+  tls:
+    - hosts:
+        - loja.com              # Dom�nio principal
+        - www.loja.com          # Com www tamb�m
+      secretName: tls-loja-com  # Secret com o certificado SSL
+                                # cert-manager cria este Secret
+                                # automaticamente!
+
+  # -------------------------------------------------------
+  # REGRAS DE ROTEAMENTO
+  # -------------------------------------------------------
+  rules:
+
+    # --- Dom�nio principal: loja.com ---
+    - host: loja.com
+      http:
+        paths:
+
+          # ROTA 1: /api/* vai para o Backend
+          - path: /api
+            pathType: Prefix    # Qualquer coisa come�ando com /api
+            backend:
+              service:
+                name: api       # Service da API (07-services.yaml)
+                port:
+                  number: 3000
+
+          # ROTA 2: /* vai para o Frontend (sempre por �ltimo!)
+          - path: /
+            pathType: Prefix    # Captura tudo que n�o foi acima
+            backend:
+              service:
+                name: frontend  # Service do Frontend
+                port:
+                  number: 80
+
+    # --- www.loja.com tamb�m funciona ---
+    - host: www.loja.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+
+# ============================================================
+# ORDEM DAS ROTAS IMPORTA!
+# Ingress avalia as rotas DE CIMA PARA BAIXO.
+# Coloque rotas MAIS ESPEC�FICAS antes de menos espec�ficas.
+# /api (espec�fico) ANTES de / (gen�rico)
+# Se inverter: tudo vai para o Frontend!
+#
+# TESTAR LOCALMENTE (sem dom�nio real):
+# 1. minikube addons enable ingress
+# 2. kubectl apply -f 08-ingress.yaml
+# 3. minikube ip  (pega o IP do cluster)
+# 4. Editar /etc/hosts:
+#    192.168.x.x  loja.com
+# 5. curl http://loja.com
+#
+# ENTREVISTA S�NIOR:
+# &quot;Como funciona o Ingress Controller por baixo?&quot;
+# RESPOSTA: O Ingress Controller (ex: nginx) roda como pod.
+# Ele monitora objetos Ingress via API do K8s e reconfigura
+# o nginx dinamicamente. Cada regra Ingress vira um bloco
+# server{} no nginx.conf do controller.
+# ============================================================</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./029-modulo-4-projeto-final-07-services.html">Aula anterior</a>
+      <a href="./031-modulo-4-projeto-final-09-hpa.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

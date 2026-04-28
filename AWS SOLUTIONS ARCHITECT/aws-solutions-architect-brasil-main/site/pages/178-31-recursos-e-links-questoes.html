@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questões — Módulo 21: Recursos e Links - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#178-31-recursos-e-links-questoes">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #b45309">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 31 - Recursos e Links - 10 min - 31-Recursos-e-Links/questoes.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1488998427799-e3362cec87c3?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 31 - Recursos e Links" loading="lazy">
+      <figcaption>Links oficiais mantem o estudo conectado ao comportamento atual dos servicos AWS.</figcaption>
+    </figure>
+    <h1>Questões — Módulo 21: Recursos e Links</h1>
+<blockquote><p><strong>Quiz de Orientação de Estudos</strong> — Conheça suas fontes e estratégias<br><strong>Dificuldade</strong>: Básica-Média</p></blockquote>
+<hr>
+<p><strong>1.</strong> Qual é o recurso oficial da AWS para acessar questões práticas gratuitas para o SAA-C03?</p>
+<ul><li>A) AWS Certification Website → Practice Exam (pago)</li><li>B) AWS Skill Builder — Oficial Exam Prep module (gratuito, inclui questões de sample)</li><li>C) Amazon.com → AWS Books</li><li>D) GitHub AWS → practice-exams</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — AWS Skill Builder (skillbuilder.aws) oferece: (1) Sample Questions gratuitas (20 questões) para calibrar o nível; (2) Official Practice Exam (pago, 65 questões) com feedback detalhado; (3) Courses gratuitos e pagos (Individual e Team). É a fonte mais confiável porque as questões são criadas pela própria AWS.</p></details>
+<hr>
+<p><strong>2.</strong> Qual whitepaper AWS cobre os 6 pilares da arquitetura bem construída?</p>
+<ul><li>A) &quot;AWS Security Best Practices&quot;</li><li>B) &quot;AWS Well-Architected Framework&quot; (disponível em aws.amazon.com/architecture/well-architected)</li><li>C) &quot;Overview of AWS Services&quot;</li><li>D) &quot;AWS Migration Acceleration Program&quot;</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — O whitepaper &quot;AWS Well-Architected Framework&quot; descreve os 6 pilares: Operational Excellence, Security, Reliability, Performance Efficiency, Cost Optimization e Sustainability. É leitura obrigatória para o SAA-C03 pois questões do exame frequentemente citam os princípios diretamente.</p></details>
+<hr>
+<p><strong>3.</strong> Qual é a vantagem do Tutorials Dojo como recurso de estudo para o SAA-C03?</p>
+<ul><li>A) É o recurso oficial AWS mais completo</li><li>B) Oferece simulados com explicações detalhadas por opção (inclusive por que cada resposta errada está errada) e alta correlação com o exame real</li><li>C) É gratuito sem limitações</li><li>D) Criado pelos próprios autores do exame AWS</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Tutorials Dojo (tutorialsdojo.com): renomado pela qualidade das explicações. Para cada questão, explica por que cada opção alternativa está incorreta — não apenas a correta. Cheat sheets por serviço. Simulados em timed e review mode. Alta correlação reportada com o exame real. Criado por Jon Bonso (arquiteto AWS certificado).</p></details>
+<hr>
+<p><strong>4.</strong> Qual é o domínio a priorizar nos últimos 3 dias antes do exame SAA-C03?</p>
+<ul><li>A) Networking (VPC, Direct Connect, Route 53) — alta complexidade</li><li>B) Design de Aplicações Seguras (30% do exame) — maior peso no exame</li><li>C) Machine Learning — novidade frequente</li><li>D) Billing e Pricing — fácil de memorizar</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Design de Aplicações Seguras tem 30% do exame — o maior domínio. Revisar nos últimos dias: IAM policies (conditions, boundaries), KMS vs CloudHSM, VPC security (SG stateful vs NACL stateless), S3 security (BPA, policies, ACLs, OAC), Cognito (User Pools vs Identity Pools), GuardDuty, Shield vs WAF, Secrets Manager vs Parameter Store.</p></details>
+<hr>
+<p><strong>5.</strong> Qual o FAQ mais importante de ler antes do exame SAA-C03?</p>
+<ul><li>A) FAQ do EC2 e S3 apenas (serviços mais testados)</li><li>B) FAQ dos 3-5 serviços core: EC2, S3, RDS, IAM, VPC — são os mais detalhados e cobrem nuances testadas</li><li>C) FAQ de todos os 200+ serviços AWS</li><li>D) FAQs não são úteis — focar nos cursos</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — FAQs da AWS descrevem limites, casos especiais e nuances que aparecem no exame. Prioridade: EC2 (tipos de instância, pricing, HA), S3 (classes de armazenamento, limites, segurança), RDS (Multi-AZ vs Read Replicas, backups, encryption), IAM (policy evaluation, roles, SCP), VPC (peering, endpoints, routing). FAQs de serviços específicos como Lambda, DynamoDB e ELB também são valiosos.</p></details>
+<hr>
+<p><strong>6.</strong> Qual ferramenta AWS serve para estimar o custo de uma arquitetura antes de implementá-la?</p>
+<ul><li>A) AWS Cost Explorer (analisa custos históricos)</li><li>B) AWS Pricing Calculator (calculator.aws) — estima custos de serviços antes de usar</li><li>C) AWS Trusted Advisor (recomendações de otimização)</li><li>D) AWS Budgets (define limites de gasto)</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — AWS Pricing Calculator (calculator.aws): ferramenta gratuita para construir estimativas de arquitetura. Adicione serviços, configure parâmetros (instância type, region, uso esperado) e veja estimativa mensal. Diferente do Cost Explorer (analisa gastos já ocorridos). No exame, quando a questão pede &quot;como estimar custos antes de deploy&quot; → Pricing Calculator.</p></details>
+<hr>
+<p><strong>7.</strong> Você precisa entender como o tráfego entra e sai de uma VPC. Qual recurso AWS recomendado oferece diagramas e exemplos de arquitetura de rede?</p>
+<ul><li>A) AWS EC2 User Guide</li><li>B) AWS VPC User Guide (docs.aws.amazon.com/vpc/latest/userguide) + AWS Architecture Center</li><li>C) AWS CLI Reference</li><li>D) AWS SDK for Python (Boto3)</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — AWS VPC User Guide é a documentação mais completa sobre networking. O AWS Architecture Center (aws.amazon.com/architecture) tem diagramas de arquiteturas de referência para casos de uso comuns — excelente para visualizar patterns de HA multi-AZ, hybrid connectivity e microservices. Ambos são gratuitos e oficiais.</p></details>
+<hr>
+<p><strong>8.</strong> Um candidato a SAA-C03 tem 4 semanas para estudar. Qual é a distribuição mais efetiva?</p>
+<ul><li>A) Semana 1-4: assistir todo o curso do Stephane Maarek sem simulados</li><li>B) Semana 1-2: curso teórico; Semana 3: simulados com revisão das respostas erradas; Semana 4: foco em pontos fracos + simulado final</li><li>C) Semana 1: simulado para baseline; Semanas 2-3: estudar conteúdo; Semana 4: simulado</li><li>D) Estudar todos os serviços AWS existentes (200+) uniformemente</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Metologia comprovada: (1) Teoria sólida nos serviços core; (2) Simulados para identificar gaps — o feedback das questões erradas é o estudo mais eficiente; (3) Revisão focada nos domínios fracos; (4) Simulado final para medir readiness. Não adianta fazer teoria sem prática; simulados sem revisão das erradas são perda de tempo.</p></details>
+<hr>
+<p><strong>9.</strong> Qual é o recurso ideal para entender o modelo de preços do EC2 (On-Demand vs Reserved vs Spot)?</p>
+<ul><li>A) AWS Billing Console → Bills</li><li>B) AWS EC2 Pricing page (aws.amazon.com/ec2/pricing) + AWS Compute Optimizer</li><li>C) AWS Trusted Advisor → Cost Optimization</li><li>D) CUR (Cost and Usage Report)</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — A página de preços do EC2 tem todos os modelos com calculadora interativa. AWS Compute Optimizer analisa utilização real e sugere o tipo certo de instância. Para o exame, conheça: On-Demand (máxima flexibilidade, maior preço), Reserved (1 ou 3 anos, até 72% off), Savings Plans (compromisso de gasto, mais flexível), Spot (até 90% off, interruptível).</p></details>
+<hr>
+<p><strong>10.</strong> O que é o AWS Architecture Center e como usá-lo para estudar?</p>
+<ul><li>A) Centro de suporte para arquitetos AWS certificados</li><li>B) Biblioteca de arquiteturas de referência, diagramas e whitepapers em aws.amazon.com/architecture — estudar os patterns de cada indústria</li><li>C) Ferramenta de design de diagramas concorrente ao draw.io</li><li>D) Parte do AWS Management Console para visualizar infraestrutura</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — AWS Architecture Center (aws.amazon.com/architecture): biblioteca gratuita de &quot;Reference Architectures&quot; por caso de uso (web app 3-tier, serverless API, data lake, etc.) e indústria (fintech, saúde, mídia). Para estudar: leia arquiteturas de referência relevantes ao SAA-C03 para entender como serviços se combinam em patterns reais de produção.</p></details>
+<hr>
+<p><strong>11.</strong> Qual o canal do YouTube mais recomendado para vídeos gratuitos de preparação AWS?</p>
+<ul><li>A) Canal oficial AWS → &quot;AWS re:Invent&quot; (técnico mas não focado em certificação)</li><li>B) Stephane Maarek, Neal Davis (Digital Cloud Training), Be a Better Dev — conteúdo focado em certificação, gratuito no YouTube</li><li>C) Linux Foundation YouTube</li><li>D) Microsoft Azure YouTube (para comparação)</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Para SAA-C03: Stephane Maarek (snippets gratuitos de seu curso Udemy), Digital Cloud Training de Neal Davis (tutoriais detalhados), Be a Better Dev (demos práticas). O canal oficial AWS tem conteúdo excelente (re:Invent, re:Inforce) mas não é focado em exames — é mais técnico/aprofundado em serviços específicos.</p></details>
+<hr>
+<p><strong>12.</strong> Onde encontrar a versão atualizada do Exam Guide oficial do SAA-C03?</p>
+<ul><li>A) Amazon.com → AWS Study Guides</li><li>B) aws.amazon.com/certification/certified-solutions-architect-associate → &quot;Exam Prep&quot; → &quot;Exam Guide PDF&quot;</li><li>C) AWS Skill Builder → My Courses</li><li>D) AWS Console → Certification → Exam Guide</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — O Exam Guide PDF oficial fica na página da certificação no aws.amazon.com. Ele descreve: (1) domínios e pesos, (2) tarefas esperadas por domínio, (3) serviços incluídos no escopo, (4) serviços fora do escopo. Leitura obrigatória antes de começar a estudar — orienta o que priorizar baseado nos pesos oficiais.</p></details>
+<hr>
+<p><strong>13.</strong> Qual é o FlashCard mais importante para memorizar sobre S3 classes de armazenamento?</p>
+<ul><li>A) S3 Standard → S3 Intelligent-Tiering → S3 Standard-IA → S3 One Zone-IA → S3 Glacier Instant → S3 Glacier Flexible → S3 Glacier Deep Archive (ordem decrescente de custo de armazenamento)</li><li>B) S3 só tem 2 classes: Standard e Glacier</li><li>C) S3 Glacier é para backups mensais; S3 Standard para backups diários</li><li>D) S3 Intelligent-Tiering só funciona para objetos &gt; 1 TB</li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — As 7 classes S3 em ordem de custo de storage (do mais caro ao mais barato): Standard → Intelligent-Tiering → Standard-IA → One Zone-IA → Glacier Instant → Glacier Flexible → Glacier Deep Archive. Inversamente proporcional: quanto mais barato o storage, maior o custo de retrieval e a latência. Exame testa: qual classe para qual caso de uso (acesso frequente, infrequente, arquivo).</p></details>
+<hr>
+<p><strong>14.</strong> Quando usar o recurso AWS Free Tier para praticar antes do exame?</p>
+<ul><li>A) Nunca — pode gerar cobranças inesperadas</li><li>B) Para labs práticos dos módulos de estudo: criar VPC, Lambda, S3, DynamoDB — serviços core têm nível gratuito generoso; sempre definir alertas de billing</li><li>C) Apenas para serviços serverless (Lambda, DynamoDB)</li><li>D) O Free Tier é apenas para contas corporativas</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — O Free Tier (aws.amazon.com/free) oferece: 12 meses de t2.micro/t3.micro EC2, 5 GB S3, 25 GB DynamoDB, 1M requisições Lambda/mês, etc. Para praticar: criar conta nova, habilitar AWS Budgets com alerta em $1-5, fazer os labs práticos do estudo. Prática real supera estudo puramente teórico. Sempre limpar recursos após os labs.</p></details>
+<hr>
+<p><strong>15.</strong> Após passar no exame SAA-C03, qual é a próxima certificação mais recomendada para seguir a trilha?</p>
+<ul><li>A) AWS Cloud Practitioner (é pré-requisito obrigatório)</li><li>B) AWS Solutions Architect Professional (SAP-C02) ou AWS Developer Associate (DVA-C02) dependendo do foco de carreira</li><li>C) Google Cloud Professional Architect</li><li>D) Kubernetes CKA — complementar ao AWS</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Trilhas pós-SAA-C03: (1) Aprofundar arquitetura: SAP-C02 (Professional, mais difícil, foco em enterprise); (2) Foco em desenvolvimento: DVA-C02 (Developer Associate, serverless, CI/CD, SDK); (3) Foco em operações: SOA-C02 (SysOps Administrator Associate); (4) Especialidades: AWS Security Specialty, Data Analytics Specialty. CCP (Cloud Practitioner) é pré-requisito opcional, não obrigatório.</p></details>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./177-31-recursos-e-links-links.html">Aula anterior</a>
+      <a href="./179-31-recursos-e-links-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Módulo 10 — Containers: ECS, EKS, Fargate - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#074-16-containers-ecs-eks-fargate-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 16 - Containers ECS EKS Fargate - 8 min - 16-Containers-ECS-EKS-Fargate/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 16 - Containers ECS EKS Fargate" loading="lazy">
+      <figcaption>Containers organizam workloads portaveis com escolhas entre ECS, EKS e Fargate.</figcaption>
+    </figure>
+    <h1>Módulo 10 — Containers: ECS, EKS, Fargate</h1>
+<h2>Por Que Containers na AWS?</h2>
+<p>Containers oferecem consistência entre ambientes (dev/staging/prod), isolamento de dependências e densidade de workloads. A AWS oferece dois orquestradores principais: <strong>ECS</strong> (proprietary, simplesidade) e <strong>EKS</strong> (Kubernetes, portabilidade).</p>
+<hr>
+<h2>Amazon ECS (Elastic Container Service)</h2>
+<h3>Conceitos Fundamentais</h3>
+<pre><code class="language-">ECS Cluster
+  └── Service (define quantas Tasks rodar + onde)
+        └── Task (1-N containers rodando juntos)
+              └── Task Definition (blueprint: imagem, CPU, RAM, ports, volumes, IAM role)</code></pre>
+<ul><li><strong>Task Definition</strong>: arquivo JSON versionado que define containers (como Dockerfile mas para o ECS)</li><li><strong>Task</strong>: instância rodando de uma Task Definition (1 task = 1 ou mais containers co-localizados)</li><li><strong>Service</strong>: garante que N tasks estejam sempre rodando; integra com ALB/NLB; rolling updates</li><li><strong>Cluster</strong>: agrupamento lógico de resources (pode ser EC2 instances ou Fargate)</li></ul>
+<h3>Launch Types</h3>
+<div class="table-wrap"><table><thead><tr><th>Launch Type</th><th>Infraestrutura</th><th>Gerenciamento</th><th>Controle</th></tr></thead><tbody><tr><td><strong>EC2</strong></td><td>EC2 instances que você registra no cluster</td><td>Você gerencia as instâncias (AMI, patches, scaling)</td><td>Total sobre o host</td></tr><tr><td><strong>Fargate</strong></td><td>Serverless — AWS gerencia o host</td><td>Sem instâncias para gerenciar</td><td>Apenas task-level</td></tr><tr><td><strong>External (ECS Anywhere)</strong></td><td>Seus servidores on-premises</td><td>Você gerencia</td><td>Híbrido</td></tr></tbody></table></div>
+<h3>Modos de Rede do ECS</h3>
+<div class="table-wrap"><table><thead><tr><th>Modo</th><th>Descrição</th><th>Quando usar</th></tr></thead><tbody><tr><td><strong>bridge</strong></td><td>Container ports mapeados para IPs dinâmicos do host</td><td>EC2, múltiplos containers no mesmo host</td></tr><tr><td><strong>host</strong></td><td>Container usa diretamente a rede do host</td><td>EC2, alta performance, sem NAT</td></tr><tr><td><strong>awsvpc</strong></td><td>Cada task recebe própria ENI com IP privado da VPC</td><td><strong>Recomendado</strong> — Fargate obrigatório; isolamento de SG por task</td></tr><tr><td><strong>none</strong></td><td>Sem rede</td><td>Tasks offline</td></tr></tbody></table></div>
+<p>Com <code>awsvpc</code>, cada task tem seu próprio Security Group — granularidade máxima de isolamento de rede.</p>
+<h3>IAM no ECS</h3>
+<div class="table-wrap"><table><thead><tr><th>Papel IAM</th><th>Para</th><th>Quem usa</th></tr></thead><tbody><tr><td><strong>Task Role</strong></td><td>O que o container pode fazer (S3, DynamoDB, etc.)</td><td>A aplicação dentro do container</td></tr><tr><td><strong>Task Execution Role</strong></td><td>O que o ECS pode fazer para lançar a task (pull ECR, push CloudWatch Logs, Secrets Manager)</td><td>O ECS agent</td></tr></tbody></table></div>
+<blockquote><p><strong>Nunca embuta credenciais no container</strong> — use Task Role com <code>awsvpc</code> mode. As credenciais são obtidas via IMDS do task metadata endpoint.</p></blockquote>
+<h3>ECS + ALB: Service Discovery e Load Balancing</h3>
+<ul><li><strong>ALB com dynamic port mapping</strong> (launch type EC2): containers registram portas dinâmicas no TG</li><li><strong>NLB</strong> para tráfego alto throughput ou non-HTTP</li><li><strong>Service Connect</strong>: Service Mesh gerenciado para comunicação service-to-service dentro do ECS (mTLS, observabilidade)</li><li><strong>Cloud Map</strong>: service discovery baseado em DNS para comunicação entre containers</li></ul>
+<h3>ECS Auto Scaling</h3>
+<ul><li>Escala o número de <strong>tasks</strong> (não instâncias — para EC2 Launch Type, escalar instâncias é separado)</li><li>Políticas: Target Tracking, Step Scaling, Scheduled</li><li><strong>ECS Capacity Provider</strong>: gerencia automaticamente o scaling do cluster EC2 subjacente com base nas tasks pendentes</li></ul>
+<hr>
+<h2>AWS Fargate</h2>
+<p>Compute engine serverless para ECS e EKS. Você não gerencia servidores:</p>
+<ul><li>Define: CPU (0,25 vCPU a 16 vCPU) + RAM (proporcional ao CPU)</li><li>Cobrado por vCPU-hora e GB-hora enquanto task está rodando</li><li>Cada task em Fargate obrigatoriamente usa <code>awsvpc</code> (própria ENI)</li><li><strong>Spot Fargate</strong>: até 70% de desconto para tasks interrompíveis</li><li><strong>Fargate Savings Plans</strong>: compromisso de uso para desconto</li></ul>
+<hr>
+<h2>Amazon EKS (Elastic Kubernetes Service)</h2>
+<p>Kubernetes gerenciado na AWS. AWS gerencia o control plane (API server, etcd); você gerencia os worker nodes.</p>
+<h3>Modos de Worker Nodes</h3>
+<div class="table-wrap"><table><thead><tr><th>Modo</th><th>Descrição</th><th>Flexibilidade</th></tr></thead><tbody><tr><td><strong>Managed Node Groups</strong></td><td>AWS gerencia o lifecycle dos EC2 nodes (launch, update, terminate)</td><td>Alta — pode customizar AMI, tipo, etc.</td></tr><tr><td><strong>Self-managed Nodes</strong></td><td>Você gerencia completamente (launch template, userdata)</td><td>Total</td></tr><tr><td><strong>Fargate Profiles</strong></td><td>Pods rodam em Fargate (serverless)</td><td>Sem node management</td></tr></tbody></table></div>
+<h3>Componentes EKS</h3>
+<ul><li><strong>Control Plane</strong>: gerenciado pela AWS (multi-AZ por padrão, altamente disponível)</li><li><strong>Worker Nodes</strong>: EC2 ou Fargate onde os Pods rodam</li><li><strong>Add-ons</strong>: AWS gerencia componentes como CoreDNS, kube-proxy, Amazon VPC CNI, AWS Load Balancer Controller</li><li><strong>Amazon VPC CNI</strong>: pods recebem IPs diretamente da VPC (igual ao ECS awsvpc — cada pod = IP da VPC)</li></ul>
+<h3>EKS Storage</h3>
+<ul><li><strong>EBS</strong>: volumes persistentes para pods (node-specific, não multi-attach)</li><li><strong>EFS</strong>: volumes compartilhados entre múltiplos pods/nodes</li><li><strong>Amazon FSx for Lustre</strong>: high-performance para ML/HPC workloads</li></ul>
+<h3>EKS vs ECS</h3>
+<div class="table-wrap"><table><thead><tr><th>Aspecto</th><th>ECS</th><th>EKS</th></tr></thead><tbody><tr><td>Orquestrador</td><td>Proprietário AWS</td><td>Kubernetes (open source)</td></tr><tr><td>Curva de aprendizado</td><td>Menor</td><td>Maior</td></tr><tr><td>Portabilidade</td><td>Apenas AWS</td><td>Qualquer Kubernetes (on-prem, GKE, AKS)</td></tr><tr><td>Ecossistema</td><td>Integrado com AWS natively</td><td>Helm charts, operadores Kubernetes</td></tr><tr><td>Multi-cloud/on-prem</td><td>ECS Anywhere (limitado)</td><td>EKS Anywhere, Kubernetes em qualquer lugar</td></tr><tr><td>Custo control plane</td><td>Sem custo de cluster</td><td>$0,10/hora por cluster EKS</td></tr></tbody></table></div>
+<hr>
+<h2>Amazon ECR (Elastic Container Registry)</h2>
+<p>Registry privado (e público) de imagens Docker/OCI:</p>
+<ul><li><strong>Repositórios privados</strong>: imagens acessíveis apenas dentro da conta (ou cross-account via resource policy)</li><li><strong>Repositórios públicos</strong> (ECR Public): imagens públicas (hub.docker similar)</li><li><strong>Image Scanning</strong>: enhanced scanning via Amazon Inspector (CVEs, malware) ou básica</li><li><strong>Lifecycle Policies</strong>: descarta imagens antigas automaticamente (ex: manter apenas as 10 mais recentes)</li><li><strong>Replication</strong>: cross-region ou cross-account para DR e distribuição global</li></ul>
+<hr>
+<h2>Outros Serviços de Container</h2>
+<h3>AWS App Runner</h3>
+<ul><li>PaaS para containers web: você fornece o código ou imagem, App Runner gerencia tudo</li><li>Auto-scaling, HTTPS, load balancing — sem configuração de ECS/Fargate/ALB</li><li>Mais simples, menos controle</li></ul>
+<h3>AWS Copilot</h3>
+<ul><li>CLI para implantar aplicações containerizadas no ECS/Fargate com melhores práticas incorporadas</li><li>Cria automaticamente: ECR, ECS Service, ALB, SSM Parameters, etc.</li></ul>
+<h3>AWS App Mesh</h3>
+<ul><li>Service Mesh baseado em <strong>Envoy proxy</strong> para ECS e EKS</li><li>Observabilidade (tracing, metrics) e mTLS para comunicação service-to-service</li><li>Alternativa AWS-native ao Istio</li></ul>
+<hr>
+<h2>Arquitetura de Referência: Microserviços com ECS Fargate</h2>
+<pre><code class="language-">Route 53 → ALB (public)
+              ├── /api/users/* → ECS Service: UserService (Fargate)
+              │                       └── Task Role → DynamoDB (Users table)
+              ├── /api/orders/* → ECS Service: OrderService (Fargate)
+              │                       └── Task Role → RDS Aurora (Orders DB)
+              └── /api/notify/* → ECS Service: NotifyService (Fargate)
+                                      └── Task Role → SNS/SES
+
+Comunicação interna:
+  OrderService → SNS &quot;order-placed&quot; → SQS → NotifyService
+  (fan-out via EventBridge para auditoria no S3)
+
+ECR → Task Definition (imagem versionada)
+CloudWatch Logs → Container logs (awslogs driver)
+AWS X-Ray → Distributed tracing</code></pre>
+<hr>
+<h2>Quando Usar o Quê</h2>
+<div class="table-wrap"><table><thead><tr><th>Necessidade</th><th>Serviço</th></tr></thead><tbody><tr><td>Simplicidade máxima, app web containerizada</td><td>App Runner</td></tr><tr><td>Containers AWS-native sem gerenciar infra</td><td>ECS + Fargate</td></tr><tr><td>Containers AWS-native com controle do host</td><td>ECS + EC2</td></tr><tr><td>Kubernetes para portabilidade</td><td>EKS</td></tr><tr><td>Kubernetes serverless</td><td>EKS + Fargate</td></tr><tr><td>Kubernetes on-premises</td><td>EKS Anywhere</td></tr></tbody></table></div>
+<hr>
+<h2>Dicas de Prova</h2>
+<ul><li><strong>Task Role</strong> = permissões da aplicação; <strong>Task Execution Role</strong> = permissões do ECS para gerenciar a task</li><li><strong>awsvpc mode</strong> = cada task tem ENI e SG próprios — isolamento de rede por task (Fargate obrigatório)</li><li><strong>ECS EC2</strong> ainda precisa de EC2 instances no cluster; <strong>Fargate</strong> = zero infra para gerenciar</li><li><strong>Managed Node Groups</strong> no EKS ≠ Fargate — ainda são EC2 nodes mas gerenciados pela AWS</li><li><strong>ECR Lifecycle Policy</strong> evita acúmulo de imagens antigas; usar para controle de custos</li><li>EKS tem custo fixo de cluster ($0,10/hora ≈ $72/mês); ECS não cobra pelo cluster</li><li>Para portabilidade multi-cloud: EKS (Kubernetes) é mais adequado que ECS</li><li><strong>VPC CNI no EKS</strong> = pods com IPs da VPC (como awsvpc no ECS) — importante para segurança e roteamento</li><li>ECS Auto Scaling escala <strong>tasks</strong>; Capacity Provider escala o <strong>cluster EC2</strong> subjacente automaticamente</li><li><strong>Service Connect</strong> = nova alternativa ao App Mesh para comunicação service-to-service no ECS</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./073-16-containers-ecs-eks-fargate-questoes.html">Aula anterior</a>
+      <a href="./075-17-serverless-lambda-api-gateway-casos-de-uso.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

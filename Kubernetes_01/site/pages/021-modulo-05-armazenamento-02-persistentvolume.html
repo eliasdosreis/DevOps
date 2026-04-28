@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#021-modulo-05-armazenamento-02-persistentvolume">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 05 - armazenamento - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 05 - armazenamento" loading="lazy">
+      <figcaption>Storage exige entender classes, volumes, claims e o ciclo de vida do dado.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um Volume Persistente (PV).
+# PV&#39;s s�o recortes LITERAIS num disco de verdade que foram 
+# provisionados antes de tudo pelo Administrador da Rede � m�o livre, 
+# para depois algu�m usar. 
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Pense no StorageClass (Aula 1) como o &quot;Vendedor de Lotes de Varejo de Terra&quot;. 
+# Ele existe e faz a terrabrota na hora do pedido.
+# O **PersistentVolume (PV)** � diferente. O PV � quando o &quot;Prefeito da Cidade&quot; (Admin) 
+# j� separou 10 Lotes no ch�o de 500 metros quadrados cada um, colocou muro em torno e deixou  
+# os 10 terrenos parados vazios l� ganhando mato. Eles existem, ocupam o espa�o na cidade, 
+# mas n�o pertencem � casa nenhuma! (Atualmente o mercado odeia o uso de PV&#39;s manuais).
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# O `PersistentVolume` (PV) � um peda�o de armazenamento no cluster que foi pr�-provisionado   
+# por um administrador manualmente de forma est�tica. Ele � um recurso GLOBAL DO CLUSTER
+# (N�o � fixado num Namespace). Quando o desenvolvedor pedir um disco, o K8s procurar� um PV livre.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: PersistentVolume              # Cria��o EST�TICA de um Volume F�sico.
+metadata:
+  # M�GICA DE ISOLAMENTO: Reparou que n�o tem campo &#39;namespace:&#39; aqui em cima? 
+  # Pe�as f�sicas globais de infra n�o respeitam fronteiras burocr�ticas l�gicas.
+  name: grande-hd-estatico-10gb     
+spec:
+  capacity:
+    storage: 10Gi                   # Cota��o exata: O Terreno f�sico pr�-separado de 10GB
+  volumeMode: Filesystem            # Arquivos normais ou blocos CRUS (BlockMode p/ alta perfm db)
+  
+  # Acesso ao Disco (CR�TICO NA ARQUITETURA DE CLUSTER)
+  # ReadWriteOnce (RWO): S� PODE ser acoplado fisicamente por 1 Node de cada vez (!).
+  # ReadWriteMany (RWX): Magia Multi-Ponto. Pode ser lido/escrito simultaneamente por Pods rodando em N�S DIFERENTES F�SICOS (Requer NFS na rede).
+  accessModes:
+    - ReadWriteOnce                
+    
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: disco-lento-default   # Nomeamos uma categoria aqui, para bater no Filtro do dev
+  
+  # Aqui n�s mostramos ao Kubernetes em qual pasta do NOSSO SISTEMA OPERACIONAL Windows/Mac/Linux 
+  # real o docker do kind pode se apoiar pra escrever arquivos de verdade sem perd�-los:
+  hostPath:
+    path: &quot;/tmp/dados-do-meu-hd-kind&quot;     # A rota dentro do kind n� onde ele salva na raiz f�sica
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Reserve os 10Gb est�ticos no cluster:
+#    kubectl apply -f 02-persistentvolume.yaml
+#
+# 2. Liste os PV&#39;s do mundo (cluster):
+#    kubectl get pv
+#    E observe o Status dele: Ficar� como `Available`. (Significa que � um Lote livre de terra sem dono).
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# O `hostPath` num K8s de produ��o real � BANIDO.
+# N�s usamos ele aqui no Kind apenas porque n�o temos uma Array EFS ou Cloud conectada 
+# no seu windows de treino. Como o Kind simula Nodes de Docker C/ Linux isolados... se voc� 
+# criar um Storage usando &quot;hostPath /mnt/disco&quot; num cluster de muitas m�quinas....
+# E o seu POD de banco for derrubado do N� &quot;Worker 1&quot; e tentar subir no &quot;Worker 2&quot;
+# procurando o dado na rota &quot;/mnt/disco&quot; ele encontrar� um VAZIO TOTAL, e o banco vir� limpo zeraod,
+# porque os Host-Paths n�o replicam. (S� use para LocalDev).
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# &quot;Elias, mas ningu�m cria PV Manualmente hoje?&quot;
+# Depende. 95% das empresas aboliram manifestos &#39;Kind: PersistentVolume&#39;. Os engenheiros 
+# modernos usam PROVISIONAMENTO DIN�MICO (Que veremos adiante no PVC). Ele cria a terra na hora.
+# Contudo, Corpora��es Jur�ssicas com VMWares e FileServers OnPremise 
+# (Sem integra��es CSI modernas) ainda mant�m Estagi�rios de Infraestrutura abrindo
+# CLI do PuralStorage, montando LUNs de disco cru e gerando manifestos PV.YAML � m�o para
+# cada peda�o!
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Temos um PersistentVolume pr�-provisionado de exatos 100Gi. Um Dev Junior submeteu
+# a requisi��o/claim PVC pedindo &#39;45Gi&#39;. O K8s pode pegar nosso PV de 100Gi, assinar com dono pro  
+# Junior, e os 55Gi de excedente do peda�o ser disponibilizado pra outro Dev paralelo em outro cluster?&quot;
+# Resposta Esperada: &quot;Nunca. Todo Acoplamento ou Binding (*Bound*) de Kubernetes em Volumes 
+# � inteiramente exclusivista 1x1. O Kubernetes at� permitira o Match (Ele entrega a chave o lote do tamanho 100Gi pro pedido de 45),
+# mas ele trav�r� o PV INTEIRO! O desenvolvedor ter� desperdi�ado e jogado 55Gi pela janela
+# porque nenhum outro POD/Claim far� mult-sharing do montante residual em n�vel block sem ser RWX.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./020-modulo-05-armazenamento-01-storageclass.html">Aula anterior</a>
+      <a href="./022-modulo-05-armazenamento-03-persistentvolumeclaim.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

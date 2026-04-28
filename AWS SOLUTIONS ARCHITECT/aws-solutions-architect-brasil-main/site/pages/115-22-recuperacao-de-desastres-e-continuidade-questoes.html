@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questoes - Recuperacao de Desastres e Continuidade - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#115-22-recuperacao-de-desastres-e-continuidade-questoes">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 22 - Recuperacao de Desastres e Continuidade - 2 min - 22-Recuperacao-de-Desastres-e-Continuidade/questoes.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 22 - Recuperacao de Desastres e Continuidade" loading="lazy">
+      <figcaption>DR e continuidade comecam por RTO/RPO antes de escolher multi-AZ ou multi-region.</figcaption>
+    </figure>
+    <h1>Questoes - Recuperacao de Desastres e Continuidade</h1>
+<h2>1)</h2>
+<p>Uma empresa exige RTO de minutos e RPO de segundos para aplicacao global. Qual estrategia e mais adequada?</p>
+<p>A. Backup and Restore B. Pilot Light C. Warm Standby D. Multi-Site Active/Active</p>
+<p>Resposta: D Motivo: menor RTO/RPO, apesar de maior custo.</p>
+<h2>2)</h2>
+<p>A aplicacao roda em uma unica regiao com RDS Multi-AZ. Qual risco permanece?</p>
+<p>A. Falha de instancia B. Falha de AZ C. Desastre regional D. Falha de disco</p>
+<p>Resposta: C Motivo: Multi-AZ nao cobre perda total da regiao.</p>
+<h2>3)</h2>
+<p>Qual servico simplifica replicacao continua de servidores para DR com baixa mudanca na aplicacao?</p>
+<p>A. AWS Backup B. AWS Elastic Disaster Recovery C. AWS DataSync D. CloudEndure Migration</p>
+<p>Resposta: B Motivo: servico especifico para DR de servidores.</p>
+<h2>4)</h2>
+<p>Para objetos S3 criticos, qual combinacao aumenta resiliencia e recuperacao de versoes apagadas acidentalmente?</p>
+<p>A. S3 Standard + Glacier B. Versioning + CRR C. Intelligent-Tiering + MFA D. Transfer Acceleration + ACL</p>
+<p>Resposta: B Motivo: versioning protege contra delete/logica e CRR protege contra falha regional.</p>
+<h2>5)</h2>
+<p>Em prova, a frase &quot;least operational overhead&quot; normalmente favorece:</p>
+<p>A. Solucao self-managed em EC2 B. Processo manual de restore C. Servicos gerenciados com automacao D. Ferramentas third-party sem integracao</p>
+<p>Resposta: C Motivo: AWS privilegia operacao simplificada quando explicitado.</p>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./114-22-recuperacao-de-desastres-e-continuidade-links.html">Aula anterior</a>
+      <a href="./116-22-recuperacao-de-desastres-e-continuidade-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab - KMS + Secrets Manager + IAM Role - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#134-25-criptografia-kms-e-gestao-de-segredos-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 25 - Criptografia KMS e Gestao de Segredos - 1 min - 25-Criptografia-KMS-e-Gestao-de-Segredos/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 25 - Criptografia KMS e Gestao de Segredos" loading="lazy">
+      <figcaption>Criptografia separa dado, chave, segredo, permissao e rotacao.</figcaption>
+    </figure>
+    <h1>Lab - KMS + Secrets Manager + IAM Role</h1>
+<h2>Objetivo</h2>
+<p>Proteger credenciais de aplicacao usando segredo rotacionavel e acesso por role.</p>
+<h2>Passos</h2>
+<ol><li>Crie uma KMS customer-managed key para segredos.</li><li>Crie um segredo no Secrets Manager (usuario/senha de teste) usando a chave.</li><li>Crie role IAM para workload (EC2/Lambda) com permissao <code>secretsmanager:GetSecretValue</code> e <code>kms:Decrypt</code>.</li><li>Associe a role ao recurso de compute.</li><li>Leia o segredo via SDK/CLI sem credenciais estaticas.</li><li>Ative rotacao automatica (quando aplicavel).</li></ol>
+<h2>Validacao</h2>
+<ul><li>workload le segredo com role</li><li>acesso negado para principal sem permissao</li><li>eventos de acesso aparecem no CloudTrail</li></ul>
+<h2>Limpeza</h2>
+<ul><li>remover segredo de laboratorio</li><li>remover role/policies e chave criada</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./133-25-criptografia-kms-e-gestao-de-segredos-flashcards.html">Aula anterior</a>
+      <a href="./135-25-criptografia-kms-e-gestao-de-segredos-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

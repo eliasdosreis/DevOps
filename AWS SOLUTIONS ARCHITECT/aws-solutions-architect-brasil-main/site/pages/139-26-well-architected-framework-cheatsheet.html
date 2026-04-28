@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Módulo 26: Well-Architected Framework - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#139-26-well-architected-framework-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 26 - Well Architected Framework - 5 min - 26-Well-Architected-Framework/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 26 - Well Architected Framework" loading="lazy">
+      <figcaption>Well-Architected organiza decisoes por pilares para melhorar sistemas reais.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Módulo 26: Well-Architected Framework</h1>
+<h2>Os 6 Pilares — Resumo</h2>
+<div class="table-wrap"><table><thead><tr><th>Pilar</th><th>Foco</th><th>Princípio-Chave</th></tr></thead><tbody><tr><td><strong>Operational Excellence</strong></td><td>Operar e melhorar</td><td>IaC, mudanças pequenas e reversíveis</td></tr><tr><td><strong>Security</strong></td><td>Proteger</td><td>Identity como base, encrypt tudo</td></tr><tr><td><strong>Reliability</strong></td><td>Recuperar de falhas</td><td>Design for failure, horizontal scaling</td></tr><tr><td><strong>Performance Efficiency</strong></td><td>Usar recursos bem</td><td>Serverless, serviços gerenciados</td></tr><tr><td><strong>Cost Optimization</strong></td><td>Evitar gastos</td><td>Pay-per-use, eliminar ociosidade</td></tr><tr><td><strong>Sustainability</strong></td><td>Impacto ambiental</td><td>Graviton, serverless, utilização alta</td></tr></tbody></table></div>
+<hr>
+<h2>Estratégias de Disaster Recovery — Comparativo</h2>
+<div class="table-wrap"><table><thead><tr><th>Estratégia</th><th>RPO</th><th>RTO</th><th>Custo</th><th>Como Funciona</th></tr></thead><tbody><tr><td><strong>Backup &amp; Restore</strong></td><td>Horas</td><td>Horas</td><td>$</td><td>Backups periódicos; restore quando necessário</td></tr><tr><td><strong>Pilot Light</strong></td><td>Minutos</td><td>10-30 min</td><td>$$</td><td>Core mínimo rodando; escalar na DR</td></tr><tr><td><strong>Warm Standby</strong></td><td>Segundos/Minutos</td><td>Minutos</td><td>$$$</td><td>Versão reduzida sempre ativa</td></tr><tr><td><strong>Active-Active</strong></td><td>Zero</td><td>Segundos</td><td>$$$$</td><td>Multi-region com tráfego ativo em ambas</td></tr></tbody></table></div>
+<p><strong>RPO</strong> = Recovery Point Objective = perda máxima de dados<br><strong>RTO</strong> = Recovery Time Objective = tempo máximo de downtime</p>
+<hr>
+<h2>Tabela de Disponibilidade</h2>
+<div class="table-wrap"><table><thead><tr><th>SLA</th><th>Downtime/Ano</th><th>Downtime/Mês</th><th>Arquitetura Típica</th></tr></thead><tbody><tr><td><strong>99%</strong></td><td>~87,6 horas</td><td>~7,3 horas</td><td>Única AZ, sem redundância</td></tr><tr><td><strong>99.9%</strong></td><td>~8,76 horas</td><td>~43,8 minutos</td><td>Multi-AZ básico</td></tr><tr><td><strong>99.99%</strong></td><td>~52,6 minutos</td><td>~4,4 minutos</td><td>Multi-AZ + Auto Scaling</td></tr><tr><td><strong>99.999%</strong></td><td>~5,26 minutos</td><td>~26 segundos</td><td>Active-Active, redundância total</td></tr></tbody></table></div>
+<hr>
+<h2>EC2 Pricing Models — Comparativo</h2>
+<div class="table-wrap"><table><thead><tr><th>Modelo</th><th>Desconto vs On-Demand</th><th>Comprometimento</th><th>Melhor Para</th></tr></thead><tbody><tr><td><strong>On-Demand</strong></td><td>—</td><td>Nenhum</td><td>Cargas imprevisíveis, teste</td></tr><tr><td><strong>Savings Plans (Compute)</strong></td><td>Até 66%</td><td>$ por hora (1 ou 3 anos)</td><td>Qualquer EC2/Fargate/Lambda, flexível</td></tr><tr><td><strong>Savings Plans (EC2)</strong></td><td>Até 72%</td><td>Família + região (1 ou 3 anos)</td><td>Família específica, maior desconto</td></tr><tr><td><strong>Reserved (Standard)</strong></td><td>Até 72%</td><td>Específico (tipo+região+OS)</td><td>Carga estável e previsível</td></tr><tr><td><strong>Reserved (Convertible)</strong></td><td>Até 54%</td><td>Pode trocar tipo/OS</td><td>Carga estável, mais flexibilidade</td></tr><tr><td><strong>Spot</strong></td><td>Até 90%</td><td>Nenhum (interruptível!)</td><td>Batch, fault-tolerant, dev/test</td></tr><tr><td><strong>Dedicated Host</strong></td><td>Varia</td><td>Por hora ou 1/3 anos</td><td>Licenças BYOL, compliance regulatório</td></tr></tbody></table></div>
+<hr>
+<h2>Well-Architected Pillars — Ferramentas AWS</h2>
+<div class="table-wrap"><table><thead><tr><th>Pilar</th><th>Ferramentas AWS Associadas</th></tr></thead><tbody><tr><td><strong>Operational Excellence</strong></td><td>CloudFormation, CodePipeline, CloudWatch, Systems Manager</td></tr><tr><td><strong>Security</strong></td><td>IAM, KMS, CloudTrail, GuardDuty, Config, Shield, WAF, Cognito</td></tr><tr><td><strong>Reliability</strong></td><td>ELB + ASG, Route 53, RDS Multi-AZ, Aurora, S3, Backup</td></tr><tr><td><strong>Performance Efficiency</strong></td><td>CloudFront, ElastiCache, Kinesis, Lambda, DynamoDB, EMR</td></tr><tr><td><strong>Cost Optimization</strong></td><td>Cost Explorer, Budgets, Trusted Advisor, Compute Optimizer, S3 Intelligent-Tiering</td></tr><tr><td><strong>Sustainability</strong></td><td>Graviton, Serverless, Compute Optimizer,</td></tr></tbody></table></div>
+<hr>
+<h2>Pilares — Design Principles Resumidos</h2>
+<h3>Operational Excellence</h3>
+<ul><li>Perform operations as code (IaC)</li><li>Make frequent, small, reversible changes</li><li>Refine operations procedures frequently</li><li>Learn from all operational failures</li></ul>
+<h3>Security</h3>
+<ul><li>Implement a strong identity foundation</li><li>Enable traceability</li><li>Apply security at all layers</li><li>Protect data in transit and at rest</li><li>Keep people away from data</li></ul>
+<h3>Reliability</h3>
+<ul><li>Test recovery procedures regularly</li><li>Scale horizontally</li><li>Stop guessing capacity</li><li>Manage change through automation</li><li>Design for failure</li></ul>
+<h3>Performance Efficiency</h3>
+<ul><li>Democratize advanced technologies</li><li>Go global in minutes</li><li>Use serverless architectures</li><li>Experiment more often</li><li>Consider mechanical sympathy</li></ul>
+<h3>Cost Optimization</h3>
+<ul><li>Implement cloud financial management</li><li>Adopt a consumption model</li><li>Measure overall efficiency</li><li>Stop spending on undifferentiated heavy lifting</li><li>Analyze and attribute expenditure</li></ul>
+<h3>Sustainability</h3>
+<ul><li>Understand your impact</li><li>Establish sustainability goals</li><li>Maximize utilization</li><li>Use managed services</li><li>Reduce downstream impact</li></ul>
+<hr>
+<h2>Well-Architected Tool — Processo</h2>
+<pre><code class="language-">1. CRIAR Workload → nome, região, tipo
+2. RESPONDER perguntas por pilar (cada pilar: ~10-20 perguntasS)
+3. VER resultados: High Risk Issues (HRI) e Medium Risk Issues (MRI)
+4. CRIAR Improvement Plan → priorizar e atribuir items
+5. REVISAR periodicamente (a cada 6-12 meses ou após mudanças grandes)</code></pre>
+<hr>
+<h2>Dicas de Prova — Well-Architected</h2>
+<div class="table-wrap"><table><thead><tr><th>Pista no Enunciado</th><th>Pilar Relevante</th><th>Resposta Típica</th></tr></thead><tbody><tr><td>&quot;Aplicação sem downtime durante deploys&quot;</td><td>Reliability</td><td>Blue/Green Deploy, Rolling Update</td></tr><tr><td>&quot;Reduzir custo de EC2 sempre ligado&quot;</td><td>Cost Optimization</td><td>Reserved ou Savings Plans</td></tr><tr><td>&quot;Ambiente de dev ligado 8h por dia&quot;</td><td>Cost Optimization</td><td>Scheduled On/Off via Lambda+EventBridge</td></tr><tr><td>&quot;Acesso a dados de auditoria&quot;</td><td>Security</td><td>CloudTrail + S3 + Object Lock</td></tr><tr><td>&quot;Detectar e corrigir drift de configuração&quot;</td><td>Operational Excellence</td><td>AWS Config + SSM Remediation</td></tr><tr><td>&quot;Instância parou de responder, recuperar mesmo IP&quot;</td><td>Reliability</td><td>EC2 Recovery Alarm (StatusCheckFailed_System)</td></tr><tr><td>&quot;Menor carbono na arquitetura&quot;</td><td>Sustainability</td><td>Graviton, Lambda, gerenciar scheduling</td></tr><tr><td>&quot;Revisar arquitetura contra boas práticas&quot;</td><td>Todos os pilares</td><td>AWS Well-Architected Tool (WAT)</td></tr><tr><td>&quot;RTO &lt; 1 minuto multi-região&quot;</td><td>Reliability</td><td>Active-Active + Aurora Global Database</td></tr><tr><td>&quot;RTO de horas é aceitável para DR&quot;</td><td>Reliability</td><td>Backup &amp; Restore strategy</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./138-26-well-architected-framework-casos-de-uso.html">Aula anterior</a>
+      <a href="./140-26-well-architected-framework-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

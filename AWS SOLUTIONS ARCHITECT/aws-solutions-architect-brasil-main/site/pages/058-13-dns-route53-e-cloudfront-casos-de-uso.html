@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Casos de Uso — Módulo 08: DNS, Route 53 e CloudFront - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#058-13-dns-route53-e-cloudfront-casos-de-uso">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 13 - DNS Route53 e CloudFront - 2 min - 13-DNS-Route53-e-CloudFront/casos-de-uso.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 13 - DNS Route53 e CloudFront" loading="lazy">
+      <figcaption>DNS e CDN aproximam usuarios, reduzem latencia e protegem origens.</figcaption>
+    </figure>
+    <h1>Casos de Uso — Módulo 08: DNS, Route 53 e CloudFront</h1>
+<h2>Caso 1: Failover Automático com Route 53 Health Checks</h2>
+<p><strong>Cenário:</strong> Aplicação crítica em us-east-1 (primária) com failover automático para eu-west-1 em caso de falha regional.</p>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">Route 53 (api.empresa.com)
+  ├── Record PRIMARY: ALB us-east-1 [FAILOVER + Health Check ativo]
+  │     └── Health Check: HTTP /health, a cada 30s, threshold 3 falhas
+  └── Record SECONDARY: ALB eu-west-1 [FAILOVER, sem HC obrigatório]
+
+Fluxo de Failover:
+1. Health Checker detecta falha (3 checks consecutivos failing)
+2. Route 53 marca record PRIMARY como UNHEALTHY
+3. DNS passa a responder com o SECONDARY
+4. TTL baixo (60s) = propagação rápida</code></pre>
+<p><strong>Configuração de Health Check para recurso privado:</strong></p>
+<ul><li>CloudWatch Metric Alarm (baseado em ALB HealthyHostCount = 0)</li><li>Route 53 HC tipo &quot;CloudWatch Alarm&quot; referenciando o alarme</li><li>Sem necessidade de expor endpoint público para o health check</li></ul>
+<hr>
+<h2>Caso 2: CloudFront com Lambda@Edge para Autenticação JWT</h2>
+<p><strong>Cenário:</strong> API RESTful servida via CloudFront + API Gateway. Cada request deve ter JWT válido verificado na edge, sem sobrecarregar o API Gateway.</p>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">Client → CloudFront → Lambda@Edge (Viewer Request) → API Gateway → Lambda
+                            │
+                  [Valida JWT assinado com RS256]
+                  [Se inválido → 401 Unauthorized]
+                  [Se válido → adiciona user-id header → origin]
+
+Lambda@Edge (us-east-1, replicado globalmente):
+- Node.js: verifica assinatura JWT com public key armazenada em CloudFront KVS
+- &lt; 5ms overhead
+- Sem chamada ao backend para validar token → escala indefinidamente</code></pre>
+<p><strong>Cache Policy:</strong></p>
+<ul><li><code>Authorization</code> header na cache key → cada token único = cache miss (não armazenar dados do usuário)</li><li>Para conteúdo público: sem Authorization na cache key → máximo cache hit</li></ul>
+<hr>
+<h2>Caso 3: Performance Global com Route 53 + CloudFront</h2>
+<p><strong>Cenário:</strong> Aplicação SaaS global serve conteúdo estático, API dinâmica e assets de vídeo para usuários em 6 continentes.</p>
+<p><strong>Arquitetura em Camadas:</strong></p>
+<pre><code class="language-">DNS: Route 53
+  └── app.empresa.com → Alias → CloudFront Distribution
+
+CloudFront Distribution:
+  ├── Behavior: /static/* → S3 Bucket (TTL: 1 ano)
+  │     └── Cache-Control: max-age=31536000, immutable
+  ├── Behavior: /api/* → ALB us-east-1 (TTL: 0, no-cache)
+  │     └── Origin Request Policy: forward all headers + cookies
+  └── Behavior: /videos/* → S3 Bucket (Signed URLs, TTL: 1h)
+
+Route 53 Latency Routing para o ALB:
+  ├── ALB us-east-1 (latência América)
+  ├── ALB eu-west-1 (latência Europa)
+  └── ALB ap-southeast-1 (latência Ásia)</code></pre>
+<p><strong>Resultado:</strong> Conteúdo estático servido da edge CloudFront mais próxima (&lt; 20ms). API dinâmica vai para API ALB regional com menor latência. Vídeos: acesso controlado por tempo com Signed URLs.</p>
+<hr>
+<h2>Caso 4: Migração DNS com Weighted Routing</h2>
+<p><strong>Cenário:</strong> Empresa migra aplicação de on-premises para AWS sem downtime Zero. Precisa validar a nova infraestrutura com tráfego real gradualmente.</p>
+<p><strong>Estratégia de Migração (Canary Deployment):</strong></p>
+<pre><code class="language-">app.empresa.com (hosted zone pública)
+  ├── A record: 203.0.113.10 (on-prem) — Peso: 100
+  └── A record: ALB AWS        — Peso: 0 (começa em 0 = sem tráfego)
+
+Semana 1: on-prem 95 / AWS 5  → validar logs AWS
+Semana 2: on-prem 80 / AWS 20 → monitorar performance
+Semana 3: on-prem 50 / AWS 50 → conferir DB migration
+Semana 4: on-prem 0  / AWS 100 → migração completa</code></pre>
+<p><strong>Monitoramento durante migração:</strong></p>
+<ul><li>CloudWatch Dashboards para ambos os ambientes em paralelo</li><li>Route 53 Health Check em ambos os endpoints</li><li>TTL baixo (60s) para agilidade em ajustes de peso</li></ul>
+<hr>
+<h2>Caso 5: Proteção contra DDoS com WAF + Shield Advanced + CloudFront</h2>
+<p><strong>Cenário:</strong> Plataforma de e-commerce sofre ataques volumétricos e tentativas de credential stuffing (brute force de login).</p>
+<p><strong>Camadas de Proteção:</strong></p>
+<pre><code class="language-">Internet
+  └── CloudFront + Shield Advanced (L3/L4 DDoS automático)
+        └── AWS WAF (L7):
+              ├── AWSManagedRulesCommonRuleSet → OWASP Top 10
+              ├── AWSManagedRulesBotControlRuleSet → Bots
+              ├── Rate-based rule: &gt; 1000 req/5min por IP → BLOCK
+              │   (previne credencial stuffing em /login)
+              └── IP Set rule: blacklist de IPs conhecidos maliciosos
+
+              Após WAF → ALB → App Servers</code></pre>
+<p><strong>Resposta a ataques:</strong></p>
+<ul><li>DRT (DDoS Response Team) da Shield Advanced acessa sua conta para mitigação manual</li><li>WAF Logs para análise + EventBridge rule para alertas automáticos via SNS</li><li>Créditos AWS para custos extras de scaling causados pelo DDoS (Shield Advanced benefit)</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./057-12-dynamodb-links.html">Aula anterior</a>
+      <a href="./059-13-dns-route53-e-cloudfront-cheatsheet.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#024-modulo-06-escalabilidade-01-resource-limits">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 06 - escalabilidade - 5 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 06 - escalabilidade" loading="lazy">
+      <figcaption>Escalabilidade e probes ajudam o cluster a reagir com saude e previsibilidade.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Define &quot;Requests&quot; (Requisi��es Base) e &quot;Limits&quot; (Limites M�ximos)
+# de CPU e Mem�ria RAM para um Container. O Kubernetes precisa 
+# disso para n�o deixar um App engolir toda a m�quina f�sica.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Voc� vai levar o seu filho numa pizzaria &quot;Rod�zio&quot;.
+# REQUEST: O Gar�om pergunta: &quot;No m�nimo, quantos peda�os ele come?&quot;. 
+# E voc� diz: &quot;Ele come garantido uns 3 peda�os&quot;. (O K8s vai buscar uma mesa / N� que tenha no m�nimo espa�o pra 3).
+# LIMITS: E o Gar�om diz: &quot;Mas e se a pizza tiver muito boa, at� onde ele come?&quot;.
+# E voc� diz: &quot;Cara, pode deixar ele comer livre o quanto aguentar, mas SE ele chegar
+# no limite de 10 peda�os, VOC� CORTA ele e tira ele da pizzaria pra n�o passar mal!&quot;
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# Cgroup (Control Groups) do Linux. O Kubelet diz ao Container Runtime (Docker)
+# que aplique travas duras do kernel na quantidade de `cpu/memory`.
+# Requests = Onde o Kube-Scheduler decide em que N� da VM ele &quot;Acha&quot; espa�o de RAM para colocar seu pod.
+# Limits = O teto de hardware estrito aplicado via CPU Throttling (Estrangulamento) ou OOM Killed.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: meu-pod-com-limites
+  namespace: meu-primeiro-projeto
+spec:
+  containers:
+    - name: api-devora-memoria
+      image: nginx:latest
+      
+      # O Cora��o do Hardware:
+      resources:
+        # REQUESTS (A GARANTIA BASE)
+        # O Kubernetes S� CONTRATAR� este pod se achar um N� (Worker) que
+        # tenha NESTE EXATO MOMENTO esses valores sobrando e livres para ele.
+        requests:
+          memory: &quot;128Mi&quot;   # Mebibytes (Aproximadamente 128 MB)
+          cpu: &quot;250m&quot;       # &quot;m&quot; = millicores. Significa 1/4 (0.25) de um n�cleo de CPU F�sica.
+          
+        # LIMITS (O TETO DE PROTE��O DO CLUSTER)
+        # O Container pode &quot;Estourar&quot; at� o teto que est� aqui. 
+        # Passou disso? Acontecer� coisas muito violentas.
+        limits:
+          memory: &quot;256Mi&quot;   # Seu Java passou de 256mb? Receber� OOM_KILLED (Morte s�bita pelo Kernel sem aviso).
+          cpu: &quot;500m&quot;       # Metade de 1 Nucleo (0.5). Passou disso? Ele n�o morre. A CPU dele ficar� &quot;Throttled&quot; lenta/travada.
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplique o pod com limites configurados:
+#    kubectl apply -f 01-resource-limits.yaml
+#
+# 2. Verifique o pod listado e preste aten��o no status para ver se n�o deu PENDING:
+#    kubectl get pods -n meu-primeiro-projeto
+#
+# 3. Use o &quot;describe&quot; pra checar como o k8s agendou (QoS Class):
+#    kubectl describe pod meu-pod-com-limites -n meu-primeiro-projeto | grep QoS
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# O erro mais comum do dia-a-dia Kubernetes de Juniors: &quot;O Pod ficou Pending&quot;. 
+# Se seu arquivo tivesse Request `memory: 64Gi` (64 Gigabytes de Ram exigido), e o seu 
+# Laptop/Kind tiver s� 16Gb F�sicos M�XIMO instalados.... 
+# O Kube-Scheduler n�o arrumar� uma vaga. O Pod ficar� eterno no limbo `Pending` 
+# e nos Events constar�: &quot;0/1 nodes are available: 1 Insufficient memory&quot;.
+# 
+# Pior ainda: `OOMKILLED` (Out of Memory Killed). Voc� errou feio no Limits (Colocou baixo). 
+# A aplica��o (ex Java/NodeJS) tentou crescer sua Heap de ram durante execu��o, encostou
+# no &quot;Limites M�ximos&quot;. O Kernel do computador hospede destruiu o Pod sem d� nem restart gracioso.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# Diferente do &#39;Limit&#39;, n�s abusamos do &#39;Request&#39; para manipular a Classifica��o de  
+# QoS (Quality of Service) nos Momentos de Escassez Extrema de uma VM!
+# Se o Host (O N� F�sico) acabar toda a Mem�ria do hardware, ele come�ar� a matar Pods alheios 
+# indiscriminadamente para o Rob� do Kubelet respirar. Se o seu YAML n�o tiver &#39;Requests e Limits&#39; declarados,  
+# a QoS do seu Pod ser� &quot;BestEffort&quot;. Ou seja: Ele � o PRIMEIRO inofensivo que o K8s passa a Faca e Mata pra salvar o cluster.
+# Se o seu YAML tiver os requests/limits exatos como ali em cima, ele herda &quot;QoS: Burstable&quot; (Intermedi�rio).
+# Para NUNCA ser morto pelo K8s em escassez, voc� faria Limits EXATAMENTE iguais ao Requests! &quot;Guaranteed&quot;!
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Para uma aplica��o em Java rodando no K8S onde o JVM Heap � Xms e Xmx... 
+# O que causaria menos reinicializa��es de Morte S�bita no Kubernetes: Cortar a CPU via Limit, 
+# ou cortar a Mem�ria RAM via Limit?&quot;
+# Resposta Esperada: &quot;A CPU � um recurso compress�vel (Throttleable). Se o Java estourar 
+# o Limit de CPU dele (os 500m), o kernel aplica CFS Quotas e deixa o java lento mas N�O O MATA  
+# O tempo de resposta cair� vertiginosamente, mas ele ficar� vivo. J� a RAM � baseada em P�ginas 
+# (Recurso Incompress�vel). Se ele bater nos 256Mi o SystemD mandar� SIGKILL absoluto resultando 
+# em um Restart total perdendo at� conex�es vivas OOM.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./023-modulo-05-armazenamento-04-pod-com-pvc.html">Aula anterior</a>
+      <a href="./025-modulo-06-escalabilidade-02-liveness-probe.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

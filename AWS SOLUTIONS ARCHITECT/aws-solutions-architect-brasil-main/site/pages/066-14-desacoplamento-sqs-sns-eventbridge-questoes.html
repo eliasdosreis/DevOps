@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questões de Prova — Módulo 09: Desacoplamento (SQS, SNS, EventBridge) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#066-14-desacoplamento-sqs-sns-eventbridge-questoes">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 14 - Desacoplamento SQS SNS EventBridge - 10 min - 14-Desacoplamento-SQS-SNS-EventBridge/questoes.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 14 - Desacoplamento SQS SNS EventBridge" loading="lazy">
+      <figcaption>Desacoplamento deixa produtores e consumidores respirarem em ritmos diferentes.</figcaption>
+    </figure>
+    <h1>Questões de Prova — Módulo 09: Desacoplamento (SQS, SNS, EventBridge)</h1>
+<p>&lt;!-- Domínio SAA-C03: Design Resilient Architectures / High-Performing Architectures --&gt;</p>
+<hr>
+<p><strong>1.</strong> Uma aplicação processa pedidos e quer garantir que cada pedido seja processado exatamente uma vez, na ordem de chegada. Qual fila SQS usar?</p>
+<ul><li>A) SQS Standard com Dead Letter Queue</li><li>B) SQS FIFO com deduplication ID</li><li>C) SQS Standard com VisibilityTimeout longo</li><li>D) SQS FIFO com Message Group ID por tipo de pedido</li></ul>
+<details><summary>Resposta</summary><p><strong>B — SQS FIFO com deduplication ID</strong> SQS FIFO garante: <strong>ordenação</strong> (First-In-First-Out) e <strong>deduplicação</strong> (exatamente uma entrega). Message Deduplication ID previne processamento duplicado dentro de janela de 5 minutos. Standard Queue oferece at-least-once delivery (pode duplicar) e best-effort ordering (pode reordenar). Para exatamente uma vez + ordem: FIFO é obrigatório.</p></details>
+<hr>
+<p><strong>2.</strong> Uma Lambda função demora em média 90 segundos para processar uma mensagem SQS. Qual configuração é crítica para evitar processamento duplicado?</p>
+<ul><li>A) Aumentar Message Retention Period para &gt; 90 segundos</li><li>B) Configurar VisibilityTimeout &gt; 90 segundos (ex: 120s)</li><li>C) Usar FIFO queue para evitar duplicação</li><li>D) Habilitar Long Polling no consumer</li></ul>
+<details><summary>Resposta</summary><p><strong>B — VisibilityTimeout &gt; tempo de processamento</strong> VisibilityTimeout define por quanto tempo a mensagem fica &quot;invisível&quot; para outros consumers após ser lida. Se o processamento demora 90s e VisibilityTimeout é o padrão de 30s, a mensagem volta à fila antes de ser confirmada (deleted), causando reprocessamento. Regra: VisibilityTimeout ≥ timeout máximo de processamento.</p></details>
+<hr>
+<p><strong>3.</strong> Uma aplicação processa mensagens mas após 3 tentativas, mensagens continuam falhando. Como evitar que fiquem em loop na fila infinitamente?</p>
+<ul><li>A) Configurar Message Retention Period de 1 hora</li><li>B) Usar SQS FIFO com deduplication</li><li>C) Configurar Dead Letter Queue (DLQ) com maxReceiveCount = 3</li><li>D) Diminuir VisibilityTimeout para detectar falha mais rápido</li></ul>
+<details><summary>Resposta</summary><p><strong>C — DLQ com maxReceiveCount</strong> Dead Letter Queue recebe mensagens que excederam o <code>maxReceiveCount</code> de tentativas de processamento. Após 3 falhas, a mensagem é movida para a DLQ para análise sem impactar o fluxo normal. Message Retention é quanto tempo a mensagem existe na fila (não relacionado a tentativas). DLQ é a solução padrão para poison pills.</p></details>
+<hr>
+<p><strong>4.</strong> Qual a diferença entre SQS Long Polling e Short Polling?</p>
+<ul><li>A) Long Polling retorna imediatamente mesmo sem mensagens; Short Polling espera</li><li>B) Long Polling espera até mensagens chegarem (waitTimeSeconds &gt; 0) ou timeout; Short Polling retorna imediatamente</li><li>C) Short Polling é recomendado para produção; Long Polling para desenvolvimento</li><li>D) Long Polling funciona apenas com FIFO queues</li></ul>
+<details><summary>Resposta</summary><p><strong>B — Correto</strong> Short Polling: retorna imediatamente (mesmo sem mensagens) → múltiplos requests vazios = custo desnecessário. Long Polling: Consumer espera até <code>waitTimeSeconds</code> (máximo 20 segundos) por mensagens — reduz número de requests, custo e CPU do consumer. Long Polling é recomendado para produção.</p></details>
+<hr>
+<p><strong>5.</strong> Um sistema precisa enviar a mesma notificação de &quot;novo pedido&quot; para 3 sistemas diferentes: estoque, faturamento e notificação por email. Qual arquitetura usar?</p>
+<ul><li>A) 3 filas SQS separadas com cada sistema fazendo polling</li><li>B) SNS Topic → 3 SQS Queues (fan-out pattern)</li><li>C) EventBridge com 3 regras diferentes</li><li>D) Kinesis Data Stream com 3 consumers</li></ul>
+<details><summary>Resposta</summary><p><strong>B — Fan-out com SNS → SQS</strong> Fan-out clássico: publicar uma mensagem no SNS e ter múltiplas filas SQS como subscriptions. Cada sistema consome de sua própria fila independentemente. Vantagens: desacoplamento completo, os sistemas podem ser lentos sem afetar o publisher, DLQ por sistema, retry independente. EventBridge também funciona mas SNS→SQS é mais simples para este caso.</p></details>
+<hr>
+<p><strong>6.</strong> Uma aplicação publica eventos em SNS com vários subscribers: Lambda A, Lambda B, SQS C. Apenas Lambda A deve receber eventos do tipo <code>order.completed</code>. Como filtrar?</p>
+<ul><li>A) Lambda A precisa filtrar internamente ao receber todos os eventos</li><li>B) SNS Message Filtering na subscription de Lambda A com FilterPolicy baseada em atributos</li><li>C) Criar um SNS Topic separado apenas para order.completed</li><li>D) EventBridge rule com event pattern</li></ul>
+<details><summary>Resposta</summary><p><strong>B — SNS Message Filtering</strong> SNS Message Filtering (FilterPolicy) permite que cada subscription especifique um JSON com condições para receber apenas mensagens que correspondam aos atributos. Ex: <code>{&quot;eventType&quot;: [&quot;order.completed&quot;]}</code>. Lambda A recebe apenas <code>order.completed</code>; outros subscribers recebem seus próprios filtros. Evita processamento desnecessário.</p></details>
+<hr>
+<p><strong>7.</strong> Uma empresa usa vários serviços AWS e SaaS e quer criar automações (ex: &quot;quando RDS CPU &gt; 90%, criar snapshot e notificar&quot;) sem escrever código de polling. Qual serviço usar?</p>
+<ul><li>A) CloudWatch Events (descontinuado)</li><li>B) Amazon EventBridge</li><li>C) SNS com CloudWatch Alarm</li><li>D) Step Functions com pooling Lambda</li></ul>
+<details><summary>Resposta</summary><p><strong>B — Amazon EventBridge</strong> EventBridge é a evolução do CloudWatch Events. Recebe eventos de mais de 200 serviços AWS, parceiros SaaS (Salesforce, Datadog, etc.) e custom apps. Rules com Event Patterns filtram e roteiam para targets (Lambda, Step Functions, SQS, SNS, etc.). CloudWatch Alarm + SNS funciona para métricas específicas, mas EventBridge é mais flexível para eventos de estado.</p></details>
+<hr>
+<p><strong>8.</strong> Qual é a diferença principal entre Kinesis Data Streams e SQS?</p>
+<ul><li>A) Kinesis é para dados de streaming em tempo real com retenção e replay; SQS é para filas de mensagens com delete após consumo</li><li>B) SQS suporta mais consumidores simultâneos que Kinesis</li><li>C) Kinesis é mais barato que SQS para todos os casos de uso</li><li>D) SQS tem menor latência que Kinesis</li></ul>
+<details><summary>Resposta</summary><p><strong>A — Correto</strong> Kinesis Data Streams: dados retidos por 1-365 dias, múltiplos consumers leem o mesmo dado (replay), ordenados por shard, base64 bytes. SQS: mensagem é deletada após confirmação de consumo (at-most-once com MessageVisibility, at-least-once padrão), sem replay nativo, order apenas no FIFO. Kinesis para analytics pipelines; SQS para task queues.</p></details>
+<hr>
+<p><strong>9.</strong> Uma empresa processa 1 milhão de transações por segundo para análise de fraude em tempo real. Qual serviço de streaming usar?</p>
+<ul><li>A) SQS FIFO (3.000 TPS por default)</li><li>B) SNS com filtros por tipo de transação</li><li>C) Kinesis Data Streams com shards suficientes</li><li>D) Amazon MQ (ActiveMQ) cluster</li></ul>
+<details><summary>Resposta</summary><p><strong>C — Kinesis Data Streams</strong> Kinesis escala por <strong>shards</strong>: cada shard suporta 1 MB/s de entrada e 2 MB/s de saída. Para 1M TPS, adicione shards suficientes. Kinesis Data Analytics pode processar em tempo real. SQS FIFO tem limite de 3.000 TPS (com batching). MQ é para migração de sistemas legacy com protocolos AMQP/STOMP/MQTT.</p></details>
+<hr>
+<p><strong>10.</strong> O que é &quot;Enhanced Fan-Out&quot; no Kinesis Data Streams?</p>
+<ul><li>A) Permite enviar dados de múltiplas fontes para um único stream</li><li>B) Permite que cada consumer registrado receba 2 MB/s de saída dedicado por shard</li><li>C) Habilita múltiplas partições por shard para maior throughput de entrada</li><li>D) Distribui automaticamente dados entre múltiplos Kinesis Firehose deliveries</li></ul>
+<details><summary>Resposta</summary><p><strong>B — 2 MB/s dedicado por consumer por shard</strong> Sem Enhanced Fan-Out: saída é compartilhada entre todos os consumers (2 MB/s total por shard dividido por N consumers). Com Enhanced Fan-Out: cada consumer registrado via <code>SubscribeToShard</code> recebe <strong>2 MB/s dedicado por shard</strong> via HTTP/2 push (ao invés de polling). Ideal para múltiplos consumers processando o mesmo stream em paralelo com alta velocidade.</p></details>
+<hr>
+<p><strong>11.</strong> Qual a diferença entre Kinesis Data Streams e Kinesis Data Firehose?</p>
+<ul><li>A) Firehose precisa de consumers customizados (polling); Streams entrega diretamente para destinos</li><li>B) Streams requer gestão de shards e consumers; Firehose é totalmente gerenciado e entrega para destinos (S3, Redshift, OpenSearch)</li><li>C) Firehose suporta replay de dados; Streams não</li><li>D) Streams é serverless; Firehose requer provisionamento de capacidade</li></ul>
+<details><summary>Resposta</summary><p><strong>B — Correto</strong> Kinesis Data Streams: você gerencia shards, escreve consumers (KCL, Lambda), dados ficam no stream por 1-365 dias (replay possível). Kinesis Firehose: totalmente managed, sem shards para gerenciar, entrega automática para S3/Redshift/OpenSearch/Splunk/HTTP endpoints, near real-time (buffer de 60s ou 1 MB), sem replay. Firehose para pipeline simples de ingestão→destino.</p></details>
+<hr>
+<p><strong>12.</strong> Uma empresa migrou de RabbitMQ on-premises para AWS. Querem manter o código da aplicação usando protocolo AMQP sem mudanças. Qual serviço AWS?</p>
+<ul><li>A) Amazon SQS com AMQP adapter</li><li>B) Amazon MQ (RabbitMQ ou ActiveMQ gerenciado)</li><li>C) Amazon Kinesis com AMQP SDK</li><li>D) SNS com FIFO topics</li></ul>
+<details><summary>Resposta</summary><p><strong>B — Amazon MQ</strong> Amazon MQ oferece ActiveMQ e RabbitMQ gerenciados, compatíveis com protocolos padrão: AMQP, MQTT, STOMP, OpenWire, WebSocket. Permite lift-and-shift de aplicações com brokers legados sem reescrever. SQS/SNS são APIs proprietárias AWS. Use Amazon MQ quando o código existente precisa do protocolo AMQP/MQTT nativo.</p></details>
+<hr>
+<p><strong>13.</strong> EventBridge Archive e Replay servem para que fim?</p>
+<ul><li>A) Comprimir eventos antigos para reduzir custo de armazenamento</li><li>B) Arquivar eventos do event bus para retransmiti-los (replay) em caso de bug no consumer</li><li>C) Criar snapshots do event bus para disaster recovery</li><li>D) Replicar eventos entre regiões automaticamente</li></ul>
+<details><summary>Resposta</summary><p><strong>B — Arquivar e retransmitir eventos</strong> Archive: salva eventos de um event bus com retenção configurável (indefinida ou N dias). Replay: retransmite eventos arquivados para o event bus (ou outro target), escolhendo janela de tempo. Útil para: corrigir bug em consumer e reprocessar eventos históricos, testar com dados de produção reais, auditar sequência de eventos.</p></details>
+<hr>
+<p><strong>14.</strong> Qual serviço usar quando você precisa de garantia de entrega ordered, exatamente-uma-vez, para mensagens entre microserviços, com throughput de 300 mensagens/segundo?</p>
+<ul><li>A) SQS Standard Queue</li><li>B) SNS FIFO Topic → SQS FIFO Queue</li><li>C) EventBridge com retry policy</li><li>D) Kinesis Data Streams (1 shard)</li></ul>
+<details><summary>Resposta</summary><p><strong>B — SNS FIFO → SQS FIFO</strong> SQS FIFO garante ordem e deduplicação, 300 TPS (ou 3.000 TPS com batching). Para fan-out com FIFO semântics: SNS FIFO Topic subscreve SQS FIFO Queues. EventBridge não garante ordem. Standard SQS não garante ordem. Kinesis poderia funcionar com 1 shard e consumer único, mas a semântica de queue (delete após consumo) não existe no Kinesis.</p></details>
+<hr>
+<p><strong>15.</strong> Uma aplicação precisa de delay de 5 minutos antes que mensagens entrem na fila para processamento. Qual configuração SQS usar?</p>
+<ul><li>A) VisibilityTimeout de 300 segundos</li><li>B) Message Timer (delay por mensagem) ou Delay Queue (delay na criação da fila)</li><li>C) Dead Letter Queue com maxReceiveCount = 0</li><li>D) Long Polling com waitTimeSeconds = 300</li></ul>
+<details><summary>Resposta</summary><p><strong>B — Delay Queue ou Message Timer</strong> <strong>Delay Queue</strong>: delay configurado na fila (padrão 0, máximo 15 minutos) — todas as mensagens aguardam antes de aparecer para consumers. <strong>Message Timer</strong>: delay configurado por mensagem individual sobrescreve o delay da fila. VisibilityTimeout esconde uma mensagem <strong>já recebida</strong>, não antes de entrar. Long Polling máximo é 20 segundos (não 300).</p></details>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./065-14-desacoplamento-sqs-sns-eventbridge-flashcards.html">Aula anterior</a>
+      <a href="./067-14-desacoplamento-sqs-sns-eventbridge-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

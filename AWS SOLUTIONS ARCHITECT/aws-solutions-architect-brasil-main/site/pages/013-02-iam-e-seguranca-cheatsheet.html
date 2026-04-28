@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — IAM e Segurança - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#013-02-iam-e-seguranca-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 02 - IAM e Seguranca - 5 min - 02-IAM-e-Seguranca/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 02 - IAM e Seguranca" loading="lazy">
+      <figcaption>Seguranca com identidade forte: quem pode fazer o que, em qual recurso e sob qual condicao.</figcaption>
+    </figure>
+    <h1>Cheatsheet — IAM e Segurança</h1>
+<h2>Tipos de Política IAM</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Quem gerencia</th><th>Reutilizável</th><th>Coexiste com identity</th><th>Vínculo</th></tr></thead><tbody><tr><td>AWS Managed Policy</td><td>AWS</td><td>Sim</td><td>Sim</td><td>1:N</td></tr><tr><td>Customer Managed Policy</td><td>Você</td><td>Sim</td><td>Sim</td><td>1:N</td></tr><tr><td>Inline Policy</td><td>Você</td><td>Não</td><td>Sim</td><td>1:1 (deletada com identity)</td></tr><tr><td>Resource-Based Policy</td><td>Você</td><td>N/A</td><td>N/A</td><td>No recurso</td></tr><tr><td>Permission Boundary</td><td>Você</td><td>Sim</td><td>Limita identity</td><td>Max permissions</td></tr><tr><td>SCP</td><td>Org admin</td><td>Sim</td><td>Limita conta</td><td>Guardrail por OU/conta</td></tr></tbody></table></div>
+<hr>
+<h2>Lógica de Avaliação de Permissões</h2>
+<pre><code class="language-">1. Explicit DENY em qualquer política?          → DENY (fim)
+2. SCP da Organization permite a ação?          → não? DENY
+3. Permission Boundary permite a ação?          → não? DENY
+4. Identity Policy permite?                     → sim? ALLOW (same account)
+   └── Resource Policy permite?                 → sim? ALLOW (cross-account sem role assumption)
+5. Nenhuma das opções permitiu?                 → DENY implícito</code></pre>
+<blockquote><p><strong>Cross-account sem Resource Policy:</strong> AMBAS identity policy E resource policy devem permitir.<br><strong>Cross-account COM Resource Policy (ex: S3, KMS):</strong> Resource policy pode permitir por si só (mas boundary e SCP ainda se aplicam).</p></blockquote>
+<hr>
+<h2>Condições IAM Mais Cobradas</h2>
+<div class="table-wrap"><table><thead><tr><th>Condição</th><th>Exemplo de uso</th></tr></thead><tbody><tr><td><code>aws:RequestedRegion</code></td><td>Restringir ações a <code>us-east-1</code> e <code>sa-east-1</code></td></tr><tr><td><code>aws:MultiFactorAuthPresent: true</code></td><td>Exigir MFA para ações sensíveis</td></tr><tr><td><code>aws:PrincipalOrgID</code></td><td>Limitar acesso ao S3 bucket a toda a Org</td></tr><tr><td><code>aws:SourceVpc</code> / <code>aws:SourceVpce</code></td><td>Restringir acesso apenas vindo da VPC/endpoint</td></tr><tr><td><code>aws:CurrentTime</code></td><td>Janela de tempo para acesso</td></tr><tr><td><code>s3:prefix</code></td><td>Restringir ListBucket a determinado prefixo</td></tr><tr><td><code>iam:PassedToService</code></td><td>Controlar a quais serviços uma role pode ser delegada</td></tr></tbody></table></div>
+<hr>
+<h2>KMS — Tipos de CMK</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Gerenciada por</th><th>Custos</th><th>Rotação</th><th>Editável</th><th>Visível</th></tr></thead><tbody><tr><td>AWS-owned</td><td>AWS (interna)</td><td>Sem custo</td><td>Automática pela AWS</td><td>Não</td><td>Não</td></tr><tr><td>AWS-managed</td><td>AWS (sua conta)</td><td>Sem custo por CMK</td><td>Anual automática</td><td>Não</td><td>Sim</td></tr><tr><td>Customer-managed</td><td>Você</td><td>$1/mês + $0.03/10K API</td><td>Opcional anual</td><td>Sim</td><td>Sim</td></tr></tbody></table></div>
+<p><strong>Key Material Origin:</strong> <code>AWS_KMS</code> (padrão) | <code>EXTERNAL</code> (import) | <code>AWS_CLOUDHSM</code></p>
+<hr>
+<h2>KMS — Envelope Encryption (Sequência)</h2>
+<pre><code class="language-">Encriptar:
+  1. GenerateDataKey(CMK ARN)
+     → recebe: Plaintext data key + Encrypted data key
+  2. Usar Plaintext key para encriptar dados (AES-256-GCM)
+  3. Apaga Plaintext key da memória
+  4. Armazena: Encrypted data + Encrypted data key
+
+Decriptar:
+  1. Decrypt(Encrypted data key, CMK ARN)
+     → recebe: Plaintext data key
+  2. Usa Plaintext key para decriptar dados
+  3. Apaga Plaintext key da memória</code></pre>
+<hr>
+<h2>Secrets Manager vs Parameter Store</h2>
+<div class="table-wrap"><table><thead><tr><th>Característica</th><th>Secrets Manager</th><th>Parameter Store</th></tr></thead><tbody><tr><td>Rotação automática</td><td>✅ Nativa (Lambda)</td><td>❌ (trigger externo)</td></tr><tr><td>Integração RDS/Redshift/DocDB</td><td>✅ Nativa</td><td>❌</td></tr><tr><td>Custo</td><td>$0,40/secret/mês + API</td><td>Standard: grátis; Advanced: $0,05/param/mês</td></tr><tr><td>Tamanho máximo</td><td>64 KB</td><td>4 KB (standard), 8 KB (advanced)</td></tr><tr><td>Versionamento</td><td>✅ (staging labels)</td><td>✅</td></tr><tr><td>Cross-account</td><td>✅ (resource policy)</td><td>Com customer CMK</td></tr><tr><td>Hierarchical paths</td><td>Limitado</td><td>✅ (<code>/app/prod/db</code>)</td></tr><tr><td>Melhor para</td><td>DB credentials com rotação</td><td>Configurações de app, parâmetros</td></tr></tbody></table></div>
+<hr>
+<h2>ACM — Resumo</h2>
+<div class="table-wrap"><table><thead><tr><th>Característica</th><th>Public ACM</th><th>ACM Private CA</th></tr></thead><tbody><tr><td>Custo</td><td>Grátis</td><td>~$400/mês por CA + $0,75/cert</td></tr><tr><td>Exportável</td><td>❌ Não</td><td>✅ Sim</td></tr><tr><td>Renovação</td><td>Automática</td><td>Automática</td></tr><tr><td>Validação</td><td>DNS (preferido) ou Email</td><td>Sem validação externa</td></tr><tr><td>Uso</td><td>ALB, CloudFront, API GW</td><td>Microserviços internos, mTLS</td></tr><tr><td>Região CloudFront</td><td>⚠️ Certificado deve estar em us-east-1</td><td>—</td></tr></tbody></table></div>
+<hr>
+<h2>Padrões de Acesso Cross-Account</h2>
+<div class="table-wrap"><table><thead><tr><th>Cenário</th><th>Mecanismo</th></tr></thead><tbody><tr><td>Acesso a S3 de outra conta</td><td>Bucket policy + (role ou user com identity policy)</td></tr><tr><td>Acesso a CMK KMS de outra conta</td><td>Key policy no CMK + identity policy no caller</td></tr><tr><td>Assumir role em outra conta</td><td>Trust policy na role + iam:AssumeRole no caller</td></tr><tr><td>Compartilhar RDS snapshot</td><td>Share snapshot com account ID destino</td></tr><tr><td>Acesso via PrivateLink</td><td>VPC Endpoint + NLB + VPC Endpoint Service policy</td></tr></tbody></table></div>
+<hr>
+<h2>IAM Identity Center — Conceitos</h2>
+<pre><code class="language-">AWS Organizations
+  └── IAM Identity Center (SSO)
+        ├── Identity Source: Built-in / AD / External IdP (SAML/SCIM)
+        ├── Users &amp; Groups
+        ├── Permission Sets (= Collection of IAM policies)
+        └── Account Assignments
+              ├── Account A → User X → Permission Set Admin
+              ├── Account B → Group Y → Permission Set ReadOnly
+              └── Application assignments (SaaS via SAML)</code></pre>
+<hr>
+<h2>Dicas de Prova (IAM)</h2>
+<ul><li><strong>Explicit DENY sempre vence</strong>, independente de qualquer Allow</li><li>Permission Boundary ≠ SCP: boundary limita a <em>identidade</em>, SCP limita a <em>conta</em></li><li>Management Account <strong>nunca</strong> é afetada por SCPs</li><li>Para cross-account S3/KMS sem role assumption → resource-based policy com o account ID destino</li><li>Para exigir MFA: <code>Bool: aws:MultiFactorAuthPresent: true</code> (não <code>StringEquals</code>)</li><li>CloudFront + ACM → certificado <strong>deve</strong> estar em <code>us-east-1</code></li><li>KMS Multi-Region Key: mesmo material mas ARNs diferentes por região</li><li>Secrets Manager cobra por secret; Parameter Store Standard é gratuito</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./012-02-iam-e-seguranca-casos-de-uso.html">Aula anterior</a>
+      <a href="./014-02-iam-e-seguranca-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

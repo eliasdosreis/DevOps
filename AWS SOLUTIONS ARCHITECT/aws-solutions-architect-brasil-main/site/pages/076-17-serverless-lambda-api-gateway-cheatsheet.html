@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Módulo 11: Serverless, Lambda e API Gateway - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#076-17-serverless-lambda-api-gateway-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #00a1c9">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 17 - Serverless Lambda API Gateway - 5 min - 17-Serverless-Lambda-API-Gateway/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 17 - Serverless Lambda API Gateway" loading="lazy">
+      <figcaption>Serverless troca servidor por eventos, integracao gerenciada e pagamento por uso.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Módulo 11: Serverless, Lambda e API Gateway</h1>
+<h2>Limites Críticos do Lambda</h2>
+<div class="table-wrap"><table><thead><tr><th>Parâmetro</th><th>Valor</th></tr></thead><tbody><tr><td>Timeout máximo</td><td>15 minutos</td></tr><tr><td>Memória</td><td>128 MB a 10.240 MB</td></tr><tr><td>Payload síncrono (request/response)</td><td>6 MB cada</td></tr><tr><td>Payload assíncrono</td><td>256 KB</td></tr><tr><td>Tamanho do package (zip)</td><td>50 MB (zip) / 250 MB (descomprimido)</td></tr><tr><td>Concurrent executions por conta/região</td><td>1.000 (default, aumentável)</td></tr><tr><td>Layers máximos por função</td><td>5</td></tr><tr><td>Variáveis de ambiente</td><td>4 KB total</td></tr><tr><td>Tmp storage (/tmp)</td><td>512 MB a 10.240 MB</td></tr></tbody></table></div>
+<hr>
+<h2>Tipos de Invocação Lambda</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Quem Usa</th><th>Retry</th><th>DLQ</th></tr></thead><tbody><tr><td><strong>Síncrono</strong></td><td>API GW, ALB, SDK, CLI</td><td>Nenhum (cliente retry)</td><td>N/A</td></tr><tr><td><strong>Assíncrono</strong></td><td>S3, SNS, EventBridge, SES</td><td>2 retries automáticos</td><td>SQS/SNS via Destinations</td></tr><tr><td><strong>Event Source Mapping</strong></td><td>SQS, Kinesis, DynamoDB Streams, MSK</td><td>Retry até expirar (Kinesis) ou maxReceiveCount (SQS)</td><td>DLQ configurada na fila</td></tr></tbody></table></div>
+<hr>
+<h2>Concurrency Lambda</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Descrição</th><th>Custo</th></tr></thead><tbody><tr><td><strong>On-demand</strong></td><td>Escala automático conforme demanda</td><td>Padrão (pay-per-use)</td></tr><tr><td><strong>Reserved</strong></td><td>Garante capacity exclusiva para a função; limita ao máximo definido</td><td>Padrão</td></tr><tr><td><strong>Provisioned</strong></td><td>Pré-aquece instâncias (elimina cold start)</td><td>$0.015/GB-hora provisionada</td></tr></tbody></table></div>
+<p><strong>Throttling:</strong> se <code>concurrent executions &gt; reserved/account limit</code> → <strong>HTTP 429</strong> (sync) ou evento vai para fila de retry (async).</p>
+<hr>
+<h2>API Gateway — Tipos de API</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Features</th><th>Custo</th><th>Melhor Para</th></tr></thead><tbody><tr><td><strong>REST API</strong></td><td>Stages, caching, usage plans, API keys, full transform</td><td>Médio</td><td>APIs produção completas</td></tr><tr><td><strong>HTTP API</strong></td><td>JWT/OAuth nativo, sem mapping templates</td><td>~70% mais barato</td><td>Microsserviços simples</td></tr><tr><td><strong>WebSocket API</strong></td><td>Conexões bidirecionais persistentes</td><td>Por conexão + mensagem</td><td>Chat, real-time updates</td></tr></tbody></table></div>
+<hr>
+<h2>API Gateway Throttling</h2>
+<div class="table-wrap"><table><thead><tr><th>Limite</th><th>Valor Padrão</th></tr></thead><tbody><tr><td>Request rate por conta</td><td>10.000 req/s</td></tr><tr><td>Burst</td><td>5.000 req concorrentes</td></tr><tr><td>HTTP 429</td><td>Too Many Requests (quando excede)</td></tr></tbody></table></div>
+<hr>
+<h2>Integrações do API Gateway</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Descrição</th></tr></thead><tbody><tr><td><strong>Lambda Proxy</strong></td><td>Event completo para Lambda; Lambda retorna statusCode + headers + body</td></tr><tr><td><strong>Lambda Custom</strong></td><td>Mapping templates (VTL) transformam request/response</td></tr><tr><td><strong>HTTP Proxy</strong></td><td>Redireciona request HTTP sem transformação</td></tr><tr><td><strong>AWS Service</strong></td><td>Chama AWS API diretamente (ex: SQS SendMessage sem Lambda)</td></tr><tr><td><strong>Mock</strong></td><td>Retorna resposta estática (para testes, CORS OPTIONS)</td></tr><tr><td><strong>VPC Link</strong></td><td>Acessa NLB em VPC privada</td></tr></tbody></table></div>
+<hr>
+<h2>Autorizadores do API Gateway</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Como Funciona</th></tr></thead><tbody><tr><td><strong>Lambda Authorizer Token</strong></td><td>Token no header → Lambda avalia → retorna IAM Policy (ALLOW/DENY)</td></tr><tr><td><strong>Lambda Authorizer Request</strong></td><td>Headers + query params → Lambda → IAM Policy; flexível</td></tr><tr><td><strong>Cognito User Pools</strong></td><td>Token JWT do Cognito validado nativamente pelo API GW</td></tr></tbody></table></div>
+<p>Cache de resultado: até <strong>3600 segundos</strong> (configurable, default 300s).</p>
+<hr>
+<h2>Lambda Execution Environment Lifecycle</h2>
+<pre><code class="language-">INIT phase     → download code, start runtime, execute init code (outside handler)
+INVOKE phase   → execute handler function
+SHUTDOWN phase → cleanup (response to SIGTERM)</code></pre>
+<p><strong>Cold Start</strong> ocorre em: primeira invocação, após período idle, novo deployment, aumento de concurrency além das instâncias warm.</p>
+<hr>
+<h2>Lambda + VPC — Diagrama de Conectividade</h2>
+<pre><code class="language-">┌─────────────────────────────────────────────────────────────┐
+│ AWS CLOUD                                                   │
+│  ┌─────────────────┐     ┌─────────────────────────────┐   │
+│  │   Lambda        │     │   VPC                       │   │
+│  │   (hyperplane)  │─ENI─│  ┌──────────┐ ┌──────────┐ │   │
+│  │                 │     │  │ Private  │ │ RDS / EC2│ │   │
+│  └─────────────────┘     │  │ Subnet   │ │          │ │   │
+│                          │  └──────────┘ └──────────┘ │   │
+│                          │         ↓ NAT GW (se precisa internet) │   │
+│                          └─────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘</code></pre>
+<p><strong>Sem NAT GW</strong>: Lambda em VPC não tem acesso à internet (SSM, DynamoDB precisam de VPC Endpoint ou NAT GW).</p>
+<hr>
+<h2>Lambda vs Outros Computes — Quando Usar</h2>
+<div class="table-wrap"><table><thead><tr><th>Cenário</th><th>Serviço</th></tr></thead><tbody><tr><td>Event-driven, &lt; 15 min, stateless</td><td>Lambda</td></tr><tr><td>Containerizado, microservices, &gt; 15 min</td><td>ECS Fargate</td></tr><tr><td>Precisa de GPU, HPC, software específico</td><td>EC2</td></tr><tr><td>Job batch longo (horas/dias)</td><td>AWS Batch</td></tr><tr><td>Workflow orquestrado multi-step</td><td>Step Functions + Lambda</td></tr><tr><td>ML Training/Inference</td><td>SageMaker</td></tr></tbody></table></div>
+<hr>
+<h2>Dicas de Prova — Padrões Comuns</h2>
+<div class="table-wrap"><table><thead><tr><th>Pista no Enunciado</th><th>Resposta Provável</th></tr></thead><tbody><tr><td>&quot;Cold start&quot; + Java</td><td>Lambda SnapStart</td></tr><tr><td>&quot;Latência consistente&quot; servlerless</td><td>Provisioned Concurrency</td></tr><tr><td>&quot;Autenticação personalizada&quot; API GW</td><td>Lambda Authorizer</td></tr><tr><td>&quot;JWT / OAuth&quot; API GW</td><td>HTTP API + JWT Authorizer</td></tr><tr><td>&quot;Lambda não acessa RDS&quot;</td><td>Verificar SG + VPC config + NAT GW</td></tr><tr><td>&quot;Lambda precisa de 30 min&quot;</td><td>Lambda NÃO serve → ECS Fargate ou AWS Batch</td></tr><tr><td>&quot;Deploy gradual 10% → 100%&quot;</td><td>Lambda Alias com pesos (canary)</td></tr><tr><td>&quot;Múltiplos ambientes (dev/staging/prod)&quot;</td><td>API GW Stages</td></tr><tr><td>&quot;Montar dependências entre funções&quot;</td><td>Lambda Layers</td></tr><tr><td>&quot;Lambda não deve ser invocada mais de N vezes/s&quot;</td><td>Reserved Concurrency</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./075-17-serverless-lambda-api-gateway-casos-de-uso.html">Aula anterior</a>
+      <a href="./077-17-serverless-lambda-api-gateway-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

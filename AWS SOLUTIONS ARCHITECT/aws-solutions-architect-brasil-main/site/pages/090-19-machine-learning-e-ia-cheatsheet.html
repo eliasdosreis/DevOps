@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Módulo 13: Machine Learning e IA - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#090-19-machine-learning-e-ia-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 19 - Machine Learning e IA - 6 min - 19-Machine-Learning-e-IA/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 19 - Machine Learning e IA" loading="lazy">
+      <figcaption>IA no Associate costuma ser reconhecer o servico gerenciado certo para o caso.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Módulo 13: Machine Learning e IA</h1>
+<h2>As 3 Camadas do Framework AWS AI/ML</h2>
+<pre><code class="language-">┌─────────────────────────────────────────────────────────────────────┐
+│       Nível 1: AI Services (sem ML knowledge necessário)            │
+│  Rekognition | Comprehend | Polly | Transcribe | Translate | Lex    │
+│  Textract | Kendra | Bedrock | Fraud Detector | Personalize          │
+│  Forecast | Lookout for Metrics | Lookout for Vision                 │
+├─────────────────────────────────────────────────────────────────────┤
+│       Nível 2: ML Services (build/train/deploy seus modelos)        │
+│  SageMaker Studio | Ground Truth | Experiments | Model Monitor      │
+│  Training Jobs | Hyperparameter Tuning | Feature Store | Pipelines  │
+├─────────────────────────────────────────────────────────────────────┤
+│       Nível 3: Infrastructure (hardware especializado)              │
+│  EC2 GPU (p3, p4, g4) | AWS Trainium | AWS Inferentia               │
+└─────────────────────────────────────────────────────────────────────┘</code></pre>
+<hr>
+<h2>Comparativo — Serviços de Linguagem Natural (NLP)</h2>
+<div class="table-wrap"><table><thead><tr><th>Serviço</th><th>Direção</th><th>Input</th><th>Output</th></tr></thead><tbody><tr><td><strong>Amazon Transcribe</strong></td><td>Audio → Texto (STT)</td><td>Áudio (MP3, WAV, FLAC)</td><td>Texto + timestamps</td></tr><tr><td><strong>Amazon Polly</strong></td><td>Texto → Audio (TTS)</td><td>Texto / SSML</td><td>Áudio (MP3, PCM)</td></tr><tr><td><strong>Amazon Translate</strong></td><td>Texto → Texto</td><td>Texto em idioma X</td><td>Texto em idioma Y</td></tr><tr><td><strong>Amazon Comprehend</strong></td><td>Texto → Análise</td><td>Texto</td><td>Entities, Sentiment, PII, Topics</td></tr><tr><td><strong>Amazon Lex v2</strong></td><td>Conversa → Intent</td><td>Texto ou Áudio</td><td>Intent + Slots preenchidos</td></tr><tr><td><strong>Amazon Kendra</strong></td><td>Pergunta → Resposta</td><td>Pergunta em linguagem natural</td><td>Resposta de documentos</td></tr></tbody></table></div>
+<hr>
+<h2>Comparativo — Visão Computacional e Documentos</h2>
+<div class="table-wrap"><table><thead><tr><th>Serviço</th><th>Input</th><th>Output</th></tr></thead><tbody><tr><td><strong>Rekognition Image</strong></td><td>Imagem</td><td>Objects, faces, text, moderation labels</td></tr><tr><td><strong>Rekognition Video</strong></td><td>Vídeo (S3 ou stream)</td><td>Person tracking, activity, labels ao longo do tempo</td></tr><tr><td><strong>Textract</strong></td><td>Imagem/PDF de documento</td><td>Texto + Tables + Forms + Keys-Values</td></tr><tr><td><strong>Lookout for Vision</strong></td><td>Imagens de produto (factory)</td><td>Anomalia detectada: NORMAL/ANOMALY</td></tr></tbody></table></div>
+<hr>
+<h2>SageMaker — Pipeline ML</h2>
+<div class="table-wrap"><table><thead><tr><th>Fase</th><th>Serviço/Feature</th></tr></thead><tbody><tr><td><strong>Data Labeling</strong></td><td>Ground Truth</td></tr><tr><td><strong>Data Preparation</strong></td><td>Data Wrangler, Processing Jobs</td></tr><tr><td><strong>Feature Engineering</strong></td><td>Feature Store</td></tr><tr><td><strong>Model Training</strong></td><td>Training Jobs (EC2)</td></tr><tr><td><strong>Hyperparameter Tuning</strong></td><td>Automatic Model Tuning (HPO)</td></tr><tr><td><strong>Model Evaluation</strong></td><td>Experiments</td></tr><tr><td><strong>Model Registry</strong></td><td>Model Registry (versionamento)</td></tr><tr><td><strong>Deployment Online</strong></td><td>Endpoint (real-time inference)</td></tr><tr><td><strong>Deployment Batch</strong></td><td>Batch Transform</td></tr><tr><td><strong>Model Monitoring</strong></td><td>Model Monitor (drift detection)</td></tr><tr><td><strong>No-Code</strong></td><td>Canvas (business users)</td></tr></tbody></table></div>
+<hr>
+<h2>Amazon Bedrock — Foundation Models Disponíveis</h2>
+<div class="table-wrap"><table><thead><tr><th>Provedor</th><th>Modelos</th></tr></thead><tbody><tr><td><strong>Amazon</strong></td><td>Titan Text, Titan Embeddings, Titan Image Generator</td></tr><tr><td><strong>Anthropic</strong></td><td>Claude 3 (Haiku, Sonnet, Opus)</td></tr><tr><td><strong>Meta</strong></td><td>Llama 3</td></tr><tr><td><strong>Cohere</strong></td><td>Command R, Embed</td></tr><tr><td><strong>Mistral AI</strong></td><td>Mistral, Mixtral</td></tr><tr><td><strong>Stability AI</strong></td><td>Stable Diffusion (imagens)</td></tr></tbody></table></div>
+<p><strong>RAG:</strong> Bedrock Knowledge Bases → OpenSearch Serverless (vector store) → LLM contextualizado.</p>
+<hr>
+<h2>Comparativo — Serviços de Recomendação e Previsão</h2>
+<div class="table-wrap"><table><thead><tr><th>Serviço</th><th>Caso de Uso</th><th>Input</th><th>Output</th></tr></thead><tbody><tr><td><strong>Personalize</strong></td><td>Recomendações personalizadas</td><td>Interações usuário-item + metadados</td><td>Top-N items por userId</td></tr><tr><td><strong>Forecast</strong></td><td>Previsão de séries temporais</td><td>Dados históricos + metadados</td><td>Valores futuros + intervalos</td></tr><tr><td><strong>Fraud Detector</strong></td><td>Detecção de fraude</td><td>Eventos de transação</td><td>Score de fraude</td></tr><tr><td><strong>Lookout for Metrics</strong></td><td>Anomalias em métricas de negócio</td><td>Métricas de S3/RDS/Redshift</td><td>Alertas de anomalia</td></tr></tbody></table></div>
+<hr>
+<h2>Comprehend — Análises Disponíveis</h2>
+<div class="table-wrap"><table><thead><tr><th>Análise</th><th>Descrição</th><th>Exemplo</th></tr></thead><tbody><tr><td><strong>Entity Recognition</strong></td><td>Pessoas, locais, orgs, datas</td><td>&quot;João trabalha na Amazon em São Paulo&quot;</td></tr><tr><td><strong>Sentiment Analysis</strong></td><td>Positivo/Negativo/Neutro/Misto</td><td>Review de produto</td></tr><tr><td><strong>Key Phrases</strong></td><td>Expressões principais do texto</td><td>&quot;aws certification&quot;, &quot;cloud computing&quot;</td></tr><tr><td><strong>Language Detection</strong></td><td>Identifica o idioma</td><td>pt-BR, en-US, es</td></tr><tr><td><strong>PII Detection</strong></td><td>CPF, email, telefone, etc.</td><td>Redação de dados pessoais</td></tr><tr><td><strong>Topic Modeling</strong></td><td>Agrupa documentos por tema</td><td>Análise de chamados de suporte</td></tr><tr><td><strong>Targeted Sentiment</strong></td><td>Sentimento por entidade mencionada</td><td>&quot;camera&quot; → positivo, &quot;battery&quot; → negativo</td></tr></tbody></table></div>
+<p><strong>Comprehend Medical:</strong> especializado em texto clínico (diagnósticos, medicamentos, procedures).</p>
+<hr>
+<h2>Rekognition — Features por Tipo</h2>
+<div class="table-wrap"><table><thead><tr><th>Feature</th><th>Imagem</th><th>Vídeo</th></tr></thead><tbody><tr><td>Detecção de objetos/cenas</td><td>✅</td><td>✅ (com timestamps)</td></tr><tr><td>Reconhecimento facial</td><td>✅ (compare, search)</td><td>✅ (person tracking)</td></tr><tr><td>Detecção de texto (OCR)</td><td>✅</td><td>✅</td></tr><tr><td>Content moderation</td><td>✅</td><td>✅</td></tr><tr><td>PPE detection (EPI)</td><td>✅</td><td>✅</td></tr><tr><td>Detecção de celebridades</td><td>✅</td><td>✅</td></tr><tr><td>Análise de atividades</td><td>❌</td><td>✅</td></tr></tbody></table></div>
+<hr>
+<h2>SageMaker Deployment Options</h2>
+<div class="table-wrap"><table><thead><tr><th>Opção</th><th>Latência</th><th>Uso</th></tr></thead><tbody><tr><td><strong>Real-time Endpoint</strong></td><td>Milissegundos</td><td>Inference online, um request por vez</td></tr><tr><td><strong>Serverless Inference</strong></td><td>Segundos (cold start)</td><td>Tráfego intermitente, sem custo idle</td></tr><tr><td><strong>Async Inference</strong></td><td>Minutos</td><td>Payload grande, filas</td></tr><tr><td><strong>Batch Transform</strong></td><td>Horas</td><td>Inference em lote (S3 input → S3 output)</td></tr><tr><td><strong>Multi-Model Endpoint</strong></td><td>Low</td><td>Hospedar múltiplos modelos em 1 endpoint</td></tr></tbody></table></div>
+<hr>
+<h2>Dicas de Prova — Qual Serviço de IA Usar</h2>
+<div class="table-wrap"><table><thead><tr><th>Cenário</th><th>Serviço AWS</th></tr></thead><tbody><tr><td>&quot;Transcrever ligações de call center&quot;</td><td>Amazon Transcribe (+ Call Analytics)</td></tr><tr><td>&quot;Gerar voz sintética para IVR&quot;</td><td>Amazon Polly (NTTS)</td></tr><tr><td>&quot;Detectar conteúdo adulto em fotos de usuários&quot;</td><td>Amazon Rekognition Content Moderation</td></tr><tr><td>&quot;Extrair campos de formulários escaneados&quot;</td><td>Amazon Textract</td></tr><tr><td>&quot;Análise de sentimento de reviews&quot;</td><td>Amazon Comprehend</td></tr><tr><td>&quot;Chatbot com linguagem natural&quot;</td><td>Amazon Lex v2</td></tr><tr><td>&quot;Busca inteligente em documentos Word/PDF&quot;</td><td>Amazon Kendra</td></tr><tr><td>&quot;Recomendações de produtos personalizadas&quot;</td><td>Amazon Personalize</td></tr><tr><td>&quot;Previsão de demanda de estoque&quot;</td><td>Amazon Forecast</td></tr><tr><td>&quot;Detectar fraude em transações&quot;</td><td>Amazon Fraud Detector</td></tr><tr><td>&quot;Detectar anomalias em métricas de receita&quot;</td><td>Amazon Lookout for Metrics</td></tr><tr><td>&quot;Usar modelos LLM via API sem treinar&quot;</td><td>Amazon Bedrock</td></tr><tr><td>&quot;Treinar modelo ML customizado&quot;</td><td>Amazon SageMaker</td></tr><tr><td>&quot;Anotar dados de imagem para treino&quot;</td><td>SageMaker Ground Truth</td></tr><tr><td>&quot;NLP em texto clínico médico&quot;</td><td>Amazon Comprehend Medical</td></tr><tr><td>&quot;Scanner de qualidade de produto na fábrica&quot;</td><td>Amazon Lookout for Vision</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./089-19-machine-learning-e-ia-casos-de-uso.html">Aula anterior</a>
+      <a href="./091-19-machine-learning-e-ia-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

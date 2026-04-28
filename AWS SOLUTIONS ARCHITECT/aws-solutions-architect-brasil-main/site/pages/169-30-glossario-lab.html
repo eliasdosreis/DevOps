@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Prático — Glossário AWS: IAM Avançado e Investigação de Policies (Módulo 20) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#169-30-glossario-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 30 - Glossario - 5 min - 30-Glossario/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1456324504439-367cee3b3c32?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 30 - Glossario" loading="lazy">
+      <figcaption>Glossario e mapa mental reduzem confusoes entre servicos parecidos.</figcaption>
+    </figure>
+    <h1>Lab Prático — Glossário AWS: IAM Avançado e Investigação de Policies (Módulo 20)</h1>
+<blockquote><p><strong>Região:</strong> us-east-1 | <strong>Custo estimado:</strong> ~$0 (IAM é gratuito)<br><strong>Pré-requisitos:</strong> AWS CLI configurado, permissão de IAM na conta</p></blockquote>
+<hr>
+<h2>Objetivo</h2>
+<p>Explorar os tipos de policies IAM na prática, simular avaliações de permissão, criar roles cross-account, e entender o modelo de avaliação de políticas AWS.</p>
+<hr>
+<h2>Parte 1 — Tipos de Policies IAM</h2>
+<pre><code class="language-bash">ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+# 1. Identity-based Policy (inline em usuário)
+aws iam create-user --user-name &quot;lab-glossario-dev&quot;
+
+# Attach managed policy
+aws iam attach-user-policy \
+  --user-name &quot;lab-glossario-dev&quot; \
+  --policy-arn &quot;arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess&quot;
+
+# Criar customer managed policy
+POLICY_ARN=$(aws iam create-policy \
+  --policy-name &quot;lab-s3-bucket-especifico&quot; \
+  --policy-document &quot;{
+    \&quot;Version\&quot;: \&quot;2012-10-17\&quot;,
+    \&quot;Statement\&quot;: [{
+      \&quot;Sid\&quot;: \&quot;LeituraEscritaBucketLab\&quot;,
+      \&quot;Effect\&quot;: \&quot;Allow\&quot;,
+      \&quot;Action\&quot;: [\&quot;s3:GetObject\&quot;, \&quot;s3:PutObject\&quot;, \&quot;s3:ListBucket\&quot;],
+      \&quot;Resource\&quot;: [
+        \&quot;arn:aws:s3:::lab-glossario-${ACCOUNT_ID}\&quot;,
+        \&quot;arn:aws:s3:::lab-glossario-${ACCOUNT_ID}/*\&quot;
+      ]
+    }]
+  }&quot; \
+  --query &#39;Policy.Arn&#39; --output text)
+
+echo &quot;Policy ARN: $POLICY_ARN&quot;
+
+# Attach ao usuário
+aws iam attach-user-policy \
+  --user-name &quot;lab-glossario-dev&quot; \
+  --policy-arn &quot;$POLICY_ARN&quot;
+
+# Listar políticas do usuário
+echo &quot;Managed policies do usuário:&quot;
+aws iam list-attached-user-policies \
+  --user-name &quot;lab-glossario-dev&quot; \
+  --query &#39;AttachedPolicies[*].[PolicyName, PolicyArn]&#39; \
+  --output table</code></pre>
+<hr>
+<h2>Parte 2 — Permissions Boundary</h2>
+<pre><code class="language-bash"># Criar Permissions Boundary — define o MÁXIMO que a role pode ter
+BOUNDARY_ARN=$(aws iam create-policy \
+  --policy-name &quot;lab-dev-boundary&quot; \
+  --policy-document &#39;{
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Statement&quot;: [
+      {
+        &quot;Sid&quot;: &quot;PermitirS3eDynamoDB&quot;,
+        &quot;Effect&quot;: &quot;Allow&quot;,
+        &quot;Action&quot;: [&quot;s3:*&quot;, &quot;dynamodb:*&quot;, &quot;cloudwatch:*&quot;, &quot;logs:*&quot;],
+        &quot;Resource&quot;: &quot;*&quot;
+      },
+      {
+        &quot;Sid&quot;: &quot;DenyIAM&quot;,
+        &quot;Effect&quot;: &quot;Deny&quot;,
+        &quot;Action&quot;: &quot;iam:*&quot;,
+        &quot;Resource&quot;: &quot;*&quot;
+      },
+      {
+        &quot;Sid&quot;: &quot;DenyEC2Caros&quot;,
+        &quot;Effect&quot;: &quot;Deny&quot;,
+        &quot;Action&quot;: [&quot;ec2:RunInstances&quot;],
+        &quot;Resource&quot;: &quot;arn:aws:ec2:*:*:instance/*&quot;,
+        &quot;Condition&quot;: {
+          &quot;StringNotLike&quot;: {
+            &quot;ec2:InstanceType&quot;: [&quot;t3.*&quot;, &quot;t4g.*&quot;]
+          }
+        }
+      }
+    ]
+  }&#39; \
+  --query &#39;Policy.Arn&#39; --output text)
+
+# Criar role COM permissions boundary
+ROLE_ARN=$(aws iam create-role \
+  --role-name &quot;lab-dev-role-com-boundary&quot; \
+  --assume-role-policy-document &quot;{
+    \&quot;Version\&quot;:\&quot;2012-10-17\&quot;,
+    \&quot;Statement\&quot;:[{
+      \&quot;Action\&quot;:\&quot;sts:AssumeRole\&quot;,
+      \&quot;Effect\&quot;:\&quot;Allow\&quot;,
+      \&quot;Principal\&quot;:{\&quot;AWS\&quot;:\&quot;arn:aws:iam::${ACCOUNT_ID}:root\&quot;}
+    }]
+  }&quot; \
+  --permissions-boundary &quot;$BOUNDARY_ARN&quot; \
+  --query &#39;Role.Arn&#39; --output text)
+
+# Dar ao usuário permissão de AdministratorAccess (mas bucket boundary limita)
+aws iam attach-role-policy \
+  --role-name &quot;lab-dev-role-com-boundary&quot; \
+  --policy-arn &quot;arn:aws:iam::aws:policy/AdministratorAccess&quot;
+
+echo &quot;Role com boundary criada: $ROLE_ARN&quot;
+echo &quot;&quot;
+echo &quot;Mesmo com AdministratorAccess, a role NÃO pode:&quot;
+echo &quot;  - Executar ações IAM&quot;
+echo &quot;  - Lançar EC2 de tipos diferentes de t3.* e t4g.*&quot;</code></pre>
+<hr>
+<h2>Parte 3 — simulate-principal-policy</h2>
+<pre><code class="language-bash"># Simular se usuário pode fazer PutObject em S3
+aws iam simulate-principal-policy \
+  --policy-source-arn &quot;arn:aws:iam::${ACCOUNT_ID}:user/lab-glossario-dev&quot; \
+  --action-names &quot;s3:PutObject&quot; \
+  --resource-arns &quot;arn:aws:s3:::lab-glossario-${ACCOUNT_ID}/teste.txt&quot; \
+  --query &#39;EvaluationResults[0].[EvalActionName, EvalDecision]&#39; \
+  --output table
+
+# Simular se pode criar EC2
+aws iam simulate-principal-policy \
+  --policy-source-arn &quot;arn:aws:iam::${ACCOUNT_ID}:user/lab-glossario-dev&quot; \
+  --action-names &quot;ec2:RunInstances&quot; \
+  --resource-arns &quot;arn:aws:ec2:us-east-1::instance/*&quot; \
+  --query &#39;EvaluationResults[0].[EvalActionName, EvalDecision]&#39; \
+  --output table
+
+# Simular ações múltiplas de uma vez
+aws iam simulate-principal-policy \
+  --policy-source-arn &quot;arn:aws:iam::${ACCOUNT_ID}:user/lab-glossario-dev&quot; \
+  --action-names \
+    &quot;s3:GetObject&quot; \
+    &quot;s3:DeleteObject&quot; \
+    &quot;dynamodb:PutItem&quot; \
+    &quot;iam:CreateRole&quot; \
+    &quot;lambda:InvokeFunction&quot; \
+  --resource-arns &quot;arn:aws:s3:::lab-glossario-${ACCOUNT_ID}/*&quot; \
+  --query &#39;EvaluationResults[*].[EvalActionName, EvalDecision]&#39; \
+  --output table</code></pre>
+<hr>
+<h2>Parte 4 — Role Cross-Account</h2>
+<pre><code class="language-bash"># Role para ser assumida por OUTRA conta (ou pela própria para demo)
+CROSS_ROLE_ARN=$(aws iam create-role \
+  --role-name &quot;lab-cross-account-readonly&quot; \
+  --assume-role-policy-document &quot;{
+    \&quot;Version\&quot;: \&quot;2012-10-17\&quot;,
+    \&quot;Statement\&quot;: [{
+      \&quot;Effect\&quot;: \&quot;Allow\&quot;,
+      \&quot;Principal\&quot;: {\&quot;AWS\&quot;: \&quot;arn:aws:iam::${ACCOUNT_ID}:root\&quot;},
+      \&quot;Action\&quot;: \&quot;sts:AssumeRole\&quot;,
+      \&quot;Condition\&quot;: {
+        \&quot;StringEquals\&quot;: {\&quot;sts:ExternalId\&quot;: \&quot;segredo-compartilhado-123\&quot;}
+      }
+    }]
+  }&quot; \
+  --query &#39;Role.Arn&#39; --output text)
+
+aws iam attach-role-policy \
+  --role-name &quot;lab-cross-account-readonly&quot; \
+  --policy-arn &quot;arn:aws:iam::aws:policy/ReadOnlyAccess&quot;
+
+echo &quot;Role Cross-Account: $CROSS_ROLE_ARN&quot;
+
+# Assumir a role (AssumeRole com ExternalId)
+CREDS=$(aws sts assume-role \
+  --role-arn &quot;$CROSS_ROLE_ARN&quot; \
+  --role-session-name &quot;lab-cross-session&quot; \
+  --external-id &quot;segredo-compartilhado-123&quot; \
+  --duration-seconds 3600 \
+  --query &#39;Credentials&#39; --output json)
+
+echo &quot;Credenciais temporárias recebidas:&quot;
+echo &quot;$CREDS&quot; | python3 -c &quot;
+import json, sys
+c = json.load(sys.stdin)
+print(f&#39;  AccessKeyId: {c[\&quot;AccessKeyId\&quot;][:10]}...&#39;)
+print(f&#39;  Expiration: {c[\&quot;Expiration\&quot;]}&#39;)
+&quot;
+
+# Usar credenciais assumidas
+AWS_ACCESS_KEY_ID=$(echo &quot;$CREDS&quot; | python3 -c &quot;import json,sys; print(json.load(sys.stdin)[&#39;AccessKeyId&#39;])&quot;)
+AWS_SECRET_ACCESS_KEY=$(echo &quot;$CREDS&quot; | python3 -c &quot;import json,sys; print(json.load(sys.stdin)[&#39;SecretAccessKey&#39;])&quot;)
+AWS_SESSION_TOKEN=$(echo &quot;$CREDS&quot; | python3 -c &quot;import json,sys; print(json.load(sys.stdin)[&#39;SessionToken&#39;])&quot;)
+
+# Verificar identidade com as credenciais assumidas
+AWS_ACCESS_KEY_ID=&quot;$AWS_ACCESS_KEY_ID&quot; \
+AWS_SECRET_ACCESS_KEY=&quot;$AWS_SECRET_ACCESS_KEY&quot; \
+AWS_SESSION_TOKEN=&quot;$AWS_SESSION_TOKEN&quot; \
+aws sts get-caller-identity</code></pre>
+<hr>
+<h2>Parte 5 — Revisar Políticas AWS Managed</h2>
+<pre><code class="language-bash"># Listar policies AWS managed mais usadas
+echo &quot;=== AWS Managed Policies Comuns ===&quot;
+for POLICY in \
+  &quot;AmazonS3FullAccess&quot; \
+  &quot;AmazonEC2ReadOnlyAccess&quot; \
+  &quot;ReadOnlyAccess&quot; \
+  &quot;AdministratorAccess&quot; \
+  &quot;AWSLambdaBasicExecutionRole&quot; \
+  &quot;AmazonDynamoDBFullAccess&quot;; do
+
+  PARN=&quot;arn:aws:iam::aws:policy/${POLICY}&quot;
+  VERSION=$(aws iam get-policy \
+    --policy-arn &quot;$PARN&quot; \
+    --query &#39;Policy.DefaultVersionId&#39; --output text 2&gt;/dev/null)
+  
+  if [ -n &quot;$VERSION&quot; ]; then
+    echo &quot;&quot;
+    echo &quot;--- $POLICY ---&quot;
+    aws iam get-policy-version \
+      --policy-arn &quot;$PARN&quot; \
+      --version-id &quot;$VERSION&quot; \
+      --query &#39;PolicyVersion.Document.Statement[*].[Effect, Action[0:3], Resource[0]]&#39; \
+      --output table 2&gt;/dev/null | head -10
+  fi
+done</code></pre>
+<hr>
+<h2>Limpeza</h2>
+<pre><code class="language-bash"># Desanexar e deletar policies/roles/usuário
+aws iam detach-user-policy \
+  --user-name &quot;lab-glossario-dev&quot; \
+  --policy-arn &quot;arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess&quot;
+
+aws iam detach-user-policy \
+  --user-name &quot;lab-glossario-dev&quot; \
+  --policy-arn &quot;$POLICY_ARN&quot;
+
+aws iam delete-policy --policy-arn &quot;$POLICY_ARN&quot;
+aws iam delete-user --user-name &quot;lab-glossario-dev&quot;
+
+aws iam detach-role-policy \
+  --role-name &quot;lab-dev-role-com-boundary&quot; \
+  --policy-arn &quot;arn:aws:iam::aws:policy/AdministratorAccess&quot;
+aws iam delete-role --role-name &quot;lab-dev-role-com-boundary&quot;
+aws iam delete-policy --policy-arn &quot;$BOUNDARY_ARN&quot;
+
+aws iam detach-role-policy \
+  --role-name &quot;lab-cross-account-readonly&quot; \
+  --policy-arn &quot;arn:aws:iam::aws:policy/ReadOnlyAccess&quot;
+aws iam delete-role --role-name &quot;lab-cross-account-readonly&quot;</code></pre>
+<hr>
+<h2>O Que Você Aprendeu</h2>
+<ul><li><strong>Identity-based policy:</strong> attached a user/role/group — define o que a identidade PODE fazer</li><li><strong>Resource-based policy:</strong> attached ao recurso (S3, SQS) — define quem PODE acessar o recurso</li><li><strong>Permissions Boundary:</strong> não concede acesso — somente reduz o teto; avaliação: <code>identidade AND boundary</code></li><li><strong><code>simulate-principal-policy</code>:</strong> ferramenta essencial para depurar permissões sem fazer mudanças reais</li><li><strong>AssumeRole:</strong> troca credenciais de longa duração por temporárias; ExternalId previne confused deputy</li><li><strong>Regra de avaliação:</strong> Deny explícito &gt; tudo. Sem Allow explícito = Deny implícito = acesso negado</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./168-30-glossario-flashcards.html">Aula anterior</a>
+      <a href="./170-30-glossario-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

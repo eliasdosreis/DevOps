@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#032-modulo-07-rbac-04-clusterrole">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #b45309">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 07 - rbac - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 07 - rbac" loading="lazy">
+      <figcaption>RBAC define identidade, permissao e escopo para operar com seguranca.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Apresenta a vers�o &quot;Deus Global&quot; das Roles (ClusterRole).
+# Ensina como um administrador d� poderes que afetam a fazenda
+# inteira, e n�o estritamente para um projeto/sala apenas.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# A `Role` l� do &#39;02.yaml&#39; era o Supervisor de Andar. Voc� deixava colar p�sters
+# apenas no mural do seu Setor local `Namespace: meu-primeiro-projeto`.
+#
+# O **ClusterRole** � o CRACH� C.E.O DO PR�DIO INTEIRO DA EMPRESA! 
+# Ele � ignorante ao conceito de &quot;Salinhas&quot; ou Namespaces. As regras dele cruzam
+# o servidor inteiro como um trem. Quando voc� veste um Bind desse paple CE.O, 
+# se sua regra diz MATA POD, voc� mata POD do DB Producao, do Dev de casa e at� os pods de firewall 
+# do kube-system. Com grandes poderes v�m grandes responsabilidades.
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# `ClusterRole` � id�ntico em verbologia � de uma Role isolada de sintaxes (ApiGroup/Resources), 
+# com a brutal exclus�o do campo &#39;namespace&#39;. Eles mapeiam direitos � objetos &#39;Non-Namespaced&#39; 
+# brutos (Ex Node, PV Global) OU concedem regras absoluidas por &#39;Namespaced Resources&#39; espalhados em todo cluster 
+# (tipo listar TODOS os pods do banco Etcd).
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole                     # (O C.E.O. do Kube inteiro)!
+metadata:                             # (NOTE A AUSENCIA CHOCANTE E NECESS�RIA DE `NAMESPACE: AQUI`)
+  name: deus-ex-lista-volumes
+rules:
+  - apiGroups: [&quot;&quot;]
+  
+    # RECURSO CLUSTER WIDE - (Os discos PVS Globais da AWS/Azure/Kind)
+    resources: [&quot;persistentvolumes&quot;]  # Como esse PV Fisico Fixo nao tem Namespace... so da pra dar grant nele via C.E.O Cluster Role!
+    verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]   
+    
+  - apiGroups: [&quot;&quot;]
+    # Pode dar Get em Nodes Inteiros? SIM!
+    resources: [&quot;nodes&quot;]              
+    verbs: [&quot;get&quot;, &quot;list&quot;]            
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Injete a grande regra C.E.O. no seu Kind Cluster global:
+#    kubectl apply -f 04-clusterrole.yaml
+#
+# 2. Olhe a grande listar de poderes globais escondidos dos robos originais do k8s q estao lado a lado
+#    com o seu (S�o mais de 50 originais de sistema):
+#    kubectl get clusterroles
+#
+# COMO EU USO O C.E.O?
+# Assim como a Role tinha o &quot;RoleBinding&quot;. 
+# O &quot;ClusterRole&quot; exige um `kind: ClusterRoleBinding` (pra vestir a roupa no mundo 
+# global). N�s n�o criaremos um pra evitar sujar a raiz do seu teste pessoal... mas a sintaxe � IDENTICA .
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# Maior furo de seguran�a Junior das empresas: Eles tentam amarrar Usu�rios e Rob�s 
+# na mais temida Role de Todo K8s que vem Padr�o Original... O famoso: `cluster-admin`.
+# Dar a clusterRole de `cluster-admin` (Deus-SysRoot completo) via um Binding num POD
+# que t� expondo o Container Python num ingress online � senten�a de Jailbreak.  
+# Um bug de Injection de parametro num Bashzinho / shellzinho do Python e vc perde controle do k8s AWS .
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# O Segredo sujo e malandrinho do Kubernetes:
+# Posso usar uma GRANDE REGRA C.E.O DO MUNDO INteiro (ClusterRole) para servir uma  
+# roupinha local do Andarzinho pequeno de `RoleBinding`?  
+#
+# Absolutamente SIM! E � a melhor pratica do universo SR! Se voc� crias o ClusterRole  
+# &#39;poder-ver-pods&#39;, e usar um &#39;RoleBinding local no RH&#39; atrelando a ela em vez do ClusterRoleBinding.  
+# Voc� CASTRA o poder do C.E.O for�adamente apenas ao escopo isolado do seu namespace!
+# A utilidade? As empresas criam apenas 4 ClusterRoles limpos de matriz base 
+# &quot;View-All, Edit-All, Deploy-Only, Logs-Only&quot;. E todas as 40 squads espalhadas usam 
+# `RoleBinding` locais referenciando aquela unica ClusterRole mestre central. Economiza milhares de yams Role por pastas!
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se tiv�ssemos 2 objetos aplicados separados onde no &quot;RoleBinding&quot; local restrito
+#  est� proibindo ver Segredos. E num &quot;ClusterRoleBinding&quot; acidental atrelado global 
+# as regras estao cedendo ver Segredos para a mesma pessoa.. E a pessoa executar um 
+# comando na namespace de Dev... Ela consegue ler o Secret ou o Local Sobrep�e Proibindo?&quot;
+# Resposta Esperada: &quot;Lembrando a Lei Matriz de Permissao de K8s: - N�o existe DENY -.
+# As perms do K8s n�o se sobrep�em e nem desfazem uma � outra. Elas S�O 100% ADITIVAS (Union Array).
+# O acesso Global garantiu o Yes de ler. O Local n�o citou (seria bloqueio). Logo, A Adi��o Union prevalece 
+# com resultado = True, YES. Ele ler� os segredos perigososamente global. Cuidado nas misturas globais!&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./031-modulo-07-rbac-03-rolebinding.html">Aula anterior</a>
+      <a href="./033-modulo-08-projeto-final-01-arquitetura.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

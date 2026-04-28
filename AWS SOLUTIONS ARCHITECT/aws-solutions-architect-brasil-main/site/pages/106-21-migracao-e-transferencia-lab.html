@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Prático — Migração e Transferência: DMS + S3 Transfer (Módulo 15) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#106-21-migracao-e-transferencia-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 21 - Migracao e Transferencia - 5 min - 21-Migracao-e-Transferencia/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 21 - Migracao e Transferencia" loading="lazy">
+      <figcaption>Migracao boa equilibra janela, volume, risco, custo e mudanca na aplicacao.</figcaption>
+    </figure>
+    <h1>Lab Prático — Migração e Transferência: DMS + S3 Transfer (Módulo 15)</h1>
+<blockquote><p><strong>Região:</strong> us-east-1 | <strong>Custo estimado:</strong> ~$0.50 (instância replication DMS t3.micro, &lt; 1 hora de uso)<br><strong>Pré-requisitos:</strong> AWS CLI configurado, Terraform &gt;= 1.5, cliente MySQL</p></blockquote>
+<hr>
+<h2>Objetivo</h2>
+<p>Simular uma migração de banco de dados MySQL on-premises para RDS usando DMS, e praticar transferência de dados entre buckets S3 (simulando migração de storage).</p>
+<hr>
+<h2>Parte 1 — Infraestrutura Base com Terraform</h2>
+<pre><code class="language-hcl"># main.tf
+terraform {
+  required_version = &quot;&gt;= 1.5&quot;
+  required_providers {
+    aws = {
+      source  = &quot;hashicorp/aws&quot;
+      version = &quot;~&gt; 5.0&quot;
+    }
+  }
+}
+
+provider &quot;aws&quot; {
+  region = &quot;us-east-1&quot;
+}
+
+data &quot;aws_caller_identity&quot; &quot;current&quot; {}
+
+locals {
+  prefix     = &quot;lab-migracao&quot;
+  account_id = data.aws_caller_identity.current.account_id
+}
+
+# VPC para o lab
+resource &quot;aws_vpc&quot; &quot;lab&quot; {
+  cidr_block           = &quot;10.10.0.0/16&quot;
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+  tags = { Name = &quot;${local.prefix}-vpc&quot; }
+}
+
+resource &quot;aws_internet_gateway&quot; &quot;lab&quot; {
+  vpc_id = aws_vpc.lab.id
+  tags   = { Name = &quot;${local.prefix}-igw&quot; }
+}
+
+# Subnet pública (para acesso ao MySQL fonte)
+resource &quot;aws_subnet&quot; &quot;public_a&quot; {
+  vpc_id                  = aws_vpc.lab.id
+  cidr_block              = &quot;10.10.1.0/24&quot;
+  availability_zone       = &quot;us-east-1a&quot;
+  map_public_ip_on_launch = true
+  tags = { Name = &quot;${local.prefix}-public-a&quot; }
+}
+
+resource &quot;aws_subnet&quot; &quot;public_b&quot; {
+  vpc_id                  = aws_vpc.lab.id
+  cidr_block              = &quot;10.10.2.0/24&quot;
+  availability_zone       = &quot;us-east-1b&quot;
+  map_public_ip_on_launch = true
+  tags = { Name = &quot;${local.prefix}-public-b&quot; }
+}
+
+resource &quot;aws_route_table&quot; &quot;public&quot; {
+  vpc_id = aws_vpc.lab.id
+  route {
+    cidr_block = &quot;0.0.0.0/0&quot;
+    gateway_id = aws_internet_gateway.lab.id
+  }
+}
+
+resource &quot;aws_route_table_association&quot; &quot;public_a&quot; {
+  subnet_id      = aws_subnet.public_a.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource &quot;aws_route_table_association&quot; &quot;public_b&quot; {
+  subnet_id      = aws_subnet.public_b.id
+  route_table_id = aws_route_table.public.id
+}
+
+# Security Group para RDS
+resource &quot;aws_security_group&quot; &quot;rds&quot; {
+  name   = &quot;${local.prefix}-rds-sg&quot;
+  vpc_id = aws_vpc.lab.id
+
+  ingress {
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = &quot;tcp&quot;
+    cidr_blocks = [&quot;10.10.0.0/16&quot;]
+    description = &quot;MySQL dentro da VPC&quot;
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = &quot;-1&quot;
+    cidr_blocks = [&quot;0.0.0.0/0&quot;]
+  }
+}
+
+# RDS MySQL — banco DESTINO
+resource &quot;aws_db_subnet_group&quot; &quot;lab&quot; {
+  name       = &quot;${local.prefix}-subnet-group&quot;
+  subnet_ids = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+}
+
+resource &quot;aws_db_instance&quot; &quot;destino&quot; {
+  identifier        = &quot;${local.prefix}-destino&quot;
+  engine            = &quot;mysql&quot;
+  engine_version    = &quot;8.0&quot;
+  instance_class    = &quot;db.t3.micro&quot;
+  allocated_storage = 20
+  storage_type      = &quot;gp2&quot;
+
+  db_name  = &quot;loja_destino&quot;
+  username = &quot;admin&quot;
+  password = &quot;Lab@12345!&quot;  # Usar Secrets Manager em produção
+
+  db_subnet_group_name   = aws_db_subnet_group.lab.name
+  vpc_security_group_ids = [aws_security_group.rds.id]
+
+  skip_final_snapshot = true
+  publicly_accessible = false
+
+  tags = { Environment = &quot;lab&quot;, Module = &quot;15-migracao&quot; }
+}
+
+# IAM Role para DMS
+resource &quot;aws_iam_role&quot; &quot;dms&quot; {
+  name = &quot;${local.prefix}-dms-role&quot;
+
+  assume_role_policy = jsonencode({
+    Version = &quot;2012-10-17&quot;
+    Statement = [{
+      Action    = &quot;sts:AssumeRole&quot;
+      Effect    = &quot;Allow&quot;
+      Principal = { Service = &quot;dms.amazonaws.com&quot; }
+    }]
+  })
+}
+
+resource &quot;aws_iam_role_policy_attachment&quot; &quot;dms_vpc&quot; {
+  role       = aws_iam_role.dms.name
+  policy_arn = &quot;arn:aws:iam::aws:policy/service-role/AmazonDMSVPCManagementRole&quot;
+}
+
+# DMS Subnet Group
+resource &quot;aws_dms_replication_subnet_group&quot; &quot;lab&quot; {
+  replication_subnet_group_description = &quot;Lab DMS subnet group&quot;
+  replication_subnet_group_id          = &quot;${local.prefix}-dms-subnet&quot;
+  subnet_ids                           = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+}
+
+# DMS Replication Instance
+resource &quot;aws_dms_replication_instance&quot; &quot;lab&quot; {
+  replication_instance_class  = &quot;dms.t3.micro&quot;
+  replication_instance_id     = &quot;${local.prefix}-replication&quot;
+  replication_subnet_group_id = aws_dms_replication_subnet_group.lab.id
+  vpc_security_group_ids      = [aws_security_group.rds.id]
+  publicly_accessible         = false
+  allocated_storage           = 20
+}
+
+output &quot;rds_endpoint&quot; {
+  value = aws_db_instance.destino.endpoint
+}
+
+output &quot;dms_instance_arn&quot; {
+  value = aws_dms_replication_instance.lab.replication_instance_arn
+}</code></pre>
+<hr>
+<h2>Parte 2 — Banco MySQL Fonte (simulado localmente)</h2>
+<pre><code class="language-bash"># Opção A: Usar Docker para simular banco on-premises
+docker run -d \
+  --name mysql-origem \
+  -e MYSQL_ROOT_PASSWORD=Lab@12345! \
+  -e MYSQL_DATABASE=loja_origem \
+  -p 3306:3306 \
+  mysql:8.0
+
+sleep 20  # aguardar MySQL inicializar
+
+# Popular banco de origem com dados de teste
+docker exec -i mysql-origem mysql -uroot -pLab@12345! loja_origem &lt;&lt; &#39;SQL&#39;
+CREATE TABLE clientes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(100) NOT NULL,
+  email VARCHAR(150) UNIQUE NOT NULL,
+  cpf CHAR(14) NOT NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE produtos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(200) NOT NULL,
+  preco DECIMAL(10,2) NOT NULL,
+  estoque INT DEFAULT 0
+);
+
+CREATE TABLE pedidos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  cliente_id INT REFERENCES clientes(id),
+  produto_id INT REFERENCES produtos(id),
+  quantidade INT NOT NULL,
+  total DECIMAL(10,2),
+  status ENUM(&#39;pendente&#39;,&#39;aprovado&#39;,&#39;enviado&#39;,&#39;entregue&#39;) DEFAULT &#39;pendente&#39;,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Dados de exemplo
+INSERT INTO clientes (nome, email, cpf) VALUES
+  (&#39;João Silva&#39;, &#39;joao@exemplo.com&#39;, &#39;000.000.000-00&#39;),
+  (&#39;Maria Santos&#39;, &#39;maria@exemplo.com&#39;, &#39;111.111.111-11&#39;),
+  (&#39;Carlos Oliveira&#39;, &#39;carlos@exemplo.com&#39;, &#39;222.222.222-22&#39;);
+
+INSERT INTO produtos (nome, preco, estoque) VALUES
+  (&#39;Notebook Pro&#39;, 2500.00, 10),
+  (&#39;Mouse Wireless&#39;, 89.90, 50),
+  (&#39;Monitor 27&quot;&#39;, 1200.00, 5);
+
+INSERT INTO pedidos (cliente_id, produto_id, quantidade, total, status) VALUES
+  (1, 1, 1, 2500.00, &#39;aprovado&#39;),
+  (2, 2, 3, 269.70, &#39;entregue&#39;),
+  (3, 3, 2, 2400.00, &#39;pendente&#39;),
+  (1, 2, 1, 89.90, &#39;enviado&#39;);
+
+SELECT &#39;Dados inseridos com sucesso&#39; AS status;
+SQL</code></pre>
+<hr>
+<h2>Parte 3 — Configurar DMS</h2>
+<pre><code class="language-bash"># Deploy infraestrutura
+terraform init &amp;&amp; terraform apply -auto-approve
+
+RDS_ENDPOINT=$(terraform output -raw rds_endpoint)
+DMS_ARN=$(terraform output -raw dms_instance_arn)
+
+echo &quot;RDS Destino: $RDS_ENDPOINT&quot;
+echo &quot;DMS Instance: $DMS_ARN&quot;
+
+# Criar endpoint FONTE (MySQL local via IP público da máquina)
+MY_IP=$(curl -s ifconfig.me)
+
+SOURCE_ARN=$(aws dms create-endpoint \
+  --endpoint-identifier &quot;lab-source-mysql&quot; \
+  --endpoint-type source \
+  --engine-name mysql \
+  --server-name &quot;$MY_IP&quot; \
+  --port 3306 \
+  --database-name loja_origem \
+  --username root \
+  --password &quot;Lab@12345!&quot; \
+  --query &#39;Endpoint.EndpointArn&#39; --output text)
+
+# Criar endpoint DESTINO (RDS)
+TARGET_ARN=$(aws dms create-endpoint \
+  --endpoint-identifier &quot;lab-target-rds&quot; \
+  --endpoint-type target \
+  --engine-name mysql \
+  --server-name &quot;${RDS_ENDPOINT%:*}&quot; \
+  --port 3306 \
+  --database-name loja_destino \
+  --username admin \
+  --password &quot;Lab@12345!&quot; \
+  --query &#39;Endpoint.EndpointArn&#39; --output text)
+
+# Testar conexão com endpoints
+aws dms test-connection \
+  --replication-instance-arn &quot;$DMS_ARN&quot; \
+  --endpoint-arn &quot;$SOURCE_ARN&quot;
+
+aws dms test-connection \
+  --replication-instance-arn &quot;$DMS_ARN&quot; \
+  --endpoint-arn &quot;$TARGET_ARN&quot;
+
+# Criar task de Full Load
+TASK_ARN=$(aws dms create-replication-task \
+  --replication-task-identifier &quot;lab-full-load&quot; \
+  --source-endpoint-arn &quot;$SOURCE_ARN&quot; \
+  --target-endpoint-arn &quot;$TARGET_ARN&quot; \
+  --replication-instance-arn &quot;$DMS_ARN&quot; \
+  --migration-type full-load \
+  --table-mappings &#39;{
+    &quot;rules&quot;: [{
+      &quot;rule-type&quot;: &quot;selection&quot;,
+      &quot;rule-id&quot;: &quot;1&quot;,
+      &quot;rule-name&quot;: &quot;1&quot;,
+      &quot;object-locator&quot;: {
+        &quot;schema-name&quot;: &quot;loja_origem&quot;,
+        &quot;table-name&quot;: &quot;%&quot;
+      },
+      &quot;rule-action&quot;: &quot;include&quot;
+    }]
+  }&#39; \
+  --query &#39;ReplicationTask.ReplicationTaskArn&#39; --output text)
+
+# Iniciar task
+aws dms start-replication-task \
+  --replication-task-arn &quot;$TASK_ARN&quot; \
+  --start-replication-task-type start-replication
+
+# Monitorar progresso
+watch -n 10 &#39;aws dms describe-replication-tasks \
+  --filters Name=replication-task-arn,Values=&#39;&quot;$TASK_ARN&quot;&#39; \
+  --query &quot;ReplicationTasks[0].[Status, ReplicationTaskStats.TablesLoaded, ReplicationTaskStats.TablesLoading]&quot; \
+  --output table&#39;</code></pre>
+<hr>
+<h2>Parte 4 — Validar Migração e Transferência S3</h2>
+<pre><code class="language-bash"># Verificar dados no RDS destino
+mysql -h &quot;${RDS_ENDPOINT%:*}&quot; -u admin -p&quot;Lab@12345!&quot; loja_destino &lt;&lt; &#39;SQL&#39;
+SELECT &#39;Clientes:&#39; AS tabela, COUNT(*) AS registros FROM clientes
+UNION ALL
+SELECT &#39;Produtos:&#39;, COUNT(*) FROM produtos
+UNION ALL  
+SELECT &#39;Pedidos:&#39;, COUNT(*) FROM pedidos;
+SQL
+
+# Simular migração de dados S3 (Cross-Region ou Cross-Account)
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+SOURCE_BUCKET=&quot;lab-migracao-source-${ACCOUNT_ID}&quot;
+DEST_BUCKET=&quot;lab-migracao-dest-${ACCOUNT_ID}&quot;
+
+# Criar buckets
+aws s3api create-bucket --bucket &quot;$SOURCE_BUCKET&quot;
+aws s3api create-bucket --bucket &quot;$DEST_BUCKET&quot;
+
+# Criar dados de teste
+for i in $(seq 1 20); do
+  echo &quot;Arquivo de dados ${i}: $(date) - dados de migração&quot; &gt; /tmp/arquivo_${i}.txt
+  aws s3 cp /tmp/arquivo_${i}.txt &quot;s3://${SOURCE_BUCKET}/dados/arquivo_${i}.txt&quot;
+done
+
+echo &quot;20 arquivos criados no bucket fonte.&quot;
+
+# Migrar usando S3 Sync
+aws s3 sync &quot;s3://${SOURCE_BUCKET}/&quot; &quot;s3://${DEST_BUCKET}/&quot; \
+  --metadata-directive COPY \
+  --sse aws:kms
+
+# Verificar integridade
+SOURCE_COUNT=$(aws s3 ls &quot;s3://${SOURCE_BUCKET}/dados/&quot; --recursive | wc -l)
+DEST_COUNT=$(aws s3 ls &quot;s3://${DEST_BUCKET}/dados/&quot; --recursive | wc -l)
+echo &quot;Arquivos fonte: $SOURCE_COUNT | Arquivos destino: $DEST_COUNT&quot;
+
+# Habilitar replicação S3 (CRR - Cross-Region Replication)
+# Requer bucket em região diferente
+echo &quot;Para CRR: criar bucket em us-west-2 e configurar replication rule&quot;</code></pre>
+<hr>
+<h2>Limpeza</h2>
+<pre><code class="language-bash"># Parar e deletar DMS
+aws dms stop-replication-task --replication-task-arn &quot;$TASK_ARN&quot;
+sleep 30
+aws dms delete-replication-task --replication-task-arn &quot;$TASK_ARN&quot;
+aws dms delete-endpoint --endpoint-arn &quot;$SOURCE_ARN&quot;
+aws dms delete-endpoint --endpoint-arn &quot;$TARGET_ARN&quot;
+
+# Destruir Terraform (RDS, DMS instance, VPC)
+terraform destroy -auto-approve
+
+# Limpar S3
+aws s3 rm &quot;s3://${SOURCE_BUCKET}&quot; --recursive
+aws s3 rm &quot;s3://${DEST_BUCKET}&quot; --recursive
+aws s3api delete-bucket --bucket &quot;$SOURCE_BUCKET&quot;
+aws s3api delete-bucket --bucket &quot;$DEST_BUCKET&quot;
+
+# Parar Docker
+docker stop mysql-origem &amp;&amp; docker rm mysql-origem
+
+# Limpar arquivos temporários
+rm -f /tmp/arquivo_*.txt</code></pre>
+<hr>
+<h2>O Que Você Aprendeu</h2>
+<ul><li>DMS requer: replication instance + source endpoint + target endpoint + task</li><li>Tipo de migração Full Load: snapshot completo, sem replicação contínua</li><li>Tipo Full Load + CDC: Full Load inicial + captura de mudanças em tempo real</li><li>DMS suporta migrações homo e heterogêneas (SCT necessário para heterogêneas)</li><li><code>aws s3 sync</code> é idempotente — só transfere arquivos novos ou modificados</li><li>Replication instance é cobrada por hora mesmo sem tasks rodando — destruir após uso</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./105-21-migracao-e-transferencia-flashcards.html">Aula anterior</a>
+      <a href="./107-21-migracao-e-transferencia-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

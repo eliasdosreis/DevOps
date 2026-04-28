@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab — Computação EC2 - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#024-04-computacao-ec2-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 04 - Computacao EC2 - 6 min - 04-Computacao-EC2/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 04 - Computacao EC2" loading="lazy">
+      <figcaption>Compute e escolha de motor: instancia, container, funcao ou servico gerenciado.</figcaption>
+    </figure>
+    <h1>Lab — Computação EC2</h1>
+<blockquote><p><strong>Região:</strong> us-east-1<br><strong>Custo estimado:</strong> ~$0,05–$0,20/hora durante o lab (EC2 t3.micro + EBS)<br><strong>Pré-requisito:</strong> AWS CLI configurado, Terraform &gt;= 1.5, VPC e subnet default disponíveis</p></blockquote>
+<h2>Objetivos do Lab</h2>
+<ol><li>Criar um Launch Template com IMDSv2 obrigatório e User Data</li><li>Criar um Spot Fleet com diversificação de tipos</li><li>Comparar gp2 vs gp3 na prática com benchmark de IOPS</li><li>Criar e usar um Partition Placement Group</li></ol>
+<hr>
+<h2>Parte 1: Launch Template com IMDSv2 via AWS CLI</h2>
+<pre><code class="language-bash"># Variáveis
+REGION=&quot;us-east-1&quot;
+VPC_ID=$(aws ec2 describe-vpcs --filters &quot;Name=isDefault,Values=true&quot; \
+  --query &quot;Vpcs[0].VpcId&quot; --output text --region $REGION)
+SUBNET_ID=$(aws ec2 describe-subnets --filters &quot;Name=vpc-id,Values=$VPC_ID&quot; \
+  --query &quot;Subnets[0].SubnetId&quot; --output text --region $REGION)
+AMI_ID=$(aws ssm get-parameters --names /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64 \
+  --region $REGION --query &quot;Parameters[0].Value&quot; --output text)
+
+echo &quot;VPC: $VPC_ID | Subnet: $SUBNET_ID | AMI: $AMI_ID&quot;
+
+# Criar Security Group
+SG_ID=$(aws ec2 create-security-group \
+  --group-name &quot;lab-ec2-sg&quot; \
+  --description &quot;Lab EC2 SAA-C03&quot; \
+  --vpc-id $VPC_ID \
+  --region $REGION \
+  --query GroupId --output text)
+
+# Permitir SSH (somente para teste — restrinja ao seu IP em produção)
+MY_IP=$(curl -s https://checkip.amazonaws.com)
+aws ec2 authorize-security-group-ingress \
+  --group-id $SG_ID \
+  --protocol tcp --port 22 \
+  --cidr &quot;${MY_IP}/32&quot; \
+  --region $REGION
+
+# Key pair (se não tiver)
+aws ec2 create-key-pair \
+  --key-name lab-ec2-keypair \
+  --query KeyMaterial --output text \
+  --region $REGION &gt; ~/.ssh/lab-ec2-keypair.pem
+chmod 400 ~/.ssh/lab-ec2-keypair.pem
+
+# USER DATA script codificado em base64
+USER_DATA=$(cat &lt;&lt;&#39;EOF&#39; | base64
+#!/bin/bash
+yum update -y
+# Instalar SSM Agent (já vem no AL2023 mas garantir)
+yum install -y amazon-ssm-agent
+systemctl enable --now amazon-ssm-agent
+
+# Benchmark simples de disco
+yum install -y fio
+echo &quot;Lab EC2 ready&quot; &gt; /var/www/html/index.html
+yum install -y httpd
+systemctl enable --now httpd
+EOF
+)
+
+# Criar Launch Template com IMDSv2 obrigatório
+LT_ID=$(aws ec2 create-launch-template \
+  --launch-template-name &quot;lab-saa-c03-lt&quot; \
+  --version-description &quot;v1 - IMDSv2 required&quot; \
+  --launch-template-data &quot;{
+    \&quot;ImageId\&quot;: \&quot;$AMI_ID\&quot;,
+    \&quot;InstanceType\&quot;: \&quot;t3.micro\&quot;,
+    \&quot;KeyName\&quot;: \&quot;lab-ec2-keypair\&quot;,
+    \&quot;SecurityGroupIds\&quot;: [\&quot;$SG_ID\&quot;],
+    \&quot;MetadataOptions\&quot;: {
+      \&quot;HttpTokens\&quot;: \&quot;required\&quot;,
+      \&quot;HttpEndpoint\&quot;: \&quot;enabled\&quot;,
+      \&quot;HttpPutResponseHopLimit\&quot;: 1
+    },
+    \&quot;UserData\&quot;: \&quot;$USER_DATA\&quot;,
+    \&quot;TagSpecifications\&quot;: [{
+      \&quot;ResourceType\&quot;: \&quot;instance\&quot;,
+      \&quot;Tags\&quot;: [{\&quot;Key\&quot;: \&quot;Name\&quot;, \&quot;Value\&quot;: \&quot;lab-ec2-imdsv2\&quot;}]
+    }]
+  }&quot; \
+  --region $REGION \
+  --query LaunchTemplate.LaunchTemplateId --output text)
+
+echo &quot;Launch Template criado: $LT_ID&quot;</code></pre>
+<hr>
+<h2>Parte 2: Testar IMDSv2</h2>
+<pre><code class="language-bash"># Lançar instância a partir do Launch Template
+INSTANCE_ID=$(aws ec2 run-instances \
+  --launch-template LaunchTemplateId=$LT_ID,Version=&#39;$Latest&#39; \
+  --subnet-id $SUBNET_ID \
+  --associate-public-ip-address \
+  --region $REGION \
+  --query &quot;Instances[0].InstanceId&quot; --output text)
+
+echo &quot;Instância: $INSTANCE_ID&quot;
+aws ec2 wait instance-running --instance-ids $INSTANCE_ID --region $REGION
+
+PUBLIC_IP=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID \
+  --query &quot;Reservations[0].Instances[0].PublicIpAddress&quot; --output text --region $REGION)
+
+# SSH na instância e testar IMDSv2
+ssh -i ~/.ssh/lab-ec2-keypair.pem ec2-user@$PUBLIC_IP
+
+# Dentro da instância:
+# Tentar IMDSv1 (deve falhar com 401)
+curl -s http://169.254.169.254/latest/meta-data/instance-id
+# Esperado: 401 Unauthorized
+
+# IMDSv2 (correto)
+TOKEN=$(curl -s -X PUT &quot;http://169.254.169.254/latest/api/token&quot; \
+  -H &quot;X-aws-ec2-metadata-token-ttl-seconds: 300&quot;)
+curl -s -H &quot;X-aws-ec2-metadata-token: $TOKEN&quot; \
+  http://169.254.169.254/latest/meta-data/instance-id
+# Esperado: i-0xxxxxxxxxxxx</code></pre>
+<hr>
+<h2>Parte 3: Terraform — Placement Group + gp3 EBS</h2>
+<pre><code class="language-hcl"># main.tf
+
+terraform {
+  required_version = &quot;&gt;= 1.5&quot;
+  required_providers {
+    aws = {
+      source  = &quot;hashicorp/aws&quot;
+      version = &quot;~&gt; 5.0&quot;
+    }
+  }
+}
+
+provider &quot;aws&quot; {
+  region = &quot;us-east-1&quot;
+}
+
+data &quot;aws_vpc&quot; &quot;default&quot; {
+  default = true
+}
+
+data &quot;aws_subnets&quot; &quot;available&quot; {
+  filter {
+    name   = &quot;vpc-id&quot;
+    values = [data.aws_vpc.default.id]
+  }
+}
+
+data &quot;aws_ssm_parameter&quot; &quot;al2023&quot; {
+  name = &quot;/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64&quot;
+}
+
+# ──────────────────────────────────────────────────────
+# 1. Partition Placement Group (para Kafka/Cassandra)
+# ──────────────────────────────────────────────────────
+
+resource &quot;aws_placement_group&quot; &quot;partition_pg&quot; {
+  name            = &quot;lab-partition-pg&quot;
+  strategy        = &quot;partition&quot;
+  partition_count = 3 # 3 partições = 3 racks separados
+}
+
+# ──────────────────────────────────────────────────────
+# 2. Security Group
+# ──────────────────────────────────────────────────────
+
+resource &quot;aws_security_group&quot; &quot;lab_sg&quot; {
+  name        = &quot;lab-ec2-terraform-sg&quot;
+  description = &quot;Lab EC2 Terraform&quot;
+  vpc_id      = data.aws_vpc.default.id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = &quot;-1&quot;
+    cidr_blocks = [&quot;0.0.0.0/0&quot;]
+  }
+}
+
+# ──────────────────────────────────────────────────────
+# 3. Launch Template com gp3 e IMDSv2
+# ──────────────────────────────────────────────────────
+
+resource &quot;aws_launch_template&quot; &quot;lab_lt&quot; {
+  name_prefix            = &quot;lab-ec2-&quot;
+  image_id               = data.aws_ssm_parameter.al2023.value
+  instance_type          = &quot;t3.micro&quot;
+  vpc_security_group_ids = [aws_security_group.lab_sg.id]
+
+  # IMDSv2 obrigatório
+  metadata_options {
+    http_endpoint               = &quot;enabled&quot;
+    http_tokens                 = &quot;required&quot;
+    http_put_response_hop_limit = 1
+  }
+
+  # EBS gp3 como root volume
+  block_device_mappings {
+    device_name = &quot;/dev/xvda&quot;
+    ebs {
+      volume_size           = 20
+      volume_type           = &quot;gp3&quot;
+      iops                  = 3000 # baseline gp3
+      throughput            = 125  # MB/s baseline gp3
+      delete_on_termination = true
+      encrypted             = true
+    }
+  }
+
+  # EBS gp3 adicional para dados (IOPS customizados)
+  block_device_mappings {
+    device_name = &quot;/dev/xvdb&quot;
+    ebs {
+      volume_size           = 50
+      volume_type           = &quot;gp3&quot;
+      iops                  = 6000  # acima do baseline, sem custo extra por volume
+      throughput            = 250   # MB/s
+      delete_on_termination = true
+      encrypted             = true
+    }
+  }
+
+  user_data = base64encode(&lt;&lt;-EOF
+    #!/bin/bash
+    yum update -y
+    yum install -y fio lsblk
+
+    # Formatar e montar /dev/nvme1n1 (segundo volume EBS)
+    mkfs.xfs /dev/nvme1n1
+    mkdir -p /data
+    mount /dev/nvme1n1 /data
+    echo &quot;/dev/nvme1n1 /data xfs defaults 0 2&quot; &gt;&gt; /etc/fstab
+
+    # Benchmark IOPS no gp3 (reportar no CloudWatch Logs)
+    fio --name=iops_test --ioengine=libaio --rw=randread \
+      --bs=4k --numjobs=4 --size=1G --runtime=30 \
+      --directory=/data --output=/tmp/fio_results.txt
+    cat /tmp/fio_results.txt
+  EOF
+  )
+
+  tag_specifications {
+    resource_type = &quot;instance&quot;
+    tags = {
+      Name   = &quot;lab-ec2-gp3-pg&quot;
+      Module = &quot;03-Computacao-EC2&quot;
+    }
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# ──────────────────────────────────────────────────────
+# 4. Instâncias no Placement Group (simulando Kafka brokers)
+# ──────────────────────────────────────────────────────
+
+resource &quot;aws_instance&quot; &quot;kafka_broker&quot; {
+  count = 3
+
+  launch_template {
+    id      = aws_launch_template.lab_lt.id
+    version = &quot;$Latest&quot;
+  }
+
+  placement_group         = aws_placement_group.partition_pg.id
+  placement_partition_number = count.index + 1
+  subnet_id               = data.aws_subnets.available.ids[0]
+
+  tags = {
+    Name      = &quot;lab-kafka-broker-${count.index + 1}&quot;
+    Partition = count.index + 1
+  }
+}
+
+# ──────────────────────────────────────────────────────
+# Outputs
+# ──────────────────────────────────────────────────────
+
+output &quot;placement_group_name&quot; {
+  value = aws_placement_group.partition_pg.name
+}
+
+output &quot;broker_instance_ids&quot; {
+  value = aws_instance.kafka_broker[*].id
+}
+
+output &quot;launch_template_id&quot; {
+  value = aws_launch_template.lab_lt.id
+}</code></pre>
+<hr>
+<h2>Parte 4: Comparar gp2 vs gp3 via CLI</h2>
+<pre><code class="language-bash"># Criar volume gp2 (legado)
+VOL_GP2=$(aws ec2 create-volume \
+  --size 100 \
+  --volume-type gp2 \
+  --availability-zone us-east-1a \
+  --region us-east-1 \
+  --query VolumeId --output text)
+
+# Criar volume gp3 com mesmos IOPS que gp2 (3 IOPS/GB = 300 IOPS para 100GB)
+# mas com throughput configurável
+VOL_GP3=$(aws ec2 create-volume \
+  --size 100 \
+  --volume-type gp3 \
+  --iops 3000 \
+  --throughput 125 \
+  --availability-zone us-east-1a \
+  --region us-east-1 \
+  --query VolumeId --output text)
+
+echo &quot;gp2: $VOL_GP2 | gp3: $VOL_GP3&quot;
+
+# Verificar preços via describe
+aws ec2 describe-volumes \
+  --volume-ids $VOL_GP2 $VOL_GP3 \
+  --query &quot;Volumes[*].{ID:VolumeId,Type:VolumeType,IOPS:Iops,Throughput:Throughput}&quot; \
+  --output table --region us-east-1</code></pre>
+<hr>
+<h2>Cleanup</h2>
+<pre><code class="language-bash"># Terraform
+terraform destroy -auto-approve
+
+# CLI — terminar instâncias
+aws ec2 terminate-instances --instance-ids $INSTANCE_ID --region us-east-1
+
+# Deletar volumes
+aws ec2 delete-volume --volume-id $VOL_GP2 --region us-east-1
+aws ec2 delete-volume --volume-id $VOL_GP3 --region us-east-1
+
+# Deletar launch template
+aws ec2 delete-launch-template \
+  --launch-template-id $LT_ID --region us-east-1
+
+# Deletar key pair
+aws ec2 delete-key-pair \
+  --key-name lab-ec2-keypair --region us-east-1
+rm ~/.ssh/lab-ec2-keypair.pem
+
+# Deletar security group (após instâncias terminadas)
+aws ec2 delete-security-group --group-id $SG_ID --region us-east-1
+
+echo &quot;Cleanup concluído!&quot;</code></pre>
+<hr>
+<h2>Pontos de Revisão</h2>
+<ul><li>[ ] Qual a diferença entre <code>HttpPutResponseHopLimit: 1</code> vs <code>2</code> no IMDSv2?</li><li>[ ] Por que o volume gp3 pode ter mais IOPS que o gp2 para o mesmo tamanho?</li><li>[ ] No Partition Placement Group, instâncias de partições diferentes compartilham hardware?</li><li>[ ] Por que usar <code>launch_template</code> em vez de <code>launch_configuration</code> no Terraform?</li><li>[ ] O que acontece com os dados do volume gp3 quando <code>delete_on_termination = true</code>?</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./023-04-computacao-ec2-flashcards.html">Aula anterior</a>
+      <a href="./025-04-computacao-ec2-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

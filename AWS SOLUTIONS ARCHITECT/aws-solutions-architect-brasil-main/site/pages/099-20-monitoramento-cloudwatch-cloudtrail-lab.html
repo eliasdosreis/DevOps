@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Prático — Monitoramento: CloudWatch + CloudTrail + Config (Módulo 14) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#099-20-monitoramento-cloudwatch-cloudtrail-lab">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 20 - Monitoramento CloudWatch CloudTrail - 6 min - 20-Monitoramento-CloudWatch-CloudTrail/lab.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 20 - Monitoramento CloudWatch CloudTrail" loading="lazy">
+      <figcaption>Observabilidade e auditoria respondem: o que aconteceu, quando, por quem e com qual impacto.</figcaption>
+    </figure>
+    <h1>Lab Prático — Monitoramento: CloudWatch + CloudTrail + Config (Módulo 14)</h1>
+<blockquote><p><strong>Região:</strong> us-east-1 | <strong>Custo estimado:</strong> &lt; $0.50 (CloudWatch primeiros 10 alarmes gratuitos; CloudTrail primeiros 90 dias Event History gratuito)<br><strong>Pré-requisitos:</strong> AWS CLI configurado, Terraform &gt;= 1.5</p></blockquote>
+<hr>
+<h2>Objetivo</h2>
+<p>Implementar um stack completo de observabilidade: métricas customizadas, alarmes, CloudTrail com alertas para ações críticas, e uma regra de Config.</p>
+<hr>
+<h2>Parte 1 — CloudWatch: Métricas Customizadas e Alarmes</h2>
+<pre><code class="language-bash"># Publicar métrica customizada (simular app que conta pedidos)
+aws cloudwatch put-metric-data \
+  --namespace &quot;MinhaApp/Pedidos&quot; \
+  --metric-data &#39;[
+    {
+      &quot;MetricName&quot;: &quot;PedidosCriados&quot;,
+      &quot;Dimensions&quot;: [{&quot;Name&quot;: &quot;Ambiente&quot;, &quot;Value&quot;: &quot;producao&quot;}],
+      &quot;Value&quot;: 42,
+      &quot;Unit&quot;: &quot;Count&quot;
+    },
+    {
+      &quot;MetricName&quot;: &quot;TaxaErro&quot;,
+      &quot;Dimensions&quot;: [{&quot;Name&quot;: &quot;Ambiente&quot;, &quot;Value&quot;: &quot;producao&quot;}],
+      &quot;Value&quot;: 2.5,
+      &quot;Unit&quot;: &quot;Percent&quot;
+    }
+  ]&#39;
+
+# Verificar que a métrica foi registrada
+aws cloudwatch list-metrics \
+  --namespace &quot;MinhaApp/Pedidos&quot; \
+  --query &#39;Metrics[*].[MetricName, Dimensions[0].Value]&#39; \
+  --output table
+
+# Criar alarme para taxa de erro
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+# Criar tópico SNS para alertas
+SNS_ARN=$(aws sns create-topic \
+  --name lab-alertas-monitoramento \
+  --query &#39;TopicArn&#39; --output text)
+
+# Inscrever email no tópico (substituir com seu email)
+aws sns subscribe \
+  --topic-arn &quot;$SNS_ARN&quot; \
+  --protocol email \
+  --notification-endpoint &quot;seu-email@exemplo.com&quot;
+
+echo &quot;Confirme a inscrição no email antes de continuar.&quot;
+echo &quot;SNS Topic ARN: $SNS_ARN&quot;
+
+# Criar alarme de taxa de erro &gt; 5%
+aws cloudwatch put-metric-alarm \
+  --alarm-name &quot;lab-taxa-erro-alta&quot; \
+  --alarm-description &quot;Taxa de erro da aplicação acima de 5%&quot; \
+  --metric-name &quot;TaxaErro&quot; \
+  --namespace &quot;MinhaApp/Pedidos&quot; \
+  --dimensions Name=Ambiente,Value=producao \
+  --statistic Average \
+  --period 300 \
+  --evaluation-periods 2 \
+  --threshold 5.0 \
+  --comparison-operator GreaterThanThreshold \
+  --alarm-actions &quot;$SNS_ARN&quot; \
+  --ok-actions &quot;$SNS_ARN&quot; \
+  --treat-missing-data notBreaching
+
+# Verificar estado do alarme
+aws cloudwatch describe-alarms \
+  --alarm-names &quot;lab-taxa-erro-alta&quot; \
+  --query &#39;MetricAlarms[*].[AlarmName, StateValue, Threshold]&#39; \
+  --output table
+
+# Simular ALARME (publicar valor acima do threshold)
+aws cloudwatch put-metric-data \
+  --namespace &quot;MinhaApp/Pedidos&quot; \
+  --metric-data &#39;[
+    {
+      &quot;MetricName&quot;: &quot;TaxaErro&quot;,
+      &quot;Dimensions&quot;: [{&quot;Name&quot;: &quot;Ambiente&quot;, &quot;Value&quot;: &quot;producao&quot;}],
+      &quot;Value&quot;: 15.0,
+      &quot;Unit&quot;: &quot;Percent&quot;
+    }
+  ]&#39;
+
+echo &quot;Aguarde ~5 minutos e verifique o estado do alarme...&quot;</code></pre>
+<hr>
+<h2>Parte 2 — CloudWatch Logs: Filtros e Queries</h2>
+<pre><code class="language-bash"># Criar um Log Group de teste
+aws logs create-log-group --log-group-name &quot;/lab/aplicacao&quot;
+aws logs create-log-stream \
+  --log-group-name &quot;/lab/aplicacao&quot; \
+  --log-stream-name &quot;stream-teste&quot;
+
+# Injetar logs simulados
+TIMESTAMP=$(date +%s%3N)
+
+aws logs put-log-events \
+  --log-group-name &quot;/lab/aplicacao&quot; \
+  --log-stream-name &quot;stream-teste&quot; \
+  --log-events &quot;[
+    {\&quot;timestamp\&quot;: ${TIMESTAMP}, \&quot;message\&quot;: \&quot;INFO: Pedido 1001 criado com sucesso\&quot;},
+    {\&quot;timestamp\&quot;: $((TIMESTAMP + 1000)), \&quot;message\&quot;: \&quot;ERROR: Falha ao processar pedido 1002 - timeout\&quot;},
+    {\&quot;timestamp\&quot;: $((TIMESTAMP + 2000)), \&quot;message\&quot;: \&quot;INFO: Pedido 1003 criado com sucesso\&quot;},
+    {\&quot;timestamp\&quot;: $((TIMESTAMP + 3000)), \&quot;message\&quot;: \&quot;ERROR: Conexão recusada ao banco de dados\&quot;},
+    {\&quot;timestamp\&quot;: $((TIMESTAMP + 4000)), \&quot;message\&quot;: \&quot;WARN: Tempo de resposta anormal: 2500ms\&quot;}
+  ]&quot;
+
+# CloudWatch Logs Insights Query
+aws logs start-query \
+  --log-group-name &quot;/lab/aplicacao&quot; \
+  --start-time $(($(date +%s) - 3600)) \
+  --end-time $(date +%s) \
+  --query-string &#39;fields @timestamp, @message
+    | filter @message like /ERROR/
+    | sort @timestamp desc
+    | limit 20&#39;
+
+# Obter resultado (use o queryId retornado acima)
+# aws logs get-query-results --query-id &quot;QUERY_ID_AQUI&quot;
+
+# Criar Metric Filter (conta ERRORs por minuto)
+aws logs put-metric-filter \
+  --log-group-name &quot;/lab/aplicacao&quot; \
+  --filter-name &quot;ContarErros&quot; \
+  --filter-pattern &quot;ERROR&quot; \
+  --metric-transformations \
+    metricName=ErroCount,metricNamespace=MinhaApp/Logs,metricValue=1,defaultValue=0</code></pre>
+<hr>
+<h2>Parte 3 — CloudTrail: Auditoria com Alertas</h2>
+<pre><code class="language-bash"># Criar bucket para CloudTrail
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+CT_BUCKET=&quot;lab-cloudtrail-${ACCOUNT_ID}&quot;
+
+aws s3api create-bucket --bucket &quot;$CT_BUCKET&quot; --region us-east-1
+
+# Criar bucket policy (CloudTrail precisa de permissão para gravar)
+cat &gt; cloudtrail_bucket_policy.json &lt;&lt; EOF
+{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Sid&quot;: &quot;AWSCloudTrailAclCheck&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Principal&quot;: {&quot;Service&quot;: &quot;cloudtrail.amazonaws.com&quot;},
+      &quot;Action&quot;: &quot;s3:GetBucketAcl&quot;,
+      &quot;Resource&quot;: &quot;arn:aws:s3:::${CT_BUCKET}&quot;
+    },
+    {
+      &quot;Sid&quot;: &quot;AWSCloudTrailWrite&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Principal&quot;: {&quot;Service&quot;: &quot;cloudtrail.amazonaws.com&quot;},
+      &quot;Action&quot;: &quot;s3:PutObject&quot;,
+      &quot;Resource&quot;: &quot;arn:aws:s3:::${CT_BUCKET}/AWSLogs/${ACCOUNT_ID}/*&quot;,
+      &quot;Condition&quot;: {
+        &quot;StringEquals&quot;: {&quot;s3:x-amz-acl&quot;: &quot;bucket-owner-full-control&quot;}
+      }
+    }
+  ]
+}
+EOF
+
+aws s3api put-bucket-policy \
+  --bucket &quot;$CT_BUCKET&quot; \
+  --policy file://cloudtrail_bucket_policy.json
+
+# Criar trail
+aws cloudtrail create-trail \
+  --name &quot;lab-trail&quot; \
+  --s3-bucket-name &quot;$CT_BUCKET&quot; \
+  --include-global-service-events \
+  --is-multi-region-trail \
+  --enable-log-file-validation
+
+# Iniciar logging
+aws cloudtrail start-logging --name &quot;lab-trail&quot;
+
+# Verificar status
+aws cloudtrail get-trail-status --name &quot;lab-trail&quot; \
+  --query &#39;[IsLogging, LatestDeliveryTime]&#39;
+
+# Criar Metric Filter no CloudWatch para detectar DeleteBucket
+aws logs create-log-group --log-group-name &quot;CloudTrailLogs&quot;
+
+aws cloudtrail update-trail \
+  --name &quot;lab-trail&quot; \
+  --cloud-watch-logs-log-group-arn &quot;arn:aws:logs:us-east-1:${ACCOUNT_ID}:log-group:CloudTrailLogs:*&quot; \
+  --cloud-watch-logs-role-arn &quot;arn:aws:iam::${ACCOUNT_ID}:role/CloudTrail_CloudWatchLogs_Role&quot;
+
+# Criar filtro para ações de deleção de bucket
+aws logs put-metric-filter \
+  --log-group-name &quot;CloudTrailLogs&quot; \
+  --filter-name &quot;DeleteBucketFilter&quot; \
+  --filter-pattern &#39;{ ($.eventName = DeleteBucket) }&#39; \
+  --metric-transformations \
+    metricName=DeleteBucketCount,metricNamespace=CloudTrailMetrics,metricValue=1
+
+# Alarme para deleção de bucket
+aws cloudwatch put-metric-alarm \
+  --alarm-name &quot;lab-s3-bucket-deletado&quot; \
+  --metric-name &quot;DeleteBucketCount&quot; \
+  --namespace &quot;CloudTrailMetrics&quot; \
+  --statistic Sum \
+  --period 300 \
+  --threshold 1 \
+  --comparison-operator GreaterThanOrEqualToThreshold \
+  --evaluation-periods 1 \
+  --alarm-actions &quot;$SNS_ARN&quot; \
+  --treat-missing-data notBreaching</code></pre>
+<hr>
+<h2>Parte 4 — AWS Config: Regra de Conformidade</h2>
+<pre><code class="language-bash"># Ver regras Config já disponíveis
+aws configservice describe-config-rules \
+  --query &#39;ConfigRules[*].ConfigRuleName&#39; \
+  --output table
+
+# Criar regra: instâncias EC2 sem IP público
+aws configservice put-config-rule \
+  --config-rule &#39;{
+    &quot;ConfigRuleName&quot;: &quot;lab-ec2-no-public-ip&quot;,
+    &quot;Description&quot;: &quot;Verifica se instâncias EC2 têm IP público associado&quot;,
+    &quot;Source&quot;: {
+      &quot;Owner&quot;: &quot;AWS&quot;,
+      &quot;SourceIdentifier&quot;: &quot;EC2_INSTANCE_NO_PUBLIC_IP&quot;
+    },
+    &quot;Scope&quot;: {
+      &quot;ComplianceResourceTypes&quot;: [&quot;AWS::EC2::Instance&quot;]
+    }
+  }&#39;
+
+# Ver status de conformidade (pode levar alguns minutos)
+aws configservice describe-compliance-by-config-rule \
+  --config-rule-names &quot;lab-ec2-no-public-ip&quot; \
+  --query &#39;ComplianceByConfigRules[*].[ConfigRuleName,Compliance.ComplianceType]&#39; \
+  --output table
+
+# Ver recursos não conformes
+aws configservice get-compliance-details-by-config-rule \
+  --config-rule-name &quot;lab-ec2-no-public-ip&quot; \
+  --compliance-types &quot;NON_COMPLIANT&quot; \
+  --query &#39;EvaluationResults[*].EvaluationResultIdentifier.EvaluationResultQualifier.[ResourceType,ResourceId]&#39; \
+  --output table</code></pre>
+<hr>
+<h2>Limpeza</h2>
+<pre><code class="language-bash"># Parar CloudTrail
+aws cloudtrail stop-logging --name &quot;lab-trail&quot;
+aws cloudtrail delete-trail --name &quot;lab-trail&quot;
+
+# Remover bucket CloudTrail
+aws s3 rm &quot;s3://${CT_BUCKET}&quot; --recursive
+aws s3api delete-bucket --bucket &quot;$CT_BUCKET&quot;
+
+# Remover alarmes
+aws cloudwatch delete-alarms \
+  --alarm-names &quot;lab-taxa-erro-alta&quot; &quot;lab-s3-bucket-deletado&quot;
+
+# Remover SNS topic
+aws sns delete-topic --topic-arn &quot;$SNS_ARN&quot;
+
+# Remover log groups
+aws logs delete-log-group --log-group-name &quot;/lab/aplicacao&quot;
+aws logs delete-log-group --log-group-name &quot;CloudTrailLogs&quot;
+
+# Remover regra Config
+aws configservice delete-config-rule --config-rule-name &quot;lab-ec2-no-public-ip&quot;
+
+# Remover arquivo temporário
+rm -f cloudtrail_bucket_policy.json</code></pre>
+<hr>
+<h2>O Que Você Aprendeu</h2>
+<ul><li>Métricas customizadas no CloudWatch permitem monitorar KPIs de negócio (não só infra)</li><li>Alarmes podem ser compostos (Composite Alarms) para evitar falsos positivos</li><li>CloudWatch Logs Insights oferece SQL-like queries em logs sem ETL</li><li>CloudTrail registra TODAS as chamadas de API — fundamental para auditoria</li><li>Metric Filters transformam eventos de log em métricas (bridge entre logs e alarmes)</li><li>Config avalia conformidade continuamente — não apenas quando configurado</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./098-20-monitoramento-cloudwatch-cloudtrail-flashcards.html">Aula anterior</a>
+      <a href="./100-20-monitoramento-cloudwatch-cloudtrail-links.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

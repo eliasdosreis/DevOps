@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Casos de Uso Reais — Dados e Analytics (Módulo 12) - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#082-18-dados-e-analytics-casos-de-uso">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #3f8624">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 18 - Dados e Analytics - 5 min - 18-Dados-e-Analytics/casos-de-uso.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 18 - Dados e Analytics" loading="lazy">
+      <figcaption>Analytics e fluxo: coletar, transformar, consultar e entregar insight.</figcaption>
+    </figure>
+    <h1>Casos de Uso Reais — Dados e Analytics (Módulo 12)</h1>
+<h2>Caso 1 — Data Lake Centralizado para Empresa de Varejo</h2>
+<p><strong>Contexto:</strong> Rede de varejo com 500 lojas precisa centralizar dados de vendas (POS), estoque (ERP), comportamento web (clickstream) e dados externos (clima, feriados) para análise integrada.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Ingestão de múltiplas fontes com diferentes formatos e frequências</li><li>Isolamento de acesso por departamento (financeiro não vê dados de RH)</li><li>Query ad hoc pelos analistas sem provisionamento de clusters</li><li>Custo proporcional à quantidade de dados analisados</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">FONTES DE DADOS:
+POS (batch diário CSV) ──────────────────┐
+ERP (batch noturno JSON) ────────────────┤ → S3 Raw Zone
+Clickstream (real-time) → KDF ──────────┤    (dados brutos)
+APIs externas (Lambda agendada) ─────────┘
+                                         │
+                                    AWS Glue ETL
+                                    (job diário)
+                                         │
+                                    S3 Processed Zone
+                                    (Parquet + particionado)
+                                         │
+                              ┌──────────┴──────────┐
+                              │                     │
+                           Athena                Redshift Spectrum
+                        (query ad hoc)          (dashboards BI)
+                              │
+                     Lake Formation
+                     (controle acesso por coluna/tabela)
+                     
+Glue Data Catalog (metadados centralizados)
+CloudWatch → Glue Job alerts</code></pre>
+<p><strong>Estratégia de Particionamento S3:</strong></p>
+<pre><code class="language-">s3://data-lake/processed/vendas/
+  year=2024/
+    month=01/
+      day=15/
+        loja=SP001/
+          dados.parquet</code></pre>
+<p>→ Athena filtra apenas as partições necessárias (reduz custo de scan)</p>
+<p><strong>Controle de Acesso Lake Formation:</strong></p>
+<div class="table-wrap"><table><thead><tr><th>Perfil</th><th>Acesso</th></tr></thead><tbody><tr><td>Analista Financeiro</td><td>vendas.<em>, faturamento.</em> (sem PII)</td></tr><tr><td>Analista Marketing</td><td>clickstream.<em>, campanhas.</em></td></tr><tr><td>Data Scientist</td><td>Todas as tabelas (read-only)</td></tr><tr><td>ETL Service Role</td><td>Todas (leitura raw + escrita processed)</td></tr></tbody></table></div>
+<hr>
+<h2>Caso 2 — Pipeline de Análise de Fraudes em Tempo Real</h2>
+<p><strong>Contexto:</strong> Fintech precisa detectar transações fraudulentas em tempo real (&lt;1 segundo) durante o processamento de pagamentos.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Análise de cada transação em &lt; 500ms</li><li>Enriquecer transação com histórico do usuário</li><li>Score de risco via modelo ML</li><li>Armazenar todas as transações para treinamento futuro</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">App Pagamento
+     │ PUT record
+     ▼
+Kinesis Data Streams (shard por região)
+     │ Lambda trigger (batch 100, window 1s)
+     ▼
+Lambda (fraud-scorer)
+├── Lê histórico em DynamoDB (&lt; 5ms com DAX)
+├── Calcula features (freq, valor, geolocalização)
+├── Invoca SageMaker Endpoint (scoring ML)
+└── Se score &gt; 0.8: publica em SNS (alerta fraude)
+│
+├── Kinesis Data Firehose (todas transações)
+│        └── S3 (treino futuro + compliance)
+│
+└── DynamoDB (atualiza perfil usuário)
+
+SNS → Lambda → bloquear transação + notificar usuário
+CloudWatch → Alarm (latência &gt; 300ms ou error rate &gt; 1%)</code></pre>
+<p><strong>Kinesis vs SQS para este caso:</strong></p>
+<ul><li><strong>Kinesis:</strong> múltiplos consumidores do mesmo stream, ordenação por shard, replay de eventos</li><li><strong>SQS:</strong> 1 consumidor por mensagem, sem ordenação garantida (Standard), sem replay</li></ul>
+<hr>
+<h2>Caso 3 — Warehouse Analítico para Relatórios de Negócio</h2>
+<p><strong>Contexto:</strong> Empresa de logística precisa de dashboards de performance (entregas no prazo, custo por rota, produtividade motoristas) para diretoria, com dados atualizados a cada hora.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Relatórios complexos com JOINs entre múltiplas tabelas</li><li>Dados consolidados de 5 anos históricos</li><li>Atualização a cada 1 hora</li><li>QuickSight para visualização dos executivos</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">RDS Aurora (sistema operacional)
+     │ DMS (Change Data Capture - CDC)
+     ▼
+S3 (staging zone — Parquet)
+     │ Redshift COPY (a cada 1h)
+     ▼
+Redshift Cluster (Warehousing)
+├── Tabelas dimensão: dim_motorista, dim_rota, dim_veiculo
+├── Tabelas fato: fato_entrega, fato_custo
+└── Materialized Views (KPIs pré-calculados)
+     │
+     ▼
+Amazon QuickSight (dashboards diretoria)
+     │
+Redshift Spectrum → S3 (consultar dados históricos &gt;2 anos sem mover para Redshift)</code></pre>
+<p><strong>Distribuição Redshift:</strong></p>
+<div class="table-wrap"><table><thead><tr><th>Tabela</th><th>Distribution Key</th><th>Sort Key</th></tr></thead><tbody><tr><td>fato_entrega</td><td>motorista_id (JOIN freq)</td><td>data_entrega</td></tr><tr><td>fato_custo</td><td>rota_id</td><td>data</td></tr><tr><td>dim_motorista</td><td>ALL (pequena tabela)</td><td>—</td></tr></tbody></table></div>
+<hr>
+<h2>Caso 4 — Análise de Logs de Aplicação com Athena</h2>
+<p><strong>Contexto:</strong> Startup de SaaS precisa analisar logs de API (erros, latência, usuários ativos) sem manter um cluster Elasticsearch. Volume: 10 GB de logs/dia.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Análise de logs dos últimos 90 dias</li><li>Queries por data, endpoint, código de erro</li><li>Custo controlado (Elasticsearch cluster ~$500/mês)</li><li>Alertas de anomalias de erro</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">ALB Access Logs → S3 (logs-brutos/alb/year=../month=../day=..)
+CloudWatch Logs → Kinesis Data Firehose → Conversão Parquet → S3 (logs-processados/)
+Lambda → Custom Logs → CloudWatch → KDF → S3
+
+S3 (logs-processados, particionado por data)
+     │
+Glue Crawler (atualiza partições diariamente)
+     │
+Glue Data Catalog
+     │
+Athena (queries ad hoc)
+     │
+QuickSight (dashboards de erro rate, p99 latência)
+
+CloudWatch Logs Insights → Queries rápidas (últimas hrs)
+EventBridge → Lambda (alerta se error rate &gt; 5% em 5 min)</code></pre>
+<p><strong>Custo Athena vs Elasticsearch:</strong></p>
+<div class="table-wrap"><table><thead><tr><th>Item</th><th>Athena</th><th>Elasticsearch</th></tr></thead><tbody><tr><td>10GB scan/query</td><td>$0.05</td><td>—</td></tr><tr><td>100 queries/dia</td><td>~$5/dia</td><td>cluster fixo</td></tr><tr><td>Cluster base</td><td>$0</td><td>~$500/mês</td></tr><tr><td>Break-even</td><td>favorável se &lt; 100 queries/dia complexas</td><td>—</td></tr></tbody></table></div>
+<hr>
+<h2>Caso 5 — ETL em Tempo Real com Kinesis + Glue Streaming</h2>
+<p><strong>Contexto:</strong> Empresa de marketplaces recebe 50.000 eventos/minuto de cliques, impressões e conversões. Precisa ter dados disponíveis para análise de campanhas com atraso máximo de 5 minutos.</p>
+<p><strong>Requisitos:</strong></p>
+<ul><li>Latência de ingestão a análise: &lt; 5 minutos</li><li>Enriquecimento de evento (adicionar dados de produto do catálogo)</li><li>Deduplicação (mesmo evento pode chegar duplicado)</li><li>Custo controlado (sem cluster sempre ligado)</li></ul>
+<p><strong>Arquitetura:</strong></p>
+<pre><code class="language-">App (tracker JS/mobile)
+     │ POST /track
+     ▼
+API Gateway → Kinesis Data Streams (10 shards)
+                     │
+              Glue Streaming ETL
+              ├── Lê do KDS a cada 60s
+              ├── Enriquece com catálogo (DynamoDB lookup)
+              ├── Deduplica por event_id (janela 5min)
+              ├── Converte para Parquet
+              └── Escreve em S3 (particionado por hora)
+                     │
+              S3 (processed/events/)
+                     │
+              Athena (query por campanha/produto — até 5min atrás)
+              QuickSight (dashboard tempo quase-real)
+              
+EventBridge → Glue Job (trigger a cada 5min como alternativa simpler)</code></pre>
+<p><strong>Glue Streaming vs Kinesis Data Analytics (Flink):</strong></p>
+<div class="table-wrap"><table><thead><tr><th>Critério</th><th>Glue Streaming</th><th>KDA / Flink</th></tr></thead><tbody><tr><td>Complexidade setup</td><td>Baixa</td><td>Alta</td></tr><tr><td>Latência mínima</td><td>~60s</td><td>Ms–segundos</td></tr><tr><td>Janelas de tempo</td><td>Básico</td><td>Avançado (sliding, tumbling)</td></tr><tr><td>Custo</td><td>DPU/hora</td><td>KPU/hora</td></tr><tr><td>Quando usar</td><td>ETL near-real-time simples</td><td>CEP, anomaly detection real-time</td></tr></tbody></table></div>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./081-17-serverless-lambda-api-gateway-readme.html">Aula anterior</a>
+      <a href="./083-18-dados-e-analytics-cheatsheet.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Módulo 13 — Machine Learning e Inteligência Artificial - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#095-19-machine-learning-e-ia-readme">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 19 - Machine Learning e IA - 6 min - 19-Machine-Learning-e-IA/README.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 19 - Machine Learning e IA" loading="lazy">
+      <figcaption>IA no Associate costuma ser reconhecer o servico gerenciado certo para o caso.</figcaption>
+    </figure>
+    <h1>Módulo 13 — Machine Learning e Inteligência Artificial</h1>
+<h2>Visão Geral dos Serviços AWS de ML/IA</h2>
+<p>A AWS oferece 3 camadas de serviços de ML:</p>
+<pre><code class="language-">Camada 1 — AI Services (prontos para uso, sem expertise ML)
+  Rekognition, Comprehend, Polly, Transcribe, Translate, Lex, Textract,
+  Forecast, Personalize, Kendra, CodeWhisperer, Bedrock
+
+Camada 2 — ML Services (plataforma gerenciada)
+  Amazon SageMaker (treinar, otimizar, deployar modelos customizados)
+
+Camada 3 — ML Frameworks + Infrastructure
+  EC2 (GPU instances p3/p4), EKS + Karpenter, Deep Learning AMIs</code></pre>
+<hr>
+<h2>Amazon SageMaker</h2>
+<p>Plataforma completa de ML gerenciada:</p>
+<h3>Fluxo ML com SageMaker</h3>
+<pre><code class="language-">Dados (S3) → SageMaker Studio (IDE web)
+                ├── Data Wrangler: preparação visual de dados
+                ├── Experiments: rastreamento de experimentos
+                ├── Training Job: treina modelo em instâncias gerenciadas
+                │     ├── Built-in algorithms (XGBoost, Linear Learner, etc.)
+                │     ├── Custom container (seu código Docker)
+                │     └── Spot instances (até 90% desconto, Managed Spot Training)
+                ├── Hyperparameter Tuning: otimiza hiperparâmetros automaticamente
+                ├── Model Registry: versiona e governa modelos
+                └── Deployment:
+                      ├── Real-time Endpoint (latência ms, escala automática)
+                      ├── Serverless Inference (sem manter instância ativa)
+                      ├── Batch Transform (inferência em lote sobre S3)
+                      └── Async Inference (jobs longos, resultado em S3)</code></pre>
+<h3>SageMaker — Recursos Importantes</h3>
+<div class="table-wrap"><table><thead><tr><th>Feature</th><th>Descrição</th></tr></thead><tbody><tr><td><strong>SageMaker Studio</strong></td><td>IDE Jupyter-based para todo o ciclo ML</td></tr><tr><td><strong>Autopilot</strong></td><td>AutoML — encontra o melhor modelo automaticamente</td></tr><tr><td><strong>Canvas</strong></td><td>AutoML com interface no-code (sem código Python)</td></tr><tr><td><strong>Ground Truth</strong></td><td>Labeling de dados com humanos (workforce pública + privada)</td></tr><tr><td><strong>Clarify</strong></td><td>Detecta bias nos dados e explainability dos modelos</td></tr><tr><td><strong>Feature Store</strong></td><td>Banco de features compartilhado entre treinamento e inferência</td></tr><tr><td><strong>Pipelines</strong></td><td>CI/CD para ML (MLOps)</td></tr><tr><td><strong>JumpStart</strong></td><td>Modelos pré-treinados e soluções ML prontas</td></tr></tbody></table></div>
+<hr>
+<h2>Amazon Rekognition</h2>
+<p>Visão computacional gerenciada (imagens e vídeos):</p>
+<ul><li><strong>Object/Scene Detection</strong>: identifica objetos, atividades, cenas</li><li><strong>Facial Analysis</strong>: detecção, análise de atributos, comparação, reconhecimento</li><li><strong>Text Detection</strong>: OCR em imagens (placas, documentos)</li><li><strong>Content Moderation</strong>: detecta conteúdo inapropriado (violência, nudez)</li><li><strong>PPE Detection</strong>: Equipamento de Proteção Individual (capacete, máscara)</li><li><strong>Celebrity Recognition</strong>: identifica famosos em imagens</li><li><strong>Video Analysis</strong>: análise de streaming de vídeo em tempo real via Kinesis Video Streams</li></ul>
+<hr>
+<h2>Amazon Comprehend</h2>
+<p>NLP (Natural Language Processing) gerenciado:</p>
+<ul><li><strong>Entidade/Sentiment Analysis</strong>: detecta entidades (pessoas, locais, organizações) e sentimento (positivo, negativo, neutro, misto)</li><li><strong>Topic Modeling</strong>: descobre tópicos em coleções de documentos</li><li><strong>Key Phrase Extraction</strong>: frases-chave do texto</li><li><strong>Language Detection</strong>: identifica idioma do texto</li><li><strong>PII Detection/Redaction</strong>: detecta e redige Informações Pessoalmente Identificáveis (CPF, email, telefone)</li><li><strong>Custom Models</strong>: treina classificadores e entity recognizers customizados</li></ul>
+<hr>
+<h2>Amazon Polly</h2>
+<p>Text-to-Speech (TTS):</p>
+<ul><li>Converte texto em fala natural em múltiplos idiomas e vozes</li><li><strong>Neural TTS (NTTS)</strong>: vozes mais naturais e expressivas</li><li><strong>SSML</strong> (Speech Synthesis Markup Language): controle fino de pronúncia, pausas, ênfase</li><li><strong>Speech Marks</strong>: metadata com timestamps de palavras/frases (útil para karaokê ou legendas sincronizadas)</li><li><strong>Lexicon</strong>: especializa pronúncia de palavras específicas (siglas, termos técnicos)</li></ul>
+<hr>
+<h2>Amazon Transcribe</h2>
+<p>Speech-to-Text (STT):</p>
+<ul><li>Média de acurácia com modelos customizados por domínio</li><li><strong>Custom Vocabulary</strong>: adiciona termos específicos (nomes de produtos, jargões)</li><li><strong>Custom Language Model</strong>: modelo de linguagem customizado para domínio específico</li><li><strong>Speaker Diarization</strong>: identifica quem está falando em cada trecho</li><li><strong>Medical Transcribe</strong>: vocabulário médico especializado (HIPAA eligible)</li><li><strong>Call Analytics</strong>: análise de chamadas de call center (sentimento, silêncios, interrupções)</li><li><strong>Streaming</strong>: transcrição em tempo real</li></ul>
+<hr>
+<h2>Amazon Translate</h2>
+<p>Tradução automática neural:</p>
+<ul><li>Tradução de alta qualidade em 75+ idiomas</li><li><strong>Custom Terminology</strong>: glossário de termos que não devem ser traduzidos ou têm tradução específica</li><li><strong>Active Custom Translation</strong>: adapta o modelo com exemplos de tradução fornecidos</li><li><strong>Parallel Data</strong>: treina com pares de frases originais e traduzidas</li><li>Integra com S3 para batch translation de documentos</li></ul>
+<hr>
+<h2>Amazon Lex</h2>
+<p>Chatbots conversacionais (mesmo motor do Alexa):</p>
+<ul><li><strong>Intents</strong>: ações que o usuário quer realizar (ex: <code>BookFlight</code>, <code>CheckBalance</code>)</li><li><strong>Slots</strong>: variáveis a coletar (ex: <code>data_viagem</code>, <code>destino</code>)</li><li><strong>Utterances</strong>: frases que disparam o intent</li><li><strong>Fulfillment</strong>: Lambda processa o intent e retorna resposta</li><li><strong>Channels</strong>: integra com Facebook, Slack, Twitch, Kik</li><li><strong>Amazon Connect</strong>: Lex pode ser o bot da central de atendimento</li></ul>
+<hr>
+<h2>Amazon Bedrock</h2>
+<p>Foundation Models (FM) via API — IA Generativa:</p>
+<ul><li>Modelos de: Anthropic (Claude), Amazon (Titan), Stability AI, Cohere, AI21, Meta (Llama)</li><li><strong>Serverless</strong>: sem infraestrutura para gerenciar; paga por token</li><li><strong>RAG com Knowledge Bases</strong>: gerencia embeddings (OpenSearch Serverless) + retrieval automaticamente</li><li><strong>Agents</strong>: define ações e Lambda functions que o modelo pode executar autonomamente</li><li><strong>Fine-tuning</strong>: adapta modelos base com seus próprios dados (S3)</li><li><strong>Model Evaluation</strong>: compara outputs de diferentes modelos com métricas automáticas e humanas</li><li><strong>Guardrails</strong>: aplica filtros de conteúdo, PII redaction, topic denial às respostas dos modelos</li></ul>
+<hr>
+<h2>Outros Serviços AI</h2>
+<div class="table-wrap"><table><thead><tr><th>Serviço</th><th>Função</th></tr></thead><tbody><tr><td><strong>Amazon Textract</strong></td><td>OCR avançado: extrai texto, tabelas e formulários de documentos PDF/imagens</td></tr><tr><td><strong>Amazon Kendra</strong></td><td>Enterprise search com NLP (encontra respostas em documentos corporativos)</td></tr><tr><td><strong>Amazon Forecast</strong></td><td>Previsão de séries temporais (demanda, vendas, uso de recursos)</td></tr><tr><td><strong>Amazon Personalize</strong></td><td>Recomendações personalizadas (como Netflix/Amazon.com) — sem ML expertise</td></tr><tr><td><strong>Amazon Fraud Detector</strong></td><td>Detecção de fraude (compras, contas falsas) com ML</td></tr><tr><td><strong>Amazon Lookout for Metrics</strong></td><td>Detecta anomalias em métricas de negócio automaticamente</td></tr><tr><td><strong>Amazon CodeWhisperer</strong></td><td>Geração de código por IA no IDE (baseado em Bedrock)</td></tr></tbody></table></div>
+<hr>
+<h2>Dicas de Prova</h2>
+<ul><li><strong>Rekognition</strong>: visão (imagem/vídeo) → Transcribe: fala→texto → Polly: texto→fala</li><li><strong>Comprehend</strong>: análise de texto (sentimento, entidades) → diferente de Rekognition (imagens)</li><li><strong>Kendra</strong>: enterprise search (busca respondendo perguntas em documentos) → diferente de OpenSearch (analytics)</li><li><strong>Forecast vs Personalize</strong>: Forecast = previsão de séries temporais (demanda, inventário); Personalize = recomendações user-item</li><li>SageMaker Ground Truth: labeling humano → <strong>Rekognition Custom Labels</strong> também treina com imagens labeleadas (mais simples)</li><li><strong>Textract</strong> reconhece <strong>tabelas e formulários</strong> (não só texto simples como OCR tradicional)</li><li>Bedrock: <strong>Foundation Models via API</strong> sem treinar modelo zero — diferente de SageMaker (treinar modelo customizado)</li><li>SageMaker Managed Spot Training: usa Spot instances para training jobs → até 90% redução de custo; checkpointing necessário para retomar após interrupção</li><li><strong>Comprehend PII</strong>: detecta/redige dados sensíveis em texto (ex: conformidade LGPD/GDPR)</li><li><strong>Amazon Connect + Lex</strong>: call center automatizado; sem infra de telefonia para gerenciar</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./094-19-machine-learning-e-ia-questoes.html">Aula anterior</a>
+      <a href="./096-20-monitoramento-cloudwatch-cloudtrail-casos-de-uso.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>deploy - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#004-github-workflows-deploy">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #ff9900">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Curso e materiais gerais - 1 min - .github/workflows/deploy.yml</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Curso e materiais gerais" loading="lazy">
+      <figcaption>Estrategia de prova: leia o cenario, encontre os requisitos e elimine distratores.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Caminho original:</strong> <code>.github/workflows/deploy.yml</code></p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise variaveis, custos possiveis, permissoes e pontos de rollback.</p>
+    <pre><code>name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Publish static site to gh-pages
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name &quot;github-actions[bot]&quot;
+          git config user.email &quot;41898282+github-actions[bot]@users.noreply.github.com&quot;
+
+          TMP_DIR=&quot;$(mktemp -d)&quot;
+          rsync -av --delete --exclude &#39;.git&#39; --exclude &#39;.github&#39; ./ &quot;$TMP_DIR/&quot;
+
+          git switch --orphan gh-pages
+          git rm -rf . &gt;/dev/null 2&gt;&amp;1 || true
+
+          cp -R &quot;$TMP_DIR&quot;/. .
+          touch .nojekyll
+
+          git add -A
+          git commit -m &quot;deploy: $(date -u +&#39;%Y-%m-%dT%H:%M:%SZ&#39;)&quot; || {
+            echo &quot;No changes to publish&quot;
+            exit 0
+          }
+
+          git push --force origin gh-pages</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./003-github-issue-template-pedagogy-suggestion.html">Aula anterior</a>
+      <a href="./005-01-introducao-saa-c03-casos-de-uso.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

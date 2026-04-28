@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#013-modulo-03-rede-01-service-clusterip">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #6f42c1">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 03 - rede - 4 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1520869562399-e772f042f422?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 03 - rede" loading="lazy">
+      <figcaption>Rede no Kubernetes conecta pods, services, NodePort e Ingress.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Cria um Service do tipo ClusterIP. Ele fornece uma rede 
+# interna fixa (Nome DNS + IP) para que outros Pods achem sua 
+# aplica��o, sem a necessidade de acessar os Pods ef�meros diretamente.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Imagine um Call Center de Suporte B�sico.
+# Os atendentes v�m e v�o todos os dias (Pods nascendo e morrendo). 
+# Voc� como cliente, n�o decora o celular pessoal (IP do Pod) de Jo�o nem de Maria.
+# Voc� liga para o n�mero geral (o Service da Empresa) e pede &quot;Quero o suporte!&quot;.
+# O Service � o PABX/Ramal. Ele tem um n�mero fixo e eterno. Toda vez que voc� liga, 
+# ele repassa a sua liga��o de forma balanceada para qualquer atendente que estiver online 
+# respirando na hora (Label Selector + iptables vivo do Kubernetes).
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# O Service ClusterIP exp�e o servi�o em um IP interno est�vel do rede K8s. 
+# Esse tipo torna o servi�o ating�vel APENAS por dentro do cluster. � o padr�o oficial.
+# O `kube-proxy` rodando em cada n� aticamente reescreve pacotes iptables/IPVS 
+# para desviar o tr�fego do VIP (Virtual IP do servi�o) para os endpoints (Pods).
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: meu-backend-fixo        # O &quot;Ramal PABX&quot; ganhar� automaticamente o DNS de &quot;meu-backend-fixo&quot;
+  namespace: meu-primeiro-projeto
+spec:
+  type: ClusterIP               # (Padr�o) A rede � isolada para funcionar apenas entre os componentes do K8s
+  
+  # COMO O SERVI�O ACHA OS ATENDENTES (PODS)? 
+  # A M�gica de Selectors que estudamos no M�dulo 1!
+  selector:
+    app: api-interna            # Ele grampear� automaticamente QUALQUER Pod que tenha ESSA label exata.
+  
+  ports:
+    - name: http                # Um nome descritivo amig�vel para a porta
+      port: 80                  # Qual porta o &quot;Service PABX&quot; atende (Porta p�blica virtual)
+      targetPort: 8080          # Para qual porta C do Pod (Container real) ele encaminhar� a rede?
+      protocol: TCP             # TCP, UDP, SCTP
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Aplique o Arquivo:
+#    kubectl apply -f 01-service-clusterip.yaml
+#
+# 2. Inspecione o servi�o criado:
+#    kubectl get service meu-backend-fixo -n meu-primeiro-projeto
+#    (Repare que ele ganhou um IP Fixo, algo como 10.96.x.x)
+#
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# O Servi�o n�o est� mandando requisi��es? Ele n�o &quot;achou&quot; seus Pods?
+# Este � o comando DEFINITIVO. Sempre olhe os ENDPOINTS do Service:
+#    kubectl get endpoints meu-backend-fixo -n meu-primeiro-projeto
+# Se a lista de &#39;ENDPOINTS&#39; do terminal voltar &lt;none&gt;, significa que seu &quot;selector&quot; do  
+# Service n�o deu &quot;Match&quot; nas labels de nenhum Pod do cluster. 
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# No K8s o CoreDNS � divino. Se amanh� o desenvolvedor Junior destruir seu banco 
+# de dados MySQL e criar outro novamente, o IP Virtual do Service novo VAI mudar. 
+# Por isso Seniors numca amarram aplica��es nos IPs de Services!. O CoreDNS crava o nome! 
+# Basta seu Pod-Spring/Node acessar HTTP em `http://meu-backend-fixo`. A engine DNS do 
+# k8s resolve pro IP automaticamente. Nada de IPs hardcoded nas configs de prod.
+# Al�m disso, o Kube-Proxy n�o � um proxy real moderno (n�o fica entre cliente/servidor segurando payload), 
+# ele literalmente escreve regras diretas de iptables no Kernel Linux do host! R�pido sem lat�ncia.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Se n�s temos um Service apontado para um Deployment com 5 R�plicas de Pods
+# e o algoritimo de Load Balancer Round-Robin bater na porta do Service. � o Service quem
+# roteia do jeito L7 Nginx balanceando?&quot;
+# Resposta Esperada: &quot;N�o. O Service nativo em modo &#39;iptables&#39; na verdade n�o � um 
+# componente ativo rodando software em um load balancer inteligente, ele n�o pesa request.
+# Ele delega uma sele��o rand�mica n�o-inteligente nas regras do Netfilter do kernel Linux. Se quiser LB 
+# inteligente nivel L7 (Http Path, Cookies), precisa usar Ingress ou ServiceMesh (Istio/Linkerd).&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./012-modulo-02-workloads-06-cronjob.html">Aula anterior</a>
+      <a href="./014-modulo-03-rede-02-pod-com-service.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

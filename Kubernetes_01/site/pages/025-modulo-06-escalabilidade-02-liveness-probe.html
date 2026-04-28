@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>============================================================ - K8S-01 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#025-modulo-06-escalabilidade-02-liveness-probe">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #0f766e">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 06 - escalabilidade - 5 min - aula HTML</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 06 - escalabilidade" loading="lazy">
+      <figcaption>Escalabilidade e probes ajudam o cluster a reagir com saude e previsibilidade.</figcaption>
+    </figure>
+    <div class="code-study">
+    <p><strong>Tipo:</strong> YAML</p>
+    <p><strong>Arquivo convertido:</strong> este conteudo foi transformado em uma pagina HTML do curso.</p>
+    <p>Leia este arquivo como evidencia pratica do laboratorio. Primeiro entenda o objetivo, depois revise namespace, selectors, portas, recursos, permissoes, persistencia e pontos de rollback.</p>
+    <pre><code># ============================================================
+# O QUE ESTE ARQUIVO FAZ:
+# Define a Liveness Probe (&quot;Sonda de Vivacidade&quot;). Ensina o  
+# Kubernetes como saber investigar que a aplica��o travou.
+# ============================================================
+
+# 1. ANALOGIA DO DIA A DIA
+# Voc� � o gestor de uma loja (O kubernetes). Voc� contratou um Vigia (Container) 
+# pra trabalhar de madrugada no pr�dio e ele est� l� na guarita.
+# Voc� manda mensagem de Whatsapp (Probe) para o Vigia repetidamente: &quot;T� acordado?&quot;
+# Vigia reponde r�pido: &quot;T�&quot;. (Http 200). �timo!
+#
+# Mas as 03:00 da manh�... o Voc� pergunta &quot;Ta Acordado?&quot;. N�o responde... Voc�
+# pergunta de novo na regra... n�o responde. 
+# A Liveness Probe conclui: &quot;O Vigia dormiu no ponto (App travado em Deadlock ou infinito)&quot;.
+# O Kubernetes age: Ele DEMITE o Vigia (Mata o Container) e o K8s CONTRATA 
+# OUTRO R�PIDO para por na guarita (O Pod sofre o Restart autom�tizado)!
+
+# 2. O QUE � (defini��o t�cnica Senior)
+# LivenessProbe indica se o conteiner est� executando ou morto clinicamente por Deadlocks.
+# Se a sonda falhar N vezes concecutivas, o kubelet &quot;MATA&quot; for�adamente o cont�iner
+# e ele se submeter� a Restarts infinitos na Pol�tica default. A probe � ativada em Http, TCP ou ExecBash.
+
+# ============================================================
+# 3. ARQUIVO YAML COMENTADO
+# ============================================================
+apiVersion: v1
+kind: Pod
+metadata:
+  name: container-zumbi-vigiado
+  namespace: meu-primeiro-projeto
+spec:
+  containers:
+    - name: servidor-lento
+      # Um app feito pra falhar propositalmente: nginx e depois apago a pasta dele!
+      image: nginx:latest
+      
+      # M�GICA: A SONDA DE VIVACIDADE (&quot;O ESTOU ACORDADO?&quot;)
+      livenessProbe:
+        # A forma mais comum: Fa�a um HTTP GET numa rota espec�fica 
+        httpGet:
+          path: /index.html # A rota deve ser simples sem carregar banco pesado!
+          port: 80
+          
+        initialDelaySeconds: 5  # &quot;Espera 5 segundos logo que o cara pisar na loja pra perguntar se ele ta bem, senao vai matar ele antes de trabalhar&quot;
+        periodSeconds: 10       # &quot;De 10 em 10 Segundos pergunte para ele se ta acordado&quot;
+        failureThreshold: 3     # QUANTAS VEZES seguidas ele tem que n�o reponder para VOC� O MATAR (Restart)? (Apenas 3).
+
+# ============================================================
+# 4. COMANDOS PASSO A PASSO
+# ============================================================
+# 1. Injete a sonda e o seu guardi�o no cluster:
+#    kubectl apply -f 02-liveness-probe.yaml
+#
+# 2. ASSISTA de Perto agora em um MODO OBSERVA��O.
+#    Abra outro terminal e fique de olho:
+#    kubectl get pods container-zumbi-vigiado -n meu-primeiro-projeto -w
+#    (Ele vai nascer em `Running` certinho. At� a gente envenenar ele).
+#
+# 3. ENVENENE O VIGIA (Hackie seu app exclu�ndo o arquivo de saude!)
+#    `kubectl exec -it container-zumbi-vigiado -n meu-primeiro-projeto -- rm -f /usr/share/nginx/html/index.html`
+#
+# 4. Magicamente perceba o K8s operando. Fique olhando no monitor de pods que deixamos 
+#    aberto do passo 2 por cerca de 30 segundos! A contagem da coluna de &#39;RESTARTS&#39; vai aumentar sozinha &quot;1, 2...&quot;. 
+
+# ============================================================
+# 5. VERIFICA��O E TROUBLESHOOTING
+# ============================================================
+# Quando a Probe mata e Reinicia a sua API. O K8S GERA UM EVENTO CLAR�SSIMO DISSO.
+# Ao tomar um Restart falso de Bug, rode: `kubectl describe pod &lt;seu-pod&gt;` e des�a  
+# at� a parte &quot;Events&quot;. L� embaixo haver� um Warning gigante:
+# &quot;Liveness probe failed: HTTP probe failed with statuscode: 404&quot; e em seguida:
+# &quot;Killing container... container will be restarted&quot;. � f�cil o debug log.
+
+# ============================================================
+# 6. CONCEITO SENIOR (o &quot;porqu�&quot; profundo)
+# ============================================================
+# &quot;Elias, mas eu vi Junior fazer uma /health_check gigante que entra numa procuro e select do Postgres Banco de Dados com Left Join pesado pra retornar Status Ok na sonda Liveness. Certo?&quot;
+# Absolutamente Anti-Pattern Desastroso!!!
+# Sua Health-Check (A Rota /) para um Liveness SERVE APENAS para provar que a thread/web do sistema n�o morreu 
+# em deadlock infinito (Ex: Tomcat vivo). Se voc� atrelar o Liveness ao Banco de Dados... no dia que a AWS der 
+# pique de lat�ncia no Servidor F�sico do Banco remoto.. o Kubernetes receber� o &quot;Timeout&quot; do banco nas liveness da 
+# camada de App... E O K8S MATAR� TODOS OS 400 DEPLOYMENTS QUE VOCE TINHA S� POR CULPA DA INTERNET LENTA DA AWS.
+# Gerando Caos. Liveness Probe DEVE ser cego ao ecosistema externo, focando s� se o Host Interno ta vivo.
+
+# ============================================================
+# 7. PERGUNTA DE ENTREVISTA
+# ============================================================
+# Pergunta: &quot;Sua aplica��o Java SpingBoot foi modernizada. Ela demora gigantescos  
+# 2 minutos iniciais pra expandir na mem�ria antes de abrir a porta 8080.
+# O Desenvolvedor subiu a LivelinessProbe padr�o checando a 8080 de 10 em 10 segundos. Oque ocorrer�?&quot;
+# Resposta Esperada: &quot;A Aplica��o Java JAMAIS subir� e sofrer� Restart em looping infinito. 
+# Como a sonda est� pingando e n�o encontrando a 8080 acordada (pq ta no boot), o `failureThreshold: 3`
+# de 10 seg bate em 30segs... e mata o Java antes que que chegue ao fim do tunel dos 2 Mins. A solu��o seria 
+# alterar o `initialDelaySeconds: 120`. MAS o jeito moderno S�nior (depois do K8S 1.16) � n�o sujar o  
+# liveness com prazos el�stico.. Devemos usar a terceira probe: &#39;StartupProbe&#39;.&quot;</code></pre>
+  </div>
+    <nav class="page-nav">
+      <a href="./024-modulo-06-escalabilidade-01-resource-limits.html">Aula anterior</a>
+      <a href="./026-modulo-06-escalabilidade-03-readiness-probe.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

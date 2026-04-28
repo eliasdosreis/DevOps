@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questões — Módulo 28: Labs Práticos - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#157-28-labs-praticos-questoes">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #d13212">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 28 - Labs Praticos - 11 min - 28-Labs-Praticos/questoes.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 28 - Labs Praticos" loading="lazy">
+      <figcaption>Labs end-to-end geram evidencia para portifolio, entrevista e troubleshooting.</figcaption>
+    </figure>
+    <h1>Questões — Módulo 28: Labs Práticos</h1>
+<blockquote><p><strong>Domínio SAA-C03</strong>: Verificação Hands-on<br><strong>Dificuldade</strong>: Prática</p></blockquote>
+<hr>
+<p><strong>1.</strong> Após criar uma VPC com o comando <code>aws ec2 create-vpc --cidr-block 10.0.0.0/16</code>, você tenta lançar uma instância EC2 na nova VPC mas não consegue acessar a internet. Qual é o passo que provavelmente está faltando?</p>
+<ul><li>A) Configurar o DNS da VPC</li><li>B) Criar um Internet Gateway e associá-lo à VPC, e adicionar rota 0.0.0.0/0 na route table apontando para o IGW</li><li>C) Habilitar IPv6 na VPC</li><li>D) Criar um NAT Gateway antes de criar instâncias</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Uma VPC recém-criada não tem IGW. Para acesso à internet: (1) criar IGW, (2) attach ao VPC, (3) criar ou modificar route table adicionando rota 0.0.0.0/0 → IGW, (4) associar route table com a subnet pública, (5) a instância precisa de IP público (auto-assign ou EIP). Todos esses passos são necessários.</p></details>
+<hr>
+<p><strong>2.</strong> Você criou uma função Lambda que tenta conectar a um RDS em uma subnet privada, mas recebe timeout. O Lambda está na mesma VPC. Qual é o primeiro item a verificar?</p>
+<ul><li>A) O timeout configurado na Lambda (muito baixo)</li><li>B) Se o Security Group do RDS permite tráfego da porta 3306 proveniente do Security Group da Lambda</li><li>C) Se a Lambda tem memória suficiente</li><li>D) Se o RDS está em Multi-AZ</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Para Lambda em VPC acessar RDS: o SG do RDS precisa ter uma inbound rule permitindo a porta do banco (MySQL: 3306, PostgreSQL: 5432) proveniente do SG da Lambda (referenciado pelo Security Group ID, não por IP). Verificar SGs é sempre o primeiro passo em problemas de conectividade.</p></details>
+<hr>
+<p><strong>3.</strong> Você executou <code>terraform apply</code> e criou recursos AWS. Ao tentar destruí-los com <code>terraform destroy</code>, você recebe um erro informando que o S3 bucket não pode ser deletado porque não está vazio. Qual é a solução correta no Terraform?</p>
+<ul><li>A) Deletar os objetos manualmente no console S3 antes de rodar <code>terraform destroy</code></li><li>B) Adicionar <code>force_destroy = true</code> no recurso <code>aws_s3_bucket</code> e re-aplicar antes de destruir</li><li>C) Usar <code>terraform state rm aws_s3_bucket.nome</code> para remover do state</li><li>D) Criar uma lifecycle rule no bucket para expirar os objetos</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — <code>force_destroy = true</code> no resource <code>aws_s3_bucket</code> permite que o Terraform delete o bucket mesmo com objetos. Faça <code>terraform apply</code> para atualizar o recurso com essa configuração, depois <code>terraform destroy</code>. Remover do state (C) deixa o recurso órfão na AWS (não é deletado).</p></details>
+<hr>
+<p><strong>4.</strong> Você quer testar se uma política IAM está funcionando corretamente antes de associá-la a um usuário. Qual ferramenta AWS CLI usar?</p>
+<ul><li>A) <code>aws iam simulate-principal-policy</code></li><li>B) <code>aws iam get-policy</code></li><li>C) <code>aws iam list-attached-user-policies</code></li><li>D) <code>aws sts assume-role</code></li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — <code>aws iam simulate-principal-policy</code>: simula o resultado de autorização IAM para um principal específico realizando ações específicas em recursos específicos. Retorna Allow ou Deny sem fazer a ação. Perfeito para testar políticas antes de aplicar. <code>simulate-custom-policy</code> testa uma policy em JSON sem usuário específico.</p></details>
+<hr>
+<p><strong>5.</strong> Você está criando um módulo Terraform para um bucket S3. O módulo deve aceitar o nome do bucket como variável obrigatória e criar o bucket com versioning habilitado. Qual é a sintaxe correta?</p>
+<ul><li>A) </li></ul>
+<pre><code class="language-hcl">resource &quot;aws_s3_bucket&quot; &quot;main&quot; {
+  bucket = var.bucket_name
+}
+resource &quot;aws_s3_bucket_versioning&quot; &quot;main&quot; {
+  bucket = aws_s3_bucket.main.id
+  versioning_configuration { status = &quot;Enabled&quot; }
+}</code></pre>
+<ul><li>B) <code>aws s3api create-bucket --bucket ${var.bucket_name} --versioning Enabled</code></li><li>C) <code>resource &quot;s3&quot; &quot;bucket&quot; { name = var.bucket_name; versioning = true }</code></li><li>D) Nenhuma das anteriores</li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — Na sintaxe Terraform AWS Provider 4.x+, o <code>aws_s3_bucket_versioning</code> é um recurso separado (não mais um bloco dentro do <code>aws_s3_bucket</code>). A configuração em (A) é a correta e moderna. A opção (C) tem sintaxe inválida.</p></details>
+<hr>
+<p><strong>6.</strong> Após deployar uma aplicação ECS Fargate, você percebe que os containers ficam reiniciando constantemente. Qual é o primeiro lugar para investigar?</p>
+<ul><li>A) VPC Flow Logs</li><li>B) CloudWatch Logs do container (task definition deve ter logConfiguration com awslogs driver)</li><li>C) AWS X-Ray traces</li><li>D) CloudTrail para o serviço ECS</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — Containers em loop de restart geralmente indicam erro na aplicação ou misconfiguration. O log do container (stdout/stderr) no CloudWatch Logs é o primeiro lugar. A task definition deve ter <code>logConfiguration: awslogs</code> apontando para um Log Group. Sem isso, os logs são perdidos e debugging é impossível.</p></details>
+<hr>
+<p><strong>7.</strong> Você está usando AWS CLI e recebe o erro <code>An error occurred (AccessDenied) when calling the DescribeInstances operation</code>. Como diagnosticar qual permissão está faltando?</p>
+<ul><li>A) Verificar <code>aws iam list-attached-user-policies</code> para ver as policies do usuário</li><li>B) Usar <code>aws iam simulate-principal-policy --action-names ec2:DescribeInstances</code> para simular a autorização</li><li>C) Verificar <code>aws sts get-caller-identity</code> para confirmar qual identidade está sendo usada, depois verificar as policies dessa identidade</li><li>D) C é o primeiro passo; depois B para confirmar a política exata que está negando</li></ul>
+<details><summary>Resposta</summary><p><strong>D</strong> — Fluxo correto: primeiro <code>aws sts get-caller-identity</code> para confirmar que você está autenticado como o identity correto (não como outra role). Depois <code>simulate-principal-policy</code> para entender qual statement está negando a ação. <code>list-attached-user-policies</code> não mostra policies de grupos ou inline policies.</p></details>
+<hr>
+<p><strong>8.</strong> Você criou um RDS MySQL com <code>--no-publicly-accessible</code> em uma subnet privada. A aplicação em EC2 na mesma VPC não consegue conectar. O que verificar? (Selecione 2)</p>
+<ul><li>A) O Security Group do RDS permite inbound na porta 3306 do Security Group do EC2</li><li>B) O EC2 está na mesma VPC que o RDS (ou VPCs conectadas por peering/TGW)</li><li>C) O RDS tem Elastic IP associado</li><li>D) A subnet do RDS tem uma rota para o Internet Gateway</li></ul>
+<details><summary>Resposta</summary><p><strong>A e B</strong> — Para conectividade EC2 → RDS na mesma VPC: (1) ambos na mesma VPC; (2) SG do RDS permite porta 3306 do SG do EC2. RDS privado não precisa de EIP (C) nem IGW route (D) — esses são para acesso público.</p></details>
+<hr>
+<p><strong>9.</strong> Você quer fazer uma query no DynamoDB retornando apenas itens onde <code>status = &quot;active&quot;</code> e <code>age &gt; 25</code>. A tabela tem <code>userId</code> como partition key e <code>createdAt</code> como sort key. Qual operação DynamoDB usar?</p>
+<ul><li>A) GetItem com FilterExpression</li><li>B) Query com FilterExpression</li><li>C) Scan com FilterExpression (lê a tabela inteira e filtra)</li><li>D) Batch GetItem</li></ul>
+<details><summary>Resposta</summary><p><strong>C</strong> — <code>status</code> e <code>age</code> não são chaves da tabela nem de nenhum GSI/LSI descrito. Query requer especificar a partition key. Scan lê a tabela inteira e aplica FilterExpression (funciona mas caro para tabelas grandes). A solução ideal seria criar um GSI com <code>status</code> como partition key e então fazer Query, mas com os índices descritos, Scan é a única opção.</p></details>
+<hr>
+<p><strong>10.</strong> Você criou uma Lambda function com o código funcionando localmente, mas ao invocar na AWS recebe <code>Runtime.ImportModuleError: No module named &#39;boto3&#39;</code>. Qual é a causa provável?</p>
+<ul><li>A) Boto3 precisa ser instalado separadamente em Lambdas Python</li><li>B) O zip de deploy não inclui as dependências corretamente</li><li>C) O runtime Python selecionado não suporta boto3</li><li>D) Boto3 já está incluído no runtime Lambda Python; o problema é outro módulo que está sendo importado</li></ul>
+<details><summary>Resposta</summary><p><strong>D</strong> — Boto3 JÁ está incluído no runtime Lambda Python (pré-instalado pela AWS). Se o erro diz <code>No module named &#39;boto3&#39;</code>, na verdade é possível que o erro seja de outro módulo listado antes, ou que o zip foi criado incorretamente substituindo o boto3 do runtime por uma versão local incompleta. Verifique se o deployment package está correto.</p></details>
+<hr>
+<p><strong>11.</strong> Após criar um CloudFront distribution com um S3 bucket como origem, você ainda consegue acessar os objetos S3 diretamente via URL do bucket, bypassando o CloudFront. Como resolver?</p>
+<ul><li>A) Configurar bucket policy para negar acesso de todos exceto do CloudFront OAC (Origin Access Control)</li><li>B) Desabilitar o static website hosting no S3</li><li>C) Configurar CORS no bucket S3</li><li>D) Usar S3 pre-signed URLs ao invés do CloudFront</li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — OAC (Origin Access Control): cria uma identidade no CloudFront. O bucket policy é atualizado para permitir apenas GetObject do Principal <code>cloudfront.amazonaws.com</code> com condição <code>AWS:SourceArn</code> do distribution. Qualquer acesso direto ao S3 URL retorna 403.</p></details>
+<hr>
+<p><strong>12.</strong> Você quer monitorar quantas requisições com status 5xx sua API Lambda está retornando e criar um alarme quando ultrapassar 10 em 5 minutos. Qual sequência de comandos CLI implementa isso?</p>
+<ul><li>A) Criar Metric Filter no Log Group + criar Alarme na métrica customizada</li><li>B) Usar métricas padrão do API Gateway (<code>5XXError</code>) diretamente para criar o Alarme</li><li>C) Criar CloudTrail Event Rule para status 500</li><li>D) Usar X-Ray com threshold de erros</li></ul>
+<details><summary>Resposta</summary><p><strong>B</strong> — API Gateway publica automaticamente a métrica <code>5XXError</code> no CloudWatch (namespace <code>AWS/ApiGateway</code>). Crie o Alarm diretamente nessa métrica: <code>aws cloudwatch put-metric-alarm --alarm-name api-5xx --namespace AWS/ApiGateway --metric-name 5XXError --dimensions Name=ApiName,Value=minha-api --period 300 --evaluation-periods 1 --threshold 10 --comparison-operator GreaterThanThreshold --statistic Sum</code>.</p></details>
+<hr>
+<p><strong>13.</strong> Você fez <code>terraform apply</code> mas o recurso <code>aws_iam_role_policy_attachment</code> não está no seu código. O Terraform está mostrando esse recurso no state (<code>terraform state list</code>). O que acontece se você faz <code>terraform apply</code> novamente?</p>
+<ul><li>A) O Terraform vai deletar o role policy attachment porque não está no código</li><li>B) O Terraform não faz nada com recursos que não estão no código (apenas gerencia o que está no code)</li><li>C) Precisaria de <code>terraform state rm</code> para remover o recurso do state</li><li>D) O Terraform vai mostrar erro sobre recurso órfão</li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — Terraform gerencia recursos declarativos: o estado desejado = o que está no código. Se um recurso está no state mas não no código, o próximo <code>terraform apply</code> vai deletar esse recurso para alinhar o state com o código. Para remover do state sem deletar o recurso real: <code>terraform state rm resource.name</code>.</p></details>
+<hr>
+<p><strong>14.</strong> Um S3 bucket event notification está configurado para invocar uma Lambda quando objetos são criados. Mas ao testar, a Lambda não é invocada. Quais dois itens verificar?</p>
+<ul><li>A) Resource Policy da Lambda permitindo que S3 invoque (Principal: s3.amazonaws.com) + Notification configurada no bucket correto</li><li>B) IAM Role da Lambda com s3:GetObject + SG da Lambda</li><li>C) Bucket versioning habilitado + Lambda em mesma região do bucket</li><li>D) CloudWatch Logs habilitado na Lambda + S3 Access Logging</li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — Para S3 invocar Lambda: (1) Resource-based policy na Lambda (<code>aws lambda add-permission</code>) permitindo <code>lambda:InvokeFunction</code> com Principal <code>s3.amazonaws.com</code> e condition <code>ArnEquals</code> no bucket ARN; (2) Notification configuration no bucket apontando para o ARN da Lambda correta. Sem a resource policy, S3 recebe access denied ao tentar invocar.</p></details>
+<hr>
+<p><strong>15.</strong> Você está usando <code>aws s3 sync</code> para backup de arquivos de um servidor para S3. O comando inclui arquivos desnecessários (node_modules, .git). Como excluir esses diretórios?</p>
+<ul><li>A) <code>aws s3 sync . s3://meu-bucket --exclude &quot;node_modules/<em>&quot; --exclude &quot;.git/</em>&quot;</code></li><li>B) <code>aws s3 sync . s3://meu-bucket --ignore node_modules .git</code></li><li>C) Criar um arquivo .s3ignore</li><li>D) <code>aws s3 sync . s3://meu-bucket --filter &quot;node_modules&quot;</code></li></ul>
+<details><summary>Resposta</summary><p><strong>A</strong> — <code>--exclude</code> com glob pattern: <code>aws s3 sync . s3://meu-bucket --exclude &quot;node_modules/<em>&quot; --exclude &quot;.git/</em>&quot;</code>. Cada exclusão é um <code>--exclude</code> separado. O padrão usa glob (<em> e </em><em>). Nota: se quiser incluir apenas certos tipos, use <code>--exclude &quot;</em>&quot; --include &quot;*.js&quot;</code>. S3 não tem arquivo .s3ignore.</p></details>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./156-28-labs-praticos-links.html">Aula anterior</a>
+      <a href="./158-28-labs-praticos-readme.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

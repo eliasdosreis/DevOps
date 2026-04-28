@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cheatsheet — Módulo 08: DNS, Route 53 e CloudFront - SAA-C03 Lab</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body class="standalone-page">
+<main class="page-shell">
+  <a class="back-link" href="../index.html#059-13-dns-route53-e-cloudfront-cheatsheet">Voltar ao painel</a>
+  <article class="lesson-card full" style="border-top:6px solid #2563eb">
+    <div class="lesson-toolbar">
+      <div class="lesson-kicker">Modulo 13 - DNS Route53 e CloudFront - 3 min - 13-DNS-Route53-e-CloudFront/cheatsheet.md</div>
+    </div>
+    <figure class="lesson-visual">
+      <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80" alt="Imagem de apoio para Modulo 13 - DNS Route53 e CloudFront" loading="lazy">
+      <figcaption>DNS e CDN aproximam usuarios, reduzem latencia e protegem origens.</figcaption>
+    </figure>
+    <h1>Cheatsheet — Módulo 08: DNS, Route 53 e CloudFront</h1>
+<h2>Route 53 — Tipos de Records</h2>
+<div class="table-wrap"><table><thead><tr><th>Record</th><th>Uso</th><th>Apex?</th><th>Custo de Query</th></tr></thead><tbody><tr><td>A</td><td>IPv4 address</td><td>Sim</td><td>Padrão</td></tr><tr><td>AAAA</td><td>IPv6 address</td><td>Sim</td><td>Padrão</td></tr><tr><td>CNAME</td><td>Alias para outro hostname</td><td><strong>NÃO</strong></td><td>Padrão</td></tr><tr><td><strong>Alias</strong></td><td>Recursos AWS (ALB, CF, S3)</td><td><strong>SIM</strong></td><td>Gratuito</td></tr><tr><td>MX</td><td>Email servers</td><td>Sim</td><td>Padrão</td></tr><tr><td>TXT</td><td>Verificação, SPF, DKIM</td><td>Sim</td><td>Padrão</td></tr><tr><td>NS</td><td>Nameservers da zona</td><td>Sim</td><td>Padrão</td></tr></tbody></table></div>
+<h2>Políticas de Roteamento Route 53</h2>
+<div class="table-wrap"><table><thead><tr><th>Política</th><th>Caso de Uso</th><th>Health Check?</th></tr></thead><tbody><tr><td>Simple</td><td>Single resource, sem HA</td><td>Não</td></tr><tr><td>Weighted</td><td>A/B testing, migração gradual</td><td>Opcional</td></tr><tr><td>Latency</td><td>Menor latência para usuário</td><td>Opcional</td></tr><tr><td>Failover</td><td>Active-Passive DR</td><td><strong>Obrigatório</strong> para primário</td></tr><tr><td>Geolocation</td><td>Conteúdo por país/região</td><td>Opcional</td></tr><tr><td>Geoproximity</td><td>Por distância geográfica com bias</td><td>Opcional</td></tr><tr><td>Multi-Value</td><td>Múltiplos IPs saudáveis (pseudo LB)</td><td>Recomendado</td></tr><tr><td>IP-based</td><td>Roteamento por CIDR de origem</td><td>Não</td></tr></tbody></table></div>
+<h2>CloudFront — Componentes e Configuração</h2>
+<div class="table-wrap"><table><thead><tr><th>Componente</th><th>Descrição</th></tr></thead><tbody><tr><td>Distribution</td><td>Ponto de entrada — define origems, behaviors, certificado</td></tr><tr><td>Origin</td><td>Origem do conteúdo: S3, ALB, EC2, API GW, HTTP custom</td></tr><tr><td>Behavior</td><td>Regra de cache associada a um path pattern (ex: <code>/api/*</code>)</td></tr><tr><td>Cache Policy</td><td>Define cache key (query strings, headers, cookies) e TTLs</td></tr><tr><td>Origin Request Policy</td><td>O que enviar à origin além da cache key</td></tr><tr><td>OAC</td><td>Substitui OAI — autentica CF com origin S3 via SigV4</td></tr></tbody></table></div>
+<h2>CloudFront TTLs</h2>
+<ul><li><code>Cache-Control: max-age=&lt;segundos&gt;</code> no response do origin → define TTL no edge</li><li>Default TTL: <strong>86.400s</strong> (24h) se origin não definir</li><li>Minimum TTL e Maximum TTL no behavior sobrescrevem o header do origin se for menor/maior</li><li>Invalidation: força cache miss imediato (1.000 paths/mês = gratuito)</li></ul>
+<h2>Lambda@Edge vs CloudFront Functions</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>CloudFront Functions</th><th>Lambda@Edge</th></tr></thead><tbody><tr><td>Runtime</td><td>JavaScript (ES5.1)</td><td>Node.js, Python</td></tr><tr><td>Gatilhos</td><td>Viewer Request, Viewer Response</td><td>Viewer Req/Res + Origin Req/Res</td></tr><tr><td>Tempo máx.</td><td>&lt; 1ms</td><td>5s (Viewer), 30s (Origin)</td></tr><tr><td>Memória</td><td>2 MB</td><td>128 MB (Viewer), 10 GB (Origin)</td></tr><tr><td>Body request</td><td>NÃO (em Viewer Req)</td><td>SIM (com size limits)</td></tr><tr><td>Preço</td><td>$0,0000001 por invocação</td><td>$0,00000625 por 100ms</td></tr><tr><td>Casos de uso</td><td>Headers, redirects, URL rewrites simples</td><td>Auth, A/B test, JWT validation, body inspection</td></tr></tbody></table></div>
+<h2>Global Accelerator vs Route 53 vs CloudFront</h2>
+<div class="table-wrap"><table><thead><tr><th></th><th>Route 53</th><th>Global Accelerator</th><th>CloudFront</th></tr></thead><tbody><tr><td>Tipo</td><td>DNS</td><td>Anycast network proxy</td><td>CDN</td></tr><tr><td>IPs</td><td>DNS (muda)</td><td>2 Anycast IPs estáticos</td><td>IPs CF (mudam)</td></tr><tr><td>Protocolo</td><td>HTTP/S, TCP, UDP</td><td>TCP, UDP, HTTP/S</td><td>HTTP/S</td></tr><tr><td>Failover speed</td><td>Minutos (TTL)</td><td>&lt; 1 minuto</td><td>Varia</td></tr><tr><td>Caching</td><td>Não</td><td>Não</td><td><strong>Sim</strong></td></tr><tr><td>Caso principal</td><td>DNS routing</td><td>Global TCP apps, IPs fixos, non-HTTP</td><td>Conteúdo estático/dinâmico global</td></tr></tbody></table></div>
+<h2>Proteção e Segurança CloudFront + WAF</h2>
+<div class="table-wrap"><table><thead><tr><th>Serviço</th><th>Protege contra</th></tr></thead><tbody><tr><td>AWS WAF</td><td>OWASP Top 10 (SQL injection, XSS), rate limiting, IP reputation, custom rules</td></tr><tr><td>Shield Standard</td><td>DDoS L3/L4 (gratuito, automático)</td></tr><tr><td>Shield Advanced</td><td>DDoS L7, DRT 24/7, crédito de custo (~$3K/mês)</td></tr><tr><td>Geo Restriction</td><td>Bloquear/permitir países (MaxMind GeoIP)</td></tr><tr><td>Signed URLs/Cookies</td><td>Conteúdo pago/privado com expiração</td></tr></tbody></table></div>
+<h2>Dicas Rápidas de Prova</h2>
+<ul><li><strong>CNAME não funciona no apex</strong> (empresa.com); use Alias</li><li>Alias records são <strong>gratuitos</strong> para Route 53 → recursos AWS</li><li>CloudFront caching: <code>Cache-Control: no-cache</code> força revalidação; TTL=0 nunca armazena em cache</li><li>OAC &gt; OAI para novos projetos (SSE-KMS, todas regiões S3, mais métodos HTTP)</li><li>Route 53 Health Check de recurso privado: via <strong>CloudWatch Alarm</strong> (HCs não alcançam recursos sem IP público)</li><li>Calculated Health Check: combine múltiplos HCs com AND/OR/NOT</li><li>WAF pode ser associado a: <strong>CloudFront, ALB, API Gateway, AppSync</strong></li><li>Global Accelerator: ideal quando precisa de <strong>IP fixo</strong> para whitelist de firewall</li><li>Lambda@Edge executa nas <strong>edge locations</strong> (regions específicas); CloudFront Functions em <strong>todos os PoPs</strong></li><li>Route 53 TTL baixo antes de migração DNS → acelera propagação de mudanças</li></ul>
+<hr>
+<p>_Credito autoral: Thiago Cardoso - <a href="https://www.linkedin.com/in/analyticsthiagocardoso">LinkedIn</a>_</p>
+    <nav class="page-nav">
+      <a href="./058-13-dns-route53-e-cloudfront-casos-de-uso.html">Aula anterior</a>
+      <a href="./060-13-dns-route53-e-cloudfront-flashcards.html">Proxima aula</a>
+    </nav>
+  </article>
+</main>
+<script src="../assets/data.js"></script>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
